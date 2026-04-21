@@ -1,87 +1,47 @@
-# 🚀 Gadget Concierge Plus (GC+) v4.1
+# Gadget Concierge Plus 🚀🎸
 
-みつひでさんのための、学習型ガジェット情報基盤 & インタラクティブ・ダッシュボード。
-最新のテックニュースを自律的にスクレイピングし、エンジニア目線でパーソナライズされた情報を提供します。
+みつひでさんの興味に特化した、自律学習型ガジェットニュース・ダッシュボード。
 
----
+## 🌟 主な機能
 
-## 📝 プロジェクト概要
+- **パーソナライズ・スクレイピング**: 設定されたカテゴリ、ブランド、キーワードに基づき、最新のテックニュースを自動収集。
+- **動的フィード管理システム (New!)**:
+  - エラー（404等）が発生したRSSフィードを自動検出し、予備のフィードへ自動差し替え。
+  - `data/feed_config.json` による自律的なURLメンテナンス。
+- **鮮度優先フィルタリング (New!)**: 1ヶ月以上前の古い記事を自動除外。
+- **高度な画像抽出ロジック**: `media:content` やサイト特有の埋め込みパターンに対応し、画像表示の精度を向上。
+- **モダンなグラスモーフィズムUI**: Windows 11ライクな、美しくコンパクトなダッシュボード。
 
-`Gadget Concierge Plus` は、特定のブランドやキーワード（Ryzen, Minisforum, Razer, ギター機材, ロードバイクなど）に基づき、日本語の主要テックサイトから最新情報を収集・解析・提供するフルスタックなツールキットです。
+## 🛠 テックスタック
 
-### 🌟 特徴
-- **自律学習**: 閲覧したトピックを学習し、次回のダッシュボードを自動でパーソナライズ。
-- **完全ダイナミックUI**: カテゴリを動的に生成し、Windows 11 Mica風のデザインで表示。
-- **マルチプラットフォーム**: Webダッシュボードだけでなく、**MCP (Model Context Protocol)** サーバーとして AI エージェント（Gemini, Cursor等）から直接呼び出し可能。
+- **Backend**: Node.js, Express, RSS-Parser, Cheerio (Docker)
+- **Frontend**: HTML5, Tailwind CSS, FontAwesome, JavaScript (Vanilla)
+- **Data**: JSONベースの軽量・永続ストレージ
 
----
+## 🚀 起動方法
 
-## 🏗️ アーキテクチャ
-
-```mermaid
-graph TD
-    User([みつひでさん]) <--> Dashboard[HTML Dashboard v4.1]
-    Dashboard <--> |HTTP API / JSON| Server[Docker: Node.js API Server]
-    Server <--> |MCP stdio| AI_Agents[Gemini CLI / Cursor / Claude]
-    Server --> |Scraping| Web_Sources[(PC Watch / AV Watch / 4Gamer / Cyclist / etc.)]
-    Server <--> |Persistence| JSON_DB[(interests.json)]
-```
-
----
-
-## 🚀 セットアップ & 起動
-
-### 1. 起動方法 (Docker Compose)
-プロジェクトルートで以下のコマンドを実行してください。
+### 1. 全システムの起動
+付属のPowerShellスクリプトを実行するだけで、バックエンドのビルドからブラウザの起動まで自動で行われます。
 
 ```powershell
+./scripts/startup.ps1
+```
+
+### 2. 手動起動
+```bash
+# バックエンド
+cd server
 docker-compose up -d --build
+
+# フロントエンド
+# dashboard/index.html をブラウザで開く
 ```
-※ APIサーバー（Port 3005）とスクレイパーがバックグラウンドで起動します。
 
-### 2. ダッシュボードの表示
-`dashboard/index.html` を Chrome で開いてください。
-「最新情報を更新」ボタンを押すと、全カテゴリの最新情報がロードされます。
+## 📝 設定と学習
 
----
-
-## 🤖 MCPサーバーとしての利用
-
-本システムは **Model Context Protocol** に対応しており、AIエージェントに「道具」として持たせることができます。
-
-### 設定方法 (Gemini CLI / Cursor / Claude Desktop)
-各ツールの設定ファイル（例: `.mcp.json`）に以下の設定を追加してください。
-
-```json
-{
-  "mcpServers": {
-    "gadget-concierge": {
-      "command": "docker",
-      "args": [
-        "run", "-i", "--rm",
-        "-v", "C:/path/to/gadget-concierge-plus/data/interests.json:/app/gadget-interests.json",
-        "gadget-concierge-plus-gadget-api"
-      ]
-    }
-  }
-}
-```
-※ `C:/path/to/...` は実際のプロジェクト絶対パスに置き換えてください。
-
-### AIに依頼できること
-MCPを通じて、AIに以下のような指示が出せます：
-- 「最新のガジェットニュースを一覧にして」
-- 「ロードバイク関連の熱い情報をピックアップして」
-- 「新しいキーワード『RTX 5090』を学習しておいて」
+- `data/interests.json`: みつひでさんの興味（カテゴリ・ブランド・キーワード）を管理。
+- `data/feed_config.json`: 巡回対象のRSSフィードと予備プールを管理。
+- ダッシュボード上の「Settings」パネルから、新しい興味を動的に学習させることが可能です。
 
 ---
-
-## 🛠️ 技術情報
-
-- **Backend**: Node.js 20, @modelcontextprotocol/sdk, Express
-- **Frontend**: Tailwind CSS, Font Awesome, Dynamic DOM Injection
-- **Source Sites**: PC Watch, AV Watch, ITmedia, ASCII.jp, 4Gamer, ファミ通, Cyclist, Cycle Sports, Sony Press, PR TIMES, Zenn AI, etc.
-- **Environment**: Optimized for Windows 11 (Ryzen 9 7945HX / RX 7600M XT)
-
----
-© 2026 Gadget Concierge Engine - Built for enthusiasts 🚀🎸
+*Created with Gemini CLI for Mitsuhide.*

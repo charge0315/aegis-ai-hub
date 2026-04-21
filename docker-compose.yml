@@ -6,4 +6,8 @@ services:
       - "3005:3005"
     volumes:
       - ./data/interests.json:/app/gadget-interests.json
+      - ./data/feed_config.json:/app/feed-config.json
+    environment:
+      - INTERESTS_PATH=/app/gadget-interests.json
+      - FEEDS_PATH=/app/feed-config.json
     restart: always

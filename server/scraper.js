@@ -1,17 +1,20 @@
+import fs from 'fs';
+import path from 'path';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import Parser from 'rss-parser';
 
 /**
  * RSSパースの設定
- * RDF (RSS 1.0) や独自拡張フィールドにも対応し、古いテックサイトから情報を漏らさず取得する
  */
 const parser = new Parser({
     customFields: {
         item: [
             ['content:encoded', 'contentEncoded'],
             ['dc:title', 'title'],
-            ['dc:description', 'description']
+            ['dc:description', 'description'],
+            ['media:content', 'mediaContent'],
+            ['media:thumbnail', 'mediaThumbnail']
         ]
     }
 });
@@ -19,81 +22,96 @@ const parser = new Parser({
 /**
  * 日本語テック・ガジェットサイトを巡回し、最新記事を抽出するコア関数
  */
-export async function scrapeGadgetNews(interests) {
+export async function scrapeGadgetNews(interests, feedConfigPath) {
     const news = {};
-    // JSONで定義された全カテゴリに対して空の配列を初期化
     for (const catName in interests.categories) {
         news[catName] = [];
     }
 
-    // 巡回対象のソースリスト。みつひでさんの好みに合わせて特化した布陣
-    const targets = [
-        { url: 'https://japan.googleblog.com/atom.xml', cat: 'AI・ソフトウェア' },
-        { url: 'https://zenn.dev/topics/ai/feed', cat: 'AI・ソフトウェア' },
-        { url: 'https://ledge.ai/feed/', cat: 'AI・ソフトウェア' },
-        { url: 'https://pc.watch.impress.co.jp/data/rss/pcw/index.rdf', cat: 'PC・ハードウェア' },
-        { url: 'https://rss.itmedia.co.jp/rss/2.0/pcuser.xml', cat: 'PC・ハードウェア' },
-        { url: 'https://ascii.jp/digital/rss.xml', cat: 'PC・ハードウェア' },
-        { url: 'https://www.4gamer.net/rss/index.xml', cat: 'ゲーム' },
-        { url: 'https://www.famitsu.com/rss/all.xml', cat: 'ゲーム' },
-        { url: 'https://av.watch.impress.co.jp/data/rss/avw/index.rdf', cat: '音楽・ギター・DTM' },
-        { url: 'https://www.sony.jp/CorporateCruise/Press/rss/index.xml', cat: '音楽・ギター・DTM' },
-        { url: 'https://www.barks.jp/rss/barks.xml', cat: '音楽・ギター・DTM' },
-        { url: 'https://cycling.p-news.jp/feed/', cat: 'ロードバイク' },
-        { url: 'https://www.cyclesports.jp/feed/', cat: 'ロードバイク' },
-        { url: 'https://www.gizmodo.jp/index.xml', cat: 'ガジェット' },
-        { url: 'https://prtimes.jp/main/html/index/category_id/12.xml', cat: 'ガジェット' }
-    ];
+    // フィード設定の読み込み
+    let feedConfig = {};
+    try {
+        feedConfig = JSON.parse(fs.readFileSync(feedConfigPath, 'utf8'));
+    } catch (e) {
+        console.error("フィード設定の読み込みに失敗しました。");
+        return news;
+    }
 
-    // 分類用の重要キーワード定義
-    const allMusicKeys = ['ギター', 'エフェクター', 'アンプ', 'イヤホン', 'ヘッドホン', 'オーディオ', 'dac', 'daw', '楽器', 'technics', 'sony', 'panasonic'];
-    const allAiKeys = [' ai ', 'llm', 'gpt', 'openai', 'claude', 'npu', '機械学習', 'copilot'];
-    const allPcKeys = ['ryzen', 'minisforum', 'asus', 'msi', 'razer', 'rtx', 'gpu', 'cpu', '自作pc', 'キーボード'];
+    const oneMonthAgo = new Date();
+    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
 
-    for (const target of targets) {
-        try {
-            const feed = await parser.parseURL(target.url);
-            for (const item of feed.items) {
-                const title = item.title || item['dc:title'] || "";
-                const snippet = item.contentSnippet || item.description || "";
-                const text = (title + snippet).toLowerCase();
+    const allMusicKeys = ['ギター', 'エフェクター', 'アンプ', 'イヤホン', 'ヘッドホン', 'オーディオ', 'dac', 'daw', '楽器', 'technics', 'sony', 'panasonic', 'dtm', 'midi', 'シンセサイザー'];
+    const allAiKeys = [' ai ', 'llm', 'gpt', 'openai', 'claude', 'npu', '機械学習', 'copilot', 'stable diffusion'];
+
+    let configChanged = false;
+
+    // カテゴリごとにフィードを巡回
+    for (const catName in feedConfig) {
+        const catData = feedConfig[catName];
+        const activeFeeds = [...catData.active];
+
+        for (const url of activeFeeds) {
+            try {
+                const feed = await parser.parseURL(url);
+                // 成功したらエラーカウントをリセット
+                if (catData.failures[url]) {
+                    delete catData.failures[url];
+                    configChanged = true;
+                }
+
+                for (const item of feed.items) {
+                    const pubDate = new Date(item.isoDate || item.pubDate);
+                    if (pubDate < oneMonthAgo) continue;
+
+                    const title = item.title || item['dc:title'] || "";
+                    const snippet = item.contentSnippet || item.description || "";
+                    const text = (title + snippet).toLowerCase();
+                    
+                    let score = 5;
+                    let detectedCat = catName;
+
+                    // カテゴリの横断再判定
+                    if (allMusicKeys.some(k => text.includes(k))) detectedCat = '音楽・ギター・DTM';
+                    else if (text.includes('ロードバイク') || text.includes('自転車') || text.includes('シマノ')) detectedCat = 'ロードバイク';
+                    else if (allAiKeys.some(k => text.includes(k))) detectedCat = 'AI・ソフトウェア';
+                    else if (text.includes('ゲーム') || text.includes('ps5') || text.includes('任天堂') || text.includes('switch')) detectedCat = 'ゲーム';
+
+                    const catInfo = interests.categories[detectedCat] || { brands: [], keywords: [] };
+                    catInfo.brands.forEach(b => { if (text.includes(b.toLowerCase())) score += 10; });
+                    catInfo.keywords.forEach(k => { if (text.includes(k.toLowerCase())) score += 8; });
+
+                    const article = {
+                        title: title,
+                        link: item.link,
+                        desc: snippet.slice(0, 120).replace(/<[^>]*>?/gm, '') + '...',
+                        brand: extractBrand(title, interests),
+                        score: score,
+                        img: extractImage(item) || getPlaceholder(detectedCat),
+                        date: item.isoDate || item.pubDate
+                    };
+
+                    if (news[detectedCat]) news[detectedCat].push(article);
+                }
+            } catch (e) {
+                console.error(`スクレイピングエラー: ${url} - ${e.message}`);
                 
-                let score = 5;
-                let detectedCat = target.cat;
-
-                // --- カテゴリの横断再判定 ---
-                // サイトの出身に関わらず、特定の強いキーワードが含まれていれば適切なカテゴリへ強制移動させる
-                if (allMusicKeys.some(k => text.includes(k))) detectedCat = '音楽・ギター・DTM';
-                else if (text.includes('ロードバイク') || text.includes('自転車') || text.includes('シマノ')) detectedCat = 'ロードバイク';
-                else if (allAiKeys.some(k => text.includes(k))) detectedCat = 'AI・ソフトウェア';
-                else if (text.includes('ゲーム') || text.includes('ps5') || text.includes('任天堂')) detectedCat = 'ゲーム';
-
-                // --- 興味度スコアリング ---
-                // みつひでさんが設定したブランドやキーワードとの合致度で「おすすめ度」を計算
-                const catInfo = interests.categories[detectedCat] || { brands: [], keywords: [] };
-                catInfo.brands.forEach(b => { if (text.includes(b.toLowerCase())) score += 10; });
-                catInfo.keywords.forEach(k => { if (text.includes(k.toLowerCase())) score += 8; });
-
-                const article = {
-                    title: title,
-                    link: item.link,
-                    desc: snippet.slice(0, 120).replace(/<[^>]*>?/gm, '') + '...',
-                    brand: extractBrand(title, interests),
-                    score: score,
-                    img: extractImage(item) || getPlaceholder(detectedCat)
-                };
-
-                // 分類したカテゴリの配列へ追加
-                if (news[detectedCat]) {
-                    news[detectedCat].push(article);
-                } else {
-                    if (!news[detectedCat]) news[detectedCat] = [];
-                    news[detectedCat].push(article);
+                // エラーカウントの更新
+                catData.failures[url] = (catData.failures[url] || 0) + 1;
+                
+                // 3回連続エラーで差し替え
+                if (catData.failures[url] >= 3 && catData.pool.length > 0) {
+                    const nextUrl = catData.pool.shift();
+                    console.log(`フィードを差し替えます: ${url} -> ${nextUrl}`);
+                    catData.active = catData.active.map(u => u === url ? nextUrl : u);
+                    configChanged = true;
                 }
             }
-        } catch (e) {
-            console.error(`スクレイピングエラー: ${target.url} - ${e.message}`);
         }
+    }
+
+    // 設定が変更された場合は保存
+    if (configChanged) {
+        fs.writeFileSync(feedConfigPath, JSON.stringify(feedConfig, null, 2));
     }
 
     // データのクレンジングと整形
@@ -101,20 +119,35 @@ export async function scrapeGadgetNews(interests) {
         const seen = new Set();
         news[cat] = news[cat]
             .filter(item => {
-                if (seen.has(item.link)) return false; // 重複記事をリンクURLで排除
+                if (seen.has(item.link)) return false;
                 seen.add(item.link);
                 return true;
             })
-            .sort((a, b) => b.score - a.score) // 興味度スコアの高い順に並び替え
-            .slice(0, 15); // 各カテゴリ最大15件に絞る
+            .sort((a, b) => new Date(b.date) - new Date(a.date))
+            .slice(0, 15);
+    }
+
+    return news;
+}
+
+    // データのクレンジングと整形
+    for (const cat in news) {
+        const seen = new Set();
+        news[cat] = news[cat]
+            .filter(item => {
+                if (seen.has(item.link)) return false;
+                seen.add(item.link);
+                return true;
+            })
+            .sort((a, b) => new Date(b.date) - new Date(a.date)) // 日付の新しい順を優先
+            .slice(0, 15);
     }
 
     return news;
 }
 
 /**
- * 記事タイトルからブランド名を抽出する。
- * 未知のブランドでも一般名詞であれば拾い上げる。
+ * 記事タイトルからブランド名を抽出する
  */
 function extractBrand(title, interests) {
     const lowerTitle = title.toLowerCase();
@@ -123,7 +156,7 @@ function extractBrand(title, interests) {
             if (lowerTitle.includes(brand.toLowerCase())) return brand;
         }
     }
-    const commonBrands = ['Google', 'AWS', 'Microsoft', 'NVIDIA', 'Apple', 'Sony', 'Technics', 'ASUS', 'MSI', 'Razer', 'Anker'];
+    const commonBrands = ['Google', 'AWS', 'Microsoft', 'NVIDIA', 'Apple', 'Sony', 'Technics', 'ASUS', 'MSI', 'Razer', 'Anker', 'Boss', 'Fender', 'Gibson'];
     for (const b of commonBrands) {
         if (lowerTitle.includes(b.toLowerCase())) return b;
     }
@@ -134,12 +167,46 @@ function extractBrand(title, interests) {
  * RSSの各フィールドから記事のサムネイル画像を頑張って探す
  */
 function extractImage(item) {
+    // 1. media:content (RSSの標準的な画像フィールド)
+    if (item.mediaContent) {
+        const media = item.mediaContent;
+        if (media.$ && media.$.url) return media.$.url;
+        if (Array.isArray(media) && media[0] && media[0].$ && media[0].$.url) return media[0].$.url;
+    }
+
+    // 2. media:thumbnail
+    if (item.mediaThumbnail && item.mediaThumbnail.$ && item.mediaThumbnail.$.url) {
+        return item.mediaThumbnail.$.url;
+    }
+
+    // 3. enclosure
     if (item.enclosure && item.enclosure.url) return item.enclosure.url;
+
+    // 4. 特殊なサイト（4Gamer等）のdescriptionパース
+    const snippet = item.description || "";
+    if (snippet.includes('4gamer.net')) {
+        // 4GamerのRSSは description 内に img タグが含まれることが多い
+        const matches = snippet.match(/src="([^"]+\.(jpg|png|gif|jpeg))"/i);
+        if (matches && matches[1]) return matches[1];
+    }
+
+    // 5. Content内のimgタグをパース
     const content = item.contentEncoded || item.content || item.description || "";
     if (content) {
         const $ = cheerio.load(content);
-        const imgSrc = $('img').attr('src');
-        if (imgSrc && imgSrc.startsWith('http')) return imgSrc;
+        // 最初に見つかったimgタグを探す。ただし1x1のトラッキング用ピクセル等は除外
+        let foundSrc = null;
+        $('img').each((i, el) => {
+            const src = $(el).attr('src');
+            if (src && src.startsWith('http')) {
+                // 広告やトラッキング用（1x1等）を除外
+                if (!src.includes('ads') && !src.includes('track') && !src.includes('pixel') && !src.includes('counter')) {
+                    foundSrc = src;
+                    return false; // ループを抜ける
+                }
+            }
+        });
+        if (foundSrc) return foundSrc;
     }
     return null;
 }

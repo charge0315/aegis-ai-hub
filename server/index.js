@@ -9,12 +9,12 @@ import { fileURLToPath } from 'url';
 import { scrapeGadgetNews } from './scraper.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-// 永続化データのパス設定。Docker環境とローカル開発環境の両方に対応
+// 永続化データのパス設定
 const INTERESTS_PATH = process.env.INTERESTS_PATH || path.join(__dirname, 'gadget-interests.json');
+const FEEDS_PATH = process.env.FEEDS_PATH || path.join(__dirname, 'feed-config.json');
 
 /**
  * MCP (Model Context Protocol) サーバーの設定
- * AIエージェント（Gemini, Cursor等）がこのツールを介して情報を取得できるようにする
  */
 const mcpServer = new Server({
     name: "gadget-concierge-mcp",
@@ -55,7 +55,7 @@ mcpServer.setRequestHandler(CallToolRequestSchema, async (request) => {
     
     // ダッシュボード情報の取得リクエスト
     if (request.params.name === "get_gadget_dashboard") {
-        const data = await scrapeGadgetNews(interests);
+        const data = await scrapeGadgetNews(interests, FEEDS_PATH);
         return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
     }
     
@@ -71,7 +71,6 @@ mcpServer.setRequestHandler(CallToolRequestSchema, async (request) => {
 
 /**
  * HTTP API サーバーの設定
- * ブラウザ上のダッシュボードUIとの通信を担う
  */
 const app = express();
 app.use(cors());
@@ -81,7 +80,7 @@ app.use(express.json());
 app.get('/dashboard', async (req, res) => {
     try {
         const interests = JSON.parse(fs.readFileSync(INTERESTS_PATH, 'utf8'));
-        const data = await scrapeGadgetNews(interests);
+        const data = await scrapeGadgetNews(interests, FEEDS_PATH);
         res.json(data);
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
