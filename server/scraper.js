@@ -130,22 +130,6 @@ export async function scrapeGadgetNews(interests, feedConfigPath) {
     return news;
 }
 
-    // データのクレンジングと整形
-    for (const cat in news) {
-        const seen = new Set();
-        news[cat] = news[cat]
-            .filter(item => {
-                if (seen.has(item.link)) return false;
-                seen.add(item.link);
-                return true;
-            })
-            .sort((a, b) => new Date(b.date) - new Date(a.date)) // 日付の新しい順を優先
-            .slice(0, 15);
-    }
-
-    return news;
-}
-
 /**
  * 記事タイトルからブランド名を抽出する
  */
@@ -185,7 +169,6 @@ function extractImage(item) {
     // 4. 特殊なサイト（4Gamer等）のdescriptionパース
     const snippet = item.description || "";
     if (snippet.includes('4gamer.net')) {
-        // 4GamerのRSSは description 内に img タグが含まれることが多い
         const matches = snippet.match(/src="([^"]+\.(jpg|png|gif|jpeg))"/i);
         if (matches && matches[1]) return matches[1];
     }
@@ -194,15 +177,13 @@ function extractImage(item) {
     const content = item.contentEncoded || item.content || item.description || "";
     if (content) {
         const $ = cheerio.load(content);
-        // 最初に見つかったimgタグを探す。ただし1x1のトラッキング用ピクセル等は除外
         let foundSrc = null;
         $('img').each((i, el) => {
             const src = $(el).attr('src');
             if (src && src.startsWith('http')) {
-                // 広告やトラッキング用（1x1等）を除外
                 if (!src.includes('ads') && !src.includes('track') && !src.includes('pixel') && !src.includes('counter')) {
                     foundSrc = src;
-                    return false; // ループを抜ける
+                    return false;
                 }
             }
         });
