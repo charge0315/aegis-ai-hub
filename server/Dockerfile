@@ -7,7 +7,8 @@ COPY package.json ./
 RUN npm install
 
 # ソースコードのコピー
-COPY index.js scraper.js ./
+COPY index.js ./
+COPY src/ ./src/
 
 # ポート3005を公開 (HTTP API用)
 EXPOSE 3005

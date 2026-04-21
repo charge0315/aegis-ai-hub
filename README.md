@@ -4,18 +4,19 @@
 
 ## 🌟 主な機能
 
-- **パーソナライズ・スクレイピング**: 設定されたカテゴリ、ブランド、キーワードに基づき、最新のテックニュースを自動収集。
-- **動的フィード管理システム (New!)**:
-  - エラー（404等）が発生したRSSフィードを自動検出し、予備のフィードへ自動差し替え。
-  - `data/feed_config.json` による自律的なURLメンテナンス。
-- **鮮度優先フィルタリング (New!)**: 1ヶ月以上前の古い記事を自動除外。
-- **高度な画像抽出ロジック**: `media:content` やサイト特有の埋め込みパターンに対応し、画像表示の精度を向上。
-- **モダンなグラスモーフィズムUI**: Windows 11ライクな、美しくコンパクトなダッシュボード。
+- **並列スクレイピング・エンジン (New!)**: 複数カテゴリのフィードを同時に取得し、更新速度を劇的に向上。
+- **自律型ヘルスチェック (New!)**: バックグラウンドでフィードの死活監視を自動実行し、故障したフィードを予備プールから補充。
+- **インテリジェント・エンリッチメント (New!)**: RSSに画像がない場合、元記事から `og:image` を自動抽出し、ダッシュボードを華やかに。
+- **モダン・モジュール化 UI (New!)**: 
+  - **スケルトンスクリーン**: 読み込み中の体感速度を向上。
+  - **Masonryレイアウト**: 記事カードを隙間なく美しく配置。
+  - **クイック検索**: 取得済み記事をリアルタイムに絞り込み。
+  - **既読管理**: LocalStorageを活用したスマートな既読追跡。
 
 ## 🛠 テックスタック
 
-- **Backend**: Node.js, Express, RSS-Parser, Cheerio (Docker)
-- **Frontend**: HTML5, Tailwind CSS, FontAwesome, JavaScript (Vanilla)
+- **Backend**: Node.js, Express, RSS-Parser, Cheerio (Docker / Service-Oriented Architecture)
+- **Frontend**: Vanilla JS (ES Modules), Tailwind CSS, FontAwesome, LocalStorage
 - **Data**: JSONベースの軽量・永続ストレージ
 
 ## 🚀 起動方法

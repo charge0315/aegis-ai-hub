@@ -6,12 +6,20 @@ import cors from 'cors';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { scrapeGadgetNews } from './scraper.js';
+import { ScraperFacade } from './src/ScraperFacade.js';
+import { HealthMonitor } from './src/jobs/HealthMonitor.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // 永続化データのパス設定
 const INTERESTS_PATH = process.env.INTERESTS_PATH || path.join(__dirname, 'gadget-interests.json');
 const FEEDS_PATH = process.env.FEEDS_PATH || path.join(__dirname, 'feed-config.json');
+
+// 新しいオーケストレーターの初期化
+const scraper = new ScraperFacade(INTERESTS_PATH, FEEDS_PATH);
+
+// ヘルスチェック監視の開始 (1時間に1回)
+const monitor = new HealthMonitor(scraper.feedManager);
+monitor.start();
 
 /**
  * MCP (Model Context Protocol) サーバーの設定
@@ -55,7 +63,7 @@ mcpServer.setRequestHandler(CallToolRequestSchema, async (request) => {
     
     // ダッシュボード情報の取得リクエスト
     if (request.params.name === "get_gadget_dashboard") {
-        const data = await scrapeGadgetNews(interests, FEEDS_PATH);
+        const data = await scraper.getDashboard(interests);
         return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
     }
     
@@ -80,7 +88,7 @@ app.use(express.json());
 app.get('/dashboard', async (req, res) => {
     try {
         const interests = JSON.parse(fs.readFileSync(INTERESTS_PATH, 'utf8'));
-        const data = await scrapeGadgetNews(interests, FEEDS_PATH);
+        const data = await scraper.getDashboard(interests);
         res.json(data);
     } catch (e) { res.status(500).json({ error: e.message }); }
 });

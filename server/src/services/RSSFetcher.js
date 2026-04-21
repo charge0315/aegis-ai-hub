@@ -1,0 +1,51 @@
+import Parser from 'rss-parser';
+import pLimit from 'p-limit';
+
+/**
+ * RSSフィードの取得とパースを専門に行うサービス。
+ * 通信の並列数を制限しつつ高速に処理します。
+ */
+export class RSSFetcher {
+    constructor(concurrency = 5) {
+        this.limit = pLimit(concurrency);
+        this.parser = new Parser({
+            timeout: 10000,
+            customFields: {
+                item: [
+                    ['content:encoded', 'contentEncoded'],
+                    ['dc:title', 'title'],
+                    ['dc:description', 'description'],
+                    ['media:content', 'mediaContent'],
+                    ['media:thumbnail', 'mediaThumbnail'],
+                    ['itunes:image', 'itunesImage']
+                ]
+            }
+        });
+    }
+
+    /**
+     * 単一のURLからフィードを取得します。
+     */
+    async fetch(url) {
+        return this.limit(async () => {
+            try {
+                const feed = await this.parser.parseURL(url);
+                return feed.items;
+            } catch (e) {
+                throw new Error(`Fetch failed: ${url} (${e.message})`);
+            }
+        });
+    }
+
+    /**
+     * 複数のURLから一括で並列に取得します。
+     */
+    async fetchAll(feedConfigs) {
+        const tasks = feedConfigs.map(config => 
+            this.fetch(config.url)
+                .then(items => ({ category: config.category, url: config.url, items, success: true }))
+                .catch(error => ({ category: config.category, url: config.url, error: error.message, success: false }))
+        );
+        return Promise.all(tasks);
+    }
+}
