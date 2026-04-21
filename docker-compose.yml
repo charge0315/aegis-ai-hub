@@ -1,0 +1,9 @@
+version: '3.8'
+services:
+  gadget-api:
+    build: ./server
+    ports:
+      - "3005:3005"
+    volumes:
+      - ./data/interests.json:/app/gadget-interests.json
+    restart: always
