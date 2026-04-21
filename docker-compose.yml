@@ -7,7 +7,10 @@ services:
     volumes:
       - ./data/interests.json:/app/gadget-interests.json
       - ./data/feed_config.json:/app/feed-config.json
+      - ./dashboard:/app/dashboard
     environment:
       - INTERESTS_PATH=/app/gadget-interests.json
       - FEEDS_PATH=/app/feed-config.json
+    env_file:
+      - ./server/.env
     restart: always

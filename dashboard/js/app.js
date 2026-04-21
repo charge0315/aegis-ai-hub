@@ -10,8 +10,20 @@ class GadgetConciergeApp {
         this.init();
     }
 
+    log(msg, isError = false) {
+        const consoleEl = document.getElementById('debug-console');
+        if (consoleEl) {
+            consoleEl.classList.remove('hidden');
+            const entry = document.createElement('div');
+            entry.className = isError ? 'text-rose-500' : 'text-lime-400';
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            consoleEl.prepend(entry);
+        }
+        console[isError ? 'error' : 'log'](msg);
+    }
+
     async init() {
-        console.log('GC Dashboard Initializing...');
+        this.log('GC Dashboard Initializing...');
         
         // 検索バーのイベント登録
         const searchInput = document.getElementById('search-input');
@@ -30,14 +42,41 @@ class GadgetConciergeApp {
      * 最新のダッシュボードデータを取得します。
      */
     async fetchDashboard() {
+        this.log('Fetching dashboard data...');
         UI.renderSkeletons();
         try {
             const data = await API.fetchDashboard();
+            this.log(`Data loaded successfully: ${Object.keys(data).length} categories found.`);
             Store.setArticles(data);
             this.refreshUI();
         } catch (err) {
+            this.log(`Dashboard fetch failed: ${err.message}`, true);
             document.getElementById('sections-container').innerHTML = 
-                '<div class="text-center py-20 text-rose-400 font-bold text-2xl">APIサーバーを起動、またはリロードしてください。</div>';
+                `<div class="text-center py-20 text-rose-400 font-bold text-2xl">APIサーバー接続エラー: ${err.message}</div>`;
+        }
+    }
+
+    /**
+     * Gemini APIを使用して特別なおすすめ10選を生成します。
+     */
+    async fetchRecommendations() {
+        this.log('Generating Gemini recommendations...');
+        const btn = document.getElementById('gemini-btn');
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner animate-spin mr-3"></i> AI思考中...';
+
+        try {
+            const recommendations = await API.fetchRecommendations();
+            this.log('Gemini recommendations received.');
+            UI.renderRecommendations(recommendations, Store);
+            document.getElementById('recommendations-container').scrollIntoView({ behavior: 'smooth' });
+        } catch (err) {
+            this.log(`Gemini API Error: ${err.message}`, true);
+            alert(`Gemini APIエラー: ${err.message}\n.envファイルに有効なキーが設定されているか、コンテナのログを確認してください。`);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
         }
     }
 

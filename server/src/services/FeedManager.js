@@ -1,4 +1,12 @@
 import fs from 'fs';
+import writeFileAtomic from 'write-file-atomic';
+import { z } from 'zod';
+
+const FeedConfigSchema = z.record(z.object({
+    active: z.array(z.string().url()),
+    pool: z.array(z.string().url()),
+    failures: z.record(z.number()).default({})
+}));
 
 /**
  * RSSフィード設定の管理、故障検知、自動切り替えを担当するサービス
@@ -9,49 +17,33 @@ export class FeedManager {
         this.config = this.loadConfig();
     }
 
-    /**
-     * 設定ファイルを読み込みます。
-     */
     loadConfig() {
         try {
-            return JSON.parse(fs.readFileSync(this.configPath, 'utf8'));
+            const raw = JSON.parse(fs.readFileSync(this.configPath, 'utf8'));
+            return FeedConfigSchema.parse(raw);
         } catch (e) {
-            console.error(`FeedManager: 設定の読み込みに失敗しました (${this.configPath})`);
+            console.error(`FeedManager: 設定の読み込みまたはバリデーションに失敗しました: ${e.message}`);
             return {};
         }
     }
 
-    /**
-     * 特定のカテゴリでアクティブなフィード一覧を返します。
-     */
     getActiveFeeds(category) {
         return this.config[category]?.active || [];
     }
 
-    /**
-     * 全カテゴリのアクティブなフィードを、カテゴリ名を添えてフラットな配列で返します。
-     */
     getAllActiveFeeds() {
-        const result = [];
-        for (const category in this.config) {
-            this.config[category].active.forEach(url => {
-                result.push({ category, url });
-            });
-        }
-        return result;
+        return Object.entries(this.config).flatMap(([category, data]) => 
+            data.active.map(url => ({ category, url }))
+        );
     }
 
-    /**
-     * フィードのエラーを記録し、必要に応じて予備プールから差し替えます。
-     */
     reportFailure(category, url) {
         const catData = this.config[category];
-        if (!catData) return;
+        if (!catData) return null;
 
-        catData.failures = catData.failures || {};
         catData.failures[url] = (catData.failures[url] || 0) + 1;
 
-        if (catData.failures[url] >= 3 && catData.pool && catData.pool.length > 0) {
+        if (catData.failures[url] >= 3 && catData.pool.length > 0) {
             const nextUrl = catData.pool.shift();
             console.log(`FeedManager: フィードを差し替えます [${category}]: ${url} -> ${nextUrl}`);
             catData.active = catData.active.map(u => u === url ? nextUrl : u);
@@ -62,24 +54,17 @@ export class FeedManager {
         return null;
     }
 
-    /**
-     * 成功を報告し、エラーカウントをリセットします。
-     */
     reportSuccess(category, url) {
         if (this.config[category]?.failures?.[url]) {
             delete this.config[category].failures[url];
-            // 保存は頻繁に行わないようにし、必要な場合のみに限定することも検討
         }
     }
 
-    /**
-     * 現在の状態をファイルに書き込みます。
-     */
-    saveConfig() {
+    async saveConfig() {
         try {
-            fs.writeFileSync(this.configPath, JSON.stringify(this.config, null, 2));
+            await writeFileAtomic(this.configPath, JSON.stringify(this.config, null, 2));
         } catch (e) {
-            console.error("FeedManager: 設定の保存に失敗しました。");
+            console.error("FeedManager: 設定のアトミック保存に失敗しました。", e.message);
         }
     }
 }

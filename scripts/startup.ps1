@@ -1,19 +1,68 @@
 # Gadget Concierge Plus - Windows Startup Script 🚀🎸
+param (
+    [switch]$Install # スタートアップにショートカットを作成する場合に使用
+)
 
-# プロジェクトディレクトリへ移動
-cd "C:\Users\charg\myWorkspace\gadget-concierge-plus"
+# 実行ディレクトリの取得
+$ScriptDir = $PSScriptRoot
+$ProjectRoot = Split-Path $ScriptDir -Parent
+cd $ProjectRoot
 
-# Dockerコンテナを起動 (バックグラウンド)
-Write-Host "バックエンド・サーバーを起動中..." -ForegroundColor Cyan
+# --- スタートアップ登録機能 ---
+if ($Install) {
+    Write-Host "Windows スタートアップに登録しています..." -ForegroundColor Yellow
+    $StartupFolder = [System.Environment]::GetFolderPath("Startup")
+    $ShortcutPath = Join-Path $StartupFolder "GadgetConcierge.lnk"
+    
+    $WshShell = New-Object -ComObject WScript.Shell
+    $Shortcut = $WshShell.CreateShortcut($ShortcutPath)
+    $Shortcut.TargetPath = "powershell.exe"
+    $Shortcut.Arguments = "-ExecutionPolicy Bypass -File `"$PSCommandPath`""
+    $Shortcut.WorkingDirectory = $ProjectRoot
+    $Shortcut.IconLocation = "chrome.exe,0"
+    $Shortcut.Description = "Gadget Concierge Plus Auto Startup"
+    $Shortcut.Save()
+    
+    Write-Host "✅ 登録完了！次回 Windows 起動時に自動で実行されます。" -ForegroundColor Green
+    exit
+}
+
+# --- メイン起動プロセス ---
+
+# 1. Dockerコンテナを起動
+Write-Host "バックエンド・サーバーを起動中 (Docker)..." -ForegroundColor Cyan
 docker-compose up -d
 
-# APIが準備できるまで数秒待機
-Start-Sleep -Seconds 3
+# 2. サーバーの準備ができるまで待機（ポーリング）
+Write-Host "APIの準備を待っています..." -ForegroundColor Magenta
+$MaxRetries = 30
+$RetryCount = 0
+$Url = "http://localhost:3005/"
 
-# ダッシュボードをブラウザで表示
-Write-Host "ダッシュボードを表示します..." -ForegroundColor Cyan
-start chrome "C:\Users\charg\myWorkspace\gadget-concierge-plus\dashboard\index.html"
+while ($RetryCount -lt $MaxRetries) {
+    try {
+        $Response = Invoke-WebRequest -Uri $Url -Method Head -UseBasicParsing -ErrorAction Stop
+        if ($Response.StatusCode -eq 200) {
+            Write-Host "✅ API サーバーが正常に起動しました！" -ForegroundColor Green
+            break
+        }
+    } catch {
+        $RetryCount++
+        Write-Host "." -NoNewline -ForegroundColor Gray
+        Start-Sleep -Seconds 2
+    }
+}
 
-# Gemini CLI を起動
-Write-Host "Gemini CLI を起動します。準備はいいですか、みつひでさん？ 🚀" -ForegroundColor Yellow
+if ($RetryCount -eq $MaxRetries) {
+    Write-Host "`n❌ サーバーの起動を確認できませんでした。Dockerの状態を確認してください。" -ForegroundColor Red
+    exit
+}
+
+# 3. ダッシュボードを「アプリ・モード」で起動
+Write-Host "ダッシュボードをアプリモードで表示します..." -ForegroundColor Cyan
+# Chromeを単独ウィンドウ、ツールバーなしで起動
+Start-Process chrome -ArgumentList "--app=$Url", "--start-maximized"
+
+# 4. Gemini CLI を起動（作業用）
+Write-Host "準備完了！Gemini CLI を起動します。🚀" -ForegroundColor Yellow
 gemini

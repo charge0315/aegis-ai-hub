@@ -1,39 +1,64 @@
 /**
- * ユーザーの興味（interests.json）に基づき、記事のスコアリングとカテゴリ判定を行うサービス
+ * ユーザーの興味関心に基づき、記事のスコアリング、カテゴリ判定、ブランド抽出を行うロジックをカプセル化したサービス。
  */
 export class ScoringService {
+    /**
+     * @param {Object} interests - ユーザーの興味データ（interests.json）
+     */
     constructor(interests) {
         this.interests = interests;
-        this.musicKeys = ['ギター', 'エフェクター', 'アンプ', 'イヤホン', 'ヘッドホン', 'オーディオ', 'dac', 'daw', '楽器', 'technics', 'sony', 'panasonic', 'dtm', 'midi', 'シンセサイザー'];
-        this.aiKeys = [' ai ', 'llm', 'gpt', 'openai', 'claude', 'npu', '機械学習', 'copilot', 'stable diffusion'];
+        
+        // カテゴリ判定用の補助キーワード定義
+        this.categoryKeywords = {
+            music: ['ギター', 'エフェクター', 'アンプ', 'イヤホン', 'ヘッドホン', 'オーディオ', 'dac', 'daw', '楽器', 'technics', 'sony', 'panasonic', 'dtm', 'midi', 'シンセサイザー'],
+            cycling: ['ロードバイク', '自転車', 'シマノ', 'ビアンキ', 'トレック', 'スペシャライズド'],
+            ai: [' ai ', 'llm', 'gpt', 'openai', 'claude', 'npu', '機械学習', 'copilot', 'stable diffusion', '生成ai'],
+            gaming: ['ゲーム', 'ps5', '任天堂', 'switch', 'xbox', 'steam', 'gpu', 'fps']
+        };
+
+        // 信頼性の高い既知のブランドリスト
+        this.commonBrands = [
+            'Google', 'AWS', 'Microsoft', 'NVIDIA', 'Apple', 'Sony', 'Technics', 
+            'ASUS', 'MSI', 'Razer', 'Anker', 'Boss', 'Fender', 'Gibson', 'Yamaha'
+        ];
     }
 
     /**
-     * 記事の内容から、最も適切なカテゴリを判定します。
+     * 記事のタイトルと要約から、最も関連性の高い内部カテゴリを推論します。
+     * @param {string} title - 記事タイトル
+     * @param {string} desc - 記事要約
+     * @param {string} originalCategory - RSSフィードが提供する元カテゴリ
+     * @returns {string} 判定されたカテゴリ名
      */
     detectCategory(title, desc, originalCategory) {
-        const text = (title + desc).toLowerCase();
+        const text = `${title} ${desc}`.toLowerCase();
         
-        if (this.musicKeys.some(k => text.includes(k))) return '音楽・ギター・DTM';
-        if (text.includes('ロードバイク') || text.includes('自転車') || text.includes('シマノ')) return 'ロードバイク';
-        if (this.aiKeys.some(k => text.includes(k))) return 'AI・ソフトウェア';
-        if (text.includes('ゲーム') || text.includes('ps5') || text.includes('任天堂') || text.includes('switch')) return 'ゲーム';
+        if (this.categoryKeywords.music.some(k => text.includes(k))) return '音楽・ギター・DTM';
+        if (this.categoryKeywords.cycling.some(k => text.includes(k))) return 'ロードバイク';
+        if (this.categoryKeywords.ai.some(k => text.includes(k))) return 'AI・ソフトウェア';
+        if (this.categoryKeywords.gaming.some(k => text.includes(k))) return 'ゲーム';
         
         return originalCategory;
     }
 
     /**
-     * ブランド一致(+10)とキーワード一致(+8)に基づいてスコアを算出します。
+     * ユーザー設定のブランド一致(+10点)とキーワード一致(+8点)に基づき、記事の重要度スコアを算出します。
+     * @param {string} title - 記事タイトル
+     * @param {string} desc - 記事要約
+     * @param {string} category - 判定済みカテゴリ
+     * @returns {number} 算出されたスコア
      */
     calculateScore(title, desc, category) {
-        let score = 5;
-        const text = (title + desc).toLowerCase();
+        let score = 5; // ベーススコア
+        const text = `${title} ${desc}`.toLowerCase();
         const catInfo = this.interests.categories[category] || { brands: [], keywords: [] };
 
+        // ブランドマッチング（高い重み付け）
         catInfo.brands.forEach(brand => {
             if (text.includes(brand.toLowerCase())) score += 10;
         });
 
+        // キーワードマッチング（中程度の重み付け）
         catInfo.keywords.forEach(keyword => {
             if (text.includes(keyword.toLowerCase())) score += 8;
         });
@@ -42,21 +67,26 @@ export class ScoringService {
     }
 
     /**
-     * 記事タイトルからブランド名を抽出します。
+     * 記事タイトルからブランド名（固有名詞）を抽出します。
+     * ユーザー設定を優先し、その後一般的なブランドリストから検索します。
+     * @param {string} title - 記事タイトル
+     * @returns {string} 抽出されたブランド名（見つからない場合は 'News'）
      */
     extractBrand(title) {
         const lowerTitle = title.toLowerCase();
-        // ユーザー設定のブランドから検索
+
+        // 1. ユーザー設定のブランドから検索
         for (const catName in this.interests.categories) {
             for (const brand of this.interests.categories[catName].brands) {
                 if (lowerTitle.includes(brand.toLowerCase())) return brand;
             }
         }
-        // 一般的なブランドリスト
-        const commonBrands = ['Google', 'AWS', 'Microsoft', 'NVIDIA', 'Apple', 'Sony', 'Technics', 'ASUS', 'MSI', 'Razer', 'Anker', 'Boss', 'Fender', 'Gibson'];
-        for (const b of commonBrands) {
-            if (lowerTitle.includes(b.toLowerCase())) return b;
+
+        // 2. 一般的な既知ブランドリストから検索
+        for (const brand of this.commonBrands) {
+            if (lowerTitle.includes(brand.toLowerCase())) return brand;
         }
+
         return "News";
     }
 }

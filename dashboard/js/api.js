@@ -2,7 +2,14 @@
  * API通信を担当するモジュール
  */
 export const API = {
-    BASE_URL: 'http://localhost:3005',
+    // 開発・実行環境に合わせてベースURLを自動決定
+    // localhost:3005以外から開かれた場合は、バックエンドのアドレスを明示的に指定
+    get BASE_URL() {
+        if (window.location.port === '3005') {
+            return ''; // 同じサーバーから配信されている場合は相対パス
+        }
+        return 'http://localhost:3005'; // それ以外（file://や他ポート）の場合は明示的に指定
+    },
 
     async fetchDashboard() {
         try {
@@ -11,6 +18,17 @@ export const API = {
             return await res.json();
         } catch (err) {
             console.error('Fetch error:', err);
+            throw err;
+        }
+    },
+
+    async fetchRecommendations() {
+        try {
+            const res = await fetch(`${this.BASE_URL}/recommend`);
+            if (!res.ok) throw new Error('API Error');
+            return await res.json();
+        } catch (err) {
+            console.error('Recommendations error:', err);
             throw err;
         }
     },

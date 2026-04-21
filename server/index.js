@@ -1,3 +1,8 @@
+/**
+ * Gadget Concierge Plus - Server Entry Point
+ * MCP (Model Context Protocol) と HTTP API を通じてパーソナライズされたニュースを提供します。
+ */
+
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
@@ -6,99 +11,158 @@ import cors from 'cors';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { rateLimit } from 'express-rate-limit';
+import 'dotenv/config';
+
 import { ScraperFacade } from './src/ScraperFacade.js';
 import { HealthMonitor } from './src/jobs/HealthMonitor.js';
 
+// --- 初期設定とパス構成 ---
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-// 永続化データのパス設定
-const INTERESTS_PATH = process.env.INTERESTS_PATH || path.join(__dirname, 'gadget-interests.json');
-const FEEDS_PATH = process.env.FEEDS_PATH || path.join(__dirname, 'feed-config.json');
+const INTERESTS_PATH = process.env.INTERESTS_PATH || path.join(__dirname, 'data', 'interests.json');
+const FEEDS_PATH = process.env.FEEDS_PATH || path.join(__dirname, 'data', 'feed_config.json');
 
-// 新しいオーケストレーターの初期化
+// 環境変数のバリデーション
+if (!process.env.GEMINI_API_KEY) {
+    console.error("【警告】GEMINI_API_KEY が設定されていません。.env ファイルを確認してください。");
+} else {
+    console.log("[System] Gemini API Key loaded successfully.");
+}
+
+// コアサービスの初期化
 const scraper = new ScraperFacade(INTERESTS_PATH, FEEDS_PATH);
 
-// ヘルスチェック監視の開始 (1時間に1回)
+// バックグラウンド・ヘルスチェックの開始 (1時間に1回実行)
 const monitor = new HealthMonitor(scraper.feedManager);
 monitor.start();
 
 /**
- * MCP (Model Context Protocol) サーバーの設定
+ * ==========================================
+ * MCP (Model Context Protocol) サーバー設定
+ * ==========================================
  */
 const mcpServer = new Server({
     name: "gadget-concierge-mcp",
-    version: "1.0.0",
+    version: "1.1.0",
 }, {
     capabilities: { tools: {} },
 });
 
-// 利用可能なツールの定義
-mcpServer.setRequestHandler(ListToolsRequestSchema, async () => {
-    return {
-        tools: [
-            {
-                name: "get_gadget_dashboard",
-                description: "最新のガジェットニュースをスクレイピングしてJSON形式で返します。みつひでさんの興味に基づいてパーソナライズされます。",
-                inputSchema: { type: "object", properties: {} }
-            },
-            {
-                name: "add_gadget_interest",
-                description: "新しいカテゴリ、ブランド、またはキーワードをみつひでさんの興味リストに追加します。",
-                inputSchema: {
-                    type: "object",
-                    properties: {
-                        type: { type: "string", enum: ["category", "keyword", "brand"], description: "追加する項目の種類" },
-                        value: { type: "string", description: "具体的な名称（例: Minisforum）" },
-                        name: { type: "string", description: "キーワードを追加する際の親カテゴリ名" }
-                    },
-                    required: ["type", "value"]
-                }
+// 1. 利用可能なツールの定義
+mcpServer.setRequestHandler(ListToolsRequestSchema, async () => ({
+    tools: [
+        {
+            name: "get_gadget_dashboard",
+            description: "最新のガジェットニュースをスクレイピングしてパーソナライズ済みのJSON形式で返します。",
+            inputSchema: { type: "object", properties: {} }
+        },
+        {
+            name: "get_gemini_picks",
+            description: "Gemini AIを使用して、ユーザーの好みに最も合致する10記事を厳選し、推薦理由を添えて返します。",
+            inputSchema: { type: "object", properties: {} }
+        },
+        {
+            name: "add_gadget_interest",
+            description: "ユーザーの興味リスト（カテゴリ、ブランド、キーワード）に新しい項目を追加します。",
+            inputSchema: {
+                type: "object",
+                properties: {
+                    type: { type: "string", enum: ["category", "keyword", "brand"], description: "追加項目の種類" },
+                    value: { type: "string", description: "名称（例: Minisforum）" },
+                    name: { type: "string", description: "キーワード追加時の親カテゴリ名" }
+                },
+                required: ["type", "value"]
             }
-        ],
-    };
-});
+        }
+    ],
+}));
 
-// ツール実行時のハンドラー
+// 2. ツール実行ハンドラー
 mcpServer.setRequestHandler(CallToolRequestSchema, async (request) => {
     const interests = JSON.parse(fs.readFileSync(INTERESTS_PATH, 'utf8'));
     
-    // ダッシュボード情報の取得リクエスト
-    if (request.params.name === "get_gadget_dashboard") {
-        const data = await scraper.getDashboard(interests);
-        return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
-    }
-    
-    // 興味の追加リクエスト
-    if (request.params.name === "add_gadget_interest") {
-        const { type, value, name } = request.params.arguments;
-        updateInterestsFile(type, value, name);
-        return { content: [{ type: "text", text: `みつひでさんの興味に「${value}」を学習しました。` }] };
-    }
+    switch (request.params.name) {
+        case "get_gadget_dashboard": {
+            const data = await scraper.getDashboard(interests);
+            return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
+        }
+        
+        case "get_gemini_picks": {
+            const data = await scraper.getRecommendations(interests);
+            return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
+        }
+        
+        case "add_gadget_interest": {
+            const { type, value, name } = request.params.arguments;
+            updateInterestsFile(type, value, name);
+            return { content: [{ type: "text", text: `興味リストに「${value}」を追加しました。次回以降のスクレイピングに反映されます。` }] };
+        }
 
-    throw new Error("指定されたツールが見つかりません。");
+        default:
+            throw new Error(`Tool not found: ${request.params.name}`);
+    }
 });
 
 /**
- * HTTP API サーバーの設定
+ * ==========================================
+ * HTTP API / Dashboard Server 設定
+ * ==========================================
  */
 const app = express();
-app.use(cors());
+const PORT = process.env.PORT || 3005;
+
+// セキュリティ & ミドルウェア
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 100,
+    message: { error: "リクエスト制限を超過しました。しばらく待ってから再試行してください。" }
+});
+
+app.use(cors({
+    origin: ['http://localhost:3005', 'http://127.0.0.1:3005'],
+    methods: ['GET', 'POST']
+}));
 app.use(express.json());
 
-// 最新情報を取得して返すエンドポイント
-app.get('/dashboard', async (req, res) => {
+// 静的ファイルの配信 (Dashboard UI)
+const dashboardPath = path.join(__dirname, 'dashboard');
+app.use(express.static(dashboardPath));
+
+// APIエンドポイント
+app.get('/api/dashboard', limiter, async (req, res) => {
     try {
         const interests = JSON.parse(fs.readFileSync(INTERESTS_PATH, 'utf8'));
         const data = await scraper.getDashboard(interests);
         res.json(data);
-    } catch (e) { res.status(500).json({ error: e.message }); }
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
 });
 
-// 興味を更新するエンドポイント
-app.post('/update', (req, res) => {
+app.get('/api/recommend', limiter, async (req, res) => {
     try {
-        updateInterestsFile(req.body.type, req.body.value, req.body.name);
-        res.json({ status: 'success' });
-    } catch (e) { res.status(500).json({ error: e.message }); }
+        const interests = JSON.parse(fs.readFileSync(INTERESTS_PATH, 'utf8'));
+        const data = await scraper.getRecommendations(interests);
+        res.json(data);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.post('/api/update-interests', async (req, res) => {
+    try {
+        const { type, value, name } = req.body;
+        updateInterestsFile(type, value, name);
+        res.json({ status: 'success', message: 'Interests updated' });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// ルートアクセスをUIへ誘導
+app.get('*', (req, res) => {
+    if (req.path.startsWith('/api/')) return res.status(404).json({ error: "API Not Found" });
+    res.sendFile(path.join(dashboardPath, 'index.html'));
 });
 
 /**
@@ -106,20 +170,31 @@ app.post('/update', (req, res) => {
  */
 function updateInterestsFile(type, value, name) {
     const data = JSON.parse(fs.readFileSync(INTERESTS_PATH, 'utf8'));
+    
     if (type === 'category') {
-        if (!data.categories[value]) data.categories[value] = { brands: [], keywords: [], score: 5 };
+        if (!data.categories[value]) {
+            data.categories[value] = { brands: [], keywords: [], score: 5 };
+        }
     } else if (type === 'keyword' || type === 'brand') {
         const target = name || 'ガジェット';
-        if (!data.categories[target]) data.categories[target] = { brands: [], keywords: [], score: 5 };
+        if (!data.categories[target]) {
+            data.categories[target] = { brands: [], keywords: [], score: 5 };
+        }
         const list = type === 'keyword' ? data.categories[target].keywords : data.categories[target].brands;
         if (!list.includes(value)) list.push(value);
     }
+    
     fs.writeFileSync(INTERESTS_PATH, JSON.stringify(data, null, 2));
+    console.log(`[Config] Interests updated: ${type} -> ${value}`);
 }
 
-// MCP stdio 通信の開始
+// サーバー起動
 const transport = new StdioServerTransport();
-mcpServer.connect(transport);
+mcpServer.connect(transport).catch(error => {
+    console.error("[MCP] Connection error:", error);
+});
 
-// HTTP API をポート3005で待機開始
-app.listen(3005, () => console.error(`ガジェットコンシェルジュAPI：ポート3005で稼働中`));
+app.listen(PORT, () => {
+    console.log(`[HTTP] Server is running on http://localhost:${PORT}`);
+    console.log(`[MCP] Standard I/O transport is active.`);
+});
