@@ -4,3 +4,15 @@ node_modules/
 data/interests.json
 data/feed_config.json
 server/test_scraper.js
+
+# Security Patterns
+.env
+*.env
+credentials.json
+*.pfx
+*.pem
+*.key
+*.p12
+node_modules/
+.venv/
+
