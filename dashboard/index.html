@@ -10,25 +10,28 @@
         :root { --accent: #38bdf8; --bg: #020617; }
         body {
             background-color: var(--bg);
+            /* Windows 11 のデスクトップ背景を彷彿とさせるグラデーション */
             background-image: radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.15) 0, transparent 50%), radial-gradient(at 50% 0%, rgba(129, 140, 248, 0.1) 0, transparent 50%);
             background-attachment: fixed;
             color: #f1f5f9;
             font-family: 'Inter', 'Noto Sans JP', sans-serif;
         }
+        /* グラスモーフィズム：磨りガラスのような質感を実現 */
         .glass { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(16px) saturate(180%); border: 1px solid rgba(255, 255, 255, 0.08); }
+        /* カードホバー時の浮き上がりアニメーション */
         .card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         .card:hover { transform: translateY(-6px); background: rgba(30, 41, 59, 0.8); border-color: var(--accent); box-shadow: 0 12px 40px -10px rgba(56, 189, 248, 0.3); }
         .sidebar { height: calc(100vh - 4rem); position: sticky; top: 2rem; }
         .input-glass { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 0.75rem; padding: 0.75rem 1rem; color: white; width: 100%; transition: all 0.2s; font-size: 1rem; }
         .input-glass:focus { outline: none; border-color: var(--accent); background: rgba(255, 255, 255, 0.1); }
-        .btn-primary { background: linear-gradient(90deg, #38bdf8, #818cf8); color: white; font-weight: bold; border-radius: 0.75rem; padding: 0.5rem 1.5rem; transition: transform 0.2s; font-size: 1rem; }
+        .btn-primary { background: linear-gradient(90deg, #38bdf8, #818cf8); color: white; font-weight: bold; border-radius: 0.75rem; padding: 0.75rem 1.5rem; transition: transform 0.2s; font-size: 1rem; }
         .btn-primary:active { transform: scale(0.95); }
         .whitespace-nowrap { white-space: nowrap; }
     </style>
 </head>
 <body class="antialiased text-lg">
     <div class="flex min-h-screen">
-        <!-- Sidebar -->
+        <!-- サイドバー：ナビゲーションと学習設定 -->
         <aside class="w-96 p-6 hidden lg:block flex-shrink-0">
             <div class="sidebar glass rounded-3xl p-8 flex flex-col gap-10 overflow-y-auto">
                 <div class="text-center">
@@ -38,15 +41,16 @@
                     <h2 class="font-bold text-2xl tracking-tighter text-white">GC Engine v4.1</h2>
                 </div>
 
-                <!-- Dynamic Navigation -->
+                <!-- 動的ナビゲーションメニュー -->
                 <nav id="dynamic-nav" class="space-y-3">
                     <p class="text-xs text-slate-500 uppercase font-bold tracking-widest mb-4 px-3">Sections</p>
                 </nav>
 
-                <!-- Settings Panel -->
+                <!-- 設定パネル：ここからみつひでさんの好みを学習させる -->
                 <div class="mt-4 pt-8 border-t border-slate-800 space-y-8">
                     <p class="text-xs text-slate-500 uppercase font-bold tracking-widest px-3">Settings (学習)</p>
                     
+                    <!-- カテゴリの新規追加 -->
                     <div class="px-3">
                         <label class="text-sm text-slate-400 mb-3 block">カテゴリを追加</label>
                         <div class="flex gap-3">
@@ -55,10 +59,11 @@
                         </div>
                     </div>
 
+                    <!-- キーワードの新規追加 -->
                     <div class="px-3">
                         <label class="text-sm text-slate-400 mb-3 block">キーワードを追加</label>
                         <select id="cat-select" class="input-glass mb-3 bg-slate-800 text-white border-slate-700">
-                            <!-- Dynamic Categories -->
+                            <!-- JSによってカテゴリ一覧が注入される -->
                         </select>
                         <div class="flex gap-3">
                             <input id="new-key" type="text" placeholder="例: Minisforum" class="input-glass">
@@ -66,29 +71,32 @@
                         </div>
                     </div>
 
+                    <!-- 処理結果の通知用メッセージ -->
                     <div id="status-msg" class="text-sm text-center hidden p-4 rounded-xl bg-emerald-500/20 text-emerald-400 font-bold"></div>
                 </div>
             </div>
         </aside>
 
-        <!-- Main Content -->
+        <!-- メインコンテンツエリア -->
         <main class="flex-grow p-4 md:p-8 lg:p-12 overflow-y-auto">
             <header class="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-8">
                 <div>
                     <h1 class="text-6xl font-black tracking-tighter mb-6 uppercase">Ultra <span class="text-sky-400">Dashboard</span></h1>
                     <p class="text-xl text-slate-400 leading-relaxed">みつひでさんの好みを完全網羅。自律スクレイピング & 学習型基盤。🚀🎸</p>
                 </div>
+                <!-- 手動更新ボタン：Ryzenのパワーで最新情報を一気に取得 -->
                 <button onclick="fetchDashboard()" class="glass p-6 rounded-2xl text-sky-400 hover:bg-sky-500/10 transition-all font-bold text-xl">
                     <i class="fas fa-sync-alt mr-3"></i> 最新情報を更新
                 </button>
             </header>
 
+            <!-- ローディング表示：スクレイピング実行中に表示 -->
             <div id="loading" class="hidden flex flex-col items-center justify-center py-32 gap-6">
                 <div class="w-16 h-16 border-4 border-sky-500/30 border-t-sky-500 rounded-full animate-spin"></div>
                 <p class="text-slate-500 font-mono text-xl text-white">Scraping latest news...</p>
             </div>
 
-            <!-- Dynamic Sections container -->
+            <!-- 動的に生成される記事セクションのコンテナ -->
             <div id="sections-container" class="space-y-24"></div>
         </main>
     </div>
@@ -96,6 +104,7 @@
     <script>
         const API_BASE = 'http://localhost:3005';
         
+        // カテゴリ名に対応するアイコンの定義
         const catIcons = {
             'AI・ソフトウェア': 'fas fa-robot',
             'ゲーム': 'fas fa-gamepad',
@@ -105,6 +114,9 @@
             'ロードバイク': 'fas fa-bicycle'
         };
 
+        /**
+         * 興味データをAPI経由で更新し、ファイルを書き換える
+         */
         async function updateInterest(type, value, name = '') {
             if (!value) return;
             const status = document.getElementById('status-msg');
@@ -116,12 +128,16 @@
                 });
                 status.textContent = '興味を学習しました！リロード中...';
                 status.classList.remove('hidden');
+                // 1.5秒後にリロードして反映
                 setTimeout(() => location.reload(), 1500);
             } catch (err) {
                 alert('APIサーバーを起動してください。');
             }
         }
 
+        /**
+         * APIサーバーから最新のスクレイピングデータを取得し、画面を構築する
+         */
         async function fetchDashboard() {
             const loading = document.getElementById('loading');
             const container = document.getElementById('sections-container');
@@ -136,26 +152,28 @@
                 
                 console.log('Dashboard Data Loaded:', data);
                 
-                // Reset containers
+                // 表示コンテナのリセット
                 container.innerHTML = '';
                 nav.innerHTML = '<p class="text-xs text-slate-500 uppercase font-bold tracking-widest mb-4 px-3 text-white">Sections</p>';
                 select.innerHTML = '';
 
-                // Iterate over all categories returned by API
+                // APIから返された全カテゴリをループ処理
                 let index = 0;
                 for (const catName in data) {
                     const articles = data[catName];
                     const icon = catIcons[catName] || 'fas fa-star';
                     const id = `cat-${index++}`;
 
-                    // Update UI even if articles are empty (to show category exists)
+                    // サイドバーのナビゲーションを生成
                     nav.innerHTML += `
                         <a href="#${id}" class="flex items-center gap-4 p-4 rounded-2xl hover:bg-sky-500/10 text-sky-400 whitespace-nowrap transition-all">
                             <i class="${icon} text-xl text-white"></i> <span class="font-bold text-xl">${catName}</span>
                         </a>
                     `;
+                    // キーワード追加用のプルダウンにカテゴリを追加
                     select.innerHTML += `<option value="${catName}" class="bg-slate-900 text-white">${catName}</option>`;
 
+                    // 記事が存在する場合のみセクションを描画
                     if (articles && articles.length > 0) {
                         const sectionHtml = `
                             <section id="${id}" class="scroll-mt-24">
@@ -169,7 +187,7 @@
                         `;
                         container.innerHTML += sectionHtml;
                     } else {
-                        // Empty state for category
+                        // 記事が0件の場合の表示
                         container.innerHTML += `
                             <section id="${id}" class="scroll-mt-24 opacity-50">
                                 <h2 class="text-4xl font-bold mb-10 flex items-center gap-4 text-slate-600 uppercase tracking-tight">
@@ -188,6 +206,9 @@
             }
         }
 
+        /**
+         * 1記事分のHTMLカードを生成する
+         */
         function renderCard(item) {
             return `
                 <div class="card glass rounded-3xl overflow-hidden flex flex-col h-full group border border-white/5">
@@ -209,6 +230,7 @@
             `;
         }
 
+        // 初期読み込み開始
         fetchDashboard();
     </script>
 </body>

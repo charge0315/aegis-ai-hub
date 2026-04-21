@@ -2,6 +2,10 @@ import axios from 'axios';
 import * as cheerio from 'cheerio';
 import Parser from 'rss-parser';
 
+/**
+ * RSSパースの設定
+ * RDF (RSS 1.0) や独自拡張フィールドにも対応し、古いテックサイトから情報を漏らさず取得する
+ */
 const parser = new Parser({
     customFields: {
         item: [
@@ -12,40 +16,39 @@ const parser = new Parser({
     }
 });
 
+/**
+ * 日本語テック・ガジェットサイトを巡回し、最新記事を抽出するコア関数
+ */
 export async function scrapeGadgetNews(interests) {
     const news = {};
+    // JSONで定義された全カテゴリに対して空の配列を初期化
     for (const catName in interests.categories) {
         news[catName] = [];
     }
 
+    // 巡回対象のソースリスト。みつひでさんの好みに合わせて特化した布陣
     const targets = [
-        // AI & Software
         { url: 'https://japan.googleblog.com/atom.xml', cat: 'AI・ソフトウェア' },
         { url: 'https://zenn.dev/topics/ai/feed', cat: 'AI・ソフトウェア' },
         { url: 'https://ledge.ai/feed/', cat: 'AI・ソフトウェア' },
-        
-        // PC & Hardware
         { url: 'https://pc.watch.impress.co.jp/data/rss/pcw/index.rdf', cat: 'PC・ハードウェア' },
         { url: 'https://rss.itmedia.co.jp/rss/2.0/pcuser.xml', cat: 'PC・ハードウェア' },
         { url: 'https://ascii.jp/digital/rss.xml', cat: 'PC・ハードウェア' },
-        
-        // Games
         { url: 'https://www.4gamer.net/rss/index.xml', cat: 'ゲーム' },
         { url: 'https://www.famitsu.com/rss/all.xml', cat: 'ゲーム' },
-        
-        // Music & Audio
         { url: 'https://av.watch.impress.co.jp/data/rss/avw/index.rdf', cat: '音楽・ギター・DTM' },
         { url: 'https://www.sony.jp/CorporateCruise/Press/rss/index.xml', cat: '音楽・ギター・DTM' },
         { url: 'https://www.barks.jp/rss/barks.xml', cat: '音楽・ギター・DTM' },
-        
-        // Road Bike
         { url: 'https://cycling.p-news.jp/feed/', cat: 'ロードバイク' },
         { url: 'https://www.cyclesports.jp/feed/', cat: 'ロードバイク' },
-
-        // Gadgets & PR
         { url: 'https://www.gizmodo.jp/index.xml', cat: 'ガジェット' },
         { url: 'https://prtimes.jp/main/html/index/category_id/12.xml', cat: 'ガジェット' }
     ];
+
+    // 分類用の重要キーワード定義
+    const allMusicKeys = ['ギター', 'エフェクター', 'アンプ', 'イヤホン', 'ヘッドホン', 'オーディオ', 'dac', 'daw', '楽器', 'technics', 'sony', 'panasonic'];
+    const allAiKeys = [' ai ', 'llm', 'gpt', 'openai', 'claude', 'npu', '機械学習', 'copilot'];
+    const allPcKeys = ['ryzen', 'minisforum', 'asus', 'msi', 'razer', 'rtx', 'gpu', 'cpu', '自作pc', 'キーボード'];
 
     for (const target of targets) {
         try {
@@ -58,13 +61,15 @@ export async function scrapeGadgetNews(interests) {
                 let score = 5;
                 let detectedCat = target.cat;
 
-                // カテゴリをキーワードで横断的に再判定（クロスオーバー対応）
-                if (text.includes('ギター') || text.includes('エフェクター') || text.includes('dtm')) detectedCat = '音楽・ギター・DTM';
+                // --- カテゴリの横断再判定 ---
+                // サイトの出身に関わらず、特定の強いキーワードが含まれていれば適切なカテゴリへ強制移動させる
+                if (allMusicKeys.some(k => text.includes(k))) detectedCat = '音楽・ギター・DTM';
                 else if (text.includes('ロードバイク') || text.includes('自転車') || text.includes('シマノ')) detectedCat = 'ロードバイク';
-                else if (text.includes('ai') || text.includes('llm') || text.includes('gpt')) detectedCat = 'AI・ソフトウェア';
+                else if (allAiKeys.some(k => text.includes(k))) detectedCat = 'AI・ソフトウェア';
                 else if (text.includes('ゲーム') || text.includes('ps5') || text.includes('任天堂')) detectedCat = 'ゲーム';
 
-                // スコアリング
+                // --- 興味度スコアリング ---
+                // みつひでさんが設定したブランドやキーワードとの合致度で「おすすめ度」を計算
                 const catInfo = interests.categories[detectedCat] || { brands: [], keywords: [] };
                 catInfo.brands.forEach(b => { if (text.includes(b.toLowerCase())) score += 10; });
                 catInfo.keywords.forEach(k => { if (text.includes(k.toLowerCase())) score += 8; });
@@ -78,35 +83,39 @@ export async function scrapeGadgetNews(interests) {
                     img: extractImage(item) || getPlaceholder(detectedCat)
                 };
 
+                // 分類したカテゴリの配列へ追加
                 if (news[detectedCat]) {
                     news[detectedCat].push(article);
                 } else {
-                    // 新規カテゴリ（JSON追加分）への対応
                     if (!news[detectedCat]) news[detectedCat] = [];
                     news[detectedCat].push(article);
                 }
             }
         } catch (e) {
-            console.error(`Error: ${target.url} - ${e.message}`);
+            console.error(`スクレイピングエラー: ${target.url} - ${e.message}`);
         }
     }
 
-    // 重複除去とソート
+    // データのクレンジングと整形
     for (const cat in news) {
         const seen = new Set();
         news[cat] = news[cat]
             .filter(item => {
-                if (seen.has(item.link)) return false;
+                if (seen.has(item.link)) return false; // 重複記事をリンクURLで排除
                 seen.add(item.link);
                 return true;
             })
-            .sort((a, b) => b.score - a.score)
-            .slice(0, 15);
+            .sort((a, b) => b.score - a.score) // 興味度スコアの高い順に並び替え
+            .slice(0, 15); // 各カテゴリ最大15件に絞る
     }
 
     return news;
 }
 
+/**
+ * 記事タイトルからブランド名を抽出する。
+ * 未知のブランドでも一般名詞であれば拾い上げる。
+ */
 function extractBrand(title, interests) {
     const lowerTitle = title.toLowerCase();
     for (const catName in interests.categories) {
@@ -114,9 +123,16 @@ function extractBrand(title, interests) {
             if (lowerTitle.includes(brand.toLowerCase())) return brand;
         }
     }
+    const commonBrands = ['Google', 'AWS', 'Microsoft', 'NVIDIA', 'Apple', 'Sony', 'Technics', 'ASUS', 'MSI', 'Razer', 'Anker'];
+    for (const b of commonBrands) {
+        if (lowerTitle.includes(b.toLowerCase())) return b;
+    }
     return "News";
 }
 
+/**
+ * RSSの各フィールドから記事のサムネイル画像を頑張って探す
+ */
 function extractImage(item) {
     if (item.enclosure && item.enclosure.url) return item.enclosure.url;
     const content = item.contentEncoded || item.content || item.description || "";
@@ -128,6 +144,9 @@ function extractImage(item) {
     return null;
 }
 
+/**
+ * 画像が見つからなかった場合に表示する、カテゴリごとのスタイリッシュな代替画像
+ */
 function getPlaceholder(cat) {
     const mapping = {
         '音楽・ギター・DTM': "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400",
