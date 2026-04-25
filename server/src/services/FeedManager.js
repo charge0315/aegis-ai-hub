@@ -3,8 +3,8 @@ import writeFileAtomic from 'write-file-atomic';
 import { z } from 'zod';
 
 const FeedConfigSchema = z.record(z.object({
-    active: z.array(z.string().url()),
-    pool: z.array(z.string().url()),
+    active: z.array(z.string()),
+    pool: z.array(z.string()),
     failures: z.record(z.number()).default({})
 }));
 
@@ -19,10 +19,16 @@ export class FeedManager {
 
     loadConfig() {
         try {
-            const raw = JSON.parse(fs.readFileSync(this.configPath, 'utf8'));
-            return FeedConfigSchema.parse(raw);
+            const rawContent = fs.readFileSync(this.configPath, 'utf8');
+            const raw = JSON.parse(rawContent);
+            const result = FeedConfigSchema.safeParse(raw);
+            if (!result.success) {
+                console.error("FeedManager Validation Errors:", JSON.stringify(result.error.issues, null, 2));
+                return raw; // バリデーション失敗しても元のデータを返す（フォールバック）
+            }
+            return result.data;
         } catch (e) {
-            console.error(`FeedManager: 設定の読み込みまたはバリデーションに失敗しました: ${e.message}`);
+            console.error(`FeedManager: 設定の読み込みに失敗しました: ${e.message}`);
             return {};
         }
     }
@@ -58,6 +64,42 @@ export class FeedManager {
         if (this.config[category]?.failures?.[url]) {
             delete this.config[category].failures[url];
         }
+    }
+
+    /**
+     * 新しいフィードをプールに追加します。
+     */
+    addFeed(category, url, name = "") {
+        if (!this.config[category]) {
+            this.config[category] = { active: [], pool: [], failures: {} };
+        }
+        
+        // 重複チェック
+        const allUrls = [...this.config[category].active, ...this.config[category].pool];
+        if (!allUrls.includes(url)) {
+            this.config[category].pool.push(url);
+            console.log(`[FeedManager] New feed added to pool [${category}]: ${name || url}`);
+            this.saveConfig();
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * 設定ファイルを整理し、無効なURLや重複を削除します。
+     */
+    cleanConfig() {
+        console.log("[FeedManager] 設定ファイルをクリーニング中...");
+        for (const cat in this.config) {
+            const data = this.config[cat];
+            // 重複排除
+            data.active = [...new Set(data.active)];
+            data.pool = [...new Set(data.pool)];
+            
+            // pool 内で active と重複しているものを削除
+            data.pool = data.pool.filter(url => !data.active.includes(url));
+        }
+        this.saveConfig();
     }
 
     async saveConfig() {

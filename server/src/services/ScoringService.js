@@ -8,13 +8,14 @@ export class ScoringService {
     constructor(interests) {
         this.interests = interests;
         
-        // カテゴリ判定用の補助キーワード定義
-        this.categoryKeywords = {
-            music: ['ギター', 'エフェクター', 'アンプ', 'イヤホン', 'ヘッドホン', 'オーディオ', 'dac', 'daw', '楽器', 'technics', 'sony', 'panasonic', 'dtm', 'midi', 'シンセサイザー'],
-            cycling: ['ロードバイク', '自転車', 'シマノ', 'ビアンキ', 'トレック', 'スペシャライズド'],
-            ai: [' ai ', 'llm', 'gpt', 'openai', 'claude', 'npu', '機械学習', 'copilot', 'stable diffusion', '生成ai'],
-            gaming: ['ゲーム', 'ps5', '任天堂', 'switch', 'xbox', 'steam', 'gpu', 'fps']
-        };
+        // カテゴリ判定用の補助キーワード（interests.json から動的に構築）
+        this.categoryKeywords = {};
+        for (const [catName, info] of Object.entries(interests.categories)) {
+            this.categoryKeywords[catName] = [
+                ...info.keywords.map(k => k.toLowerCase()),
+                ...info.brands.map(b => b.toLowerCase())
+            ];
+        }
 
         // 信頼性の高い既知のブランドリスト
         this.commonBrands = [
@@ -33,10 +34,10 @@ export class ScoringService {
     detectCategory(title, desc, originalCategory) {
         const text = `${title} ${desc}`.toLowerCase();
         
-        if (this.categoryKeywords.music.some(k => text.includes(k))) return '音楽・ギター・DTM';
-        if (this.categoryKeywords.cycling.some(k => text.includes(k))) return 'ロードバイク';
-        if (this.categoryKeywords.ai.some(k => text.includes(k))) return 'AI・ソフトウェア';
-        if (this.categoryKeywords.gaming.some(k => text.includes(k))) return 'ゲーム';
+        // 興味設定にある全カテゴリに対してマッチングを確認
+        for (const [catName, keywords] of Object.entries(this.categoryKeywords)) {
+            if (keywords.some(k => text.includes(k))) return catName;
+        }
         
         return originalCategory;
     }

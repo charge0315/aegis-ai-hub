@@ -1,16 +1,21 @@
 version: '3.8'
 services:
-  gadget-api:
+  aegis-api:
     build: ./server
+    container_name: aegis-ai-hub
     ports:
       - "3005:3005"
     volumes:
-      - ./data/interests.json:/app/gadget-interests.json
-      - ./data/feed_config.json:/app/feed-config.json
+      - ./data/interests.json:/app/data/interests.json
+      - ./data/feed_config.json:/app/data/feed_config.json
       - ./dashboard:/app/dashboard
     environment:
-      - INTERESTS_PATH=/app/gadget-interests.json
-      - FEEDS_PATH=/app/feed-config.json
+      - INTERESTS_PATH=/app/data/interests.json
+      - FEEDS_PATH=/app/data/feed_config.json
     env_file:
       - ./server/.env
     restart: always
+
+networks:
+  default:
+    name: aegis-network

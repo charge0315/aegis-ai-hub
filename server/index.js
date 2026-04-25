@@ -1,5 +1,5 @@
 /**
- * Gadget Concierge Plus - Server Entry Point
+ * Aegis AI Hub - Server Entry Point
  * MCP (Model Context Protocol) と HTTP API を通じてパーソナライズされたニュースを提供します。
  */
 
@@ -16,6 +16,8 @@ import 'dotenv/config';
 
 import { ScraperFacade } from './src/ScraperFacade.js';
 import { HealthMonitor } from './src/jobs/HealthMonitor.js';
+import { DiscoveryService } from './src/services/DiscoveryService.js';
+import { EvolutionJob } from './src/jobs/EvolutionJob.js';
 
 // --- 初期設定とパス構成 ---
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -31,10 +33,21 @@ if (!process.env.GEMINI_API_KEY) {
 
 // コアサービスの初期化
 const scraper = new ScraperFacade(INTERESTS_PATH, FEEDS_PATH);
+const discovery = new DiscoveryService(scraper.geminiService, scraper.rssFetcher, scraper.feedManager);
+const evolution = new EvolutionJob(scraper, discovery, INTERESTS_PATH);
 
-// バックグラウンド・ヘルスチェックの開始 (1時間に1回実行)
+// バックグラウンド・ジョブの開始
 const monitor = new HealthMonitor(scraper.feedManager);
 monitor.start();
+
+// 自律進化ジョブ (週1回：7日間隔)
+const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+setInterval(() => evolution.run(), ONE_WEEK_MS);
+
+// 起動時に1回実行（開発・テスト用：環境変数で制御可能）
+if (process.env.RUN_EVOLUTION_ON_START === 'true') {
+    setTimeout(() => evolution.run(), 10000); // 起動10秒後に実行
+}
 
 /**
  * ==========================================
@@ -42,8 +55,8 @@ monitor.start();
  * ==========================================
  */
 const mcpServer = new Server({
-    name: "gadget-concierge-mcp",
-    version: "1.1.0",
+    name: "aegis-ai-hub-mcp",
+    version: "5.0.0",
 }, {
     capabilities: { tools: {} },
 });
@@ -52,8 +65,8 @@ const mcpServer = new Server({
 mcpServer.setRequestHandler(ListToolsRequestSchema, async () => ({
     tools: [
         {
-            name: "get_gadget_dashboard",
-            description: "最新のガジェットニュースをスクレイピングしてパーソナライズ済みのJSON形式で返します。",
+            name: "get_aegis_dashboard",
+            description: "最新のパーソナライズされたニュースをスクレイピングしてJSON形式で返します。",
             inputSchema: { type: "object", properties: {} }
         },
         {
@@ -62,13 +75,13 @@ mcpServer.setRequestHandler(ListToolsRequestSchema, async () => ({
             inputSchema: { type: "object", properties: {} }
         },
         {
-            name: "add_gadget_interest",
+            name: "add_aegis_interest",
             description: "ユーザーの興味リスト（カテゴリ、ブランド、キーワード）に新しい項目を追加します。",
             inputSchema: {
                 type: "object",
                 properties: {
                     type: { type: "string", enum: ["category", "keyword", "brand"], description: "追加項目の種類" },
-                    value: { type: "string", description: "名称（例: Minisforum）" },
+                    value: { type: "string", description: "名称" },
                     name: { type: "string", description: "キーワード追加時の親カテゴリ名" }
                 },
                 required: ["type", "value"]
@@ -82,7 +95,7 @@ mcpServer.setRequestHandler(CallToolRequestSchema, async (request) => {
     const interests = JSON.parse(fs.readFileSync(INTERESTS_PATH, 'utf8'));
     
     switch (request.params.name) {
-        case "get_gadget_dashboard": {
+        case "get_aegis_dashboard": {
             const data = await scraper.getDashboard(interests);
             return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
         }
@@ -92,7 +105,7 @@ mcpServer.setRequestHandler(CallToolRequestSchema, async (request) => {
             return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
         }
         
-        case "add_gadget_interest": {
+        case "add_aegis_interest": {
             const { type, value, name } = request.params.arguments;
             updateInterestsFile(type, value, name);
             return { content: [{ type: "text", text: `興味リストに「${value}」を追加しました。次回以降のスクレイピングに反映されます。` }] };
@@ -118,10 +131,7 @@ const limiter = rateLimit({
     message: { error: "リクエスト制限を超過しました。しばらく待ってから再試行してください。" }
 });
 
-app.use(cors({
-    origin: ['http://localhost:3005', 'http://127.0.0.1:3005'],
-    methods: ['GET', 'POST']
-}));
+app.use(cors()); // デバッグのため一時的に全てのオリジンを許可
 app.use(express.json());
 
 // 静的ファイルの配信 (Dashboard UI)
@@ -129,22 +139,103 @@ const dashboardPath = path.join(__dirname, 'dashboard');
 app.use(express.static(dashboardPath));
 
 // APIエンドポイント
+app.get('/api/restructure-proposals', limiter, async (req, res) => {
+    try {
+        console.log("[API] /api/restructure-proposals request received");
+        const interests = JSON.parse(fs.readFileSync(INTERESTS_PATH, 'utf8'));
+        const proposal = await scraper.geminiService.getRestructureProposal(interests);
+        res.json(proposal);
+    } catch (e) {
+        console.error("[API Error] /api/restructure-proposals:", e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.post('/api/apply-restructure', async (req, res) => {
+    try {
+        const { categories } = req.body;
+        if (!categories) throw new Error("カテゴリデータが見つかりません。");
+        
+        const data = {
+            categories: categories,
+            learned_keywords: {}
+        };
+
+        fs.writeFileSync(INTERESTS_PATH, JSON.stringify(data, null, 2));
+        console.log("[Config] Interests structure rebuilt successfully.");
+        res.json({ status: 'success', message: 'Knowledge base restructured' });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.get('/api/evolution-proposals', limiter, async (req, res) => {
+    try {
+        console.log("[API] /api/evolution-proposals request received");
+        const interests = JSON.parse(fs.readFileSync(INTERESTS_PATH, 'utf8'));
+        const proposals = await discovery.getProposals(interests);
+        res.json(proposals);
+    } catch (e) {
+        console.error("[API Error] /api/evolution-proposals:", e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.post('/api/apply-evolution', async (req, res) => {
+    try {
+        const { sites, brands, keywords } = req.body;
+        const interests = JSON.parse(fs.readFileSync(INTERESTS_PATH, 'utf8'));
+
+        // 1. サイトの追加
+        if (sites) {
+            for (const site of sites) {
+                scraper.feedManager.addFeed(site.category, site.url, site.name);
+            }
+        }
+
+        // 2. ブランドとキーワードの追加
+        const addItems = (list, type) => {
+            if (!list) return;
+            for (const item of list) {
+                const cat = item.category;
+                if (!interests.categories[cat]) {
+                    interests.categories[cat] = { brands: [], keywords: [], score: 5 };
+                }
+                const targetList = type === 'brand' ? interests.categories[cat].brands : interests.categories[cat].keywords;
+                if (!targetList.includes(item.value)) targetList.push(item.value);
+            }
+        };
+
+        addItems(brands, 'brand');
+        addItems(keywords, 'keyword');
+
+        fs.writeFileSync(INTERESTS_PATH, JSON.stringify(interests, null, 2));
+        res.json({ status: 'success', message: 'Evolution applied successfully' });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 app.get('/api/dashboard', limiter, async (req, res) => {
     try {
+        console.log("[API] /api/dashboard request received");
         const interests = JSON.parse(fs.readFileSync(INTERESTS_PATH, 'utf8'));
         const data = await scraper.getDashboard(interests);
         res.json(data);
     } catch (e) {
+        console.error("[API Error] /api/dashboard:", e);
         res.status(500).json({ error: e.message });
     }
 });
 
 app.get('/api/recommend', limiter, async (req, res) => {
     try {
+        console.log("[API] /api/recommend request received");
         const interests = JSON.parse(fs.readFileSync(INTERESTS_PATH, 'utf8'));
         const data = await scraper.getRecommendations(interests);
         res.json(data);
     } catch (e) {
+        console.error("[API Error] /api/recommend:", e);
         res.status(500).json({ error: e.message });
     }
 });

@@ -1,7 +1,7 @@
 {
-  "name": "gadget-concierge-mcp",
-  "version": "1.0.0",
-  "description": "Scrapes gadget news and exposes via MCP and HTTP API",
+  "name": "aegis-ai-hub",
+  "version": "5.0.0",
+  "description": "Autonomous Evolution AI News Hub powered by Gemini 3.1",
   "main": "index.js",
   "type": "module",
   "dependencies": {

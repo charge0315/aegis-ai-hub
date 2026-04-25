@@ -1,35 +1,33 @@
-# Gadget Concierge Plus 🚀🎸 (The Ultimate Dashbord v3.1)
+# Aegis AI Hub 🛡️🤖 (The Ultimate Dashboard v5.0)
 
-みつひでさんの興味に特化した、究極の自律学習型ガジェットニュース・ダッシュボード。  
-最新の **Gemini 3.1 Pro/Flash** を統合し、セキュリティ、パフォーマンス、AI知能の3軸において極限まで磨き上げられた「芸術的コード」の結晶です。
+ユーザーの興味に特化した、究極の自律学習型知的ニュース・ダッシュボード。  
+最新の **Gemini 3.1 Pro / Flash** を統合し、セキュリティ、自律進化、AIナレッジ再構築の3軸において極限まで磨き上げられた「芸術的コード」の結晶です。
 
-## 🌟 究極の3大進化
+## 🌟 究極の3大進化 (v5.0 New Features)
 
-### 1. セキュリティの鉄壁化 (Security First)
-信頼できるガジェット体験を支える、妥協のないセキュリティ設計。
-- **XSS防御**: フロントエンドにおける徹底した `escapeHTML` 実装により、悪意あるスクリプト注入を完全に遮断。
-- **レート制限 (Rate Limiting)**: `express-rate-limit` による API 保護。DoS攻撃や過剰なAPI呼び出しからシステムを守ります。
-- **CORS制御**: 厳格なオリジン許可リストにより、意図しないドメインからのリクエストを拒否。
+### 1. 自律적エコシステムの構築 (Autonomous Evolution)
+システム自身が新しい知識を学習し、成長し続ける仕組みを実現。
+- **AI サイト発見 (Discovery Service)**: 登録された興味（ブランド、キーワード）に基づき、Gemini 3.1 が最適な RSS フィードを世界中から探索・自動登録。
+- **トレンド学習ジョブ (Evolution Job)**: 最新のニュース記事から新しいトレンドを抽出し、「学習済みキーワード」として蓄積。
+- **自己修復機能**: リンク切れや無効なフィードを AI が検知し、自動的に除外または代替案を提案。
 
-### 2. 極限のパフォーマンス (Peak Performance)
-「待たせない」ガジェット体験を追求した、高速レスポンスの実現。
-- **並列処理の芸術**: `RSSFetcher` が最大10個のフィードを同時並列で取得。ボトルネックを解消。
-- **最適化されたデータフロー**: `_fetchAndProcessArticles` と `_sortAndSlice` という精緻なプライベートメソッドにより、数万文字のニュースから瞬時に「価値ある30件」を抽出。
-- **オンデマンド・エンリッチメント**: 全記事ではなく、上位50件に限定して画像抽出（Cheerio/Axios）を行うことで、メモリと通信量を劇的に削減。
+### 2. ナレッジグラフの再構築 (Knowledge Restructure)
+散らばった興味を AI が整理し、最適な情報構造へ「再設計」します。
+- **AI ナレッジ再構築**: `interests.json` の構造を解析し、重複の統合、カテゴリの命名変更、不足している重要キーワードの補完を一括提案。
+- **対話型確定フロー**: AI の提案をフロントエンドで視覚的に確認し、ワンクリックでシステムの根幹知識を刷新。
 
-### 3. AI知能の極致 (Gemini 3.1 Intelligence)
-Google の最新鋭モデル **Gemini 3.1 Pro / Flash** を中枢に据えたインテリジェンス。
-- **AI Concierge**: 単なる検索ではなく、みつひでさんの「好み」を理解した 10件の厳選推薦。
-- **多層フォールバックロジック**: `gemini-3.1-pro-preview` から順に 6段階のモデルを自動試行。APIの不調をユーザーに感じさせない強靭な可用性。
-- **AI Insight**: 推薦理由（なぜこの記事が選ばれたか）を個別に生成し、ガジェット選びの意思決定を高度に支援。
+### 3. Next-Gen ユーザーインターフェース (Modern UX)
+「使いやすさ」と「美しさ」を両立した、最新のフロントエンド体験。
+- **常時表示ハンバーガーメニュー**: どの画面位置からでも、一瞬で検索やカテゴリ移動ができるドロワーサイドバーへアクセス可能。
+- **AI Evolution モーダル**: AI からの提案をカード形式で可視化。ワクワクする「進化」のプロセスをユーザーがコントロール。
+- **Glassmorphism 2.0**: 背景の透過とブラー、グラデーションを極めた、未来的な情報体験を演出するデザイン。
 
 ## 🛠 テックスタック
 
 - **Backend**: Node.js, Express (SOA - Service Oriented Architecture)
-- **AI**: Gemini 3.1 Pro / Flash (Google Generative AI SDK)
-- **Frontend**: Vanilla JS (ES Modules), Tailwind CSS, Glassmorphism UI
-- **Security**: Express-Rate-Limit, CORS, HTML Escaping
-- **Automation**: Docker Compose, PowerShell Startup Scripts
+- **AI**: Gemini 3.1 Pro / Flash (Google Generative AI SDK) - 最新 2026年4月モデル
+- **Frontend**: Vanilla JS (ES Modules), Tailwind CSS, FontAwesome 6
+- **Automation**: Docker Compose, PowerShell Startup Scripts, Evolution Jobs
 
 ## 🚀 起動とセットアップ
 
@@ -53,9 +51,9 @@ docker-compose up -d
 ## 👨‍💻 芸術的コード構造 (Codemaps)
 
 詳細な設計図は `docs/CODEMAPS/` に集約されています。
-- [**INDEX.md**](./docs/CODEMAPS/INDEX.md) - プロジェクト全体の俯瞰図
-- [**backend.md**](./docs/CODEMAPS/backend.md) - サービス指向設計とAIフォールバック
-- [**frontend.md**](./docs/CODEMAPS/frontend.md) - セキュアで美しいUI/UX
+- [**INDEX.md**](./docs/CODEMAPS/INDEX.md) - プロジェクト全体の俯瞰図 (v5.0対応)
+- [**backend.md**](./docs/CODEMAPS/backend.md) - 自律進化ジョブとAI再構築ロジック
+- [**frontend.md**](./docs/CODEMAPS/frontend.md) - ドロワーUIとセキュアなレンダリング
 
 ---
-*Created for Mitsuhide. This code is your stage. Keep Rocking! 🎸*
+*Autonomous AI Hub - This code is your stage. Keep Evolving! 🚀*

@@ -13,7 +13,7 @@ export const API = {
 
     async fetchDashboard() {
         try {
-            const res = await fetch(`${this.BASE_URL}/dashboard`);
+            const res = await fetch(`${this.BASE_URL}/api/dashboard`);
             if (!res.ok) throw new Error('API Error');
             return await res.json();
         } catch (err) {
@@ -24,7 +24,7 @@ export const API = {
 
     async fetchRecommendations() {
         try {
-            const res = await fetch(`${this.BASE_URL}/recommend`);
+            const res = await fetch(`${this.BASE_URL}/api/recommend`);
             if (!res.ok) throw new Error('API Error');
             return await res.json();
         } catch (err) {
@@ -35,7 +35,7 @@ export const API = {
 
     async updateInterest(type, value, name = '') {
         try {
-            const res = await fetch(`${this.BASE_URL}/update`, {
+            const res = await fetch(`${this.BASE_URL}/api/update-interests`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ type, value, name })
@@ -43,6 +43,58 @@ export const API = {
             return await res.json();
         } catch (err) {
             console.error('Update error:', err);
+            throw err;
+        }
+    },
+
+    async fetchEvolutionProposals() {
+        try {
+            const res = await fetch(`${this.BASE_URL}/api/evolution-proposals`);
+            if (!res.ok) throw new Error('Evolution API Error');
+            return await res.json();
+        } catch (err) {
+            console.error('Evolution Proposals error:', err);
+            throw err;
+        }
+    },
+
+    async applyEvolution(data) {
+        try {
+            const res = await fetch(`${this.BASE_URL}/api/apply-evolution`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            if (!res.ok) throw new Error('Apply Evolution Error');
+            return await res.json();
+        } catch (err) {
+            console.error('Apply Evolution error:', err);
+            throw err;
+        }
+    },
+
+    async fetchRestructureProposals() {
+        try {
+            const res = await fetch(`${this.BASE_URL}/api/restructure-proposals`);
+            if (!res.ok) throw new Error('Restructure API Error');
+            return await res.json();
+        } catch (err) {
+            console.error('Restructure Proposals error:', err);
+            throw err;
+        }
+    },
+
+    async applyRestructure(data) {
+        try {
+            const res = await fetch(`${this.BASE_URL}/api/apply-restructure`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            if (!res.ok) throw new Error('Apply Restructure Error');
+            return await res.json();
+        } catch (err) {
+            console.error('Apply Restructure error:', err);
             throw err;
         }
     }

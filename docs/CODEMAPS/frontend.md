@@ -1,31 +1,47 @@
 # Frontend UI Codemap
 
-**Last Updated:** 2026-04-21
+**Last Updated:** 2026-04-22
 **Entry Point:** `dashboard/index.html`
 
 ## 概要
-フロントエンドは、究極の「美」と「信頼性」を両立させた Next-Gen UI です。Vanilla JS による軽量さと Tailwind CSS によるモダンなスタイリングに加え、強固な XSS 対策を実装しています。
+フロントエンドは、究極の「美」と「機能性」を追求した次世代 UI です。常時表示のハンバーガーメニューによるドロワー操作、AIの進化・再構築提案を可視化するモダンなモーダルシステムを搭載しています。
+
+## 主要コンポーネント & UI パターン
+
+- **常時表示ハンバーガーメニュー**:
+  - 画面左下にフローティング配置されたボタン (`#menu-toggle`)。
+  - どのデバイス・画面位置からでも、一瞬でサイドバー（ドロワー）へアクセス可能。
+
+- **ドロワーサイドバー**:
+  - `transform -translate-x-full` によるスムーズなアニメーション。
+  - **検索バー**: 全記事を即座にキーワードでフィルタリング。
+  - **動的ナビゲーション**: カテゴリごとにセクションへジャンプ。
+  - **学習パネル**: ユーザーが手動でカテゴリやキーワードを追加し、AIへ反映。
+
+- **AI進化・再構築モーダル**:
+  - `backdrop-blur-xl` を使用した没入感のあるデザイン。
+  - AI が提案する「新しいフィード」「新ブランド」「ナレッジ構造の変更」をカード形式で表示。
+  - ユーザーが個別に項目を選択・確定できる対話型インターフェース。
 
 ## モジュール構成
 
 | ファイル名 | 役割 | 主要オブジェクト/メソッド |
 | :--- | :--- | :--- |
-| `js/app.js` | メイン・アプリケーション・コントローラー。イベント管理と全体フロー制御。 | `fetchDashboard`, `fetchRecommendations` |
-| `js/ui.js` | DOM操作、レンダリング、セキュリティ保護。 | `renderDashboard`, `renderRecommendations`, `escapeHTML` |
-| `js/store.js` | 既読状態、検索クエリの状態管理。 | `getFilteredArticles`, `markAsRead`, `setSearchQuery` |
-| `js/api.js` | バックエンド API との通信インターフェース。 | `fetchDashboard`, `fetchRecommendations` |
+| `js/app.js` | メイン・コントローラー。進化提案のフェッチと確定ロジック。 | `showEvolutionProposal`, `applyCurrentProposal` |
+| `js/ui.js` | レンダリング、ドロワー開閉、モーダル管理。 | `toggleSidebar`, `renderEvolutionProposals`, `renderRestructureProposal` |
+| `js/store.js` | 状態管理。検索、既読、フィルタリングの永続化。 | `getFilteredArticles`, `setSearchQuery` |
+| `js/api.js` | バックエンドとの通信。進化・再構築 API の呼び出し。 | `fetchEvolutionProposal`, `applyEvolution` |
 
 ## セキュリティ実装 (XSS 対策)
-- **HTML Escaping**: 全ての記事タイトル、ブランド名、推薦理由は `escapeHTML` メソッドを経由してレンダリングされます。
-  - `& < > " '` の 5 文字を実体参照へ変換し、DOM ベースの XSS 攻撃を根本から防止します。
-- **ARIA & Role**: アクセシビリティとセキュリティの両立のため、適切な `role="article"` や `aria-label` を付与。
+- **HTML Escaping**: AI が生成する「推薦理由」や「進化提案の理由」を含め、全ての動的テキストは `escapeHTML` を経由。
+  - `& < > " '` の 5 文字を厳密に変換。
+- **サニタイズ**: 外部サイトからの画像 URL 等も、テンプレートリテラル内での慎重なレンダリングにより保護。
 
-## UX デザインの極致
-- **スケルトンスクリーン**: API 応答までの待機時間を視覚的に埋める優雅なプレースホルダー。
-- **Glassmorphism (グラスモーフィズム)**: `backdrop-blur` を多用した、ガジェットの「未来感」を演出するデザイン。
-- **Gemini's Picks**: AI 推薦セクションには専用のグラデーションボーダーと `fas-magic` アイコンを採用。
-- **LocalStorage 永続化**: ブラウザをリロードしても「既読」情報が維持されるスマートな体験。
+## デザイン哲学
+- **Glassmorphism 2.0**: `glass` クラスと `border-white/10` による、重層的で奥行きのある視覚効果。
+- **Neo-Cyberpunk Color Palette**: 
+  - `Sky-400`: メインアクション
+  - `Fuchsia-500`: AI キュレーション (Gemini's Picks)
+  - `Cyan-500`: AI 進化 (Evolution)
+  - `Indigo-500`: ナレッジ再構築 (Restructure)
 
-## スタイリング & アイコン
-- **Tailwind CSS**: `grid`, `flex`, `animate-pulse` などを駆使したレスポンシブデザイン。
-- **FontAwesome**: 操作ボタン、既読マーク、カテゴリ識別のための視覚的ヒント。

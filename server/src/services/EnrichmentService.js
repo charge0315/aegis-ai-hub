@@ -23,7 +23,7 @@ export class EnrichmentService {
         if (article.img) return article;
 
         try {
-            const { data } = await axios.get(article.link, { timeout: 5000, headers: { 'User-Agent': 'GadgetConciergeBot/1.0' } });
+            const { data } = await axios.get(article.link, { timeout: 5000, headers: { 'User-Agent': 'AegisAIHubBot/1.0' } });
             const $ = cheerio.load(data);
             const ogImage = $('meta[property="og:image"]').attr('content') || 
                             $('meta[name="twitter:image"]').attr('content') ||

@@ -1,27 +1,28 @@
 # Automation & Lifecycle Codemap
 
-**Last Updated:** 2026-04-21
+**Last Updated:** 2026-04-22
 **Key File:** `scripts/startup.ps1`
 
 ## 概要
-Gadget Concierge Plus は、Windows 起動時に自動で立ち上がり、まるで OS の一部（ウィジェット）のように動作するライフサイクル管理を提供します。
+Aegis AI Hub は、Windows 起動時の自動立ち上げ、常時監視、そして自律的な進化（学習）という3層の自動化レイヤーにより、メンテナンスフリーな運用を提供します。
 
-## Windows 起動自動化 (`startup.ps1`)
-- **インストール**: `startup.ps1 -Install` を実行すると、Windows の `Startup` フォルダにショートカット (`.lnk`) を作成。
-- **ショートカット設定**:
-  - **TargetPath**: `powershell.exe`
-  - **Arguments**: `-ExecutionPolicy Bypass -File "startup.ps1"`
-- **動作**: Windows ログイン直後に自動でバックエンドを起動し、Chrome を「アプリ・モード」で起動します。
+## 1. 起動自動化 (`startup.ps1`)
+- **インストール**: `startup.ps1 -Install` を実行すると、Windows の `Startup` フォルダにショートカットを作成。
+- **動作**: 
+  - `docker-compose up -d` をバックグラウンドで実行。
+  - Chrome を「アプリ・モード (`--app`)」で起動し、専用のウィジェットウィンドウとして表示。
 
-## Chrome アプリ・モード
-- **引数**: `--app=http://localhost:3005/`
-- **効果**: ブラウザのタブやアドレスバー、ツールバーを非表示にし、専用のウィンドウとして表示。デスクトップ・ウィジェットのような外観を実現。
+## 2. 常時監視・自己修復 (`HealthMonitor`)
+- **役割**: RSS フィードの死活監視。
+- **動作**: 定期的に全フィードへ疎通確認を行い、タイムアウトや 404 エラーが続くフィードを `feed_config.json` で自動的に非アクティブ化。システムのダウンタイムを最小化します。
 
-## Docker によるバックエンド管理
-- `docker-compose.yml` により、Node.js API サーバーをコンテナ化。
-- **依存環境の隔離**: ローカルの Node.js バージョンに依存せず、常に安定した環境で動作。
-- `docker-compose up -d --build` により、常に最新のソースコードを反映。
+## 3. 自律進化ジョブ (`EvolutionJob`)
+- **役割**: システムの知的成長と設定の最適化。
+- **ライフサイクル**:
+  1. **クリーンアップ**: 重複したキーワードや不要な設定を整理。
+  2. **AI探索**: `Gemini 3.1` を用い、最新の興味に合致する新サイトを自動発見。
+  3. **トレンド学習**: 取得した最新記事を分析し、新しい注目ブランドやキーワードを `learned_keywords` として自動蓄積。
 
-## バックグラウンド監視 (`HealthMonitor`)
-- バックエンド・コンテナ内で `setInterval` により定期実行される。
-- フィードの異常を検知した際は、ログ出力と設定ファイルの自動更新を行い、自己修復を図る。
+## Docker による一貫した実行環境
+- **Node.js サーバー**: ソースコードの変更を即座に反映し、隔離されたコンテナ環境で動作。
+- **永続データ**: `./data` ボリュームをマウントすることで、コンテナが再起動しても AI が学習した `interests.json` や `feed_config.json` を保持。

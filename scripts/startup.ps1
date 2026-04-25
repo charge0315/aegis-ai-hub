@@ -1,4 +1,4 @@
-﻿# Gadget Concierge Plus - Windows Startup Script
+# Aegis AI Hub - Windows Startup Script
 param (
     [switch]$Install # スタートアップにショートカットを作成する場合に使用
 )
@@ -12,7 +12,7 @@ cd $ProjectRoot
 if ($Install) {
     Write-Host 'Windows スタートアップに登録しています...' -ForegroundColor Yellow
     $StartupFolder = [System.Environment]::GetFolderPath('Startup')
-    $ShortcutPath = Join-Path $StartupFolder 'GadgetConcierge.lnk'
+    $ShortcutPath = Join-Path $StartupFolder 'AegisAIHub.lnk'
     
     $WshShell = New-Object -ComObject WScript.Shell
     $Shortcut = $WshShell.CreateShortcut($ShortcutPath)
@@ -20,7 +20,7 @@ if ($Install) {
     $Shortcut.Arguments = '-ExecutionPolicy Bypass -File \"' + $PSCommandPath + '\"'
     $Shortcut.WorkingDirectory = $ProjectRoot
     $Shortcut.IconLocation = 'chrome.exe,0'
-    $Shortcut.Description = 'Gadget Concierge Plus Auto Startup'
+    $Shortcut.Description = 'Aegis AI Hub Auto Startup'
     $Shortcut.Save()
     
     Write-Host '登録完了！次回 Windows 起動時に自動で実行されます。' -ForegroundColor Green
@@ -54,12 +54,24 @@ while ($RetryCount -lt $MaxRetries) {
 }
 
 if ($RetryCount -eq $MaxRetries) {
-    Write-Host \"`nサーバーの起動を確認できませんでした。Dockerの状態を確認してください。\" -ForegroundColor Red
+    Write-Host "`nサーバーの起動を確認できませんでした。Dockerの状態を確認してください。" -ForegroundColor Red
     exit
 }
 
 # 3. ダッシュボードを「アプリ・モード」で起動
 Write-Host 'ダッシュボードをアプリモードで表示します...' -ForegroundColor Cyan
+
+# 画面解像度の取得 (プライマリモニタ)
+Add-Type -AssemblyName System.Windows.Forms
+$Screen = [System.Windows.Forms.Screen]::PrimaryScreen
+$ScreenWidth = $Screen.Bounds.Width
+$ScreenHeight = $Screen.Bounds.Height
+
+# ウィンドウサイズの計算 (幅 1/4, 高さ フル)
+$WinWidth = [Math]::Floor($ScreenWidth / 4)
+$WinHeight = $ScreenHeight
+$PosX = $ScreenWidth - $WinWidth
+$PosY = 0
 
 # 起動するブラウザのパスを特定 (Chrome -> Edge の順に確認)
 $BrowserPath = ""
@@ -77,17 +89,13 @@ foreach ($Path in $PotentialPaths) {
     }
 }
 
-if ($BrowserPath -eq "") {
-    # パスで見つからない場合は PATH にあることを期待して chrome をデフォルトにする
-    $BrowserPath = "chrome"
-}
+if ($BrowserPath -eq "") { $BrowserPath = "chrome" }
 
-# URLの末尾のスラッシュを除去して正規化（解釈ミス防止）
+# URLの末尾のスラッシュを除去して正規化
 $CleanUrl = $Url.TrimEnd('/')
 
-# Chrome/Edge を単独ウィンドウ、ツールバーなしで起動
-# 引数全体を一つの文字列として渡し、URLを引用符で囲む
-$Arguments = "--app=""$CleanUrl"" --start-maximized"
+# Chrome/Edge を右側 1/4 のサイズと位置で起動
+$Arguments = "--app=""$CleanUrl"" --window-position=$PosX,$PosY --window-size=$WinWidth,$WinHeight"
 Write-Host "起動コマンド: $BrowserPath $Arguments" -ForegroundColor Gray
 
 try {

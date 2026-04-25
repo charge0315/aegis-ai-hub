@@ -113,6 +113,34 @@ body {
     .panel-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
 }
 
+/* 提案カードの選択スタイル */
+.proposal-card {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.proposal-card.selected {
+    background: rgba(14, 165, 233, 0.15) !important;
+    border-color: rgba(14, 165, 233, 0.5) !important;
+    box-shadow: 0 0 30px rgba(14, 165, 233, 0.2);
+    transform: translateY(-4px) scale(1.02);
+}
+
+.proposal-card.selected .selection-status {
+    color: #38bdf8;
+}
+
+.proposal-card.selected .selection-status::after {
+    content: 'SELECTED';
+    padding: 2px 8px;
+    background: rgba(14, 165, 233, 0.2);
+    border-radius: 4px;
+}
+
+.proposal-card:not(.selected) .selection-status::after {
+    content: 'CLICK TO ADD';
+    opacity: 0.3;
+}
+
 /* スケルトン */
 .skeleton {
     background: linear-gradient(90deg, #333 25%, #443 50%, #333 75%);
