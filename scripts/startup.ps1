@@ -1,4 +1,5 @@
-# Aegis AI Hub - Windows Startup Script
+# Aegis AI Hub v5.0 - Windows Startup Script
+# Powerered by Gemini 3.1 - Fully Autonomous News Infrastructure
 param (
     [switch]$Install # スタートアップにショートカットを作成する場合に使用
 )
@@ -10,8 +11,19 @@ cd $ProjectRoot
 
 # --- スタートアップ登録機能 ---
 if ($Install) {
-    Write-Host 'Windows スタートアップに登録しています...' -ForegroundColor Yellow
+    Write-Host 'Aegis AI Hub をシステムに登録中...' -ForegroundColor Yellow
     $StartupFolder = [System.Environment]::GetFolderPath('Startup')
+    
+    # 旧称のショートカットがあればクリーンアップ
+    $OldShortcuts = @('GadgetConcierge.lnk', 'AegisConcierge.lnk', 'AegisAIHub.lnk')
+    foreach ($old in $OldShortcuts) {
+        $oldPath = Join-Path $StartupFolder $old
+        if (Test-Path $oldPath) {
+            Remove-Item $oldPath -Force
+            Write-Host "Old shortcut removed: $old" -ForegroundColor Gray
+        }
+    }
+
     $ShortcutPath = Join-Path $StartupFolder 'AegisAIHub.lnk'
     
     $WshShell = New-Object -ComObject WScript.Shell
@@ -20,10 +32,10 @@ if ($Install) {
     $Shortcut.Arguments = '-ExecutionPolicy Bypass -File \"' + $PSCommandPath + '\"'
     $Shortcut.WorkingDirectory = $ProjectRoot
     $Shortcut.IconLocation = 'chrome.exe,0'
-    $Shortcut.Description = 'Aegis AI Hub Auto Startup'
+    $Shortcut.Description = 'Aegis AI Hub - Autonomous Intelligence Dashboard'
     $Shortcut.Save()
     
-    Write-Host '登録完了！次回 Windows 起動時に自動で実行されます。' -ForegroundColor Green
+    Write-Host '登録完了！次回 Windows 起動時に Aegis AI Hub が自動で起動します。' -ForegroundColor Green
     exit
 }
 
