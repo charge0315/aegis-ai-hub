@@ -160,4 +160,43 @@ ${context}
         const data = JSON.parse(jsonText.match(/\{[\s\S]*\}/)[0]);
         return { ...data, modelName };
     }
+
+    /**
+     * ユーザーの興味に基づき、新しいサイト、ブランド、キーワードの「進化」提案を一括生成します。
+     */
+    async getEvolutionProposals(interests) {
+        if (!this.genAI) throw new Error("Gemini APIキーが設定されていません。");
+
+        const context = JSON.stringify(interests.categories, null, 2);
+        const prompt = `
+あなたはガジェットと最新テクノロジーのトレンド分析のエキスパートです。
+以下の「ユーザーの興味リスト」を分析し、システムの能力を拡張するための「進化提案」を作成してください。
+
+1. **新しい情報源 (sites)**: 興味に合致し、かつ現在登録されていないであろう高品質なRSSフィード対応サイトを3〜5つ。
+2. **注目ブランド (brands)**: 各カテゴリに追加すべき最新の注目ブランドを合計5つ程度。
+3. **新規キーワード (keywords)**: 今後流行が予想される、または現在欠けている重要なテクノロジー用語を合計5つ程度。
+
+### ユーザーの興味リスト:
+${context}
+
+### 出力形式:
+必ず以下の形式のJSONのみを出力してください。
+{
+  "sites": [
+    { "name": "サイト名", "url": "RSS URL", "category": "既存のカテゴリ名", "reason": "提案理由" }
+  ],
+  "brands": [
+    { "value": "ブランド名", "category": "既存のカテゴリ名", "reason": "提案理由" }
+  ],
+  "keywords": [
+    { "value": "キーワード名", "category": "既存のカテゴリ名", "reason": "提案理由" }
+  ]
+}
+`;
+
+        const { text, modelName } = await this._generateWithFallback(prompt);
+        const jsonText = text.replace(/```json/g, "").replace(/```/g, "").trim();
+        const data = JSON.parse(jsonText.match(/\{[\s\S]*\}/)[0]);
+        return { ...data, modelName };
+    }
 }
