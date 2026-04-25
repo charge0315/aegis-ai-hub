@@ -1,6 +1,6 @@
 # Automation & Lifecycle Codemap
 
-**Last Updated:** 2026-04-22
+**Last Updated:** 2026-04-25
 **Key File:** `scripts/startup.ps1`
 
 ## 概要

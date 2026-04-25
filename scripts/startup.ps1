@@ -1,20 +1,17 @@
 # Aegis AI Hub v5.0 - Windows Startup Script
-# Powerered by Gemini 3.1 - Fully Autonomous News Infrastructure
+# Powered by Gemini 3.1 - Fully Autonomous News Infrastructure
 param (
-    [switch]$Install # スタートアップにショートカットを作成する場合に使用
+    [switch]$Install
 )
 
-# 実行ディレクトリの取得
 $ScriptDir = $PSScriptRoot
 $ProjectRoot = Split-Path $ScriptDir -Parent
 cd $ProjectRoot
 
-# --- スタートアップ登録機能 ---
 if ($Install) {
-    Write-Host 'Aegis AI Hub をシステムに登録中...' -ForegroundColor Yellow
+    Write-Host 'Installing Aegis AI Hub to Startup...' -ForegroundColor Yellow
     $StartupFolder = [System.Environment]::GetFolderPath('Startup')
     
-    # 旧称のショートカットがあればクリーンアップ
     $OldShortcuts = @('GadgetConcierge.lnk', 'AegisConcierge.lnk', 'AegisAIHub.lnk')
     foreach ($old in $OldShortcuts) {
         $oldPath = Join-Path $StartupFolder $old
@@ -25,7 +22,6 @@ if ($Install) {
     }
 
     $ShortcutPath = Join-Path $StartupFolder 'AegisAIHub.lnk'
-    
     $WshShell = New-Object -ComObject WScript.Shell
     $Shortcut = $WshShell.CreateShortcut($ShortcutPath)
     $Shortcut.TargetPath = 'powershell.exe'
@@ -35,18 +31,14 @@ if ($Install) {
     $Shortcut.Description = 'Aegis AI Hub - Autonomous Intelligence Dashboard'
     $Shortcut.Save()
     
-    Write-Host '登録完了！次回 Windows 起動時に Aegis AI Hub が自動で起動します。' -ForegroundColor Green
+    Write-Host 'Installation Complete!' -ForegroundColor Green
     exit
 }
 
-# --- メイン起動プロセス ---
-
-# 1. Dockerコンテナを起動
-Write-Host 'バックエンド・サーバーを起動中 (Docker)...' -ForegroundColor Cyan
+Write-Host 'Starting Backend (Docker)...' -ForegroundColor Cyan
 docker-compose up -d
 
-# 2. サーバーの準備ができるまで待機（ポーリング）
-Write-Host 'APIの準備を待っています...' -ForegroundColor Magenta
+Write-Host 'Waiting for API...' -ForegroundColor Magenta
 $MaxRetries = 30
 $RetryCount = 0
 $Url = 'http://localhost:3005/'
@@ -55,7 +47,7 @@ while ($RetryCount -lt $MaxRetries) {
     try {
         $Response = Invoke-WebRequest -Uri $Url -Method Head -UseBasicParsing -ErrorAction Stop
         if ($Response.StatusCode -eq 200) {
-            Write-Host 'API サーバーが正常に起動しました！' -ForegroundColor Green
+            Write-Host 'API Server is UP!' -ForegroundColor Green
             break
         }
     } catch {
@@ -66,26 +58,21 @@ while ($RetryCount -lt $MaxRetries) {
 }
 
 if ($RetryCount -eq $MaxRetries) {
-    Write-Host "`nサーバーの起動を確認できませんでした。Dockerの状態を確認してください。" -ForegroundColor Red
+    Write-Host "`nCould not connect to API. Please check Docker status." -ForegroundColor Red
     exit
 }
 
-# 3. ダッシュボードを「アプリ・モード」で起動
-Write-Host 'ダッシュボードをアプリモードで表示します...' -ForegroundColor Cyan
+Write-Host 'Launching Dashboard...' -ForegroundColor Cyan
 
-# 画面解像度の取得 (プライマリモニタ)
 Add-Type -AssemblyName System.Windows.Forms
 $Screen = [System.Windows.Forms.Screen]::PrimaryScreen
 $ScreenWidth = $Screen.Bounds.Width
 $ScreenHeight = $Screen.Bounds.Height
-
-# ウィンドウサイズの計算 (幅 1/4, 高さ フル)
 $WinWidth = [Math]::Floor($ScreenWidth / 4)
 $WinHeight = $ScreenHeight
 $PosX = $ScreenWidth - $WinWidth
 $PosY = 0
 
-# 起動するブラウザのパスを特定 (Chrome -> Edge の順に確認)
 $BrowserPath = ""
 $PotentialPaths = @(
     "${env:ProgramFiles}\Google\Chrome\Application\chrome.exe",
@@ -93,30 +80,21 @@ $PotentialPaths = @(
     "${env:ProgramFiles}\Microsoft\Edge\Application\msedge.exe",
     "${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe"
 )
-
 foreach ($Path in $PotentialPaths) {
     if (Test-Path $Path) {
         $BrowserPath = $Path
         break
     }
 }
-
 if ($BrowserPath -eq "") { $BrowserPath = "chrome" }
 
-# URLの末尾のスラッシュを除去して正規化
 $CleanUrl = $Url.TrimEnd('/')
-
-# Chrome/Edge を右側 1/4 のサイズと位置で起動
 $Arguments = "--app=""$CleanUrl"" --window-position=$PosX,$PosY --window-size=$WinWidth,$WinHeight"
-Write-Host "起動コマンド: $BrowserPath $Arguments" -ForegroundColor Gray
 
 try {
     Start-Process $BrowserPath -ArgumentList $Arguments
 } catch {
-    Write-Host "ブラウザの起動に失敗しました。直接ブラウザで $Url を開いてください。" -ForegroundColor Red
+    Write-Host "Failed to launch browser. Please open $Url manually." -ForegroundColor Red
 }
 
-
-# 4. Gemini CLI を起動（作業用）
-Write-Host '準備完了！Gemini CLI を起動します。' -ForegroundColor Yellow
-gemini
+Write-Host 'Aegis AI Hub is ready.' -ForegroundColor Yellow

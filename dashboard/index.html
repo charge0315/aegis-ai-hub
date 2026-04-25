@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aegis AI Hub - Next Gen v5.0</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2338bdf8'><path d='M21 16.5C21 16.88 20.79 17.21 20.47 17.38L12.57 21.82C12.41 21.94 12.21 22 12 22C11.79 22 11.59 21.94 11.43 21.82L3.53 17.38C3.21 17.21 3 16.88 3 16.5V7.5C3 7.12 3.21 6.79 3.53 6.62L11.43 2.18C11.59 2.06 11.79 2 12 2C12.21 2 12.41 2.06 12.57 2.18L20.47 6.62C20.79 6.79 21 7.12 21 7.5V16.5ZM12 4.15L5 8.09V15.91L12 19.85L19 15.91V8.09L12 4.15ZM12 7C10.34 7 9 8.34 9 10C9 11.66 10.34 13 12 13C13.66 13 15 11.66 15 10C15 8.34 13.66 7 12 7Z'/></svg>">
-    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="css/style.css?v=1.2">
+    <link rel="stylesheet" href="css/style.css?v=5.0">
+    <link rel="stylesheet" href="css/main.css">
 </head>
 <body class="antialiased text-lg">
     <!-- ハンバーガーメニューボタン（常時表示） -->
@@ -16,10 +16,10 @@
     </button>
 
     <!-- デバッグログ表示エリア（開発中のみ） -->
-    <div id="debug-console" class="fixed bottom-4 right-4 z-50 max-w-md bg-black/80 text-xs text-lime-400 p-4 rounded-xl font-mono hidden overflow-auto max-h-40 border border-white/10"></div>
+    <div id="debug-console" class="fixed bottom-4 right-4 z-50 w-full max-w-lg bg-black/80 text-xs text-lime-400 p-6 rounded-2xl font-mono hidden overflow-auto h-56 border border-white/10 backdrop-blur-md shadow-2xl"></div>
     <div class="flex min-h-screen">
         <!-- サイドバー：常時非表示（ドロワー形式） -->
-        <aside id="sidebar-container" class="fixed inset-y-0 left-0 z-[105] w-1/2 transform -translate-x-full transition-transform duration-300 ease-in-out p-6 flex-shrink-0">
+        <aside id="sidebar-container" class="fixed inset-y-0 left-0 z-[105] w-[85%] md:w-1/2 transform -translate-x-full transition-transform duration-300 ease-in-out p-6 flex-shrink-0">
             <div class="sidebar glass rounded-3xl p-8 h-full flex flex-col gap-10 overflow-y-auto overflow-x-hidden border border-white/10 shadow-2xl">
                 <!-- 閉じるボタン -->
                 <button onclick="UI.toggleSidebar()" class="absolute top-8 right-8 text-slate-400 hover:text-white transition-colors">
@@ -81,31 +81,38 @@
                     <h1 class="text-6xl font-black tracking-tighter mb-6 uppercase">Aegis <span class="text-sky-400">AI Hub</span></h1>
                     <p class="text-xl text-slate-400 leading-relaxed">ユーザーのための「自律型知的エージェント」体験。次世代並列スクレイピング基盤。🛡️🤖</p>
                 </div>
-                <button onclick="fetchDashboard()" class="glass p-6 rounded-2xl text-sky-400 hover:bg-sky-500/10 transition-all font-bold text-xl">
-                    <i class="fas fa-sync-alt mr-3"></i> 最新情報を更新
-                </button>
-                <!-- Geminiおすすめ生成ボタン -->
-                <button id="gemini-btn" onclick="app.fetchRecommendations()" class="relative overflow-hidden p-6 rounded-2xl bg-gradient-to-br from-fuchsia-600 to-violet-700 text-white shadow-lg shadow-fuchsia-500/20 hover:scale-105 active:scale-95 transition-all font-black text-xl group">
-                    <span class="relative z-10 flex items-center justify-center">
-                        <i class="fas fa-magic mr-3 group-hover:rotate-12 transition-transform"></i> Gemini におすすめを聞く
-                    </span>
-                    <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_2s_infinite]"></div>
-                </button>
 
-                <!-- AI進化提案ボタン -->
-                <button id="evolution-btn" onclick="app.showEvolutionProposal()" class="relative overflow-hidden p-6 rounded-2xl bg-gradient-to-br from-cyan-600 to-sky-700 text-white shadow-lg shadow-cyan-500/20 hover:scale-105 active:scale-95 transition-all font-black text-xl group">
-                    <span class="relative z-10 flex items-center justify-center">
-                        <i class="fas fa-dna mr-3 group-hover:scale-110 transition-transform"></i> システムを進化
-                    </span>
-                </button>
+                <div class="grid grid-cols-4 gap-4 md:gap-8 shrink-0">
+                    <button onclick="fetchDashboard()" class="glass p-4 rounded-2xl text-sky-400 hover:bg-sky-500/10 transition-all font-bold text-sm md:text-base flex items-center justify-center min-w-[160px]">
+                        <i class="fas fa-sync-alt mr-2"></i> 最新情報を更新
+                    </button>
+                    
+                    <!-- Geminiおすすめ生成ボタン -->
+                    <button id="gemini-btn" onclick="app.fetchRecommendations()" class="relative overflow-hidden p-4 rounded-2xl bg-gradient-to-br from-fuchsia-600 to-violet-700 text-white shadow-lg shadow-fuchsia-500/20 hover:scale-105 active:scale-95 transition-all font-black text-sm md:text-base group flex items-center justify-center min-w-[160px]">
+                        <span class="relative z-10 flex items-center justify-center text-center">
+                            <i class="fas fa-magic mr-2 group-hover:rotate-12 transition-transform"></i> AIのオススメ
+                        </span>
+                        <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_2s_infinite]"></div>
+                    </button>
 
-                <!-- AI再構築ボタン（新規追加） -->
-                <button id="restructure-btn" onclick="app.showRestructureProposal()" class="relative overflow-hidden p-6 rounded-2xl bg-gradient-to-br from-indigo-600 to-blue-700 text-white shadow-lg shadow-indigo-500/20 hover:scale-105 active:scale-95 transition-all font-black text-xl group">
-                    <span class="relative z-10 flex items-center justify-center">
-                        <i class="fas fa-project-diagram mr-3 group-hover:rotate-90 transition-transform"></i> ナレッジ再構築
-                    </span>
-                </button>
+                    <!-- AI進化提案ボタン -->
+                    <button id="evolution-btn" onclick="app.showEvolutionProposal()" class="relative overflow-hidden p-4 rounded-2xl bg-gradient-to-br from-cyan-600 to-sky-700 text-white shadow-lg shadow-cyan-500/20 hover:scale-105 active:scale-95 transition-all font-black text-sm md:text-base group flex items-center justify-center min-w-[160px]">
+                        <span class="relative z-10 flex items-center justify-center text-center">
+                            <i class="fas fa-dna mr-2 group-hover:scale-110 transition-transform"></i> システムを進化
+                        </span>
+                    </button>
+
+                    <!-- AI再構築ボタン（新規追加） -->
+                    <button id="restructure-btn" onclick="app.showRestructureProposal()" class="relative overflow-hidden p-4 rounded-2xl bg-gradient-to-br from-indigo-600 to-blue-700 text-white shadow-lg shadow-indigo-500/20 hover:scale-105 active:scale-95 transition-all font-black text-sm md:text-base group flex items-center justify-center min-w-[160px]">
+                        <span class="relative z-10 flex items-center justify-center text-center">
+                            <i class="fas fa-project-diagram mr-2 group-hover:rotate-90 transition-transform"></i> ナレッジ再構築
+                        </span>
+                    </button>
+                </div>
             </header>
+
+            <!-- Geminiおすすめ表示エリア -->
+            <div id="recommendations-container" class="hidden space-y-16 mb-24"></div>
 
             <!-- 進化・再構築提案モーダル -->
             <div id="evolution-modal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-xl hidden p-4">

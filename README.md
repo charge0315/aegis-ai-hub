@@ -1,11 +1,11 @@
-# Aegis AI Hub 🛡️🤖 (The Ultimate Dashboard v5.0)
+# Aegis AI Hub 🛡️🤖
 
 ユーザーの興味に特化した、究極の自律学習型知的ニュース・ダッシュボード。  
 最新の **Gemini 3.1 Pro / Flash** を統合し、セキュリティ、自律進化、AIナレッジ再構築の3軸において極限まで磨き上げられた「芸術的コード」の結晶です。
 
 ## 🌟 究極の3大進化 (v5.0 New Features)
 
-### 1. 自律적エコシステムの構築 (Autonomous Evolution)
+### 1. 自律的エコシステムの構築 (Autonomous Evolution)
 システム自身が新しい知識を学習し、成長し続ける仕組みを実現。
 - **AI サイト発見 (Discovery Service)**: 登録された興味（ブランド、キーワード）に基づき、Gemini 3.1 が最適な RSS フィードを世界中から探索・自動登録。
 - **トレンド学習ジョブ (Evolution Job)**: 最新のニュース記事から新しいトレンドを抽出し、「学習済みキーワード」として蓄積。
@@ -56,4 +56,4 @@ docker-compose up -d
 - [**frontend.md**](./docs/CODEMAPS/frontend.md) - ドロワーUIとセキュアなレンダリング
 
 ---
-*Autonomous AI Hub - This code is your stage. Keep Evolving! 🚀*
+*Aegis AI Hub - This code is your stage. Keep Evolving! 🚀*

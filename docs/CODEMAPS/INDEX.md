@@ -11,6 +11,7 @@ AIによるキュレーション、自律的なサイト発見、ナレッジの
 
 - [**Backend Architecture**](backend.md) - SOA、自律進化ジョブ、AIナレッジ再構築
 - [**Frontend UI**](frontend.md) - ドロワーメニュー、進化提案モーダル、XSS対策
+- [**API & MCP Reference**](../API.md) - エンドポイントとMCPツールの仕様
 - [**Automation**](automation.md) - スタートアップ自動化、Docker、定期ジョブ
 
 ## システム全体俯瞰

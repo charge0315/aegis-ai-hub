@@ -45,6 +45,21 @@ body {
     border-radius: 12px;
     transition: all 0.4s cubic-bezier(0.1, 0.9, 0.2, 1);
     cursor: pointer;
+    max-height: 480px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* カード内画像コンテナ */
+.card-image-container {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    background: #1a1a1a;
+    flex-shrink: 0;
+    aspect-ratio: 16 / 9;
+    max-height: 180px;
 }
 
 .card::before { /* ホバー時の光彩エフェクト */
@@ -102,15 +117,23 @@ body {
 .panel-grid {
     display: grid !important;
     grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
-    gap: 1.5rem !important;
+    gap: 2rem !important;
 }
 
 @media (min-width: 768px) {
     .panel-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
 }
 
-@media (min-width: 1500px) {
+@media (min-width: 1200px) {
     .panel-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+}
+
+@media (min-width: 1600px) {
+    .panel-grid { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+}
+
+@media (min-width: 2000px) {
+    .panel-grid { grid-template-columns: repeat(5, minmax(0, 1fr)) !important; }
 }
 
 /* 提案カードの選択スタイル */

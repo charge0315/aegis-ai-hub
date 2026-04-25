@@ -3,12 +3,14 @@
  */
 export const UI = {
     catIcons: {
-        'AI・ソフトウェア': '🤖',
-        'ゲーム': '🎮',
-        'PC・ハードウェア': '💻',
-        'ガジェット': '⚡',
-        '音楽・ギター・DTM': '🎸',
-        'ロードバイク': '🚴'
+        'AI・ソフトウェア・開発': '🤖',
+        'モバイル・スマートデバイス': '📱',
+        'PC・周辺機器': '💻',
+        '半導体・PCパーツ': '🔌',
+        'ゲーム・eスポーツ': '🎮',
+        'オーディオ・楽器・DTM': '🎸',
+        'スマートアクセサリ・IoT': '🏠',
+        'ロードバイク・スポーツテック': '🚴'
     },
 
     /**
@@ -53,13 +55,15 @@ export const UI = {
         container.classList.remove('hidden');
         container.innerHTML = `
             <div class="mb-16">
-                <h2 class="text-5xl font-black mb-10 flex items-center gap-6 text-white uppercase tracking-tighter">
+                <div class="flex items-center gap-6 mb-10">
                     <span class="w-16 h-16 bg-gradient-to-br from-fuchsia-500 to-violet-600 rounded-2xl flex items-center justify-center shadow-lg shadow-fuchsia-500/20">
-                        <i class="fas fa-magic text-3xl"></i>
-                    </span> 
-                    Gemini's <span class="text-fuchsia-400">Picks</span>
-                    <span class="text-sm text-slate-500 font-mono lowercase">Curated for User</span>
-                </h2>
+                        <i class="fas fa-magic text-3xl text-white"></i>
+                    </span>
+                    <div>
+                        <h2 class="text-5xl font-black text-white uppercase tracking-tighter">AI's <span class="text-fuchsia-400">Picks</span></h2>
+                        <p class="text-sm text-slate-500 font-mono lowercase">Curated based on your interests</p>
+                    </div>
+                </div>
                 <div class="panel-grid">
                     ${articles.map(item => this.renderGeminiCard(item, store)).join('')}
                 </div>
@@ -79,22 +83,22 @@ export const UI = {
         return `
             <div class="card glass rounded-3xl overflow-hidden flex flex-col group border-2 border-fuchsia-500/20 hover:border-fuchsia-500/50 bg-gradient-to-b from-fuchsia-500/5 to-transparent ${isRead ? 'is-read' : ''}" 
                  onclick="window.open('${item.link}', '_blank'); app.markAsRead('${item.link}', this)">
-                <div class="relative h-40 overflow-hidden">
-                    <img src="${item.img}" class="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-700" 
+                <div class="card-image-container rounded-t-3xl">
+                    <img src="${item.img}" class="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-700" 
                          onerror="this.src='https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=600'">
                     <div class="absolute top-4 left-4 px-3 py-1 bg-fuchsia-600 rounded-full text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-fuchsia-600/40">${brand}</div>
                     <div class="absolute bottom-4 right-4 px-3 py-1 rounded-lg bg-black/60 backdrop-blur-md text-fuchsia-400 text-xs font-black border border-fuchsia-500/30">AI RANK: ${item.score}</div>
                 </div>
-                <div class="p-6 flex flex-col gap-3">
-                    <h3 class="font-bold text-xl leading-tight text-white group-hover:text-fuchsia-400 transition-colors">${title}</h3>
+                <div class="p-6 flex flex-col flex-grow overflow-hidden">
+                    <h3 class="font-bold text-lg leading-tight text-white group-hover:text-fuchsia-400 transition-colors line-clamp-2 shrink-0">${title}</h3>
                     
                     <!-- Geminiの推薦理由エリア -->
-                    <div class="bg-fuchsia-500/10 border border-fuchsia-500/20 rounded-2xl p-4 flex gap-3 items-start italic text-fuchsia-200 text-xs leading-relaxed">
-                        <i class="fas fa-comment-dots mt-1 text-fuchsia-400 text-[10px]"></i>
-                        <p>"${reason}"</p>
+                    <div class="bg-fuchsia-500/10 border border-fuchsia-500/20 rounded-2xl p-4 mt-3 flex gap-3 items-start italic text-fuchsia-200 text-xs leading-relaxed overflow-hidden">
+                        <i class="fas fa-comment-dots mt-1 text-fuchsia-400 text-[10px] shrink-0"></i>
+                        <p class="line-clamp-3">"${reason}"</p>
                     </div>
 
-                    <div class="mt-2 pt-3 border-t border-white/5 flex justify-between items-center">
+                    <div class="mt-auto pt-3 border-t border-white/5 flex justify-between items-center shrink-0">
                         <span class="text-[10px] font-black uppercase tracking-widest text-fuchsia-400 flex items-center gap-2">
                             ${isRead ? '<i class="fas fa-check-circle"></i> READ' : 'CHECK THIS OUT <i class="fas fa-chevron-right text-[8px]"></i>'}
                         </span>
@@ -115,7 +119,6 @@ export const UI = {
         if (isHidden) {
             sidebar.classList.remove('-translate-x-full');
             sidebar.classList.add('translate-x-0');
-            // 背景クリックで閉じられるようにする
             const overlay = document.createElement('div');
             overlay.id = 'sidebar-overlay';
             overlay.className = 'fixed inset-0 bg-black/60 backdrop-blur-md z-[102] transition-opacity duration-300';
@@ -182,9 +185,12 @@ export const UI = {
                 ${Object.entries(data.categories).map(([catName, info]) => `
                     <div class="p-8 rounded-[2rem] bg-white/5 border border-white/10 hover:border-indigo-500/30 transition-all group">
                         <div class="flex justify-between items-start mb-6">
-                            <div>
-                                <h3 class="text-2xl font-black text-white uppercase tracking-tighter">${this.escapeHTML(catName)}</h3>
-                                <p class="text-indigo-400 text-xs font-bold mt-1 uppercase tracking-widest">Reason: ${this.escapeHTML(info.reason || "最適化")}</p>
+                            <div class="flex items-center gap-4">
+                                <span class="text-4xl">${info.emoji || '🌟'}</span>
+                                <div>
+                                    <h3 class="text-2xl font-black text-white uppercase tracking-tighter">${this.escapeHTML(catName)}</h3>
+                                    <p class="text-indigo-400 text-xs font-bold mt-1 uppercase tracking-widest">Reason: ${this.escapeHTML(info.reason || "最適化")}</p>
+                                </div>
                             </div>
                             <div class="px-4 py-2 bg-indigo-500/20 rounded-xl text-indigo-300 font-bold text-xs">Score: ${info.score}</div>
                         </div>
@@ -217,14 +223,13 @@ export const UI = {
 
         content.innerHTML = '';
 
-        // 1. 正常なサイト
-        this.renderProposalSection(content, '🆕 新しい情報源 (RSS Feeds)', data.sites, (item, idx) => `
-            <div class="flex flex-col gap-2">
-                <h4 class="font-bold text-white">${this.escapeHTML(item.name)}</h4>
-                <p class="text-[10px] text-cyan-400 font-mono break-all">${this.escapeHTML(item.url)}</p>
-                <p class="text-xs text-slate-400 mt-2 italic leading-relaxed">"${this.escapeHTML(item.reason)}"</p>
-                <div class="mt-auto pt-3 flex justify-between items-center">
-                    <span class="px-2 py-1 bg-slate-800 rounded text-[10px] text-slate-500 uppercase font-bold">${this.escapeHTML(item.category)}</span>
+        // 1. 新しいサイト (RSS Feeds) - カテゴリごとにグループ化
+        this.renderGroupedProposalSection(content, '🆕 新しい情報源 (RSS Feeds)', data.sites, (item, idx) => `
+            <div class="flex flex-col h-full">
+                <h4 class="font-bold text-white mb-1">${this.escapeHTML(item.name)}</h4>
+                <p class="text-[10px] text-cyan-400 font-mono break-all mb-2">${this.escapeHTML(item.url)}</p>
+                <p class="text-xs text-slate-400 italic leading-relaxed mb-4">"${this.escapeHTML(item.reason)}"</p>
+                <div class="mt-auto pt-3 flex justify-end items-center border-t border-white/5">
                     <span class="selection-status text-[10px] font-bold"></span>
                 </div>
             </div>
@@ -233,15 +238,15 @@ export const UI = {
         // 2. 健康診断失敗サイト（特別表示）
         if (data.failedSites && data.failedSites.length > 0) {
             const failedSection = document.createElement('div');
-            failedSection.className = 'space-y-4 opacity-60';
+            failedSection.className = 'space-y-6 opacity-60';
             failedSection.innerHTML = `
                 <h3 class="text-sm font-bold text-rose-400/70 border-l-4 border-rose-500/50 pl-4 uppercase tracking-widest">⚠️ 健康診断未通過 (自動除外済み)</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     ${data.failedSites.map(site => `
-                        <div class="p-4 rounded-xl bg-rose-500/5 border border-rose-500/10 text-xs">
+                        <div class="p-6 rounded-2xl bg-rose-500/5 border border-rose-500/10 text-xs">
                             <div class="font-bold text-slate-300">${this.escapeHTML(site.name)}</div>
                             <div class="text-[10px] text-slate-500 font-mono mt-1">${this.escapeHTML(site.url)}</div>
-                            <div class="text-rose-400/60 mt-2"><i class="fas fa-exclamation-triangle mr-2"></i>${this.escapeHTML(site.error)}</div>
+                            <div class="text-rose-400/60 mt-3"><i class="fas fa-exclamation-triangle mr-2"></i>${this.escapeHTML(site.error)}</div>
                         </div>
                     `).join('')}
                 </div>
@@ -249,50 +254,68 @@ export const UI = {
             content.appendChild(failedSection);
         }
 
-        // 3. ブランド
-        this.renderProposalSection(content, '🏷️ 注目ブランド (各カテゴリ5選)', data.brands, (item, idx) => `
-            <div class="flex flex-col">
-                <div class="flex justify-between items-center">
+        // 3. ブランド - カテゴリごとにグループ化
+        this.renderGroupedProposalSection(content, '🏷️ 注目ブランド (各カテゴリ5選)', data.brands, (item, idx) => `
+            <div class="flex flex-col h-full">
+                <div class="flex justify-between items-center mb-1">
                     <span class="text-lg font-bold text-white">${this.escapeHTML(item.value)}</span>
                     <span class="selection-status text-[10px] font-bold"></span>
                 </div>
-                <span class="text-[10px] text-slate-500 uppercase font-black tracking-tighter mt-1">${this.escapeHTML(item.category)}</span>
-                <p class="text-xs text-slate-400 mt-2 italic">"${this.escapeHTML(item.reason)}"</p>
+                <p class="text-xs text-slate-400 italic leading-relaxed">"${this.escapeHTML(item.reason)}"</p>
             </div>
         `, 'brands', selectedIndices.brands);
 
-        // 4. キーワード
-        this.renderProposalSection(content, '🔍 新規キーワード', data.keywords, (item, idx) => `
-            <div class="flex flex-col">
-                <div class="flex justify-between items-center">
+        // 4. キーワード - カテゴリごとにグループ化
+        this.renderGroupedProposalSection(content, '🔍 新規キーワード', data.keywords, (item, idx) => `
+            <div class="flex flex-col h-full">
+                <div class="flex justify-between items-center mb-1">
                     <span class="text-lg font-bold text-white">#${this.escapeHTML(item.value)}</span>
                     <span class="selection-status text-[10px] font-bold"></span>
                 </div>
-                <span class="text-[10px] text-slate-500 uppercase font-black tracking-tighter mt-1">${this.escapeHTML(item.category)}</span>
-                <p class="text-xs text-slate-400 mt-2 italic">"${this.escapeHTML(item.reason)}"</p>
+                <p class="text-xs text-slate-400 italic leading-relaxed">"${this.escapeHTML(item.reason)}"</p>
             </div>
         `, 'keywords', selectedIndices.keywords);
     },
 
-    renderProposalSection(container, title, items, itemRenderer, type, selectedSet) {
+    /**
+     * 提案項目をカテゴリごとにグループ化して描画します。
+     */
+    renderGroupedProposalSection(container, title, items, itemRenderer, type, selectedSet) {
         if (!items || items.length === 0) return;
 
+        const grouped = items.reduce((acc, item, originalIdx) => {
+            const cat = item.category || 'その他';
+            if (!acc[cat]) acc[cat] = [];
+            acc[cat].push({ item, originalIdx });
+            return acc;
+        }, {});
+
         const section = document.createElement('div');
-        section.className = 'space-y-6';
-        section.innerHTML = `
-            <h3 class="text-xl font-bold text-slate-300 border-l-4 border-cyan-500 pl-4 uppercase tracking-widest text-sm">${title}</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                ${items.map((item, idx) => {
-                    const isSelected = selectedSet.has(idx);
-                    return `
-                        <div onclick="app.toggleProposalSelection('${type}', ${idx})" 
-                             class="proposal-card p-6 rounded-2xl cursor-pointer transition-all duration-300 border-2 ${isSelected ? 'selected' : 'bg-white/5 border-white/5 hover:border-white/10'}">
-                            ${itemRenderer(item, idx)}
-                        </div>
-                    `;
-                }).join('')}
-            </div>
-        `;
+        section.className = 'space-y-10';
+        section.innerHTML = `<h3 class="text-2xl font-black text-slate-300 border-l-4 border-cyan-500 pl-6 uppercase tracking-[0.2em] text-sm">${title}</h3>`;
+
+        for (const [catName, entries] of Object.entries(grouped)) {
+            const catSection = document.createElement('div');
+            catSection.className = 'space-y-4 ml-2';
+            catSection.innerHTML = `
+                <div class="flex items-center gap-3 mb-6">
+                    <span class="px-3 py-1 bg-slate-800 rounded-lg text-[10px] font-black text-cyan-400 uppercase tracking-widest border border-cyan-500/20">${this.escapeHTML(catName)}</span>
+                    <div class="h-[1px] flex-grow bg-gradient-to-r from-white/10 to-transparent"></div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    ${entries.map(({ item, originalIdx }) => {
+                        const isSelected = selectedSet.has(originalIdx);
+                        return `
+                            <div onclick="app.toggleProposalSelection('${type}', ${originalIdx})" 
+                                 class="proposal-card p-6 rounded-2xl cursor-pointer transition-all duration-300 border-2 ${isSelected ? 'selected' : 'bg-white/5 border-white/5 hover:border-white/10'}">
+                                ${itemRenderer(item, originalIdx)}
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+            section.appendChild(catSection);
+        }
         container.appendChild(section);
     },
 
@@ -310,34 +333,34 @@ export const UI = {
 
         let index = 0;
         for (const catName in data) {
-            const articles = data[catName];
-            const icon = this.catIcons[catName] || '🌟';
+            const categoryData = data[catName];
+            const articles = categoryData.articles || [];
+            const icon = categoryData.emoji || this.catIcons[catName] || '🌟';
+            
             const id = `cat-${index++}`;
             const escapedCatName = this.escapeHTML(catName);
-
-            // ナビゲーション追加
-            nav.innerHTML += `
-                <a href="#${id}" class="flex items-center gap-4 p-4 rounded-2xl hover:bg-sky-500/10 text-sky-400 transition-all">
-                    <span class="text-2xl">${icon}</span> <span class="font-bold text-xl">${escapedCatName}</span>
-                </a>
-            `;
+// ナビゲーション追加
+nav.innerHTML += `
+    <a href="#${id}" class="flex items-center gap-4 p-4 rounded-2xl hover:bg-sky-500/10 text-sky-400 transition-all whitespace-nowrap overflow-hidden text-ellipsis">
+        <span class="text-2xl shrink-0">${icon}</span> <span class="font-bold text-xl truncate">${escapedCatName}</span>
+    </a>
+`;
             select.innerHTML += `<option value="${escapedCatName}" class="bg-slate-900 text-white">${escapedCatName}</option>`;
+// セクション描画
+const section = document.createElement('section');
+section.id = id;
+section.className = 'scroll-mt-24';
 
-            // セクション描画
-            const section = document.createElement('section');
-            section.id = id;
-            section.className = 'scroll-mt-24';
-            
-            const hasArticles = articles && articles.length > 0;
-            section.innerHTML = `
-                <h2 class="text-4xl font-bold mb-10 flex items-center gap-4 ${hasArticles ? 'text-sky-400' : 'text-slate-600 opacity-50'} uppercase tracking-tight">
-                    <span class="text-5xl ${!hasArticles && 'grayscale'}">${icon}</span> ${escapedCatName} 
-                    <span class="text-sm font-normal">(${hasArticles ? articles.length + ' articles' : 'No updates today'})</span>
-                </h2>
-                <div class="panel-grid">
-                    ${articles.map(item => this.renderCard(item, store)).join('')}
-                </div>
-            `;
+const hasArticles = articles && articles.length > 0;
+section.innerHTML = `
+    <h2 class="text-3xl md:text-4xl font-bold mb-10 flex items-center gap-4 ${hasArticles ? 'text-sky-400' : 'text-slate-600 opacity-50'} uppercase tracking-tight">
+        <span class="text-4xl md:text-5xl ${!hasArticles && 'grayscale'}">${icon}</span> ${escapedCatName} 
+        <span class="text-sm font-normal">(${hasArticles ? articles.length + ' articles' : 'No updates today'})</span>
+    </h2>
+    <div class="panel-grid">
+        ${articles.map(item => this.renderCard(item, store)).join('')}
+    </div>
+`;
             container.appendChild(section);
         }
     },
@@ -357,18 +380,18 @@ export const UI = {
                  onmousemove="this.style.setProperty('--x', event.offsetX + 'px'); this.style.setProperty('--y', event.offsetY + 'px')"
                  onclick="window.open('${item.link}', '_blank'); app.markAsRead('${item.link}', this)"
                  onkeydown="if(event.key === 'Enter') { window.open('${item.link}', '_blank'); app.markAsRead('${item.link}', this) }">
-                <div class="relative h-32 overflow-hidden bg-slate-800">
-                    <img src="${item.img}" class="w-full h-full object-cover opacity-70 group-hover:scale-105 transition-transform duration-500" 
+                <div class="card-image-container">
+                    <img src="${item.img}" class="absolute inset-0 w-full h-full object-cover opacity-70 group-hover:scale-105 transition-transform duration-500" 
                          onerror="this.src='https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=600'">
                     <div class="absolute top-3 left-3 px-2 py-1 bg-black/60 backdrop-blur-md rounded-lg text-[10px] font-bold uppercase tracking-widest border border-white/10 text-white">${brand}</div>
                     <div class="absolute bottom-3 right-3 w-8 h-8 rounded-full flex items-center justify-center bg-sky-500/30 text-sky-400 text-xs font-black border border-sky-500/40 backdrop-blur-sm">${item.score}</div>
                 </div>
-                <div class="p-6 flex flex-col">
-                    <h3 class="font-bold text-xl mb-3 leading-tight group-hover:text-sky-400 transition-colors text-white">${title}</h3>
-                    <p class="text-base text-slate-400 mb-4 line-clamp-3 leading-relaxed">${desc}</p>
-                    <div class="mt-auto pt-4 flex justify-between items-center border-t border-white/5">
-                        <span class="text-xs font-black uppercase tracking-wider text-sky-400 flex items-center gap-2">
-                            ${isRead ? '<i class="fas fa-check-circle"></i> READ' : 'VIEW ARTICLE <i class="fas fa-external-link-alt text-[10px]"></i>'}
+                <div class="p-6 flex flex-col flex-grow overflow-hidden">
+                    <h3 class="font-bold text-lg mb-3 leading-tight group-hover:text-sky-400 transition-colors text-white line-clamp-2 shrink-0">${title}</h3>
+                    <p class="text-sm text-slate-400 line-clamp-3 leading-relaxed">${desc}</p>
+                    <div class="mt-auto pt-4 flex justify-between items-center border-t border-white/5 shrink-0">
+                        <span class="text-[10px] font-black uppercase tracking-wider text-sky-400 flex items-center gap-2">
+                            ${isRead ? '<i class="fas fa-check-circle"></i> READ' : 'VIEW ARTICLE <i class="fas fa-external-link-alt text-[8px]"></i>'}
                         </span>
                     </div>
                 </div>

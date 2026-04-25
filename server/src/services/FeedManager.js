@@ -2,7 +2,7 @@ import fs from 'fs';
 import writeFileAtomic from 'write-file-atomic';
 import { z } from 'zod';
 
-const FeedConfigSchema = z.record(z.object({
+const FeedConfigSchema = z.record(z.string(), z.object({
     active: z.array(z.string()),
     pool: z.array(z.string()),
     failures: z.record(z.number()).default({})

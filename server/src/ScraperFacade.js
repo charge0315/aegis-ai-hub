@@ -62,19 +62,22 @@ export class ScraperFacade {
         await Promise.all(topArticles.map(a => this.enrichmentService.enrich(a)));
 
         const dashboard = {};
-        for (const cat in interests.categories) {
-            dashboard[cat] = [];
+        for (const catName in interests.categories) {
+            dashboard[catName] = {
+                emoji: interests.categories[catName].emoji || null,
+                articles: []
+            };
         }
 
         topArticles.forEach(a => {
             if (dashboard[a.category]) {
-                dashboard[a.category].push(a.toJSON());
+                dashboard[a.category].articles.push(a.toJSON());
             }
         });
 
         // 各カテゴリ内を最終的に新着順で整列し、表示枠（15件）に最適化
-        for (const cat in dashboard) {
-            dashboard[cat] = dashboard[cat]
+        for (const catName in dashboard) {
+            dashboard[catName].articles = dashboard[catName].articles
                 .sort((a, b) => new Date(b.date) - new Date(a.date))
                 .slice(0, 15);
         }

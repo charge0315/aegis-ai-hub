@@ -75,14 +75,15 @@ export class DiscoveryService {
             for (const site of result.sites) {
                 console.log(`[DiscoveryService] フィード検証中: ${site.name} (${site.url})`);
                 try {
-                    const res = await this.rssFetcher.fetch(site.url, site.category);
-                    if (res.success && res.items.length > 0) {
+                    const items = await this.rssFetcher.fetch(site.url);
+                    if (items && items.length > 0) {
+                        console.log(`[DiscoveryService] 検証成功: ${site.name} (${items.length} 記事)`);
                         validatedSites.push(site);
                     } else {
-                        console.log(`[DiscoveryService] 検証失敗: ${site.name}`);
-                        failedSites.push({ ...site, error: "有効なRSSフィードが確認できませんでした。" });
+                        throw new Error("記事が見つかりませんでした。");
                     }
                 } catch (e) {
+                    console.warn(`[DiscoveryService] 検証失敗: ${site.name} - ${e.message}`);
                     failedSites.push({ ...site, error: e.message });
                 }
             }

@@ -1,6 +1,6 @@
 # Frontend UI Codemap
 
-**Last Updated:** 2026-04-22
+**Last Updated:** 2026-04-25
 **Entry Point:** `dashboard/index.html`
 
 ## 概要

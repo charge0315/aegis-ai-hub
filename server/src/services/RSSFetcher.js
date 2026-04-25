@@ -9,7 +9,11 @@ export class RSSFetcher {
     constructor(concurrency = 5) {
         this.limit = pLimit(concurrency);
         this.parser = new Parser({
-            timeout: 10000,
+            timeout: 15000, // 少し長めに設定
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+                'Accept': 'application/rss+xml, application/xml, text/xml, */*'
+            },
             customFields: {
                 item: [
                     ['content:encoded', 'contentEncoded'],
