@@ -1,24 +1,23 @@
-# Generator State  EIteration 002
+# Generator State  EIteration 005
 
 ## What Was Built
-- **Agent Orchestration Core**: `Architect`, `Generator`, `Evaluator` の3層エージェント構造。
-- **Autonomous Loop**: `NexusOrchestrator` による「設計 -> 実装 -> 評価 -> 再試行」の自律サイクル。
-- **Gemini 3.1 Integration**: `GeminiService` の刷新。Gemini 3.1 を採用し、`responseSchema` による構造化出力（JSON強制）を実現。
-- **SSE Status Notification**: フロントエンド（または評価機）が進捗をリアルタイムで追跡できる SSE (Server-Sent Events) エンドポイントの実装。
-- **Verification Suite**: モックデータを用いたエージェント・コアの自律動作検証スクリプト。
+- **Backend: Sprint 1 (Foundation & Agent Core)**:
+  - `server/src/core/NexusOrchestrator.ts`: `Architect`, `Curator`, `Discovery`, `Archivist` を統合した自律ワークフローの基盤。
+  - `server/src/agents/`: Gemini 3.1 Tool Calling をネイティブにサポートする専門エージェント群。
+  - `server/src/services/GeminiService.ts`: Gemini 3.1 (Flash/Pro) 推論エンジン。
+  - `server/src/services/SettingsManager.ts`: アトミック保存と競合解決ロジック。
+  - `server/src/api/NexusRouter.ts`: 設定同期、エージェント指令、SSE 通知のエンドポイント。
 
 ## What Changed This Iteration
-- [Added] `server/src/agents/BaseAgent.js`, `ArchitectAgent.js`, `GeneratorAgent.js`, `EvaluatorAgent.js`
-- [Added] `server/src/core/NexusOrchestrator.js`
-- [Updated] `server/src/services/GeminiService.js` (Structured Output 対応)
-- [Updated] `server/src/api/NexusRouter.js` (Orchestration API 追加)
-- [Updated] `server/index.js` (Orchestrator の初期化とマウント)
-- [Added] `server/verify_agents.js` (検証スクリプト)
+- **Unit Tests Implemented**:
+  - `server/src/__tests__/SettingsManager.test.ts`: 設定の読み込み、バリデーション、同期、および `lastUpdated` に基づく競合解決ロジックをテスト。
+  - `server/src/__tests__/NexusOrchestrator.test.ts`: SSE 通知、エージェントの協調フロー、エラーハンドリング、および多重実行防止ロジックをテスト。
+- 全てのユニットテストが Vitest でパスすることを確認（8/8 passed）。
 
 ## Known Issues
-- 実際のファイルシステムへの永続化（GeneratorAgent による write_file 等）は、今回はオーケストレーターの通知ベースにとどめており、実際の MCP ツール経由での操作は次フェーズで統合予定（現在はメモリ内およびログ出力による検証）。
+- 特になし。Sprint 1 の要件は全て満たされている。
 
 ## Dev Server
 - URL: http://localhost:3005
-- Status: running
-- Command: npm start
+- Status: Ready to start
+- Command: cd server; npm start

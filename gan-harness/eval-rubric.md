@@ -1,30 +1,33 @@
-# Evaluation Rubric: Aegis-Nexus Autonomous Loop
+# Evaluation Rubric: Aegis Nexus
 
-## 1. Autonomous Loop Stability (30 points)
-- **Agent Orchestration (15pts)**: 
-  - [ ] `Generator` と `Evaluator` の通信が途切れることなく、Plan -> Implement -> Eval のサイクルが完走するか。
-  - [ ] 無限ループやデッドロックを検知・回避する仕組みが機能しているか。
-- **MCP Tool Usage (15pts)**:
-  - [ ] エージェントがMCP経由でファイル操作、APIアクセスをエラーなく実行できるか。
-  - [ ] 不正な操作に対するロールバック（下書きの破棄）が正常に行われるか。
+## 1. Design Quality (30%)
+- [ ] **Aesthetic Consistency**: Mica/Glass-morphism is applied across all components. Colors follow the Indigo/Deep Space theme.
+- [ ] **UI Density**: Information is dense but not cluttered. Card layout is professional and aligns with "Precision Engineering" vision.
+- [ ] **Animations**: Micro-interactions (hover, click, loading) are smooth and provide clear feedback.
+- [ ] **No AI Slop**: Avoids generic gradients, stock AI illustrations, or unstyled generic components.
 
-## 2. Code Quality & Warnings (30 points)
-- **Zero Warnings Policy (15pts)**:
-  - [ ] コンパイラ（TypeScript等）やリンター（ESLint）の警告が完全にゼロであるか。
-  - [ ] 正当な理由での抑制（例: `eslint-disable`）を行う場合、その理由がコメントで明記されているか。
-- **TDD Compliance (15pts)**:
-  - [ ] 全ての新規ロジック（特に `sync-settings` API等）に対してユニットテストが存在し、全てパスするか。
-  - [ ] カバレッジ基準（80%以上等）を満たしているか。
+## 2. Originality & Intelligence (20%)
+- [ ] **Agent 협調 Model**: The UI clearly shows different agents (`Curator`, `Discovery`, etc.) working in the background.
+- [ ] **AI Reasoning**: "Why" this news was selected is explained to the user via UI tooltips or overlays.
+- [ ] **Interaction**: Features like Knowledge Graph or Command Palette provide a unique way to manage intelligence.
 
-## 3. Visual & Functional Quality (40 points)
-- **UI/UX Aesthetics (20pts)**:
-  - [ ] Fluent Design / Glass-morphism の原則（ぼかし効果、シャドウ、細いボーダーライン）が正確に実装されているか。
-  - [ ] レスポンシブなグリッドレイアウトが全てのデバイス幅で破綻しないか。
-- **Feature Completion (20pts)**:
-  - [ ] 統合エディタにおける「下書き」の保存・同期処理が、フロントエンドとバックエンド間で整合性を保ちながら完了するか。
-  - [ ] AI提案の受け入れ機能が正常に作動し、設定に反映されるか。
+## 3. Engineering Craft (30%)
+- [ ] **TypeScript Excellence**: Strict typing, no `any`, interfaces are well-defined.
+- [ ] **Zero Warnings**: No compiler or linter warnings in the final output.
+- [ ] **Architecture**: Clear separation between Agent logic (Backend) and UI State (Frontend).
+- [ ] **Performance**: Fast loading, efficient state updates, no unnecessary re-renders.
 
-## Critical Failures (自動失格条件)
-- [ ] リンター/コンパイラの警告を無視して実装を強制コミットした場合。
-- [ ] エージェント間のやり取りでスタックし、人間が手動介入しないと進行不可に陥った場合。
-- [ ] Windows PowerShell環境において、コマンド連結に `;` ではなく `&&` を使用している箇所が残っている場合。
+## 4. Functionality & UX (20%)
+- [ ] **Draft Workflow**: User can edit settings in a "Draft" state and sync them atomically.
+- [ ] **E2E Stability**: Playwright tests cover:
+    1. Initial loading of the dashboard.
+    2. Editing an interest in the Unified Editor.
+    3. Applying an AI proposal to the draft.
+    4. Successful synchronization to the backend.
+- [ ] **Error Handling**: Graceful degradation when Gemini API is unavailable or RSS feeds fail.
+
+## Scoring Scale
+- **0.0 - 0.4**: Non-functional or significantly diverges from spec.
+- **0.5 - 0.7**: Functional but lacks polish or specific design direction.
+- **0.8 - 0.9**: High quality, meets all "Must-Have" and most "Should-Have" features.
+- **1.0**: Exceptional work, exceeds expectations with "Nice-to-Have" features and perfect craft.
