@@ -3,139 +3,246 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aegis AI Hub - Next Gen v5.0</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2338bdf8'><path d='M21 16.5C21 16.88 20.79 17.21 20.47 17.38L12.57 21.82C12.41 21.94 12.21 22 12 22C11.79 22 11.59 21.94 11.43 21.82L3.53 17.38C3.21 17.21 3 16.88 3 16.5V7.5C3 7.12 3.21 6.79 3.53 6.62L11.43 2.18C11.59 2.06 11.79 2 12 2C12.21 2 12.41 2.06 12.57 2.18L20.47 6.62C20.79 6.79 21 7.12 21 7.5V16.5ZM12 4.15L5 8.09V15.91L12 19.85L19 15.91V8.09L12 4.15ZM12 7C10.34 7 9 8.34 9 10C9 11.66 10.34 13 12 13C13.66 13 15 11.66 15 10C15 8.34 13.66 7 12 7Z'/></svg>">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="css/style.css?v=5.0">
-    <link rel="stylesheet" href="css/main.css">
+    <title>Aegis Nexus | Autonomous AI Hub</title>
+    <link href="css/main.css" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" rel="stylesheet">
 </head>
-<body class="antialiased text-lg overflow-x-hidden">
-    <!-- ハンバーガーメニューボタン -->
-    <button id="menu-toggle" onclick="UI.toggleSidebar()" class="fixed bottom-8 left-8 z-[110] w-16 h-16 bg-sky-500 text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all">
-        <i class="fas fa-bars text-2xl"></i>
-    </button>
+<body class="bg-nexus-dark text-slate-200 antialiased font-sans">
+    <div id="particle-container" class="particle-container"></div>
 
-    <!-- デバッグログ -->
-    <div id="debug-console" class="fixed bottom-4 right-4 z-50 w-full max-w-lg bg-black/80 text-[11px] text-lime-400 p-6 rounded-2xl font-mono hidden overflow-auto h-56 border border-white/10 backdrop-blur-md shadow-2xl"></div>
-    
-    <div class="flex min-h-screen">
-        <!-- サイドバー -->
-        <aside id="sidebar-container" class="fixed inset-y-0 left-0 z-[105] w-[85%] md:w-1/2 transform -translate-x-full transition-transform duration-300 ease-in-out p-6 pb-32">
-            <div class="sidebar glass rounded-3xl p-8 h-full flex flex-col gap-10 overflow-y-auto border border-white/10 shadow-2xl">
-                <button onclick="UI.toggleSidebar()" class="absolute top-8 right-8 text-slate-400 hover:text-white"><i class="fas fa-times text-3xl"></i></button>
-                <div class="text-center">
-                    <div class="w-20 h-16 bg-sky-500 rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-lg shadow-sky-500/20"><i class="fas fa-microchip text-3xl text-white"></i></div>
-                    <h2 class="font-bold text-2xl tracking-tighter text-white uppercase italic">Aegis Engine</h2>
-                </div>
-                <div class="px-2">
-                    <div class="relative">
-                        <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-sm"></i>
-                        <input id="search-input" type="text" placeholder="キーワードで絞り込み..." class="input-glass pl-10 text-sm w-full">
-                    </div>
-                </div>
-                <nav id="dynamic-nav" class="space-y-3 px-2">
-                    <p class="text-[10px] text-slate-500 uppercase font-black tracking-widest mb-4 px-2 text-white">Sections</p>
-                </nav>
-                <nav class="space-y-3 px-2 pt-6 border-t border-white/5">
-                    <p class="text-[10px] text-slate-500 uppercase font-black tracking-widest mb-4 px-2 text-white">System</p>
-                    <a href="javascript:void(0)" onclick="app.showSettings()" class="flex items-center gap-4 p-4 rounded-2xl hover:bg-sky-500/10 text-sky-400 transition-all font-bold">
-                        <i class="fas fa-cog text-xl"></i> <span>システム設定</span>
-                    </a>
-                </nav>
-            </div>
-        </aside>
+    <!-- Sidebar Navigation -->
+    <aside class="fixed left-0 top-0 h-full w-20 flex flex-col items-center py-8 gap-10 mica-effect border-r border-nexus-border z-50">
+        <div class="w-12 h-12 rounded-xl bg-nexus-blue flex items-center justify-center shadow-[0_0_20px_rgba(14,165,233,0.5)]">
+            <i data-lucide="shield-check" class="text-white w-8 h-8"></i>
+        </div>
+        
+        <nav class="flex flex-col gap-6">
+            <button data-tab="discover" class="nav-item group relative p-3 rounded-xl transition-all hover:bg-white/10 active:scale-95 text-nexus-blue" title="Discover">
+                <i data-lucide="compass" class="w-7 h-7"></i>
+                <span class="absolute left-full ml-4 px-2 py-1 rounded bg-nexus-blue text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">Discover</span>
+            </button>
+            <button data-tab="nexus" class="nav-item group relative p-3 rounded-xl transition-all hover:bg-white/10 active:scale-95 text-slate-400" title="Nexus Core">
+                <i data-lucide="cpu" class="w-7 h-7"></i>
+                <span class="absolute left-full ml-4 px-2 py-1 rounded bg-nexus-blue text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">Nexus Core</span>
+            </button>
+            <button data-tab="evolution" class="nav-item group relative p-3 rounded-xl transition-all hover:bg-white/10 active:scale-95 text-slate-400" title="Evolution">
+                <i data-lucide="zap" class="w-7 h-7"></i>
+                <span class="absolute left-full ml-4 px-2 py-1 rounded bg-nexus-blue text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">Evolution</span>
+            </button>
+        </nav>
 
-        <!-- メインエリア -->
-        <main class="flex-grow p-4 md:p-8 lg:p-12 overflow-y-auto">
-            <header id="main-header" class="flex flex-col xl:flex-row xl:items-end justify-between mb-20 gap-10">
+        <div class="mt-auto flex flex-col gap-6">
+            <button id="btn-sync" class="p-3 rounded-xl text-slate-400 hover:text-nexus-blue hover:bg-white/10 transition-all" title="Sync Status">
+                <i data-lucide="refresh-cw" class="w-6 h-6"></i>
+            </button>
+            <button class="p-3 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-all" title="Settings">
+                <i data-lucide="settings" class="w-6 h-6"></i>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="ml-20 mr-80 min-h-screen p-8 transition-all duration-500">
+        <!-- Discover View -->
+        <section id="view-discover" class="view-section animate-fade-in">
+            <header class="mb-10 flex justify-between items-end">
                 <div>
-                    <h1 class="text-7xl font-black tracking-tighter mb-6 uppercase">Aegis <span class="text-sky-400">AI Hub</span></h1>
-                    <p class="text-2xl text-slate-500 font-medium leading-relaxed">ユーザーのための「自律型知的エージェント」🛡️🤖</p>
+                    <h1 class="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-500 mb-2">Neural Discover</h1>
+                    <p class="text-slate-400">AI-curated insights from the global nexus.</p>
                 </div>
-                <div class="flex flex-wrap items-center justify-end gap-6 shrink-0">
-                    <div class="flex bg-black/20 p-1.5 rounded-2xl border border-white/5 backdrop-blur-md">
-                        <button id="view-grid-btn" onclick="app.setViewMode('grid')" class="w-12 h-12 rounded-xl flex items-center justify-center transition-all hover:bg-white/5"><i class="fas fa-th-large text-slate-400"></i></button>
-                        <button id="view-list-btn" onclick="app.setViewMode('list')" class="w-12 h-12 rounded-xl flex items-center justify-center transition-all hover:bg-white/5"><i class="fas fa-list text-slate-400"></i></button>
-                    </div>
-                    <button onclick="fetchDashboard()" class="px-8 py-4 glass rounded-2xl text-sky-400 hover:bg-sky-500/10 transition-all font-black text-sm flex items-center gap-3 border border-sky-500/20 active:scale-95"><i class="fas fa-sync-alt"></i> 最新情報を同期</button>
-                    <button id="gemini-btn" onclick="app.fetchRecommendations()" class="px-8 py-4 rounded-2xl bg-gradient-to-br from-fuchsia-600 to-violet-700 text-white font-black text-sm hover:scale-105 active:scale-95 transition-all flex items-center gap-3 shadow-lg shadow-fuchsia-500/20"><i class="fas fa-magic"></i> AIのオススメ</button>
+                <div class="flex gap-4">
+                    <button class="btn-nexus flex items-center gap-2">
+                        <i data-lucide="filter" class="w-4 h-4"></i>
+                        Filter
+                    </button>
+                    <button id="btn-refresh-news" class="btn-nexus-primary flex items-center gap-2">
+                        <i data-lucide="sparkles" class="w-4 h-4"></i>
+                        Curate Now
+                    </button>
                 </div>
             </header>
+            
+            <div id="news-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- News cards will be injected here -->
+                <div class="col-span-full py-20 flex flex-col items-center text-slate-500">
+                    <div class="w-16 h-16 border-4 border-nexus-blue/20 border-t-nexus-blue rounded-full animate-spin mb-4"></div>
+                    <p>Accessing Neural Grid...</p>
+                </div>
+            </div>
+        </section>
 
-            <!-- 重要なコンテナ群 -->
-            <div id="recommendations-container" class="hidden space-y-20 mb-32"></div>
+        <!-- Nexus Core View -->
+        <section id="view-nexus" class="view-section hidden animate-fade-in">
+            <header class="mb-10">
+                <h1 class="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-nexus-blue to-nexus-violet mb-2">Nexus Core</h1>
+                <p class="text-slate-400">Configure the autonomous intelligence engine.</p>
+            </header>
 
-            <div id="evolution-modal" class="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 backdrop-blur-xl hidden p-4">
-                <div class="glass w-full max-w-5xl max-h-[90vh] rounded-[2.5rem] overflow-hidden flex flex-col border border-white/10 shadow-2xl">
-                    <div class="p-8 border-b border-white/5 flex justify-between items-center bg-white/5">
-                        <h2 id="modal-title" class="text-3xl font-black text-white uppercase">AI Proposal</h2>
-                        <button onclick="UI.hideEvolutionModal()" class="text-slate-400 hover:text-white"><i class="fas fa-times text-2xl"></i></button>
+            <div class="grid grid-cols-12 gap-8">
+                <!-- Editor Side -->
+                <div class="col-span-8 space-y-8">
+                    <div class="glass-card p-6">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-xl font-semibold flex items-center gap-2 text-nexus-cyan">
+                                <i data-lucide="tags" class="w-5 h-5"></i>
+                                Interests & Focus
+                            </h2>
+                            <button id="btn-add-interest" class="p-2 hover:bg-white/10 rounded-lg text-nexus-blue transition-colors">
+                                <i data-lucide="plus-circle" class="w-6 h-6"></i>
+                            </button>
+                        </div>
+                        <div id="interests-list" class="flex flex-wrap gap-3 min-h-[100px] content-start">
+                            <!-- Interests will be injected here -->
+                        </div>
                     </div>
-                    <div id="evolution-content" class="flex-grow overflow-y-auto p-8 space-y-8"></div>
-                    <div class="p-8 border-t border-white/5 flex justify-end gap-6 bg-slate-900/50">
-                        <button onclick="UI.hideEvolutionModal()" class="px-8 py-4 rounded-2xl text-slate-400 font-bold hover:text-white active:scale-95 transition-all">キャンセル</button>
-                        <button id="apply-evolution-btn" onclick="app.applyProposalToDraft()" class="px-10 py-4 rounded-2xl bg-cyan-500 text-white font-black shadow-lg hover:scale-105 active:scale-95 transition-all">エディタに取り込む</button>
+
+                    <div class="glass-card p-6">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-xl font-semibold flex items-center gap-2 text-nexus-violet">
+                                <i data-lucide="rss" class="w-5 h-5"></i>
+                                Intelligence Sources
+                            </h2>
+                            <button id="btn-add-feed" class="p-2 hover:bg-white/10 rounded-lg text-nexus-violet transition-colors">
+                                <i data-lucide="plus-circle" class="w-6 h-6"></i>
+                            </button>
+                        </div>
+                        <div id="feeds-list" class="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+                            <!-- Feeds will be injected here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Control Side -->
+                <div class="col-span-4 space-y-8">
+                    <div class="glass-card p-6 border-nexus-blue/30">
+                        <h2 class="text-xl font-semibold mb-6 flex items-center gap-2">
+                            <i data-lucide="save" class="w-5 h-5"></i>
+                            Transaction
+                        </h2>
+                        <div id="draft-status" class="mb-6 p-4 rounded-lg bg-nexus-dark/50 border border-nexus-border">
+                            <p class="text-sm text-slate-400 mb-1">Status</p>
+                            <p id="store-status-text" class="font-mono text-emerald-400">Synchronized</p>
+                        </div>
+                        <div class="flex flex-col gap-3">
+                            <button id="btn-commit" class="btn-nexus-primary w-full py-3 flex items-center justify-center gap-2 disabled:opacity-50" disabled>
+                                <i data-lucide="check-circle" class="w-5 h-5"></i>
+                                Commit Changes
+                            </button>
+                            <button id="btn-discard" class="btn-nexus w-full py-3 flex items-center justify-center gap-2 opacity-50 cursor-not-allowed" disabled>
+                                <i data-lucide="trash-2" class="w-5 h-5"></i>
+                                Discard Draft
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="glass-card p-6">
+                        <h2 class="text-xl font-semibold mb-6 flex items-center gap-2 text-slate-400">
+                            <i data-lucide="history" class="w-5 h-5"></i>
+                            Revisions
+                        </h2>
+                        <div id="revisions-list" class="space-y-3">
+                            <!-- Revisions will be injected here -->
+                            <p class="text-slate-500 text-center py-4">No revisions recorded yet.</p>
+                        </div>
                     </div>
                 </div>
             </div>
+        </section>
 
-            <!-- 設定画面エリア -->
-            <div id="settings-container" class="hidden space-y-20 mb-32">
-                <div class="settings-header">
-                    <div class="space-y-2">
-                        <h2 class="text-5xl font-black text-white uppercase tracking-tighter">System <span class="text-sky-400">Settings</span></h2>
-                        <p class="text-slate-500 font-bold text-lg">システムの興味関心と情報源を精密にチューニングします</p>
+        <!-- Evolution View -->
+        <section id="view-evolution" class="view-section hidden animate-fade-in">
+            <header class="mb-10">
+                <h1 class="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-nexus-violet to-nexus-blue mb-2">Evolution Log</h1>
+                <p class="text-slate-400">Trace the growth and self-improvement of Aegis agents.</p>
+            </header>
+
+            <div class="glass-card p-0 overflow-hidden">
+                <div class="bg-white/5 px-6 py-4 border-b border-nexus-border flex justify-between items-center">
+                    <div class="flex gap-4 text-sm">
+                        <span class="flex items-center gap-1 text-nexus-blue"><i data-lucide="check-circle-2" class="w-4 h-4"></i> Architect</span>
+                        <span class="flex items-center gap-1 text-nexus-cyan"><i data-lucide="check-circle-2" class="w-4 h-4"></i> Generator</span>
+                        <span class="flex items-center gap-1 text-slate-400"><i data-lucide="circle" class="w-4 h-4"></i> Evaluator</span>
                     </div>
-                    <div class="action-bar">
-                        <button id="evolution-btn-settings" onclick="app.showEvolutionProposal()" class="btn-core btn-ai-evo active:scale-95"><i class="fas fa-dna"></i> <span>システムを進化</span></button>
-                        <button id="restructure-btn-settings" onclick="app.showRestructureProposal()" class="btn-core btn-ai-res active:scale-95"><i class="fas fa-project-diagram"></i> <span>ナレッジ再構築</span></button>
-                        <button onclick="app.fetchDashboard()" class="btn-core btn-back active:scale-95"><i class="fas fa-undo-alt"></i> <span>保存しないで戻る</span></button>
-                        <button onclick="app.saveAllSettings()" class="btn-core btn-save active:scale-95"><i class="fas fa-save"></i> <span>保存してシステムを更新</span></button>
-                    </div>
+                    <button class="text-xs text-nexus-blue hover:underline">Clear Logs</button>
                 </div>
-
-                <div class="tab-container mx-auto xl:mx-0 shadow-2xl">
-                    <button onclick="app.switchSettingsTab('feeds')" id="tab-btn-feeds" class="tab-btn active"><i class="fas fa-rss mr-3"></i> フィード管理</button>
-                    <button onclick="app.switchSettingsTab('categories')" id="tab-btn-categories" class="tab-btn"><i class="fas fa-tags mr-3"></i> カテゴリ管理</button>
-                    <button onclick="app.switchSettingsTab('keywords')" id="tab-btn-keywords" class="tab-btn"><i class="fas fa-search mr-3"></i> ブランド・キーワード</button>
-                </div>
-
-                <div id="tab-content-feeds" class="settings-tab-content space-y-12">
-                    <div class="section-card flex flex-col md:flex-row justify-between items-center gap-6">
-                        <div><h3 class="text-4xl font-black text-white uppercase tracking-tighter">RSS Feed Sources</h3><p class="text-slate-500 font-bold mt-1 text-lg">購読中の情報源URLを管理します</p></div>
-                        <button onclick="app.draftAddFeed()" class="px-10 py-5 rounded-2xl bg-sky-600 text-white font-black text-lg hover:scale-105 active:scale-95 transition-all shadow-xl shadow-sky-500/30 flex items-center gap-3"><i class="fas fa-plus"></i> フィードを追加</button>
-                    </div>
-                    <div id="feed-list" class="px-4"></div>
-                </div>
-
-                <div id="tab-content-categories" class="settings-tab-content hidden space-y-12">
-                    <div class="section-card flex flex-col md:flex-row justify-between items-center gap-6">
-                        <div><h3 class="text-4xl font-black text-white uppercase tracking-tighter">Categories</h3><p class="text-slate-500 font-bold mt-1 text-lg">情報の分類カテゴリを定義します</p></div>
-                        <button onclick="app.draftAddInterest('category')" class="px-10 py-5 rounded-2xl bg-sky-600 text-white font-black text-lg hover:scale-105 active:scale-95 transition-all shadow-xl shadow-sky-500/30 flex items-center gap-3"><i class="fas fa-plus"></i> カテゴリを追加</button>
-                    </div>
-                    <div id="category-list" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-10 px-4"></div>
-                </div>
-
-                <div id="tab-content-keywords" class="settings-tab-content hidden space-y-12">
-                    <div class="px-6"><h3 class="text-4xl font-black text-white uppercase tracking-tighter">Brands & Keywords</h3><p class="text-slate-500 font-bold mt-1 text-lg">カテゴリごとにブランドや単語を管理します</p></div>
-                    <div id="keyword-list-grouped" class="grid grid-cols-1 gap-12 px-4"></div>
+                <div id="evolution-log-content" class="h-[600px] overflow-y-auto p-6 font-mono text-sm space-y-2">
+                    <div class="text-slate-500 italic">[SYSTEM] Initializing Evolution Monitor...</div>
                 </div>
             </div>
+        </section>
+    </main>
 
-            <div id="sections-container" class="space-y-32">
-                <!-- 記事セクション -->
+    <!-- Agent Monitor Panel (SSE) -->
+    <aside class="fixed right-0 top-0 h-full w-80 mica-effect border-l border-nexus-border z-40 p-6 flex flex-col">
+        <header class="flex justify-between items-center mb-8">
+            <h2 class="text-lg font-bold flex items-center gap-2">
+                <span class="relative flex h-3 w-3">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-nexus-blue opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-3 w-3 bg-nexus-blue"></span>
+                </span>
+                Agent Monitor
+            </h2>
+            <button class="p-1 hover:bg-white/10 rounded" title="Collapse">
+                <i data-lucide="chevrons-right" class="w-5 h-5 text-slate-500"></i>
+            </button>
+        </header>
+
+        <div class="flex-1 overflow-y-auto space-y-6" id="agent-monitor-events">
+            <!-- SSE Events will be injected here -->
+            <div class="flex gap-4 items-start">
+                <div class="p-2 rounded-lg bg-nexus-blue/20 text-nexus-blue mt-1">
+                    <i data-lucide="info" class="w-4 h-4"></i>
+                </div>
+                <div class="flex-1">
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="text-slate-400">System</span>
+                        <span class="text-slate-500">Now</span>
+                    </div>
+                    <p class="text-sm text-slate-300">Ready to orchestrate. Submit requirements to start.</p>
+                </div>
             </div>
-        </main>
-    </div>
-
-    <!-- 共通ダイアログ -->
-    <div id="custom-dialog-container" class="fixed inset-0 z-[200] flex items-center justify-center bg-black/75 backdrop-blur-md hidden p-4">
-        <div class="glass w-full max-w-lg rounded-[2.5rem] overflow-hidden flex flex-col border border-white/10 shadow-2xl scale-95 opacity-0 transition-all duration-300" id="custom-dialog-box">
-            <div class="p-10 pb-6"><h3 id="dialog-title" class="text-2xl font-black text-white tracking-tighter uppercase mb-4">Notification</h3><div id="dialog-message" class="text-slate-300 leading-relaxed text-xl"></div></div>
-            <div id="dialog-actions" class="p-10 pt-4 flex justify-end gap-6"></div>
         </div>
+
+        <div class="mt-8 pt-6 border-t border-nexus-border">
+            <h3 class="text-sm font-semibold mb-4 text-slate-400">Autonomous Command</h3>
+            <div class="relative">
+                <textarea id="orchestrate-input" class="w-full bg-nexus-dark/50 border border-nexus-border rounded-xl p-4 text-sm focus:outline-none focus:border-nexus-blue/50 transition-colors resize-none h-24" placeholder="Enter requirements for the next evolution..."></textarea>
+                <button id="btn-orchestrate" class="absolute bottom-3 right-3 p-2 bg-nexus-blue rounded-lg text-white hover:bg-nexus-blue/80 transition-colors">
+                    <i data-lucide="send" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Modals (Hidden by default) -->
+    <div id="modal-container" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center hidden">
+        <!-- Modal content will be injected here -->
     </div>
 
-    <script type="module" src="js/app.js"></script>
+    <!-- Scripts -->
+    <script type="module" src="js/nexus/ui.js"></script>
+    <script>
+        // Lucide initialization
+        lucide.createIcons();
+
+        // Background particles
+        const container = document.getElementById('particle-container');
+        for (let i = 0; i < 30; i++) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            const size = Math.random() * 3 + 1;
+            p.style.width = `${size}px`;
+            p.style.height = `${size}px`;
+            p.style.left = `${Math.random() * 100}%`;
+            p.style.top = `${Math.random() * 100}%`;
+            p.style.opacity = Math.random() * 0.3;
+            p.style.animation = `particle ${15 + Math.random() * 20}s infinite linear`;
+            p.style.animationDelay = `${Math.random() * 10}s`;
+            container.appendChild(p);
+        }
+    </script>
 </body>
 </html>

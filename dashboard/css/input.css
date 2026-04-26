@@ -2,4 +2,79 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Custom styles are linked in index.html to prevent unintended purging. */
+@layer base {
+  body {
+    @apply bg-nexus-dark text-slate-200 overflow-hidden font-sans;
+    background-image: 
+      radial-gradient(circle at 0% 0%, rgba(14, 165, 233, 0.15) 0%, transparent 50%),
+      radial-gradient(circle at 100% 100%, rgba(139, 92, 246, 0.15) 0%, transparent 50%);
+    height: 100vh;
+    width: 100vw;
+  }
+}
+
+@layer components {
+  .mica-effect {
+    @apply backdrop-blur-mica bg-nexus-surface border border-nexus-border;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  }
+
+  .neon-border {
+    @apply border border-nexus-blue/30 relative overflow-hidden;
+  }
+
+  .neon-border::after {
+    content: '';
+    @apply absolute inset-0 opacity-0 transition-opacity duration-300;
+    box-shadow: inset 0 0 15px rgba(14, 165, 233, 0.3);
+  }
+
+  .neon-border:hover::after {
+    @apply opacity-100;
+  }
+
+  .glass-card {
+    @apply mica-effect rounded-xl transition-all duration-300 hover:translate-y-[-2px] hover:shadow-2xl hover:bg-white/[0.05];
+  }
+
+  .btn-nexus {
+    @apply px-4 py-2 rounded-lg bg-nexus-blue/20 border border-nexus-blue/50 text-nexus-blue font-medium transition-all duration-200 hover:bg-nexus-blue/30 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-nexus-primary {
+    @apply px-4 py-2 rounded-lg bg-nexus-blue text-white font-medium transition-all duration-200 hover:bg-nexus-blue/80 hover:shadow-[0_0_15px_rgba(14,165,233,0.5)] active:scale-95;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-nexus-border rounded-full hover:bg-slate-500 transition-colors;
+}
+
+/* Thinking Particles Container */
+.particle-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: -1;
+  overflow: hidden;
+}
+
+.particle {
+  position: absolute;
+  background: white;
+  border-radius: 50%;
+  filter: blur(1px);
+}

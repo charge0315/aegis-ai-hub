@@ -1,22 +1,22 @@
-# Generator State  EIteration 001
+# Generator State  EIteration 002
 
 ## What Was Built
-- **`server/src/models/Schemas.js`**: Zodによるデータモデルの厳密な定義（interests, feed_config, sync-settings）。
-- **`server/src/services/SettingsManager.js`**: Zodバリデーション、アトミックなファイル書き込み（`write-file-atomic`）、および自動バックアップ機能を備えた設定管理サービス。
-- **`server/src/api/NexusRouter.js`**: `/api/v5` プレフィックス配下での設定取得および一括同期エンドポイントの実装。
-- **`server/index.js` リファクタリング**: 
-    - レガシーAPIの整理。
-    - `NexusRouter` のマウント。
-    - MCPサーバーの初期化コードを最新仕様（@modelcontextprotocol/sdk 1.x）に合わせて刷新。
-    - 全体的なエラーハンドリングとパス解決の堅牢化。
+- **Agent Orchestration Core**: `Architect`, `Generator`, `Evaluator` の3層エージェント構造。
+- **Autonomous Loop**: `NexusOrchestrator` による「設計 -> 実装 -> 評価 -> 再試行」の自律サイクル。
+- **Gemini 3.1 Integration**: `GeminiService` の刷新。Gemini 3.1 を採用し、`responseSchema` による構造化出力（JSON強制）を実現。
+- **SSE Status Notification**: フロントエンド（または評価機）が進捗をリアルタイムで追跡できる SSE (Server-Sent Events) エンドポイントの実装。
+- **Verification Suite**: モックデータを用いたエージェント・コアの自律動作検証スクリプト。
 
 ## What Changed This Iteration
-- データの整合性を保証するための一括同期（Atomic Sync）フローの導入。
-- データの読み書きにおける安全性の向上（`.bak`ファイルの自動生成）。
-- 設定変更時のインメモリステート（`FeedManager`等）の即時反映。
+- [Added] `server/src/agents/BaseAgent.js`, `ArchitectAgent.js`, `GeneratorAgent.js`, `EvaluatorAgent.js`
+- [Added] `server/src/core/NexusOrchestrator.js`
+- [Updated] `server/src/services/GeminiService.js` (Structured Output 対応)
+- [Updated] `server/src/api/NexusRouter.js` (Orchestration API 追加)
+- [Updated] `server/index.js` (Orchestrator の初期化とマウント)
+- [Added] `server/verify_agents.js` (検証スクリプト)
 
 ## Known Issues
-- `ScraperFacade` や `FeedManager` 内部に一部 `fs.readFileSync` が残っているが、これらは次回以降のスプリントで `SettingsManager` に統一予定。
+- 実際のファイルシステムへの永続化（GeneratorAgent による write_file 等）は、今回はオーケストレーターの通知ベースにとどめており、実際の MCP ツール経由での操作は次フェーズで統合予定（現在はメモリ内およびログ出力による検証）。
 
 ## Dev Server
 - URL: http://localhost:3005
