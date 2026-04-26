@@ -17,6 +17,7 @@ import { ScraperFacade } from './src/ScraperFacade.js';
 import { HealthMonitor } from './src/jobs/HealthMonitor.js';
 import { DiscoveryService } from './src/services/DiscoveryService.js';
 import { EvolutionJob } from './src/jobs/EvolutionJob.js';
+import { NexusOrchestrator } from './src/core/NexusOrchestrator.js';
 
 // v5.0 Additions
 import SettingsManager from './src/services/SettingsManager.js';
@@ -31,6 +32,7 @@ const FEEDS_PATH = process.env.FEEDS_PATH || path.join(__dirname, 'data', 'feed_
 const scraper = new ScraperFacade(INTERESTS_PATH, FEEDS_PATH);
 const discovery = new DiscoveryService(scraper.geminiService, scraper.rssFetcher, scraper.feedManager);
 const evolution = new EvolutionJob(scraper, discovery, INTERESTS_PATH);
+const orchestrator = new NexusOrchestrator(scraper.geminiService);
 
 // バックグラウンド・ジョブの開始
 const monitor = new HealthMonitor(scraper.feedManager);
@@ -58,7 +60,7 @@ app.use(express.json());
 const apiRouter = express.Router();
 
 // --- Nexus API (v5.0) ---
-app.use('/api/v5', createNexusRouter({ scraper, evolution }));
+app.use('/api/v5', createNexusRouter({ scraper, evolution, orchestrator }));
 
 // --- Legacy & Dashboard API (Refactored) ---
 

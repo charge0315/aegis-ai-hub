@@ -4,9 +4,9 @@ import { SyncSettingsSchema } from '../models/Schemas.js';
 
 /**
  * Create Nexus Router
- * @param {Object} dependencies - Core services like scraper, evolution job
+ * @param {Object} dependencies - Core services like scraper, evolution job, orchestrator
  */
-export function createNexusRouter({ scraper, evolution }) {
+export function createNexusRouter({ scraper, evolution, orchestrator }) {
   const router = express.Router();
 
   /**
@@ -48,7 +48,6 @@ export function createNexusRouter({ scraper, evolution }) {
       if (scraper && scraper.feedManager) {
         scraper.feedManager.config = validated.feedConfig;
       }
-      // If EvolutionJob needs refresh, do it here
       
       res.json(result);
     } catch (error) {
@@ -57,6 +56,43 @@ export function createNexusRouter({ scraper, evolution }) {
       }
       res.status(500).json({ error: 'Failed to sync settings', details: error.message });
     }
+  });
+
+  /**
+   * POST /api/v5/orchestrate
+   * 自律ループを開始
+   */
+  router.post('/orchestrate', async (req, res) => {
+    const { requirements } = req.body;
+    if (!requirements) {
+      return res.status(400).json({ error: 'Requirements are required' });
+    }
+
+    try {
+      // 非同期でループを開始
+      orchestrator.runAutonomousLoop(requirements).catch(err => {
+        console.error('[Orchestrator Loop Error]', err);
+      });
+      res.json({ status: 'accepted', message: 'Autonomous loop started' });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  /**
+   * GET /api/v5/events
+   * SSEによる進捗通知
+   */
+  router.get('/events', (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders();
+
+    orchestrator.subscribe(res);
+    
+    // 初回接続時の通知
+    res.write(`data: ${JSON.stringify({ status: 'connected', message: 'SSE Connection Established' })}\n\n`);
   });
 
   return router;

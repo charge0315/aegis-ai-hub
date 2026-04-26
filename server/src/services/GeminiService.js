@@ -1,8 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 /**
- * Gemini APIを活用して記事のキュレーションと推薦理由の生成を行うサービス。
- * 複数のモデル候補を用いたフォールバック機構を備え、安定したAI応答を保証します。
+ * Gemini 3.1 APIを中枢に、Structured Output（スキーマ強制）を利用したAIリクエスト基盤。
  */
 export class GeminiService {
     /**
@@ -11,193 +10,218 @@ export class GeminiService {
     constructor(apiKey) {
         this.apiKey = apiKey;
         this.genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
-        // 利用可能なモデル名の優先順位（最新版を優先）
-        this.modelNames = [
-            "gemini-3.1-pro",
-            "gemini-3.1-pro-preview",
+        this.primaryModel = "gemini-3.1-pro";
+        this.fallbackModels = [
             "gemini-3.1-flash",
-            "gemini-3.1-flash-preview",
-            "gemini-3.1-flash-lite-preview",
             "gemini-2.0-flash",
-            "gemini-1.5-pro",
-            "gemini-1.5-flash"
+            "gemini-1.5-pro"
         ];
     }
 
     /**
-     * 指定されたプロンプトを、利用可能なモデルで順次試行します。
-     * @private
-     * @returns {Promise<{text: string, modelName: string}>}
+     * 構造化データを生成します。
+     * @param {string} prompt - プロンプト
+     * @param {object} schema - JSONスキーマ定義
+     * @param {string} [modelName] - 使用するモデル名（オプション）
      */
-    async _generateWithFallback(prompt) {
-        let lastError = null;
-        for (const name of this.modelNames) {
-            try {
-                console.log(`[GeminiService] モデル 「${name}」 でリクエストを実行中...`);
-                const model = this.genAI.getGenerativeModel({ model: name });
-                const result = await model.generateContent(prompt);
-                const response = await result.response;
-                return { text: response.text(), modelName: name };
-            } catch (e) {
-                console.warn(`[GeminiService] モデル 「${name}」 でエラーが発生しました。フォールバックを試みます。 (${e.message})`);
-                lastError = e;
+    async generateStructured(prompt, schema, modelName = this.primaryModel) {
+        if (!this.genAI) throw new Error("Gemini APIキーが設定されていません。");
+
+        const model = this.genAI.getGenerativeModel({
+            model: modelName,
+            generationConfig: {
+                responseMimeType: "application/json",
+                responseSchema: schema,
+            },
+        });
+
+        try {
+            const result = await model.generateContent(prompt);
+            const response = await result.response;
+            const text = response.text();
+            return JSON.parse(text);
+        } catch (error) {
+            console.error(`[GeminiService] Error with model ${modelName}: ${error.message}`);
+            
+            // フォールバック試行
+            if (modelName === this.primaryModel) {
+                for (const fallback of this.fallbackModels) {
+                    console.log(`[GeminiService] Attempting fallback with ${fallback}...`);
+                    try {
+                        return await this.generateStructured(prompt, schema, fallback);
+                    } catch (e) {
+                        continue;
+                    }
+                }
             }
+            throw error;
         }
-        throw new Error(`全モデルでリクエストに失敗しました。最後のエラー: ${lastError.message}`);
     }
 
     /**
-     * 多数の記事候補から、ユーザーの興味に最も合致する10件を厳選し、推薦理由を付与します。
+     * チャット形式でのやり取り（履歴保持）
      */
-    async curate(articlesPool, interests) {
+    async chat(history, message, schema = null) {
         if (!this.genAI) throw new Error("Gemini APIキーが設定されていません。");
 
-        const interestContext = Object.entries(interests.categories)
-            .map(([cat, info]) => `[${cat}] Brands: ${info.brands.join(', ')}, Keywords: ${info.keywords.join(', ')}`)
-            .join('\n');
+        const config = {
+            model: this.primaryModel,
+        };
 
-        const candidateArticles = articlesPool.slice(0, 30).map((a, i) => ({
-            id: i,
-            title: a.title,
-            brand: a.brand,
-            category: a.category,
-            desc: a.desc
-        }));
+        if (schema) {
+            config.generationConfig = {
+                responseMimeType: "application/json",
+                responseSchema: schema,
+            };
+        }
+
+        const model = this.genAI.getGenerativeModel(config);
+        const chatSession = model.startChat({
+            history: history.map(h => ({
+                role: h.role === "assistant" ? "model" : "user",
+                parts: [{ text: h.content }],
+            })),
+        });
+
+        const result = await chatSession.sendMessage(message);
+        const response = await result.response;
+        const text = response.text();
+
+        return schema ? JSON.parse(text) : text;
+    }
+
+    /**
+     * ニュースの厳選
+     */
+    async curate(articlesPool, interests) {
+        const schema = {
+            type: "object",
+            properties: {
+                selections: {
+                    type: "array",
+                    items: {
+                        type: "object",
+                        properties: {
+                            id: { type: "number" },
+                            reason: { type: "string" }
+                        },
+                        required: ["id", "reason"]
+                    }
+                }
+            },
+            required: ["selections"]
+        };
 
         const prompt = `
 あなたはガジェット専門のAIコンシェルジュです。
-提示された「最新記事候補」の中から、ユーザーの「興味リスト」に最も合致するものを【必ず10個】選んでください。
-JSON形式で出力してください。
-[
-  { "id": 数値, "reason": "推薦理由の文字列" }
-]
-### 興味リスト:
-${interestContext}
+ユーザーの興味に基づいて、最新記事候補の中から最適な10件を選んでください。
+
+### ユーザーの興味:
+${JSON.stringify(interests.categories, null, 2)}
+
 ### 最新記事候補:
-${JSON.stringify(candidateArticles)}
+${JSON.stringify(articlesPool.slice(0, 30).map((a, i) => ({ id: i, title: a.title, brand: a.brand, desc: a.desc })))}
 `;
 
-        const { text } = await this._generateWithFallback(prompt);
-        const jsonText = text.replace(/```json/g, "").replace(/```/g, "").trim();
-        
-        let selection;
-        try {
-            selection = JSON.parse(jsonText.match(/\[[\s\S]*\]/)[0]);
-        } catch (e) {
-            throw new Error("応答から有効なJSON配列を抽出できませんでした。");
-        }
-
-        return selection.map(item => ({
+        const result = await this.generateStructured(prompt, schema);
+        return result.selections.map(item => ({
             ...articlesPool[item.id],
             geminiReason: item.reason
         }));
     }
 
     /**
-     * ユーザーの興味に基づき、新しいRSSフィード対応サイトを探索します。
-     */
-    async discoverSites(interests) {
-        if (!this.genAI) throw new Error("Gemini APIキーが設定されていません。");
-
-        const context = JSON.stringify(interests.categories, null, 2);
-        const prompt = `
-あなたはガジェット情報のスペシャリストです。
-以下の「ユーザーの興味リスト」に基づき、これらに合致する高品質な最新ニュースを提供している【RSSフィードに対応した】ウェブサイトを10個程度提案してください。
-JSON形式で出力してください。
-[
-  { "name": "サイト名", "url": "RSS URL", "category": "カテゴリ名", "description": "理由" }
-]
-### ユーザーの興味リスト:
-${context}
-`;
-
-        const { text } = await this._generateWithFallback(prompt);
-        const jsonText = text.replace(/```json/g, "").replace(/```/g, "").trim();
-        return JSON.parse(jsonText.match(/\[[\s\S]*\]/)[0]);
-    }
-
-    async analyzeTrends(articles, interests) {
-        return [];
-    }
-
-    /**
-     * 現在の interests.json を分析し、カテゴリ構造、ブランド、キーワードを最適化（再構築）する案を生成します。
-     */
-    async getRestructureProposal(interests) {
-        if (!this.genAI) throw new Error("Gemini APIキーが設定されていません。");
-
-        const context = JSON.stringify(interests, null, 2);
-        const prompt = `
-あなたはナレッジグラフと情報整理の専門家です。
-以下の「ユーザーの現在の興味設定（interests.json）」を分析し、より効率的で網羅的な「ガジェットニュース・ダッシュボード」にするための【構造再構築案】を提案してください。
-
-### 現在の構造:
-${context}
-
-### 再構築の指針:
-1. **カテゴリの整理**: 重複しているカテゴリを統合し、分かりにくい名称を直感的なものに変更してください。
-2. **網羅性の向上**: 現在の興味から推測される、追加すべき新しいカテゴリ（セクション）を提案してください。
-3. **要素の最適配置**: 各ブランドやキーワードを、最も適切なカテゴリに再配置してください。
-4. **不足の補充**: 各カテゴリにおいて、核となる重要ブランドやキーワードが欠けている場合は補完してください。
-
-### 出力形式:
-必ず以下の形式のJSONのみを出力してください。
-{
-  "categories": {
-    "新カテゴリ名": {
-      "emoji": "🎨",
-      "brands": ["ブランド1", "ブランド2", ...],
-      "keywords": ["キーワード1", "キーワード2", ...],
-      "score": 10,
-      "reason": "このカテゴリの定義・変更理由"
-    }
-  },
-  "modelName": "使用したモデル名"
-}
-`;
-
-        const { text, modelName } = await this._generateWithFallback(prompt);
-        const jsonText = text.replace(/```json/g, "").replace(/```/g, "").trim();
-        const data = JSON.parse(jsonText.match(/\{[\s\S]*\}/)[0]);
-        return { ...data, modelName };
-    }
-
-    /**
-     * ユーザーの興味に基づき、新しいサイト、ブランド、キーワードの「進化」提案を一括生成します。
+     * 進化提案（サイト、ブランド、キーワード）
      */
     async getEvolutionProposals(interests) {
-        if (!this.genAI) throw new Error("Gemini APIキーが設定されていません。");
+        const schema = {
+            type: "object",
+            properties: {
+                sites: {
+                    type: "array",
+                    items: {
+                        type: "object",
+                        properties: {
+                            name: { type: "string" },
+                            url: { type: "string" },
+                            category: { type: "string" },
+                            reason: { type: "string" }
+                        },
+                        required: ["name", "url", "category", "reason"]
+                    }
+                },
+                brands: {
+                    type: "array",
+                    items: {
+                        type: "object",
+                        properties: {
+                            value: { type: "string" },
+                            category: { type: "string" },
+                            reason: { type: "string" }
+                        },
+                        required: ["value", "category", "reason"]
+                    }
+                },
+                keywords: {
+                    type: "array",
+                    items: {
+                        type: "object",
+                        properties: {
+                            value: { type: "string" },
+                            category: { type: "string" },
+                            reason: { type: "string" }
+                        },
+                        required: ["value", "category", "reason"]
+                    }
+                }
+            },
+            required: ["sites", "brands", "keywords"]
+        };
 
-        const context = JSON.stringify(interests.categories, null, 2);
         const prompt = `
 あなたはガジェットと最新テクノロジーのトレンド分析のエキスパートです。
-以下の「ユーザーの興味リスト」を分析し、システムの能力を拡張するための「進化提案」を作成してください。
+現在の興味リストを分析し、能力を拡張するための進化提案（新規サイト、注目ブランド、新規キーワード）を生成してください。
 
-1. **新しい情報源 (sites)**: 興味に合致し、かつ現在登録されていないであろう高品質なRSSフィード対応サイトを各カテゴリから3〜5つ程度。
-2. **注目ブランド (brands)**: 各カテゴリに追加すべき最新の注目ブランドを【各カテゴリごとに必ず5つずつ】。
-3. **新規キーワード (keywords)**: 今後流行が予想される、または現在欠けている重要なテクノロジー用語を【各カテゴリごとに必ず5つずつ】。
-
-### ユーザーの興味リスト:
-${context}
-
-### 出力形式:
-必ず以下の形式のJSONのみを出力してください。
-{
-  "sites": [
-    { "name": "サイト名", "url": "RSS URL", "category": "既存のカテゴリ名", "reason": "提案理由" }
-  ],
-  "brands": [
-    { "value": "ブランド名", "category": "既存のカテゴリ名", "reason": "提案理由" }
-  ],
-  "keywords": [
-    { "value": "キーワード名", "category": "既存のカテゴリ名", "reason": "提案理由" }
-  ]
-}
+### 現在の興味:
+${JSON.stringify(interests.categories, null, 2)}
 `;
 
-        const { text, modelName } = await this._generateWithFallback(prompt);
-        const jsonText = text.replace(/```json/g, "").replace(/```/g, "").trim();
-        const data = JSON.parse(jsonText.match(/\{[\s\S]*\}/)[0]);
-        return { ...data, modelName };
+        return await this.generateStructured(prompt, schema);
+    }
+
+    /**
+     * 構造再構築の提案
+     */
+    async getRestructureProposal(interests) {
+        const schema = {
+            type: "object",
+            properties: {
+                categories: {
+                    type: "object",
+                    additionalProperties: {
+                        type: "object",
+                        properties: {
+                            emoji: { type: "string" },
+                            brands: { type: "array", items: { type: "string" } },
+                            keywords: { type: "array", items: { type: "string" } },
+                            score: { type: "number" },
+                            reason: { type: "string" }
+                        },
+                        required: ["emoji", "brands", "keywords", "score", "reason"]
+                    }
+                }
+            },
+            required: ["categories"]
+        };
+
+        const prompt = `
+あなたはナレッジグラフと情報整理の専門家です。
+現在の興味設定を分析し、より効率的で網羅的な構造への再構築案を提示してください。
+
+### 現在の構造:
+${JSON.stringify(interests, null, 2)}
+`;
+
+        return await this.generateStructured(prompt, schema);
     }
 }
