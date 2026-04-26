@@ -1,96 +1,70 @@
 # Aegis AI Hub - API & MCP Technical Reference
 
-**Last Updated:** 2026-04-25
+**Last Updated:** 2026-04-26
+**Version:** 5.0 (Unified Settings Era)
 
-本ドキュメントでは、Aegis AI Hub が提供する HTTP API および MCP (Model Context Protocol) ツールのインターフェース仕様について記述します。
+本ドキュメントでは、Aegis AI Hub v5.0 が提供する HTTP API および MCP (Model Context Protocol) ツールの仕様について記述します。
 
 ## 1. HTTP API サーバー
-デフォルトポート: `3005` (Docker 経由で公開)
+デフォルトポート: `3005`
 
-### 1.1 ダッシュボード関連
+### 1.1 コンテンツ取得 API
 #### `GET /api/dashboard`
 最新のパーソナライズ済みニュース記事を取得します。
-- **出力 (JSON)**:
-  ```json
-  {
-    "カテゴリ名": {
-      "emoji": "🤖",
-      "articles": [
-        {
-          "title": "記事タイトル",
-          "link": "URL",
-          "desc": "概要文",
-          "brand": "判定されたブランド",
-          "score": 8,
-          "category": "カテゴリ名",
-          "date": "2026-04-25T...",
-          "img": "画像URL"
-        }
-      ]
-    }
-  }
-  ```
+- **制限**: レート制限あり (15分100リクエスト)
+- **出力**: カテゴリ別に分類された記事オブジェクト
 
 #### `GET /api/recommend`
-Gemini AI によって厳選された、ユーザーの興味に最も合致する10記事を取得します。
-- **出力 (JSON)**: `Array<Article>` (各記事に `geminiReason` フィールドが付与されます)
+Gemini AI によって厳選された、重要度の高い 10 記事を取得します。各記事には `geminiReason` フィールドが含まれます。
 
 ---
 
-### 1.2 AI 進化・再構築関連
-#### `GET /api/evolution-proposals`
-AI による新しい RSS フィード、ブランド、キーワードの提案を取得します。
-- **出力 (JSON)**:
-  ```json
-  {
-    "sites": [{ "name": "サイト名", "url": "RSS URL", "category": "カテゴリ名", "reason": "理由" }],
-    "brands": [{ "value": "ブランド名", "category": "カテゴリ名", "reason": "理由" }],
-    "keywords": [{ "value": "キーワード名", "category": "カテゴリ名", "reason": "理由" }],
-    "failedSites": [],
-    "modelName": "使用モデル名"
-  }
-  ```
+### 1.2 システム設定・同期 API (v5.0 新設)
+v5.0 では、設定の変更を個別に送るのではなく、UI 側の「下書き（Draft）」を一括で同期する方式を採用しています。
 
-#### `POST /api/apply-evolution`
-選択した進化提案をシステムに適用（保存）します。
-- **入力 (JSON)**: 上記 `evolution-proposals` と同形式のオブジェクト
+#### `GET /api/interests`
+現在の興味・カテゴリ・ブランド・キーワードの設定を取得します。
 
-#### `GET /api/restructure-proposals`
-`interests.json` の構造自体を Gemini が再設計した「ナレッジ再構築案」を取得します。
-- **出力 (JSON)**: `categories` オブジェクトと `modelName`
+#### `GET /api/feeds`
+現在の RSS フィード構成を取得します。
 
-#### `POST /api/apply-restructure`
-再構築案を適用し、`interests.json` を完全に書き換えます。
-- **入力 (JSON)**: `{ "categories": { ... } }`
-
----
-
-### 1.3 手動更新
-#### `POST /api/update-interests`
-特定の興味（カテゴリ、ブランド、キーワード）を個別に追加します。
+#### `POST /api/sync-settings`
+フロントエンドで編集された「下書き」をサーバー上の設定ファイルへ一括同期します。
 - **入力 (JSON)**:
   ```json
   {
-    "type": "category | keyword | brand",
-    "value": "名称",
-    "name": "親カテゴリ名 (キーワード追加時のみ任意)"
+    "interests": { "categories": { ... }, "learned_keywords": { ... } },
+    "feeds": { "CategoryName": { "active": [], "pool": [] } }
   }
   ```
+- **効果**: `interests.json` と `feed_config.json` を同時に更新し、システムの知識構造を再構築します。
+
+---
+
+### 1.3 AI 進化・提案 API
+#### `GET /api/evolution-proposals`
+AI による新しい RSS フィード、ブランド、キーワードの提案を取得します。UI 側はこの結果を「下書き」に取り込みます。
+
+#### `GET /api/restructure-proposals`
+`interests.json` の構造を Gemini が完全に再設計した「ナレッジ再構築案」を取得します。
 
 ---
 
 ## 2. MCP (Model Context Protocol) ツール
-Claude 等の AI エージェントから Aegis AI Hub を操作するためのツール群です。
+外部 AI エージェントから Aegis AI Hub を操作するためのインターフェース。
 
-| ツール名 | 説明 | 入力パラメータ |
-| :--- | :--- | :--- |
-| `get_aegis_dashboard` | 最新のパーソナライズ記事を JSON で取得 | なし |
-| `get_gemini_picks` | AI 推薦の 10 記事と理由を取得 | なし |
-| `add_aegis_interest` | 新しい興味（ブランド等）を学習させる | `type`, `value`, `name` |
+| ツール名 | 説明 |
+| :--- | :--- |
+| `get_aegis_dashboard` | 最新のパーソナライズ記事を JSON で取得 |
+| `get_gemini_picks` | AI 推薦の 10 記事と理由を取得 |
 
 ---
 
-## 3. セキュリティと制限
-- **レート制限**: `express-rate-limit` により、15分間に100リクエストまでの制限が適用されています。
-- **CORS**: デバッグ利便性のため、現在は全てのオリジンを許可していますが、本番運用時は適切に制限することを推奨します。
-- **環境変数**: `GEMINI_API_KEY` が必須です。
+## 3. ディレクトリ構造とデータ
+- `server/data/interests.json`: ユーザーの興味関心を定義。
+- `server/data/feed_config.json`: AI が管理する RSS フィード群。
+- `dashboard/js/api.js`: これらの API と通信するフロントエンドモジュール。
+
+## 4. セキュリティ
+- 全ての API は `express-rate-limit` で保護されています。
+- 静的ファイルと API は同一ポート上で配信され、SPA (Single Page Application) ルーティングに対応しています。

@@ -1,47 +1,46 @@
 # Frontend UI Codemap
 
-**Last Updated:** 2026-04-25
+**Last Updated:** 2026-04-26
+**Version:** 5.0 (Unified Settings & Fluent Design)
 **Entry Point:** `dashboard/index.html`
 
 ## 概要
-フロントエンドは、究極の「美」と「機能性」を追求した次世代 UI です。常時表示のハンバーガーメニューによるドロワー操作、AIの進化・再構築提案を可視化するモダンなモーダルシステムを搭載しています。
+Aegis AI Hub v5.0 のフロントエンドは、複雑な設定を直感的に操作できる「統合システムエディタ」と、Mica/Glass-morphism を採用したモダンな UI を特徴としています。
 
-## 主要コンポーネント & UI パターン
+## 統合システムエディタ (System Settings)
+設定画面 (`#settings-container`) は、以下の 3 つのタブで構成され、一貫した操作感を提供します。
 
-- **常時表示ハンバーガーメニュー**:
-  - 画面左下にフローティング配置されたボタン (`#menu-toggle`)。
-  - どのデバイス・画面位置からでも、一瞬でサイドバー（ドロワー）へアクセス可能。
+- **フィード管理 (Feeds)**: 購読中の RSS ソースをカテゴリ別に管理。
+- **カテゴリ管理 (Categories)**: 情報分類の追加・編集・削除。
+- **ブランド・キーワード管理 (Keywords)**: カテゴリ内の詳細な興味ワードをタグ形式で管理。
 
-- **ドロワーサイドバー**:
-  - `transform -translate-x-full` によるスムーズなアニメーション。
-  - **検索バー**: 全記事を即座にキーワードでフィルタリング。
-  - **動的ナビゲーション**: カテゴリごとにセクションへジャンプ。
-  - **学習パネル**: ユーザーが手動でカテゴリやキーワードを追加し、AIへ反映。
+### 「下書き（Draft）」ワークフロー
+1. **ロード**: 設定画面を開くと、サーバーから最新の `interests` と `feeds` がメモリ上の `draft` 変数へロードされます。
+2. **編集**: 全ての追加・編集・削除操作は、この `draft` 変数に対して行われます（即座にサーバーへは保存されません）。
+3. **AI提案の適用**: AI による進化案も、この `draft` 変数へとマージされます。
+4. **一括保存**: 「保存してシステムを更新」ボタンを押すことで、`POST /api/sync-settings` が実行され、ファイルへ永続化されます。
 
-- **AI進化・再構築モーダル**:
-  - `backdrop-blur-xl` を使用した没入感のあるデザイン。
-  - AI が提案する「新しいフィード」「新ブランド」「ナレッジ構造の変更」をカード形式で表示。
-  - ユーザーが個別に項目を選択・確定できる対話型インターフェース。
+## UI インタラクション & デザインパターン
+
+- **インタラクティブ・ワードタグ**:
+  - ブランド・キーワードは、クリックすることで即座に削除（OFF）が可能。
+  - **順序規則**: ブランドが常にキーワードの前に表示され、重要度を視覚的に強調。
+  - ホバー時に削除アイコンが表示され、直感的なフィードバックを返します。
+- **グリッド/リスト表示切り替え**:
+  - メインヘッダーのボタンにより、記事の表示密度をリアルタイムで変更。状態は `Store` を通じて管理されます。
+- **動的なステータス表示**:
+  - AI解析中や保存中には、ボタン内のスピナーとテキストが動的に変化し、システムの処理状況をユーザーに伝えます。
+- **Fluent デザイン**:
+  - `backdrop-blur` と `active:scale-95` による、高級感のある操作感。
 
 ## モジュール構成
 
-| ファイル名 | 役割 | 主要オブジェクト/メソッド |
+| ファイル名 | 役割 | 主要メソッド |
 | :--- | :--- | :--- |
-| `js/app.js` | メイン・コントローラー。進化提案のフェッチと確定ロジック。 | `showEvolutionProposal`, `applyCurrentProposal` |
-| `js/ui.js` | レンダリング、ドロワー開閉、モーダル管理。 | `toggleSidebar`, `renderEvolutionProposals`, `renderRestructureProposal` |
-| `js/store.js` | 状態管理。検索、既読、フィルタリングの永続化。 | `getFilteredArticles`, `setSearchQuery` |
-| `js/api.js` | バックエンドとの通信。進化・再構築 API の呼び出し。 | `fetchEvolutionProposal`, `applyEvolution` |
+| `js/app.js` | メイン・ロジック & 状態遷移。下書き (Draft) の保持と同期。 | `showSettings`, `saveAllSettings`, `applyProposalToDraft` |
+| `js/ui.js` | レンダリング。エディタのタブ表示、タグの描画、ダイアログ。 | `renderFeedList`, `renderInterestGroups`, `renderTag` |
+| `js/store.js` | データストア。記事、既読管理、表示モード、検索。 | `getFilteredArticles`, `markAsRead`, `setViewMode` |
+| `js/api.js` | API 通信。`/api/sync-settings` の呼び出し。 | `syncSettings`, `fetchEvolutionProposals` |
 
-## セキュリティ実装 (XSS 対策)
-- **HTML Escaping**: AI が生成する「推薦理由」や「進化提案の理由」を含め、全ての動的テキストは `escapeHTML` を経由。
-  - `& < > " '` の 5 文字を厳密に変換。
-- **サニタイズ**: 外部サイトからの画像 URL 等も、テンプレートリテラル内での慎重なレンダリングにより保護。
-
-## デザイン哲学
-- **Glassmorphism 2.0**: `glass` クラスと `border-white/10` による、重層的で奥行きのある視覚効果。
-- **Neo-Cyberpunk Color Palette**: 
-  - `Sky-400`: メインアクション
-  - `Fuchsia-500`: AI キュレーション (Gemini's Picks)
-  - `Cyan-500`: AI 進化 (Evolution)
-  - `Indigo-500`: ナレッジ再構築 (Restructure)
-
+## セキュリティ (XSS 対策)
+- `ui.js` 内の `escapeHTML` メソッドにより、AI 生成コンテンツを含む全ての動的テキストをサニタイズしています。

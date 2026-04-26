@@ -1,55 +1,57 @@
 # Aegis AI Hub - System Index
 
-**Project Status:** Ultimate Architecture (v5.0)
-**Last Updated:** 2026-04-25
+**Project Status:** Next-Gen Architecture (v5.0)
+**Last Updated:** 2026-04-26
 
 ## プロジェクト概要
-ユーザーの好みに完全に最適化された「自律型知的ダッシュボード」。  
-AIによるキュレーション、自律的なサイト発見、ナレッジの自動再構築、セキュアなUIを統合した進化型サービス指向システムです。
+Aegis AI Hub は、Gemini 3.1 を中枢に据えた「自律学習型知的ダッシュボード」です。  
+v5.0 では、設定画面の統合と「下書き（Draft）」ベースのワークフローを導入し、AIの進化を人間が直感的にコントロールできる環境へと昇華しました。
 
 ## 技術ドキュメント (Codemaps)
 
-- [**Backend Architecture**](backend.md) - SOA、自律進化ジョブ、AIナレッジ再構築
-- [**Frontend UI**](frontend.md) - ドロワーメニュー、進化提案モーダル、XSS対策
-- [**API & MCP Reference**](../API.md) - エンドポイントとMCPツールの仕様
-- [**Automation**](automation.md) - スタートアップ自動化、Docker、定期ジョブ
+- [**Backend Architecture**](backend.md) - SOA, 自律進化ジョブ, `sync-settings` API
+- [**Frontend UI**](frontend.md) - 統合エディタ, 下書きワークフロー, Fluentデザイン
+- [**API & MCP Reference**](../API.md) - 同期 API と MCP ツールの詳細仕様
+- [**Automation**](automation.md) - スタートアップ自動化と Docker 構成
 
 ## システム全体俯瞰
 ```mermaid
 graph TD
     User((User))
-    UI[Frontend Dashboard]
+    UI[Frontend: Dashboard/Editor]
     Server[Node.js Backend]
-    Job[Evolution Job]
     
-    subgraph "External Services"
-        Feeds[RSS News Feeds]
-        GeminiAPI[Gemini 3.1 API]
+    subgraph "Knowledge Management"
+        Draft[(UI Draft Memory)]
+        Config[(interests.json / feed_config.json)]
     end
 
     User <--> UI
-    UI <--> Server
+    UI <--> Draft
+    Draft -- sync-settings --> Server
+    Server -- Update --> Config
     
-    Server -- Scrape --> Feeds
-    Server -- Curate/Discover --> GeminiAPI
-    
-    Job -- Clean/Discover/Learn --> Server
-    Job -- Update --> Config[(Config Files)]
+    Server -- Evolution/Discovery --> GeminiAPI[Gemini 3.1 API]
+    Server -- Scrape --> Feeds[External RSS]
 ```
 
 ## 主要モジュール構成
 
 ### Backend (`server/`)
-- `index.js` - API & MCP サーバー、レート制限の実装
-- `ScraperFacade.js` - 取得・判定・整形・AI推論を統括する司令塔
-- `services/` - `DiscoveryService` (AIサイト発見), `GeminiService` (キュレーション & 再構築), `RSSFetcher` 等
-- `jobs/` - `EvolutionJob` (自律進化), `HealthMonitor` (死活監視)
+- `index.js`: API サーバー、MCP サーバー、同期ロジックの統括。
+- `src/services/`: 
+    - `DiscoveryService`: AI による新サイト探索。
+    - `GeminiService`: キュレーション、構造再構築の提案。
+    - `FeedManager`: フィード構成の永続化と管理。
+- `src/jobs/`: 
+    - `EvolutionJob`: 記事トレンドからの継続学習。
 
 ### Frontend (`dashboard/`)
-- `js/ui.js` - ドロワーメニュー、進化提案モーダル、エスケープ処理
-- `js/app.js` - 進化・再構築の適用ロジック
-- `index.html` - 常時表示ハンバーガーメニュー、グラスモーフィズム UI
+- `js/app.js`: アプリケーション・ロジック、下書き（Draft）管理、AI提案の適用。
+- `js/ui.js`: Fluentデザインに基づくレンダリング、統合エディタのタブ切り替え。
+- `js/store.js`: 記事データ、表示モード（Grid/List）、既読状態の管理。
+- `js/api.js`: `/api/sync-settings` を含むバックエンド通信。
 
 ### Data (`data/`)
-- `interests.json` - パーソナライズ設定（学習済みキーワード含む）
-- `feed_config.json` - フィードURL（AIにより自動拡張）
+- `interests.json`: カテゴリ、ブランド、キーワード。
+- `feed_config.json`: AI とユーザーが共同管理する情報源。

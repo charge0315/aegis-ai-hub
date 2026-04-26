@@ -1,0 +1,62 @@
+{
+  "AI・ソフトウェア": {
+    "active": [
+      "https://japan.googleblog.com/atom.xml",
+      "https://zenn.dev/topics/ai/feed",
+      "https://atmarkit.itmedia.co.jp/rss/rssit.xml"
+    ],
+    "pool": [],
+    "failures": {}
+  },
+  "ゲーム": {
+    "active": [
+      "https://www.4gamer.net/rss/index.xml",
+      "https://news.denfaminicogamer.jp/feed"
+    ],
+    "pool": [
+      "https://www.famitsu.com/rss/all.xml",
+      "https://game.watch.impress.co.jp/data/rss/gmw/index.rdf"
+    ],
+    "failures": {}
+  },
+  "PC・ハードウェア": {
+    "active": [
+      "https://ascii.jp/digital/rss.xml",
+      "https://rss.itmedia.co.jp/rss/2.0/pcuser.xml"
+    ],
+    "pool": [
+      "https://akiba-pc.watch.impress.co.jp/data/rss/akiba/index.rdf",
+      "https://srad.jp/srad.rss"
+    ],
+    "failures": {}
+  },
+  "ガジェット": {
+    "active": [
+      "https://www.gizmodo.jp/index.xml",
+      "https://getnews.jp/feed"
+    ],
+    "pool": [
+      "https://digi-kaden.com/feed"
+    ],
+    "failures": {}
+  },
+  "音楽・ギター・DTM": {
+    "active": [
+      "https://www.snrec.jp/rss",
+      "https://guitar-home.net/feed/"
+    ],
+    "pool": [],
+    "failures": {}
+  },
+  "ロードバイク": {
+    "active": [
+      "https://www.cyclesports.jp/feed/"
+    ],
+    "pool": [
+      "https://cycling.p-news.jp/feed/",
+      "https://funride.jp/feed/",
+      "https://bc-station.jp/feed/"
+    ],
+    "failures": {}
+  }
+}

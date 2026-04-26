@@ -1,82 +1,79 @@
-# Product Specification: Aegis AI Hub (Autonomous Evolution)
+# Product Specification: Aegis AI Hub v5.0 "Aegis-Nexus"
 
-> Generated from brief: "自律型AIニュースハブ「Aegis AI Hub」の機能拡張。AIによるサイト発見と自動進化サイクルの実装。"
+> Generated from brief: "Aegis AI Hub v5.0のすべての.mdファイルを読み込み、ゼロベースでの設計・実装・テストを全自動で行うための総合的な計画を策定してください。"
 
 ## Vision
-「ユーザーが探さなくても、最高に刺さる情報が向こうからやってくる」。
-Aegis AI Hubは、単なるRSSリーダーではなく、ユーザーの興味と世界のトレンドをリアルタイムに同期させ、自律的に情報収集網を最適化し続ける「生きている」ダッシュボードへと進化します。
+Aegis AI Hub v5.0 "Aegis-Nexus" は、単なるニュースダッシュボードを超え、**自己進化型インテリジェンス・プラットフォーム**へと昇華します。Gemini 3.1を中枢に据え、複数の自律エージェントが「設計・実装・テスト・改善」のループを高速に回すことで、常に最新かつセキュア、そして洗練されたUI/UXを維持し続けるシステムを目指します。
 
 ## Design Direction
 - **Color palette**: 
-  - **Background**: `#05070a` (Deep Obsidian)
-  - **Primary**: `#00f2ff` (Electric Cyan) - 進化やAI活動の象徴
-  - **Accent**: `#ff0055` (Neon Rose) - 新発見やアクションが必要な項目
-  - **Text**: `#e0e0e0` (Silver Grey)
+  - Primary: `#0ea5e9` (Cyber Blue)
+  - Secondary: `#8b5cf6` (Intelligence Violet)
+  - Background: `#020617` (Deep Space Dark)
+  - Surface: `rgba(15, 23, 42, 0.8)` (Blurred Glass)
 - **Typography**: 
-  - UI: "Inter", sans-serif (可読性重視)
-  - Data/Status: "JetBrains Mono" (システム感の演出)
-- **Layout philosophy**: 
-  - **"Evolutionary Sidebar"**: 画面左側にAIの思考ログ（どのフィードを追加したか、どんなトレンドを見つけたか）を表示。
-  - **"Dynamic Interest Cloud"**: ユーザーの興味をタグクラウド形式で表示し、AIが提案した新興味は点滅や強調表示。
-- **Visual identity**: ガラスモーフィズムとネオンの発光エフェクトを多用し、AIが背後で稼働している感覚を演出。AI生成のグラデーションは避け、ソリッドな線と発光をベースにする。
+  - Main: "Inter Variable", sans-serif
+  - Mono: "JetBrains Mono" (AIステータスおよびデバッグ用)
+- **Layout philosophy**: "Adaptive Neural Grid" - エージェントの活動状態や情報の重要度に応じて動的にリサイズ・再配置されるグリッドシステム。
+- **Visual identity**: 
+  - ガラスモーフィズムとネオンの境界線による「未来感」の演出。
+  - AIの思考プロセスを可視化する「思考パーティクル」アニメーション。
+- **Inspiration**: Linear, Vercel Dashboard, Cyberpunk 2077 UI.
 
 ## Features (prioritized)
 
-### Must-Have (Sprint 1-2)
-1. **AI Discovery Engine**: `interests.json`を解析し、Geminiに新しいRSSフィードを提案させる機能。
-   - **Acceptance Criteria**: 提案されたURLに対して`RSSFetcher`で自動疎通確認を行い、成功したものだけを`feed_config.json`の`pool`に追加する。
-2. **Autonomous Rebuild Job**: 週次で稼働するバックグラウンドジョブ。
-   - **Acceptance Criteria**: エラー率の高いフィードのパージ、`pool`からの昇格、新フィードの補充を一気通貫で行う。
-3. **Interest Refiner**: `interests.json`内の重複排除、古くなったキーワードの自動整理。
-4. **Trend Hunter**: 取得した最新記事のタイトル・概要から、ユーザーの既存の興味に近い「新しいキーワードやブランド」をGeminiが抽出する。
+### Must-Have (Autonomous Core)
+1. **Multi-Agent Orchestration**: `Architect`, `Generator`, `Evaluator`, `E2E-Runner` の役割分担と協調制御。
+2. **Autonomous Implementation Loop**: Plan -> Implement -> Eval -> Refine の自律サイクル。
+3. **MCP-Powered Tooling**: ファイル操作、Webブラウジング、Gemini API、OS実行をMCPツール経由で統合。
+4. **Unified Settings Editor (v5.0 Core)**: 「下書き」ベースの高度なシステム構成管理。
 
-### Should-Have (Sprint 3-4)
-1. **Evolution Dashboard**: AIが行った改善（追加/削除したフィード、提案した興味）を時系列で確認できるUI。
-2. **User Feedback Loop**: AIの提案（新興味）に対して、ユーザーが「採用/却下」をワンクリックで選べるUI。
-3. **Feed Health Matrix**: フィードごとの「鮮度（更新頻度）」と「適合率（ユーザーの興味への合致度）」をスコアリングし、視覚化する。
+### Should-Have (Quality & Polish)
+1. **TDD-Workflow Skill**: テストが通るまで実装を繰り返すテスト駆動スキルの統合。
+2. **Visual Regression Bot**: UIの崩れを自動検出し、`Generator` に修正を依頼する視覚的評価。
+3. **Security-Review Skill**: 実装コードに対する自動脆弱性診断と修正。
+4. **Agent Status Dashboard**: エージェントが現在何をしているかをリアルタイムで表示するモニタリング画面。
 
-### Nice-to-Have (Sprint 5+)
-1. **Predictive Discovery**: 特定のガジェット発表イベント（例：Apple Event）を予見し、一時的に関連ソースを強化する。
-2. **AI-Generated Summary**: 複数の記事にまたがるトレンドを1つのサマリー記事としてAIが書き起こす。
+### Nice-to-Have (Next-Gen)
+1. **Self-Healing Infrastructure**: Dockerコンテナの不調を自律検知し、構成を修正して再起動。
+2. **Keyboard-Driven Orchestration**: コマンドラインまたはショートカットからエージェントへ直接指示。
+3. **Multi-Model Fallback**: Gemini 3.1 をメインとしつつ、必要に応じて他のモデル（Claude, GPT-4等）を補助的に利用。
 
 ## Technical Stack
-- **Frontend**: Vanilla JS, CSS (Tailwind CSS導入検討), Chart.js (健康状態の可視化)
-- **Backend**: Node.js (Express)
-- **AI**: Google Gemini 1.5 Pro / Flash
-- **Key libraries**: `rss-parser`, `node-cron` (定期ジョブ), `zod` (スキーマ検証), `axios`
+- **Core Engine**: Node.js (Express), Gemini 3.1 Series
+- **Frontend**: Tailwind CSS 3.4+, Vanilla ES Modules, Lucide Icons
+- **Agents Framework**: Custom Multi-Agent Harness (GAN-style)
+- **Skills**: `tdd-workflow`, `security-review`, `deployment-patterns`
+- **MCP Tools**: `filesystem`, `google_search`, `playwright_browser`
 
 ## Evaluation Criteria
 
-### Design Quality (weight: 0.3)
-- 「AIが自律的に動いている」というワクワク感があるか。
-- 単なるリスト表示ではなく、進化のプロセスが美しく視覚化されているか。
+### Design Quality (weight: 0.25)
+- Windows 11 Fluent Design の原則（Mica/Glass）が守られているか。
+- レスポンシブグリッドが崩れず、どの解像度でも美しく表示されるか。
 
-### Originality (weight: 0.2)
-- 既存の「静的なRSSリーダー」の枠を超え、情報源自体がユーザーに合わせて変化する独自性。
-- Geminiのプロンプトエンジニアリングにより、ノイズの少ない質の高いサイト発見ができているか。
+### Originality (weight: 0.25)
+- AIの「思考」や「進化」が視覚的に表現されているか。
+- 単なるニュースサイトではなく、次世代エージェントの拠点としての雰囲気があるか。
 
-### Craft (weight: 0.3)
-- エラーハンドリング（サイトがRSSを提供していない場合の安全なスキップなど）。
-- ファイル書き込みのアトミック性（`write-file-atomic`の適切な使用）。
-- ログ出力の丁寧さ（何が起きたか追跡可能か）。
+### Craft & Reliability (weight: 0.3)
+- コードに冗長な記述がなく、コンパイラ/リンターの警告がゼロであるか。
+- 自律ループが無限ループに陥らず、論理的なゴールに到達できているか。
 
 ### Functionality (weight: 0.2)
-- `interests.json` の更新が正しく反映されるか。
-- 週次ジョブが期待通りに設定ファイルを書き換えるか。
+- `/api/sync-settings` を介した設定同期が100%確実に動作するか。
+- MCPツール経由での外部操作がスムーズに行えるか。
 
-## Sprint Plan
+## Sprint Plan: Autonomous Reconstruction
 
-### Sprint 1: Discovery Foundation
-- **Goals**: AIによるサイト発見の仕組みと、疎通テスト機能の実装。
-- **Features**: `DiscoveryService`の実装、`GeminiService`への拡張、`FeedManager`のアップデート。
-- **Definition of done**: 特定のカテゴリを指定すると、AIが5-10の有効なRSSフィードを提案し、設定ファイルに保存される。
+### Sprint 1: Agent Foundation
+- **Goals**: 各エージェントのプロンプト定義とMCP接続。
+- **Definition of Done**: `Architect` が出した指示を `Generator` がコード化し、`Evaluator` がレビューできる状態。
 
-### Sprint 2: Autonomous Evolution
-- **Goals**: 定期実行ジョブと興味の自動整理機能の実装。
-- **Features**: `EvolutionJob`の実装、トレンド抽出エンジン。
-- **Definition of done**: 週次ジョブを手動キックした際、設定ファイルのクリーニングと新興味の提案が生成される。
+### Sprint 2: Core Loop Implementation
+- **Goals**: 自律実装ループの実装と「下書き」エディタの構築。
+- **Definition of Done**: 最小限のUI変更をエージェントが自律的に行い、テストをパスさせること。
 
-### Sprint 3: UI & Feedback
-- **Goals**: 進化の可視化とユーザー承認フローの実装。
-- **Features**: Evolution Log UI, Interest Approval UI.
-- **Definition of done**: ユーザーがAIの提案を確認し、ダッシュボード上で興味を確定できる。
+### Sprint 3: Full Integration & Polish
+- **Goals**: デザインの洗練と全機能の統合。
+- **Definition of Done**: Aegis v5.0 が全自動でビルドされ、全てのE2Eテストをクリアすること。

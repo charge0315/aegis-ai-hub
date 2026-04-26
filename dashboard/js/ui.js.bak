@@ -29,7 +29,7 @@ export const UI = {
     },
 
     /**
-     * フィード一覧（表形式）の描画
+     * フィード一覧（表形式）
      */
     renderFeedList(feeds) {
         const container = document.getElementById('feed-list');
@@ -66,58 +66,60 @@ export const UI = {
     },
 
     /**
-     * カテゴリ管理（カテゴリのみ）
+     * カテゴリ管理（カテゴリのみを一覧化）
      */
     renderCategoryManager(interests) {
         const container = document.getElementById('category-list');
         if (!container) return;
 
         container.innerHTML = Object.entries(interests.categories).map(([catName, info]) => `
-            <div class="glass p-8 rounded-[2rem] border border-white/5 flex items-center justify-between group">
-                <div class="flex items-center gap-5">
-                    <span class="text-5xl">${info.emoji || '📂'}</span>
+            <div class="glass p-6 rounded-2xl border border-white/5 flex items-center justify-between group">
+                <div class="flex items-center gap-4">
+                    <span class="text-3xl">${info.emoji || '📂'}</span>
                     <div>
-                        <h3 class="text-2xl font-black text-white uppercase tracking-tighter">${this.escapeHTML(catName)}</h3>
-                        <div class="flex gap-4 mt-1">
-                            <span class="text-[10px] text-sky-400 font-bold uppercase tracking-widest">${info.brands.length} Brands</span>
-                            <span class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">${info.keywords.length} Keywords</span>
-                        </div>
+                        <h3 class="text-lg font-bold text-white">${this.escapeHTML(catName)}</h3>
+                        <p class="text-[10px] text-slate-500 uppercase font-black tracking-widest">
+                            ${info.brands.length} Brands / ${info.keywords.length} Keywords
+                        </p>
                     </div>
                 </div>
-                <div class="flex gap-3 opacity-0 group-hover:opacity-100 transition-all">
-                    <button onclick="app.draftEditInterest('category', '${this.escapeHTML(catName)}')" class="w-12 h-12 rounded-xl flex items-center justify-center bg-white/5 text-slate-400 hover:text-sky-400"><i class="fas fa-pencil-alt"></i></button>
-                    <button onclick="app.draftDeleteInterest('category', '${this.escapeHTML(catName)}')" class="w-12 h-12 rounded-xl flex items-center justify-center bg-white/5 text-slate-400 hover:text-rose-500"><i class="fas fa-trash-alt"></i></button>
+                <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                    <button onclick="app.draftEditInterest('category', '${this.escapeHTML(catName)}')" class="w-10 h-10 rounded-xl flex items-center justify-center bg-white/5 text-slate-400 hover:text-sky-400"><i class="fas fa-pencil-alt"></i></button>
+                    <button onclick="app.draftDeleteInterest('category', '${this.escapeHTML(catName)}')" class="w-10 h-10 rounded-xl flex items-center justify-center bg-white/5 text-slate-400 hover:text-rose-500"><i class="fas fa-trash-alt"></i></button>
                 </div>
             </div>
         `).join('');
     },
 
     /**
-     * ブランド・キーワード管理
+     * ブランド・キーワード管理（グルーピング表示）
+     * ブランドをキーワードの前に表示する
      */
     renderInterestGroups(interests) {
         const container = document.getElementById('keyword-list-grouped');
         if (!container) return;
 
         container.innerHTML = Object.entries(interests.categories).map(([catName, info]) => `
-            <div class="glass p-10 rounded-[2.5rem] border border-white/5 space-y-8">
-                <div class="flex items-center gap-5">
-                    <span class="text-5xl">${info.emoji || '📂'}</span>
-                    <h3 class="text-3xl font-black text-white uppercase tracking-tighter">${this.escapeHTML(catName)}</h3>
+            <div class="glass p-8 rounded-[2rem] border border-white/5 space-y-6 group">
+                <div class="flex items-center gap-4">
+                    <span class="text-4xl">${info.emoji || '📂'}</span>
+                    <h3 class="text-2xl font-black text-white uppercase tracking-tighter">${this.escapeHTML(catName)}</h3>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-10 pt-6 border-t border-white/5">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4 border-t border-white/5">
+                    <!-- ブランドを先に表示 -->
                     <div>
-                        <h4 class="text-[10px] font-black text-sky-400 uppercase tracking-widest mb-4 px-1">Brands</h4>
-                        <div class="flex flex-wrap gap-2.5">
+                        <h4 class="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-3">Brands</h4>
+                        <div class="flex flex-wrap gap-2">
                             ${info.brands.map(b => this.renderTag(b, 'brand', catName)).join('')}
-                            <button onclick="app.draftAddInterest('brand', '${this.escapeHTML(catName)}')" class="px-4 py-2 border border-dashed border-sky-500/30 rounded-xl text-xs font-bold text-sky-400 hover:bg-sky-500/5 transition-all"><i class="fas fa-plus mr-2"></i>追加</button>
+                            <button onclick="app.draftAddInterest('brand', '${this.escapeHTML(catName)}')" class="px-3 py-1 border border-dashed border-sky-500/30 rounded-lg text-[10px] font-bold text-sky-400 hover:bg-sky-500/5 transition-all"><i class="fas fa-plus"></i></button>
                         </div>
                     </div>
+                    <!-- キーワードを後に表示 -->
                     <div>
-                        <h4 class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4 px-1">Keywords</h4>
-                        <div class="flex flex-wrap gap-2.5">
+                        <h4 class="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-3">Keywords</h4>
+                        <div class="flex flex-wrap gap-2">
                             ${info.keywords.map(k => this.renderTag(k, 'keyword', catName)).join('')}
-                            <button onclick="app.draftAddInterest('keyword', '${this.escapeHTML(catName)}')" class="px-4 py-2 border border-dashed border-slate-500/30 rounded-xl text-xs font-bold text-slate-400 hover:bg-white/5 transition-all"><i class="fas fa-plus mr-2"></i>追加</button>
+                            <button onclick="app.draftAddInterest('keyword', '${this.escapeHTML(catName)}')" class="px-3 py-1 border border-dashed border-sky-500/30 rounded-lg text-[10px] font-bold text-sky-400 hover:bg-sky-500/5 transition-all"><i class="fas fa-plus"></i></button>
                         </div>
                     </div>
                 </div>
@@ -126,29 +128,34 @@ export const UI = {
     },
 
     renderTag(val, type, category) {
-        const isBrand = type === 'brand';
         return `
-            <div class="px-4 py-2 ${isBrand ? 'tag-brand' : 'tag-keyword'} rounded-xl text-[12px] font-bold border flex items-center gap-2 group/tag transition-all cursor-pointer hover:border-rose-500/50" 
+            <div class="px-3 py-1.5 bg-white/5 rounded-xl text-[11px] font-bold text-slate-300 border border-white/5 flex items-center gap-2 group/tag hover:border-slate-500 transition-all cursor-pointer" 
                  onclick="app.draftDeleteInterest('${type}', '${this.escapeHTML(val)}', '${this.escapeHTML(category)}')">
                 ${this.escapeHTML(val)}
-                <i class="fas fa-times text-[10px] text-rose-500 opacity-0 group-hover/tag:opacity-100 transition-all"></i>
+                <div class="opacity-0 group-hover/tag:opacity-100 transition-all ml-1">
+                    <i class="fas fa-times text-[9px] text-rose-500"></i>
+                </div>
             </div>
         `;
     },
 
+    /**
+     * AI提案のプレビュー
+     */
     renderProposalPreview(data) {
         const container = document.getElementById('evolution-content');
         if (!container) return;
+        
         container.innerHTML = `
             <div class="bg-sky-500/10 border border-sky-500/20 rounded-3xl p-8 mb-8">
                 <p class="text-sky-200 text-sm leading-relaxed"><i class="fas fa-magic mr-3"></i>AIが提案する新しい構成案です。取り込むと、現在のエディタにマージされます。</p>
             </div>
-            <div id="proposal-items" class="space-y-10">
+            <div id="proposal-items" class="space-y-8">
                 ${data.sites ? `
                     <div class="space-y-4">
                         <h4 class="text-xs font-black text-slate-500 uppercase tracking-widest px-2">Proposed RSS Feeds</h4>
                         <div class="grid grid-cols-1 gap-3">
-                            ${data.sites.map(s => `<div class="glass p-5 rounded-2xl flex justify-between items-center"><div class="min-w-0"><p class="text-white font-bold truncate">${this.escapeHTML(s.name)}</p><p class="text-[10px] text-sky-400 font-mono truncate">${this.escapeHTML(s.url)}</p></div><span class="px-3 py-1 bg-slate-800 rounded-lg text-[10px] text-slate-400 border border-white/5">${this.escapeHTML(s.category)}</span></div>`).join('')}
+                            ${data.sites.map(s => `<div class="glass p-4 rounded-2xl flex justify-between items-center"><div class="min-w-0"><p class="text-white font-bold truncate">${this.escapeHTML(s.name)}</p><p class="text-[10px] text-sky-400 font-mono truncate">${this.escapeHTML(s.url)}</p></div><span class="px-2 py-1 bg-slate-800 rounded text-[9px] text-slate-400 border border-white/5">${this.escapeHTML(s.category)}</span></div>`).join('')}
                         </div>
                     </div>
                 ` : ''}
@@ -213,7 +220,7 @@ export const UI = {
         return new Promise((resolve) => {
             const container = document.getElementById('custom-dialog-container');
             const box = document.getElementById('custom-dialog-box');
-            document.getElementById('dialog-title').textContent = 'Add Feed Source';
+            document.getElementById('dialog-title').textContent = 'Add Feed';
             document.getElementById('dialog-message').innerHTML = `<div class="space-y-4 mt-4 text-left"><div><label class="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2 px-1">Category</label><select id="dialog-feed-cat" class="input-glass w-full bg-slate-800">${cats.map(c => `<option value="${this.escapeHTML(c)}">${this.escapeHTML(c)}</option>`).join('')}</select></div><div><label class="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2 px-1">URL</label><input id="dialog-feed-url" type="url" class="input-glass w-full"></div></div>`;
             const actionsEl = document.getElementById('dialog-actions');
             actionsEl.innerHTML = '';

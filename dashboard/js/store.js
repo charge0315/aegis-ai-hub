@@ -5,13 +5,24 @@ export const Store = {
     articles: {}, // カテゴリ別の記事リスト
     readUrls: new Set(JSON.parse(localStorage.getItem('read_urls') || '[]')),
     searchQuery: '',
+    viewMode: localStorage.getItem('view_mode') || 'grid', // 'grid' or 'list'
+    recommendations: [], // AIおすすめ記事
 
     setArticles(data) {
         this.articles = data;
     },
 
+    setRecommendations(data) {
+        this.recommendations = data;
+    },
+
     setSearchQuery(query) {
         this.searchQuery = query.toLowerCase();
+    },
+
+    setViewMode(mode) {
+        this.viewMode = mode;
+        localStorage.setItem('view_mode', mode);
     },
 
     markAsRead(url) {

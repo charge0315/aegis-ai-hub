@@ -12,7 +12,7 @@ if ($Install) {
     Write-Host 'Installing Aegis AI Hub to Startup...' -ForegroundColor Yellow
     $StartupFolder = [System.Environment]::GetFolderPath('Startup')
     
-    $OldShortcuts = @('GadgetConcierge.lnk', 'AegisConcierge.lnk', 'AegisAIHub.lnk')
+    $OldShortcuts = @('GadgetConcierge.lnk', 'GadgetConciergeStartup.lnk', 'AegisConcierge.lnk', 'AegisAIHub.lnk')
     foreach ($old in $OldShortcuts) {
         $oldPath = Join-Path $StartupFolder $old
         if (Test-Path $oldPath) {

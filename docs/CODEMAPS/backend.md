@@ -1,46 +1,42 @@
 # Backend Architecture Codemap
 
-**Last Updated:** 2026-04-25
+**Last Updated:** 2026-04-26
+**Version:** v5.0
 **Entry Point:** `server/index.js`
 
 ## 概要
-バックエンドは、関心の分離 (Separation of Concerns) を徹底したサービス指向アーキテクチャ (SOA) を採用。AIによる自律的な進化（フィード発見・興味学習）と、Gemini 3.1 を中枢としたインテリジェンス層を統合しています。
+バックエンドは、サービス指向アーキテクチャ (SOA) をベースに、AI サービス (Gemini 3.1) と RSS 処理層を分離して構成されています。v5.0 では、設定の整合性を保つための「一括同期 API」を中枢に据えています。
 
 ## サービス構成
 
-| サービス名 | 役割 | 主要メソッド | 依存関係 |
-| :--- | :--- | :--- | :--- |
-| `ScraperFacade` | 取得・判定・整形・AI推論を統括する司令塔 | `getDashboard`, `getRecommendations` | 全てのサービス |
-| `GeminiService` | キュレーション、サイト発見、構造再構築の提案 | `curate`, `discoverSites`, `getRestructureProposal` | Gemini 3.1 API |
-| `DiscoveryService` | AIによる新サイトの探索とRSS疎通検証 | `run`, `getProposals` | `GeminiService`, `RSSFetcher` |
-| `EvolutionJob` | 自律進化ジョブ（設定クリーンアップ、新興味の学習） | `run`, `updateLearnedKeywords` | `DiscoveryService`, `ScraperFacade` |
-| `RSSFetcher` | 非同期・並列でのRSS取得 | `fetchAll` | `rss-parser` |
-| `ScoringService` | スコア計算・カテゴリ判定・ブランド抽出 | `calculateScore`, `detectCategory`, `extractBrand` | `interests.json` |
-| `FeedManager` | フィードURLの管理、故障時の自動切り替え | `addFeed`, `reportFailure`, `getAllActiveFeeds` | `feed_config.json` |
-| `HealthMonitor` | 定期的なフィード死活監視ジョブ | `start`, `checkAll` | `FeedManager` |
+| サービス名 | 役割 | 主要メソッド |
+| :--- | :--- | :--- |
+| `ScraperFacade` | 全てのデータ取得と AI 推論を統括する司令塔。 | `getDashboard`, `getRecommendations` |
+| `DiscoveryService` | AI による新しい RSS フィードの探索と検証。 | `getProposals` |
+| `GeminiService` | 記事のキュレーション、サイト発見、構造再構築の提案。 | `curate`, `getRestructureProposal` |
+| `FeedManager` | `feed_config.json` の管理。動的な設定更新に対応。 | `saveConfig`, `addFeed` |
+| `EvolutionJob` | 最新トレンドからの継続的な興味学習（バックグラウンド）。 | `run` |
 
-## 自律進化 & AIナレッジ再構築
+## v5.0 における重要な変更：設定同期ロジック
+これまでの個別更新方式から、整合性を重視した **「一括同期方式」** へと移行しました。
 
-バックエンドは単なるデータ取得に留まらず、以下の「自律進化」機能を備えています：
+- **`POST /api/sync-settings`**:
+  - `interests.json` と `feed_config.json` を同時に書き換えます。
+  - フロントエンドから送られてくる完全な設定状態を受け取り、アトミックに保存します。
+  - 保存後、`ScraperFacade` 内の `FeedManager` インスタンスも即座に最新状態へ更新されます。
 
-- **AIサイト発見 (`DiscoveryService`)**:
-  - `Gemini 3.1` に現在の興味（ブランド、キーワード）を提示し、最適な RSS フィードを提案させます。
-  - 提案された URL は `RSSFetcher` で即座に検証され、有効なものだけが `feed_config.json` に自動追加されます。
+## AI 進化 & 再構築の提供フロー
+バックエンドは AI による提案を生成しますが、**自動的には適用しません**（EvolutionJob を除く）。
 
-- **自律進化サイクル (`EvolutionJob`)**:
-  - 定期的に実行され、最新記事のトレンドから「学習済みキーワード (`learned_keywords`)」を抽出。
-  - 重複や古い設定をクリーニングし、システムを常に最新のガジェット動向に最適化します。
+1. **提案生成**: `DiscoveryService` や `GeminiService` が現在の設定に基づき新案を作成。
+2. **API 提供**: `GET /api/evolution-proposals` 等を通じてフロントエンドへ送信。
+3. **人間による確認**: フロントエンドの「下書き」エディタ上でユーザーが調整。
+4. **一括同期**: ユーザーが保存を選択した時のみ、システム設定が更新される。
 
-- **ナレッジ再構築 (`GeminiService.getRestructureProposal`)**:
-  - `interests.json` の構造自体を AI が見直し、より効率的なカテゴリ分類や不足ブランドの補完を提案。
-  - ユーザーはフロントエンドからこの提案を確認し、ワンクリックでナレッジグラフを刷新できます。
+## Gemini 3.1 の活用
+- **最新モデルの採用**: 2026年4月時点の最新モデル（Gemini 3.1 シリーズ）に最適化されたプロンプト設計。
+- **インテリジェント・フォールバック**: クォータ制限やエラー時に、複数のモデルランク（Pro / Flash）を自動的に切り替えて処理を継続。
 
-## Gemini 3.1 統合 & フォールバック
-- **モデル優先順位**: `gemini-3.1-pro` -> `gemini-3.1-pro-preview` -> `gemini-3.1-flash` -> `gemini-2.0-flash` -> ...
-- **多層リカバリ**:
-  - API エラーやクォータ制限が発生した場合、即座に下位モデルへフォールバック。
-  - レスポンスのJSONパースに失敗した場合、正規表現による抽出を試行し、AIのゆらぎを許容。
-
-## セキュリティ実装
-- **レート制限**: `express-rate-limit` により、過剰なアクセスやAPI呼び出しをブロック。
-- **Zod バリデーション**: `Article.js` におけるスキーマ検証により、不正な形式のデータ流入を遮断。
+## セキュリティ & 信頼性
+- **レート制限**: `express-rate-limit` により、API エンドポイントへの過剰アクセスを防御。
+- **エラーハンドリング**: パースエラーやネットワークエラーに対する多層的な Try-Catch 構造。

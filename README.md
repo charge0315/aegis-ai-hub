@@ -1,33 +1,32 @@
-# Aegis AI Hub 🛡️🤖
+# Aegis AI Hub 🛡️🤖 - v5.0 Next-Gen
 
 ユーザーの興味に特化した、究極の自律学習型知的ニュース・ダッシュボード。  
-最新の **Gemini 3.1 Pro / Flash** を統合し、セキュリティ、自律進化、AIナレッジ再構築の3軸において極限まで磨き上げられた「芸術的コード」の結晶です。
+最新の **Gemini 3.1 シリーズ** を中枢に、Fluentデザイン（Mica/Glass-morphism）と「下書き」ベースの高度な設定ワークフローを統合した、インテリジェンス・エージェントの決定版。
 
-## 🌟 究極の3大進化 (v5.0 New Features)
+## 🌟 Aegis v5.0 の主要な進化点
 
-### 1. 自律的エコシステムの構築 (Autonomous Evolution)
-システム自身が新しい知識を学習し、成長し続ける仕組みを実現。
-- **AI サイト発見 (Discovery Service)**: 登録された興味（ブランド、キーワード）に基づき、Gemini 3.1 が最適な RSS フィードを世界中から探索・自動登録。
-- **トレンド学習ジョブ (Evolution Job)**: 最新のニュース記事から新しいトレンドを抽出し、「学習済みキーワード」として蓄積。
-- **自己修復機能**: リンク切れや無効なフィードを AI が検知し、自動的に除外または代替案を提案。
+### 1. 統合システムエディタ (Unified System Editor)
+「フィード」「カテゴリ」「キーワード」の設定を、タブ切り替えで一元管理できる統合画面を新設。
+- **「下書き（Draft）」ベースの編集フロー**: 設定画面を開いた際に現在の構成をメモリにロード。全ての変更（追加・編集・削除）を一時的に保持し、最後に「保存してシステムを再構築」ボタンで一括反映。
+- **インタラクティブなワード管理**: カテゴリ内のブランド・キーワードをタグ形式で表示。クリックひとつで即座に削除（OFF）が可能。
 
-### 2. ナレッジグラフの再構築 (Knowledge Restructure)
-散らばった興味を AI が整理し、最適な情報構造へ「再設計」します。
-- **AI ナレッジ再構築**: `interests.json` の構造を解析し、重複の統合、カテゴリの命名変更、不足している重要キーワードの補完を一括提案。
-- **対話型確定フロー**: AI の提案をフロントエンドで視覚的に確認し、ワンクリックでシステムの根幹知識を刷新。
+### 2. AI 進化のシームレスな統合 (AI-Driven Evolution)
+AIによる「システム進化」と「ナレッジ再構築」の提案を、設定エディタへ直接取り込むワークフロー。
+- **AI 提案の「下書き」取り込み**: Gemini が提案する新しいフィードやブランドを、ワンクリックで現在の編集セッション（下書き）へマージ。
+- **プレビュー & 調整**: AI の提案をそのまま適用するのではなく、エディタ上で手動調整してから保存可能。
 
-### 3. Next-Gen ユーザーインターフェース (Modern UX)
-「使いやすさ」と「美しさ」を両立した、最新のフロントエンド体験。
-- **常時表示ハンバーガーメニュー**: どの画面位置からでも、一瞬で検索やカテゴリ移動ができるドロワーサイドバーへアクセス可能。
-- **AI Evolution モーダル**: AI からの提案をカード形式で可視化。ワクワクする「進化」のプロセスをユーザーがコントロール。
-- **Glassmorphism 2.0**: 背景の透過とブラー、グラデーションを極めた、未来的な情報体験を演出するデザイン。
+### 3. 次世代 Fluent デザイン (Advanced UI/UX)
+Windows 11 の Mica や Glass-morphism を踏襲した、モダンで直感的なインターフェース。
+- **グリッド/リスト表示の切り替え**: 記事の密度をユーザーの好みに合わせて瞬時に変更。
+- **動的なフィードバック**: AI解析中のスピナー表示や、ボタンの `active:scale` エフェクトによる高い操作感。
+- **インテリジェント・サーチ**: 常時アクセスのドロワーメニューから、全記事を瞬時にフィルタリング。
 
 ## 🛠 テックスタック
 
 - **Backend**: Node.js, Express (SOA - Service Oriented Architecture)
-- **AI**: Gemini 3.1 Pro / Flash (Google Generative AI SDK) - 最新 2026年4月モデル
-- **Frontend**: Vanilla JS (ES Modules), Tailwind CSS, FontAwesome 6
-- **Automation**: Docker Compose, PowerShell Startup Scripts, Evolution Jobs
+- **AI**: Gemini 3.1 Pro / Flash (最新 2026年4月モデル対応)
+- **Frontend**: ES Modules (api.js, ui.js, store.js, app.js), Tailwind CSS 3.4+
+- **Protocol**: MCP (Model Context Protocol) サーバー機能搭載
 
 ## 🚀 起動とセットアップ
 
@@ -37,23 +36,23 @@
 GEMINI_API_KEY=your_api_key_here
 ```
 
-### 2. Windows スタートアップへの登録
-管理者として PowerShell を開き実行：
+### 2. クイックスタート (Windows)
 ```powershell
 ./scripts/startup.ps1 -Install
 ```
 
-### 3. 開発モードでの起動
+### 3. Docker を利用した起動
 ```bash
 docker-compose up -d
 ```
 
-## 👨‍💻 芸術的コード構造 (Codemaps)
+## 👨‍💻 技術リファレンス (Codemaps)
 
-詳細な設計図は `docs/CODEMAPS/` に集約されています。
-- [**INDEX.md**](./docs/CODEMAPS/INDEX.md) - プロジェクト全体の俯瞰図 (v5.0対応)
-- [**backend.md**](./docs/CODEMAPS/backend.md) - 自律進化ジョブとAI再構築ロジック
-- [**frontend.md**](./docs/CODEMAPS/frontend.md) - ドロワーUIとセキュアなレンダリング
+詳細な設計ドキュメントは `docs/CODEMAPS/` に集約されています。
+- [**INDEX.md**](./docs/CODEMAPS/INDEX.md) - プロジェクト全体の俯瞰図とモジュール構成
+- [**backend.md**](./docs/CODEMAPS/backend.md) - 自律進化ジョブと API / MCP ロジック
+- [**frontend.md**](./docs/CODEMAPS/frontend.md) - 統合エディタと Fluent デザインの実装
+- [**API.md**](./docs/API.md) - 同期 API (`/api/sync-settings`) と MCP の仕様
 
 ---
-*Aegis AI Hub - This code is your stage. Keep Evolving! 🚀*
+*Aegis AI Hub - Precision Engineering for Intellectual Excellence. 🚀*
