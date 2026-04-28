@@ -2,10 +2,10 @@
 
 **Last Updated:** 2026-04-26
 **Version:** v5.0
-**Entry Point:** `server/index.js`
+**Entry Point:** `server/src/index.ts`
 
 ## 概要
-バックエンドは、サービス指向アーキテクチャ (SOA) をベースに、AI サービス (Gemini 3.1) と RSS 処理層を分離して構成されています。v5.0 では、設定の整合性を保つための「一括同期 API」を中枢に据えています。
+バックエンドは、Fastify をベースとしたサービス指向アーキテクチャ (SOA) で構成され、AI サービス (Gemini 3.1) と RSS 処理層、そして MCP サーバー機能を統合しています。
 
 ## サービス構成
 
@@ -13,30 +13,29 @@
 | :--- | :--- | :--- |
 | `ScraperFacade` | 全てのデータ取得と AI 推論を統括する司令塔。 | `getDashboard`, `getRecommendations` |
 | `DiscoveryService` | AI による新しい RSS フィードの探索と検証。 | `getProposals` |
-| `GeminiService` | 記事のキュレーション、サイト発見、構造再構築の提案。 | `curate`, `getRestructureProposal` |
-| `FeedManager` | `feed_config.json` の管理。動的な設定更新に対応。 | `saveConfig`, `addFeed` |
+| `GeminiService` | 構造化出力（JSON Schema）を用いた記事キュレーション。 | `generateStructured`, `curate` |
+| `NexusOrchestrator` | 自律ループの実行と SSE による進捗ブロードキャスト。 | `runAutonomousLoop`, `subscribe` |
 | `EvolutionJob` | 最新トレンドからの継続的な興味学習（バックグラウンド）。 | `run` |
 
-## v5.0 における重要な変更：設定同期ロジック
-これまでの個別更新方式から、整合性を重視した **「一括同期方式」** へと移行しました。
+## v5.0 における重要な変更
 
-- **`POST /api/sync-settings`**:
-  - `interests.json` と `feed_config.json` を同時に書き換えます。
-  - フロントエンドから送られてくる完全な設定状態を受け取り、アトミックに保存します。
-  - 保存後、`ScraperFacade` 内の `FeedManager` インスタンスも即座に最新状態へ更新されます。
-
-## AI 進化 & 再構築の提供フロー
-バックエンドは AI による提案を生成しますが、**自動的には適用しません**（EvolutionJob を除く）。
-
-1. **提案生成**: `DiscoveryService` や `GeminiService` が現在の設定に基づき新案を作成。
-2. **API 提供**: `GET /api/evolution-proposals` 等を通じてフロントエンドへ送信。
-3. **人間による確認**: フロントエンドの「下書き」エディタ上でユーザーが調整。
-4. **一括同期**: ユーザーが保存を選択した時のみ、システム設定が更新される。
+- **一括同期 API (`POST /api/v5/sync-settings`)**:
+  - `interests.json` と `feed_config.json` をアトミックに同時更新。
+  - Zod スキーマによる厳密なバリデーションを実施。
+- **SSE (Server-Sent Events) の安定化**:
+  - 自律ループの進捗をリアルタイム配信。
+  - 30秒ごとの **ハートビート (`: heartbeat`)** により、タイムアウトによる切断を防止。
+- **静的ファイル配信の最適化**:
+  - `dashboard/dist` フォルダからの配信に完全移行。
+  - MIME タイプ（特に JavaScript モジュール）の問題を `fastify-static` の構成により解決。
 
 ## Gemini 3.1 の活用
-- **最新モデルの採用**: 2026年4月時点の最新モデル（Gemini 3.1 シリーズ）に最適化されたプロンプト設計。
-- **インテリジェント・フォールバック**: クォータ制限やエラー時に、複数のモデルランク（Pro / Flash）を自動的に切り替えて処理を継続。
+- **最新モデルの採用**:
+  - `gemini-3.1-pro-preview`: 高度な推論と構造化出力が必要なタスクに使用。
+  - `gemini-1.5-flash` / `flash-lite`: 速度とコスト効率が求められるスクレイピング解析に使用。
+- **Structured Output**: `generationConfig.responseSchema` を活用し、プロンプトに頼らない正確な JSON 取得を実現。
 
 ## セキュリティ & 信頼性
-- **レート制限**: `express-rate-limit` により、API エンドポイントへの過剰アクセスを防御。
-- **エラーハンドリング**: パースエラーやネットワークエラーに対する多層的な Try-Catch 構造。
+- **CORS 構成**: フロントエンドからの安全なクロスオリジン通信を許可。
+- **SPA Fallback**: ルート以外のパスへのアクセスを `index.html` へ転送し、React Router との整合性を確保。
+- **エラーハンドリング**: 404 エラーの適切な処理と、AI 推論失敗時のフォールバック。

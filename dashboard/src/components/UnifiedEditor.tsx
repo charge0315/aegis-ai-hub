@@ -10,13 +10,14 @@ import {
   Network, 
   Cpu, 
   Edit3,
-  ChevronRight,
-  Trash2
+  Trash2,
+  ChevronUp,
+  ChevronDown
 } from 'lucide-react';
 import { GlassPanel } from './GlassPanel';
 import { KnowledgeGraph } from './KnowledgeGraph';
 import { SkillRegistry } from './SkillRegistry';
-import type { NexusSettings } from '../types';
+import type { NexusSettings, Skill } from '../types';
 
 interface UnifiedEditorProps {
   currentSettings: NexusSettings;
@@ -38,10 +39,40 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
 
   const isDirty = JSON.stringify(draft) !== JSON.stringify(currentSettings);
 
+  const handleAddCategory = () => {
+    const name = window.prompt('Enter new category name:');
+    if (!name) return;
+    if (draft.interests.categories[name]) {
+      alert('Category already exists.');
+      return;
+    }
+    setDraft(prev => ({
+      ...prev,
+      interests: {
+        ...prev.interests,
+        categories: {
+          ...prev.interests.categories,
+          [name]: {
+            emoji: '🆕',
+            brands: [],
+            keywords: [],
+            score: 5,
+            reason: 'Manually added category.'
+          }
+        }
+      }
+    }));
+    setSelectedCategory(name);
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
     try {
       await onSave(draft);
+      alert('Configuration saved successfully!');
+    } catch (error: any) {
+      console.error('Save failed:', error);
+      alert(`Failed to save: ${error.message}`);
     } finally {
       setIsSaving(false);
     }
@@ -75,6 +106,59 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
         cat.brands = cat.brands.filter(b => b !== brand);
       }
       newCategories[category] = cat;
+      return { ...prev, interests: { ...prev.interests, categories: newCategories } };
+    });
+  };
+
+  const handleToggleSkill = (skillId: string) => {
+    setDraft(prev => {
+      const defaultSkills: Skill[] = [
+        { id: 'rss-fetch', name: 'RSS Fetcher', description: 'Retrieves raw signals from configured sources with deduplication.', agent: 'Discovery', type: 'tool', enabled: true },
+        { id: 'semantic-filter', name: 'Semantic Filter', description: 'Analyzes article relevance using Gemini 3.1 embeddings.', agent: 'Architect', type: 'logic', enabled: true },
+        { id: 'entity-extract', name: 'Entity Extraction', description: 'Identifies brands and keywords within text content.', agent: 'Curator', type: 'tool', enabled: true },
+        { id: 'version-sync', name: 'Version Control Sync', description: 'Safely commits interest changes to the persistent layer.', agent: 'Archivist', type: 'action', enabled: true },
+        { id: 'site-discovery', name: 'Source Discovery', description: 'Finds new authoritative RSS feeds based on current interests.', agent: 'Discovery', type: 'action', enabled: true },
+        { id: 'reasoning-gen', name: 'Reasoning Engine', description: 'Generates user-friendly explanations for curated content.', agent: 'Curator', type: 'logic', enabled: true },
+      ];
+      const currentSkills = prev.interests.skills || defaultSkills;
+      const newSkills = currentSkills.map(s => 
+        s.id === skillId ? { ...s, enabled: !s.enabled } : s
+      );
+      return { ...prev, interests: { ...prev.interests, skills: newSkills } };
+    });
+  };
+
+  const handleDeleteCategory = (catName: string) => {
+    if (!window.confirm(`Delete category "${catName}"?`)) return;
+    setDraft(prev => {
+      const newCategories = { ...prev.interests.categories };
+      delete newCategories[catName];
+      return { ...prev, interests: { ...prev.interests, categories: newCategories } };
+    });
+    if (selectedCategory === catName) {
+      const keys = Object.keys(draft.interests.categories);
+      const remaining = keys.filter(k => k !== catName);
+      setSelectedCategory(remaining[0] || null);
+    }
+  };
+
+  const handleMoveCategory = (catName: string, direction: 'up' | 'down') => {
+    setDraft(prev => {
+      const keys = Object.keys(prev.interests.categories);
+      const index = keys.indexOf(catName);
+      if (index === -1) return prev;
+      
+      const newIndex = direction === 'up' ? index - 1 : index + 1;
+      if (newIndex < 0 || newIndex >= keys.length) return prev;
+      
+      const newKeys = [...keys];
+      [newKeys[index], newKeys[newIndex]] = [newKeys[newIndex], newKeys[index]];
+      
+      const newCategories: any = {};
+      newKeys.forEach(k => {
+        newCategories[k] = prev.interests.categories[k];
+      });
+      
       return { ...prev, interests: { ...prev.interests, categories: newCategories } };
     });
   };
@@ -167,24 +251,48 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
                 <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-2 mb-3">
                   Intelligence Categories
                 </div>
-                {Object.keys(draft.interests.categories).map(catName => (
-                  <button
-                    key={catName}
-                    onClick={() => setSelectedCategory(catName)}
-                    className={`w-full flex items-center justify-between p-3 rounded-xl transition-all ${
-                      selectedCategory === catName 
-                        ? 'bg-primary/10 text-primary border border-primary/20 shadow-lg shadow-primary/5' 
-                        : 'text-slate-400 hover:bg-white/5 border border-transparent'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
+                {Object.keys(draft.interests.categories).map((catName, idx, arr) => (
+                  <div key={catName} className="group relative flex items-center gap-1">
+                    <button
+                      onClick={() => setSelectedCategory(catName)}
+                      className={`flex-grow flex items-center gap-3 p-3 rounded-xl transition-all ${
+                        selectedCategory === catName 
+                          ? 'bg-primary/10 text-primary border border-primary/20 shadow-lg shadow-primary/5' 
+                          : 'text-slate-400 hover:bg-white/5 border border-transparent'
+                      }`}
+                    >
                       <span className="text-xl">{draft.interests.categories[catName].emoji}</span>
-                      <span className="font-semibold">{catName}</span>
+                      <span className="font-semibold truncate">{catName}</span>
+                    </button>
+                    
+                    <div className="flex flex-col gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button 
+                        disabled={idx === 0}
+                        onClick={() => handleMoveCategory(catName, 'up')}
+                        className="p-1 hover:text-white disabled:text-slate-700 transition-colors"
+                      >
+                        <ChevronUp size={14} />
+                      </button>
+                      <button 
+                        disabled={idx === arr.length - 1}
+                        onClick={() => handleMoveCategory(catName, 'down')}
+                        className="p-1 hover:text-white disabled:text-slate-700 transition-colors"
+                      >
+                        <ChevronDown size={14} />
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteCategory(catName)}
+                        className="p-1 text-slate-600 hover:text-alert transition-colors"
+                      >
+                        <Trash2 size={14} />
+                      </button>
                     </div>
-                    {selectedCategory === catName && <ChevronRight size={16} />}
-                  </button>
+                  </div>
                 ))}
-                <button className="w-full flex items-center gap-3 p-3 text-slate-500 hover:text-accent hover:bg-accent/5 rounded-xl border border-dashed border-white/10 transition-all mt-4">
+                <button 
+                  onClick={handleAddCategory}
+                  className="w-full flex items-center gap-3 p-3 text-slate-500 hover:text-accent hover:bg-accent/5 rounded-xl border border-dashed border-white/10 transition-all mt-4"
+                >
                   <Plus size={18} />
                   <span className="text-sm font-medium">Add New Category</span>
                 </button>
@@ -328,7 +436,10 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
             >
-              <SkillRegistry />
+              <SkillRegistry 
+                skills={draft.interests.skills} 
+                onToggleSkill={handleToggleSkill} 
+              />
             </motion.div>
           )}
         </AnimatePresence>

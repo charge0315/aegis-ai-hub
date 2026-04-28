@@ -28,10 +28,25 @@ export const InterestCategorySchema = z.object({
 export type InterestCategory = z.infer<typeof InterestCategorySchema>;
 
 /**
+ * v5.0 Skill Schema
+ */
+export const SkillSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string(),
+  agent: z.string(),
+  type: z.enum(['tool', 'action', 'logic']),
+  enabled: z.boolean().default(true),
+});
+
+export type Skill = z.infer<typeof SkillSchema>;
+
+/**
  * v5.0 Interests Schema
  */
 export const InterestsSchema = z.object({
   categories: z.record(z.string(), InterestCategorySchema),
+  skills: z.array(SkillSchema).optional(),
   lastUpdated: z.number().optional(),
 });
 

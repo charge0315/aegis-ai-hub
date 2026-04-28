@@ -18,8 +18,18 @@ export interface InterestCategory {
   reason?: string;
 }
 
+export interface Skill {
+  id: string;
+  name: string;
+  description: string;
+  agent: string;
+  type: 'tool' | 'action' | 'logic';
+  enabled: boolean;
+}
+
 export interface Interests {
   categories: { [key: string]: InterestCategory };
+  skills?: Skill[];
   lastUpdated?: number;
 }
 

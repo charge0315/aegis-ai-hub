@@ -16,3 +16,4 @@ credentials.json
 node_modules/
 .venv/
 
+startup.log

@@ -7,7 +7,17 @@ const API_BASE = '/api';
 export const nexusApi = {
   async getArticles(): Promise<Article[]> {
     const response = await axios.get(`${API_BASE}/dashboard`);
-    return response.data;
+    const data = response.data;
+    
+    // Flatten the categorized object into a single array
+    const allArticles: Article[] = [];
+    Object.keys(data).forEach(category => {
+      if (data[category] && Array.isArray(data[category].articles)) {
+        allArticles.push(...data[category].articles);
+      }
+    });
+    
+    return allArticles;
   },
 
   async getSettings(): Promise<NexusSettings> {
@@ -25,7 +35,7 @@ export const nexusApi = {
     const payload = {
       interests: settings.interests,
       feedConfig: settings.feed_urls,
-      lastUpdated: new Date().toISOString()
+      lastUpdated: settings.interests.lastUpdated || Date.now()
     };
     const response = await axios.post(`${API_BASE}/v5/sync-settings`, payload);
     return response.data;
@@ -91,29 +101,36 @@ export function useAgentEvents() {
   ]);
 
   useEffect(() => {
+    console.log('[SSE] Connecting to /api/v5/events...');
     const eventSource = new EventSource(`${API_BASE}/v5/events`);
+
+    eventSource.onopen = () => {
+      console.log('[SSE] Connection established.');
+    };
 
     eventSource.onmessage = (event) => {
       try {
+        console.log('[SSE] Received event:', event.data);
         const data = JSON.parse(event.data);
         if (data.agentId) {
           setEvents(prev => prev.map(agent => 
             agent.id === data.agentId 
-              ? { ...agent, status: data.status, lastMessage: data.message, timestamp: data.timestamp }
+              ? { ...agent, status: data.status, lastMessage: data.message, timestamp: data.timestamp || new Date().toISOString() }
               : agent
           ));
         }
       } catch (err) {
-        console.error('Failed to parse SSE event', err);
+        console.error('[SSE] Failed to parse event', err);
       }
     };
 
     eventSource.onerror = (err) => {
-      console.error('SSE Error', err);
+      console.error('[SSE] Connection error/closed', err);
       eventSource.close();
     };
 
     return () => {
+      console.log('[SSE] Closing connection.');
       eventSource.close();
     };
   }, []);

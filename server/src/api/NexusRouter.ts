@@ -89,14 +89,29 @@ export const nexusRouter: FastifyPluginAsync<NexusRouterOptions> = async (fastif
    * SSEによる進捗通知
    */
   fastify.get('/events', (request: FastifyRequest, reply: FastifyReply) => {
-    reply.raw.setHeader('Content-Type', 'text/event-stream');
-    reply.raw.setHeader('Cache-Control', 'no-cache');
-    reply.raw.setHeader('Connection', 'keep-alive');
+    const headers = {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+      'Access-Control-Allow-Origin': '*'
+    };
+    reply.raw.writeHead(200, headers);
+    reply.raw.write('\n'); // Send initial padding
 
     orchestrator.subscribe(reply);
     
     // 初回接続時の通知
-    reply.raw.write(`data: ${JSON.stringify({ status: 'connected', message: 'SSE Connection Established' })}\n\n`);
+    const initialMsg = JSON.stringify({ status: 'connected', message: 'SSE Connection Established', timestamp: new Date().toISOString() });
+    reply.raw.write(`data: ${initialMsg}\n\n`);
+
+    // Keep connection alive with heartbeat
+    const keepAlive = setInterval(() => {
+      reply.raw.write(': heartbeat\n\n');
+    }, 30000);
+
+    request.raw.on('close', () => {
+      clearInterval(keepAlive);
+    });
   });
 };
 

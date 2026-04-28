@@ -7,11 +7,14 @@ COPY package.json ./
 RUN npm install
 
 # ソースコードのコピー
-COPY index.js ./
 COPY src/ ./src/
+COPY tsconfig.json ./
 
 # ポート3005を公開 (HTTP API用)
 EXPOSE 3005
 
+# tsxをインストールしてTypeScriptを直接実行
+RUN npm install -g tsx
+
 # 実行
-CMD ["node", "index.js"]
+CMD ["tsx", "src/index.ts"]

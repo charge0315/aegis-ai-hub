@@ -27,7 +27,7 @@ export interface CuratedArticle {
  */
 export class GeminiService {
   private genAI: GoogleGenerativeAI | null;
-  private primaryModelName: string = "gemini-2.0-flash";
+  private primaryModelName: string = "gemini-3.1-pro-preview";
 
   /**
    * @param {string} apiKey - Google Gemini APIキー
@@ -42,7 +42,7 @@ export class GeminiService {
    * @param {ResponseSchema} schema - JSONスキーマ定義
    * @param {string} [modelName] - 使用するモデル名
    */
-  async generateStructured<T>(prompt: string, schema: ResponseSchema, modelName: string = "gemini-1.5-pro"): Promise<T> {
+  async generateStructured<T>(prompt: string, schema: ResponseSchema, modelName: string = "gemini-3.1-pro-preview"): Promise<T> {
     if (!this.genAI) throw new Error("Gemini APIキーが設定されていません。");
 
     const model: GenerativeModel = this.genAI.getGenerativeModel({
@@ -70,7 +70,7 @@ export class GeminiService {
    * @param {any[]} tools 
    * @param {string} modelName 
    */
-  async generateWithTools(prompt: string, tools: any[], modelName: string = "gemini-1.5-pro"): Promise<ToolCallingResponse> {
+  async generateWithTools(prompt: string, tools: any[], modelName: string = "gemini-3.1-pro-preview"): Promise<ToolCallingResponse> {
     if (!this.genAI) throw new Error("Gemini APIキーが設定されていません。");
 
     const model: GenerativeModel = this.genAI.getGenerativeModel({
@@ -97,7 +97,7 @@ export class GeminiService {
   /**
    * チャットセッションを開始
    */
-  createChatSession(modelName: string = "gemini-1.5-pro", history: any[] = [], tools: any[] = []): ChatSession {
+  createChatSession(modelName: string = "gemini-3.1-pro-preview", history: any[] = [], tools: any[] = []): ChatSession {
     if (!this.genAI) throw new Error("Gemini APIキーが設定されていません。");
 
     const model: GenerativeModel = this.genAI.getGenerativeModel({

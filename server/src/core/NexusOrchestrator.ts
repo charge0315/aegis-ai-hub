@@ -8,7 +8,8 @@ export interface OrchestratorNotification {
   status: string;
   message: string;
   data?: any;
-  agent?: string;
+  agentId?: string;
+  timestamp?: string;
 }
 
 /**
@@ -53,6 +54,7 @@ export class NexusOrchestrator {
    * 全購読者へステータスを通知。
    */
   public notify(data: OrchestratorNotification): void {
+    if (!data.timestamp) data.timestamp = new Date().toISOString();
     console.log(`[NexusOrchestrator] ${data.message || data.status}`);
     const payload = `data: ${JSON.stringify(data)}\n\n`;
     for (const res of this.subscribers) {
@@ -78,30 +80,30 @@ export class NexusOrchestrator {
     }
 
     this.isRunning = true;
-    this.notify({ status: "start", message: "自律Nexusワークフローを開始します。" });
+    this.notify({ status: "working", message: "自律Nexusワークフローを開始します。", agentId: "architect" });
 
     try {
       // 1. Architectによるプランニング
-      this.notify({ status: "planning", message: "Architectがプランを立案中..." });
+      this.notify({ status: "working", message: "Architectがプランを立案中...", agentId: "architect" });
       const plan: ExecutionPlan = await this.architect.plan(requirements);
-      this.notify({ status: "plan_ready", message: "プランが確定しました。", data: plan });
+      this.notify({ status: "success", message: "プランが確定しました。", agentId: "architect" });
 
       // 2. ステップの実行
       for (const step of plan.steps) {
+        const id = step.agent.toLowerCase();
         this.notify({ 
-          status: "executing", 
+          status: "working", 
           message: `${step.agent} がアクションを実行中: ${step.action}`,
-          agent: step.agent
+          agentId: id
         });
 
         let result: any;
         switch (step.agent) {
           case "Curator":
-            // 本来はScraper等からデータを取得するが、ここではワークフローのデモ
             result = { message: "Curated 10 high-quality articles based on interests." };
             break;
           case "Discovery":
-            result = await this.discovery.discoverSources({ categories: {} }); // Simplified for demo
+            result = await this.discovery.discoverSources({ categories: {} }); 
             break;
           case "Archivist":
             result = await this.archivist.summarizeAndArchive("Aegis Nexus System Update");
@@ -111,20 +113,24 @@ export class NexusOrchestrator {
         }
 
         this.notify({ 
-          status: "step_complete", 
+          status: "success", 
           message: `${step.agent} のタスクが完了しました。`, 
+          agentId: id,
           data: result 
         });
       }
 
-      this.notify({ status: "complete", message: "全ての自律タスクが正常に完了しました。" });
+      this.notify({ status: "idle", message: "全ての自律タスクが正常に完了しました。" });
 
     } catch (error: any) {
       console.error("[NexusOrchestrator] Error:", error);
       this.notify({ status: "error", message: `エラーが発生しました: ${error.message}` });
     } finally {
       this.isRunning = false;
-      this.notify({ status: "idle", message: "オーケストレーターは待機状態です。" });
+      // 全てのエージェントをidleに戻す
+      ["architect", "curator", "discovery", "archivist"].forEach(id => {
+        this.notify({ status: "idle", message: "待機中", agentId: id });
+      });
     }
   }
 }

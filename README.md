@@ -1,31 +1,31 @@
 # Aegis AI Hub 🛡️🤖 - v5.0 Next-Gen
 
 ユーザーの興味に特化した、究極の自律学習型知的ニュース・ダッシュボード。  
-最新の **Gemini 3.1 シリーズ** を中枢に、Fluentデザイン（Mica/Glass-morphism）と「下書き」ベースの高度な設定ワークフローを統合した、インテリジェンス・エージェントの決定版。
+最新の **Gemini 3.1 Pro Preview / Flash Lite** を中枢に、React/TypeScript と「下書き」ベースの高度な設定ワークフローを統合した、インテリジェンス・エージェントの決定版。
 
 ## 🌟 Aegis v5.0 の主要な進化点
 
-### 1. 統合システムエディタ (Unified System Editor)
-「フィード」「カテゴリ」「キーワード」の設定を、タブ切り替えで一元管理できる統合画面を新設。
-- **「下書き（Draft）」ベースの編集フロー**: 設定画面を開いた際に現在の構成をメモリにロード。全ての変更（追加・編集・削除）を一時的に保持し、最後に「保存してシステムを再構築」ボタンで一括反映。
-- **インタラクティブなワード管理**: カテゴリ内のブランド・キーワードをタグ形式で表示。クリックひとつで即座に削除（OFF）が可能。
+### 1. Nexus Command & Control (統合システムエディタ)
+設定、視覚化、スキルの制御を一元管理する強力なダッシュボードを搭載。
+- **「下書き（Draft）」ベースの編集フロー**: 全ての変更を一時保持し、一括同期（Atomic Sync）が可能。
+- **カテゴリ・ライフサイクル管理**: カテゴリの追加、削除、表示順の入れ替えを直感的に操作。
+- **Skill Registry**: エージェントが持つ特定の「スキル」（RSS取得、解析、提案等）を個別に有効/無効化。
 
-### 2. AI 進化のシームレスな統合 (AI-Driven Evolution)
-AIによる「システム進化」と「ナレッジ再構築」の提案を、設定エディタへ直接取り込むワークフロー。
-- **AI 提案の「下書き」取り込み**: Gemini が提案する新しいフィードやブランドを、ワンクリックで現在の編集セッション（下書き）へマージ。
-- **プレビュー & 調整**: AI の提案をそのまま適用するのではなく、エディタ上で手動調整してから保存可能。
+### 2. 次世代 AI 推論 (Powered by Gemini 3.1)
+2026年4月時点の最新モデル **Gemini 3.1 シリーズ** に最適化。
+- **Structured Output**: JSON Schema による厳密なデータパースにより、AI の誤動作（404エラー等）を解消。
+- **自律ループと SSE**: エージェントの思考プロセスをリアルタイムでストリーミング。ハートビート機能により安定した接続を維持。
 
-### 3. 次世代 Fluent デザイン (Advanced UI/UX)
-Windows 11 の Mica や Glass-morphism を踏襲した、モダンで直感的なインターフェース。
-- **グリッド/リスト表示の切り替え**: 記事の密度をユーザーの好みに合わせて瞬時に変更。
-- **動的なフィードバック**: AI解析中のスピナー表示や、ボタンの `active:scale` エフェクトによる高い操作感。
-- **インテリジェント・サーチ**: 常時アクセスのドロワーメニューから、全記事を瞬時にフィルタリング。
+### 3. プロダクション級の堅牢性
+- **堅牢な起動プロセス**: Docker Desktop の起動待ち、API 疎通確認、ログ出力 (`startup.log`) を備えた改善版 `startup.ps1`。
+- **最適化された静的配信**: `dashboard/dist` からの配信により、高速な読み込みと正確な MIME タイプ処理を実現。
+- **モダン UI**: Windows 11 の Mica や Glass-morphism を踏襲した Fluent デザイン。
 
 ## 🛠 テックスタック
 
-- **Backend**: Node.js, Express (SOA - Service Oriented Architecture)
-- **AI**: Gemini 3.1 Pro / Flash (最新 2026年4月モデル対応)
-- **Frontend**: ES Modules (api.js, ui.js, store.js, app.js), Tailwind CSS 3.4+
+- **Backend**: Node.js, Fastify, TypeScript
+- **AI**: Gemini 3.1 Pro Preview / Flash / Flash Lite (Structured Output 対応)
+- **Frontend**: React 18, Vite, Tailwind CSS 3.4+, Framer Motion
 - **Protocol**: MCP (Model Context Protocol) サーバー機能搭載
 
 ## 🚀 起動とセットアップ
@@ -40,6 +40,7 @@ GEMINI_API_KEY=your_api_key_here
 ```powershell
 ./scripts/startup.ps1 -Install
 ```
+※ 実行ログは `./startup.log` に出力されます。
 
 ### 3. Docker を利用した起動
 ```bash
@@ -50,9 +51,9 @@ docker-compose up -d
 
 詳細な設計ドキュメントは `docs/CODEMAPS/` に集約されています。
 - [**INDEX.md**](./docs/CODEMAPS/INDEX.md) - プロジェクト全体の俯瞰図とモジュール構成
-- [**backend.md**](./docs/CODEMAPS/backend.md) - 自律進化ジョブと API / MCP ロジック
-- [**frontend.md**](./docs/CODEMAPS/frontend.md) - 統合エディタと Fluent デザインの実装
-- [**API.md**](./docs/API.md) - 同期 API (`/api/sync-settings`) と MCP の仕様
+- [**automation.md**](./docs/CODEMAPS/automation.md) - スタートアップ自動化と Docker 構成
+- [**frontend.md**](./docs/CODEMAPS/frontend.md) - Nexus Editor, Skill Registry, Fluent デザイン
+- [**backend.md**](./docs/CODEMAPS/backend.md) - SOA, 自律進化, SSE, Gemini 3.1 基盤
 
 ---
 *Aegis AI Hub - Precision Engineering for Intellectual Excellence. 🚀*

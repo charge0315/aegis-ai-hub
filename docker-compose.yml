@@ -1,4 +1,3 @@
-version: '3.8'
 services:
   aegis-api:
     build: ./server
@@ -19,3 +18,4 @@ services:
 networks:
   default:
     name: aegis-network
+    external: false
