@@ -95,14 +95,36 @@ if ($RetryCount -eq $MaxRetries) {
 
 Write-Log 'Launching Dashboard...' 'Cyan'
 
+# サーバーからウィンドウ状態の取得を試みる
+$WindowState = $null
+try {
+    $Response = Invoke-WebRequest -Uri "http://localhost:3005/api/v5/window-state" -UseBasicParsing -ErrorAction SilentlyContinue
+    if ($Response.StatusCode -eq 200) {
+        $WindowState = $Response.Content | ConvertFrom-Json
+    }
+} catch {
+    Write-Log "Could not fetch window state, using defaults." 'Gray'
+}
+
 Add-Type -AssemblyName System.Windows.Forms
 $Screen = [System.Windows.Forms.Screen]::PrimaryScreen
 $ScreenWidth = $Screen.Bounds.Width
 $ScreenHeight = $Screen.Bounds.Height
-$WinWidth = [Math]::Floor($ScreenWidth / 4)
-$WinHeight = $ScreenHeight
+
+# デフォルト設定 (スクリーンショットに基づく縦長レイアウト)
+$WinWidth = [Math]::Floor($ScreenWidth / 3) # 約 1/3 幅
+$WinHeight = [Math]::Floor($ScreenHeight * 0.95) # フル高さに近い
 $PosX = $ScreenWidth - $WinWidth
 $PosY = 0
+
+# 前回の状態があれば上書き
+if ($WindowState -and $WindowState.width -gt 100) {
+    $WinWidth = $WindowState.width
+    $WinHeight = $WindowState.height
+    $PosX = $WindowState.x
+    $PosY = $WindowState.y
+    Write-Log "Restoring window state: $($WinWidth)x$($WinHeight) at ($($PosX),$($PosY))" 'Gray'
+}
 
 $BrowserPath = ""
 $PotentialPaths = @(
@@ -124,7 +146,7 @@ $Arguments = "--app=""$CleanUrl"" --window-position=$PosX,$PosY --window-size=$W
 
 try {
     Start-Process $BrowserPath -ArgumentList $Arguments
-    Write-Log 'Browser launched successfully.' 'Green'
+    Write-Log "Browser launched at $PosX,$PosY ($WinWidth x $WinHeight)." 'Green'
 } catch {
     Write-Log "Failed to launch browser. Please open $Url manually." 'Red'
 }

@@ -1,6 +1,6 @@
 # Backend Architecture Codemap
 
-**Last Updated:** 2026-04-26
+**Last Updated:** 2026-04-28
 **Version:** v5.0
 **Entry Point:** `server/src/index.ts`
 
@@ -14,14 +14,17 @@
 | `ScraperFacade` | 全てのデータ取得と AI 推論を統括する司令塔。 | `getDashboard`, `getRecommendations` |
 | `DiscoveryService` | AI による新しい RSS フィードの探索と検証。 | `getProposals` |
 | `GeminiService` | 構造化出力（JSON Schema）を用いた記事キュレーション。 | `generateStructured`, `curate` |
+| `SettingsManager` | 設定（interests, feeds）およびウィンドウ状態の永続化管理。 | `syncSettings`, `getWindowState`, `saveWindowState` |
 | `NexusOrchestrator` | 自律ループの実行と SSE による進捗ブロードキャスト。 | `runAutonomousLoop`, `subscribe` |
-| `EvolutionJob` | 最新トレンドからの継続的な興味学習（バックグラウンド）。 | `run` |
 
 ## v5.0 における重要な変更
 
 - **一括同期 API (`POST /api/v5/sync-settings`)**:
   - `interests.json` と `feed_config.json` をアトミックに同時更新。
-  - Zod スキーマによる厳密なバリデーションを実施。
+- **ウィンドウ状態の永続化 (`/api/v5/window-state`)**:
+  - `GET`: `startup.ps1` が起動時にブラウザのサイズ・位置を決定するために使用。
+  - `POST`: フロントエンドがサイズ変更や移動を検知した際に呼び出し。
+  - `window_state.json` ファイルにデータを保存。
 - **SSE (Server-Sent Events) の安定化**:
   - 自律ループの進捗をリアルタイム配信。
   - 30秒ごとの **ハートビート (`: heartbeat`)** により、タイムアウトによる切断を防止。

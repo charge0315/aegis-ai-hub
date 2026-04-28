@@ -3,14 +3,31 @@ import { motion } from 'framer-motion';
 import { Cpu, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { GlassPanel } from './GlassPanel';
 import type { AgentStatus } from '../types';
-
 interface AgentMonitorProps {
   agents: AgentStatus[];
+  compact?: boolean;
 }
 
-export const AgentMonitor: React.FC<AgentMonitorProps> = ({ agents }) => {
+export const AgentMonitor: React.FC<AgentMonitorProps> = ({ agents, compact }) => {
+  if (compact) {
+    return (
+      <div className="flex flex-col items-center gap-4 py-2">
+        {agents.map((agent) => (
+          <div key={agent.id} title={`${agent.name}: ${agent.lastMessage || 'Idle'}`} className="relative group">
+            <StatusIcon status={agent.status} size={18} />
+            {agent.status === 'working' && (
+              <span className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full animate-ping" />
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   return (
     <GlassPanel className="p-4 flex flex-col gap-4">
+// ...
+
       <div className="flex items-center justify-between border-b border-white/5 pb-2">
         <h2 className="text-xs font-bold uppercase tracking-widest text-slate-400 flex items-center gap-2">
           <Cpu size={14} />
@@ -58,16 +75,16 @@ export const AgentMonitor: React.FC<AgentMonitorProps> = ({ agents }) => {
   );
 };
 
-const StatusIcon = ({ status }: { status: AgentStatus['status'] }) => {
+const StatusIcon = ({ status, size = 12 }: { status: AgentStatus['status'], size?: number }) => {
   switch (status) {
     case 'working':
-      return <Loader2 size={12} className="text-primary animate-spin" />;
+      return <Loader2 size={size} className="text-primary animate-spin" />;
     case 'success':
-      return <CheckCircle2 size={12} className="text-accent" />;
+      return <CheckCircle2 size={size} className="text-accent" />;
     case 'error':
-      return <AlertCircle size={12} className="text-alert" />;
+      return <AlertCircle size={size} className="text-alert" />;
     default:
-      return <div className="w-3 h-3 rounded-full border border-slate-600" />;
+      return <div style={{ width: size, height: size }} className="rounded-full border border-slate-600" />;
   }
 };
 

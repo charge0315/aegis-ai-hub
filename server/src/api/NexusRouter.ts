@@ -85,6 +85,18 @@ export const nexusRouter: FastifyPluginAsync<NexusRouterOptions> = async (fastif
   });
 
   /**
+   * GET /api/v5/window-state
+   */
+  fastify.get('/window-state', async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const state = await SettingsManager.getWindowState();
+      return state || { error: 'Not Found' };
+    } catch (error: any) {
+      reply.status(500).send({ error: 'Failed to retrieve window state' });
+    }
+  });
+
+  /**
    * GET /api/v5/events
    * SSEによる進捗通知
    */

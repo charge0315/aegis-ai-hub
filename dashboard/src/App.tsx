@@ -7,8 +7,7 @@ import {
   Search, 
   RefreshCcw,
   AlertCircle,
-  Loader2,
-  Command as CommandIcon
+  Loader2
 } from 'lucide-react';
 import { ArticleCard } from './components/ArticleCard';
 import { AgentMonitor } from './components/AgentMonitor';
@@ -22,6 +21,34 @@ const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<View>('feed');
   const { settings, articles, loading, error, sync, refetch } = useNexusSync();
   const agentEvents = useAgentEvents();
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+
+  // Save window state and update local width for responsive UI
+  useEffect(() => {
+    let timeoutId: any;
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        if (settings) {
+          const state = {
+            width: window.outerWidth,
+            height: window.outerHeight,
+            x: window.screenX,
+            y: window.screenY
+          };
+          nexusApi.syncSettings(settings, state).catch(console.error);
+        }
+      }, 1000);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      clearTimeout(timeoutId);
+    };
+  }, [settings]);
+
+  const isCompact = windowWidth < 1024;
   const [searchQuery, setSearchQuery] = useState('');
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
 
@@ -67,7 +94,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="bg-deep-space min-h-screen text-slate-200 flex">
+    <div className="bg-deep-space min-h-screen text-slate-200 flex transition-all duration-300">
       {/* Command Palette */}
       <CommandPalette 
         isOpen={isCommandPaletteOpen}
@@ -79,154 +106,122 @@ const App: React.FC = () => {
       />
 
       {/* Sidebar Navigation */}
-      <aside className="w-64 border-r border-white/5 bg-black/20 backdrop-blur-xl flex flex-col p-6 sticky top-0 h-screen z-30">
-        <div className="flex items-center gap-3 mb-10 px-2" data-testid="app-logo">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
+      <aside className={`${isCompact ? 'w-20 px-3' : 'w-64 p-6'} border-r border-white/5 bg-black/20 backdrop-blur-xl flex flex-col sticky top-0 h-screen z-30 transition-all duration-300`}>
+        <div className={`flex items-center ${isCompact ? 'justify-center' : 'gap-3 px-2'} mb-10 mt-6`} data-testid="app-logo">
+          <div className="w-8 h-8 rounded-lg bg-primary flex-shrink-0 flex items-center justify-center shadow-lg shadow-primary/20">
             <Shield size={20} className="text-white" />
           </div>
-          <span className="text-lg font-bold tracking-tight text-white uppercase italic">Aegis <span className="text-primary">Nexus</span></span>
+          {!isCompact && <span className="text-lg font-bold tracking-tight text-white uppercase italic">Aegis <span className="text-primary">Nexus</span></span>}
         </div>
 
-        <nav className="space-y-2 flex-grow">
+        <nav className="space-y-4 flex-grow">
           <NavItem 
             active={currentView === 'feed'} 
             onClick={() => setCurrentView('feed')}
             icon={<LayoutDashboard size={18} />}
-            label="Intelligence Feed"
+            label={isCompact ? '' : 'Intelligence Feed'}
             data-testid="nav-feed"
           />
           <NavItem 
             active={currentView === 'settings'} 
             onClick={() => setCurrentView('settings')}
             icon={<Settings2 size={18} />}
-            label="Nexus Command"
+            label={isCompact ? '' : 'Nexus Command'}
             data-testid="nav-settings"
           />
         </nav>
 
-        <div className="mt-auto pt-6 border-t border-white/5">
-          <AgentMonitor agents={agentEvents} />
+        <div className={`mt-auto py-6 border-t border-white/5 ${isCompact ? 'flex justify-center' : ''}`}>
+          <AgentMonitor agents={agentEvents} compact={isCompact} />
         </div>
       </aside>
 
       {/* Main Content Area */}
       <main className="flex-grow flex flex-col min-h-screen">
         {/* Header */}
-        <header className="h-16 border-b border-white/5 bg-black/10 backdrop-blur-md flex items-center justify-between px-8 sticky top-0 z-20">
-          <div className="flex items-center gap-6">
-            <div className="relative w-96">
+        <header className={`h-16 border-b border-white/5 bg-black/10 backdrop-blur-md flex items-center justify-between ${isCompact ? 'px-4' : 'px-8'} sticky top-0 z-20`}>
+          <div className="flex items-center gap-6 flex-grow">
+            <div className={`relative ${isCompact ? 'w-full' : 'w-96'}`}>
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
               <input 
                 type="text" 
-                placeholder="Search signals (Ctrl+K for commands)"
+                placeholder={isCompact ? "Search..." : "Search signals (Ctrl+K for commands)"}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 data-testid="search-input"
                 className="w-full bg-white/5 border border-white/10 rounded-full py-1.5 pl-10 pr-4 text-sm focus:outline-none focus:border-primary/50 transition-colors"
               />
             </div>
-            <button 
-              onClick={() => setIsCommandPaletteOpen(true)}
-              data-testid="command-center-button"
-              className="flex items-center gap-2 px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-[10px] font-bold text-slate-400 transition-all uppercase tracking-widest"
-            >
-              <CommandIcon size={12} />
-              Command Center
-            </button>
           </div>
-
-          <div className="flex items-center gap-4">
-            <button 
-              onClick={() => void refetch()}
-              data-testid="refresh-button"
-              className="p-2 text-slate-400 hover:text-white transition-colors"
-              title="Refresh Data"
-            >
-              <RefreshCcw size={18} className={loading ? 'animate-spin' : ''} />
-            </button>
-            <button 
-              onClick={() => handleTriggerOrchestration()}
-              data-testid="run-orchestrator-button"
-              className="px-4 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold rounded-full border border-primary/20 transition-all"
-            >
-              Run Orchestrator
-            </button>
-          </div>
+          {!isCompact && (
+            <div className="flex items-center gap-4 ml-4">
+              <button 
+                onClick={() => handleTriggerOrchestration()}
+                className="p-2 text-slate-400 hover:text-white transition-colors"
+                title="Sync with Agents"
+              >
+                <RefreshCcw size={18} />
+              </button>
+              <div className="flex items-center gap-2 px-3 py-1 bg-white/5 border border-white/10 rounded-lg text-xs font-mono text-slate-500">
+                <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+                v5.0 NEXUS
+              </div>
+            </div>
+          )}
         </header>
 
-        {/* Content View */}
-        <div className="p-8">
+        {/* Dynamic View Content */}
+        <div className={`flex-grow p-4 ${isCompact ? 'sm:p-6' : 'md:p-8'}`}>
           <AnimatePresence mode="wait">
-            {loading && articles.length === 0 ? (
-              <motion.div 
-                key="loading"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="flex flex-col items-center justify-center py-40 gap-4"
-              >
-                <div className="relative">
-                  <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full animate-pulse" />
-                  <Loader2 size={48} className="text-primary animate-spin relative z-10" />
-                </div>
-                <p className="text-slate-400 font-medium tracking-tight">Synchronizing with Global Intelligence Grid...</p>
-              </motion.div>
-            ) : error ? (
-              <motion.div 
-                key="error"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="flex flex-col items-center justify-center py-40 gap-4 text-alert"
-              >
-                <AlertCircle size={40} />
-                <p className="font-medium text-lg">Nexus Connectivity Error</p>
-                <p className="text-slate-500 text-sm -mt-2">{error}</p>
-                <button 
-                  onClick={() => void refetch()}
-                  className="mt-2 px-6 py-2 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 transition-colors text-white text-sm font-bold"
-                >
-                  Reconnect to Nexus
-                </button>
-              </motion.div>
-            ) : currentView === 'feed' ? (
+            {currentView === 'feed' ? (
               <motion.div
                 key="feed"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
-                className="space-y-8"
+                transition={{ duration: 0.2 }}
               >
-                <div className="flex items-end justify-between">
-                  <div>
-                    <h2 className="text-4xl font-extrabold text-white tracking-tighter">Intelligence Feed</h2>
-                    <p className="text-slate-500 mt-1 font-medium">Synthesizing global signals for your designated interests.</p>
-                  </div>
-                  <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest bg-white/5 px-3 py-1 rounded-full border border-white/5">
-                    {filteredArticles.length} active signals / {articles.length} total
-                  </div>
+                <div className="mb-8">
+                  <h2 className={`font-bold text-white ${isCompact ? 'text-2xl' : 'text-4xl'}`}>Intelligence Feed</h2>
+                  <p className="text-slate-500 mt-2">Synthesizing global signals for your designated interests.</p>
                 </div>
 
-                {filteredArticles.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {loading ? (
+                  <div className="h-[60vh] flex flex-col items-center justify-center gap-4">
+                    <Loader2 className="text-primary animate-spin" size={48} />
+                    <p className="text-slate-500 font-medium">Scanning node cluster...</p>
+                  </div>
+                ) : error ? (
+                  <div className="h-[60vh] flex flex-col items-center justify-center gap-4 p-8 border-2 border-dashed border-red-500/20 rounded-3xl bg-red-500/5">
+                    <AlertCircle className="text-alert" size={48} />
+                    <h3 className="text-xl font-bold text-white">Synchronization Error</h3>
+                    <p className="text-slate-400 text-center max-w-md">{error}</p>
+                    <button 
+                      onClick={() => refetch()}
+                      className="mt-4 px-6 py-2 bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors font-semibold"
+                    >
+                      Retry Connection
+                    </button>
+                  </div>
+                ) : filteredArticles.length > 0 ? (
+                  <div className={`grid gap-6 items-start auto-rows-min ${
+                    isCompact 
+                      ? 'grid-cols-1' 
+                      : 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4'
+                  }`}>
                     {filteredArticles.map((article, idx) => (
-                      <motion.div
-                        key={article.link}
-                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        transition={{ delay: idx * 0.03 }}
-                      >
-                        <ArticleCard article={article} />
-                      </motion.div>
+                      <ArticleCard key={`${article.link}-${idx}`} article={article} index={idx} />
                     ))}
                   </div>
                 ) : (
-                  <div className="py-40 text-center border-2 border-dashed border-white/5 rounded-3xl bg-white/[0.02]">
-                    <Search size={48} className="mx-auto text-slate-800 mb-4" />
-                    <p className="text-slate-500 text-lg font-medium">No intelligence matches your current filter.</p>
+                  <div className="h-[60vh] flex flex-col items-center justify-center gap-4 text-slate-600">
+                    <div className="p-6 bg-white/5 rounded-full">
+                      <Search size={32} />
+                    </div>
+                    <p className="text-lg font-medium">No signals match your current query.</p>
                     <button 
                       onClick={() => setSearchQuery('')}
-                      className="mt-4 text-primary text-sm font-bold hover:underline"
+                      className="text-primary hover:underline"
                     >
                       Clear all filters
                     </button>
@@ -239,8 +234,14 @@ const App: React.FC = () => {
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.2 }}
               >
-                {settings && <UnifiedEditor currentSettings={settings} onSave={sync} />}
+                {settings && (
+                  <UnifiedEditor 
+                    currentSettings={settings} 
+                    onSave={sync}
+                  />
+                )}
               </motion.div>
             )}
           </AnimatePresence>
@@ -262,31 +263,17 @@ const NavItem: React.FC<NavItemProps> = ({ active, onClick, icon, label, 'data-t
   <button
     onClick={onClick}
     data-testid={testId}
-    className={cn(
-      "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group",
+    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
       active 
-        ? "bg-primary/10 text-primary shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] border border-primary/20" 
-        : "text-slate-400 hover:text-slate-200 hover:bg-white/5 border border-transparent"
-    )}
+        ? 'bg-primary text-white shadow-lg shadow-primary/20' 
+        : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+    }`}
   >
-    <span className={cn(
-      "transition-transform duration-300",
-      active ? "scale-110" : "group-hover:scale-110"
-    )}>
+    <div className={`${active ? 'scale-110' : 'scale-100'} transition-transform`}>
       {icon}
-    </span>
-    <span className="text-xs font-bold tracking-widest uppercase">{label}</span>
-    {active && (
-      <motion.div 
-        layoutId="activeNav"
-        className="ml-auto w-1.5 h-1.5 rounded-full bg-primary"
-      />
-    )}
+    </div>
+    {label && <span className="font-semibold text-sm">{label}</span>}
   </button>
 );
-
-function cn(...classes: string[]) {
-  return classes.filter(Boolean).join(' ');
-}
 
 export default App;

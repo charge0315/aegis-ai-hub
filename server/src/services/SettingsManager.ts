@@ -52,10 +52,11 @@ class SettingsManager {
    * Save settings with validation, backup, and atomic write.
    * Includes basic conflict resolution based on timestamp.
    */
-  async syncSettings({ interests, feedConfig, lastUpdated }: SyncSettings): Promise<{ success: boolean; timestamp: string; lastUpdated: number }> {
+  async syncSettings({ interests, feedConfig, windowState, lastUpdated }: SyncSettings): Promise<{ success: boolean; timestamp: string; lastUpdated: number }> {
     // 1. Validate
     const validatedInterests = InterestsSchema.parse(interests);
     const validatedFeedConfig = FeedConfigSchema.parse(feedConfig);
+    const validatedWindowState = windowState ? WindowStateSchema.parse(windowState) : undefined;
 
     // 2. Conflict Resolution
     const currentInterests = await this.getInterests();
@@ -75,11 +76,27 @@ class SettingsManager {
     // 4. Backup and Save Feed Config
     await this._safeWrite(this.feedConfigPath, validatedFeedConfig);
 
+    // 5. Save Window State
+    if (validatedWindowState) {
+      const windowStatePath = path.join(path.dirname(this.interestsPath), 'window_state.json');
+      await this._safeWrite(windowStatePath, validatedWindowState);
+    }
+
     return { 
       success: true, 
       timestamp: new Date().toISOString(),
       lastUpdated: now
     };
+  }
+
+  async getWindowState(): Promise<any | null> {
+    const windowStatePath = path.join(path.dirname(this.interestsPath), 'window_state.json');
+    try {
+      const content = await fs.readFile(windowStatePath, 'utf-8');
+      return JSON.parse(content);
+    } catch {
+      return null;
+    }
   }
 
   /**

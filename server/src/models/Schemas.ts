@@ -53,12 +53,26 @@ export const InterestsSchema = z.object({
 export type Interests = z.infer<typeof InterestsSchema>;
 
 /**
- * Unified Sync Settings Schema
+ * v5.0 Window State Schema
+ */
+export const WindowStateSchema = z.object({
+  width: z.number(),
+  height: z.number(),
+  x: z.number(),
+  y: z.number(),
+});
+
+export type WindowState = z.infer<typeof WindowStateSchema>;
+
+/**
+ * v5.0 Sync Settings Schema
  */
 export const SyncSettingsSchema = z.object({
   interests: InterestsSchema,
   feedConfig: FeedConfigSchema,
+  windowState: WindowStateSchema.optional(),
   lastUpdated: z.number().optional(),
 });
+
 
 export type SyncSettings = z.infer<typeof SyncSettingsSchema>;

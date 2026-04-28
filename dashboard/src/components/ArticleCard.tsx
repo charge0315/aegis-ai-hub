@@ -6,14 +6,18 @@ import type { Article } from '../types';
 
 interface ArticleCardProps {
   article: Article;
+  index?: number;
 }
 
-export const ArticleCard: React.FC<ArticleCardProps> = ({ article }) => {
+export const ArticleCard: React.FC<ArticleCardProps> = ({ article, index = 0 }) => {
   const [showReason, setShowReason] = useState(false);
 
   return (
     <GlassPanel 
       className="group relative flex flex-col h-full hover:border-primary/50 transition-colors duration-300 article-card"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: Math.min(index * 0.05, 0.5) }}
       whileHover={{ y: -4 }}
       data-testid="article-card"
     >

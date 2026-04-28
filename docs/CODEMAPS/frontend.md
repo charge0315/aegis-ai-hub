@@ -1,23 +1,28 @@
 # Frontend UI Codemap
 
-**Last Updated:** 2026-04-26
-**Version:** 5.0 (Unified Settings & Fluent Design)
+**Last Updated:** 2026-04-28
+**Version:** 5.0 (Smart Layout & Persistence)
 **Entry Point:** `dashboard/src/main.tsx`
 
 ## 概要
-Aegis AI Hub v5.0 のフロントエンドは、React と Vite をベースに、複雑な設定を直感的に操作できる「Nexus Editor」と、Mica/Glass-morphism を採用したモダンな UI を特徴としています。
+Aegis AI Hub v5.0 のフロントエンドは、React と Vite をベースに、複雑な設定を直感的に操作できる「Nexus Editor」に加え、利用環境に最適化される「レスポンシブ・スマートレイアウト」と「ウィンドウ状態の永続化」を特徴としています。
 
-## 統合システムエディタ (Nexus Command & Control)
-設定画面 (`UnifiedEditor`) は、以下の 3 つの主要コンポーネントで構成されます。
+## レスポンシブ・スマートレイアウト (Responsive Smart Layout)
+ユーザーの閲覧環境（ウィンドウ幅）に応じて、UI が自動的に最適化されます。
 
-- **Nexus Editor (Categories & Keywords)**: 
-  - カテゴリの追加・削除・表示順の入れ替え機能。
-  - ブランドおよびキーワードの直接編集。
-  - カテゴリごとの AI 推論（Reasoning）の表示。
-- **Knowledge Graph**: 興味関心のネットワークを 2D/3D で可視化。
-- **Skill Registry**: 
-  - エージェントが保持するスキル（RSS取得、セマンティックフィルタ、実体抽出等）の一覧表示。
-  - スキルの有効/無効をワンクリックで切り替え、エージェントの挙動を直接制御。
+- **コンパクトモード (幅 < 1024px)**: 
+  - サイドバーが自動的に折りたたまれ、アイコンのみの表示に切り替わります。
+  - ニュースグリッドが動的にカラム数を調整し、限られたスペースを最大限に活用します。
+  - `AgentMonitor` がコンパクト表示に最適化され、要約情報を効率的に提示します。
+- **ウィンドウ状態の永続化**:
+  - ウィンドウのサイズと位置をリアルタイムで監視し、変更があるたびにバックエンド (`/api/v5/window-state`) へ保存します。
+  - 次回起動時、保存された座標とサイズが自動的に適用されます。
+
+## 視覚効果 & インタラクション (UX Enhancement)
+- **ArticleCard Animation**: 
+  - 記事カードが表示される際、`framer-motion` を使用した **Staggered Entrance Animation**（時間差での浮き上がり）を適用。
+  - リストの読み込み時に視覚的なリズムを与え、高級感を演出します。
+- **Fluent デザイン**: Tailwind CSS を活用した `backdrop-blur` や、ボタン押下時の `active:scale-95` によるフィードバック。
 
 ### 「下書き（Draft）」ワークフロー
 1. **ロード**: 設定画面を開くと、現在の設定が `draft` ステートにコピーされます。
