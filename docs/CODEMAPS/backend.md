@@ -1,6 +1,6 @@
 # Backend Architecture Codemap
 
-**Last Updated:** 2026-04-28
+**Last Updated:** 2026-05-15
 **Version:** v5.0
 **Entry Point:** `server/src/index.ts`
 
@@ -30,7 +30,19 @@
   - 30秒ごとの **ハートビート (`: heartbeat`)** により、タイムアウトによる切断を防止。
 - **静的ファイル配信の最適化**:
   - `dashboard/dist` フォルダからの配信に完全移行。
-  - MIME タイプ（特に JavaScript モジュール）の問題を `fastify-static` の構成により解決。
+  - MIME タイプ（特に JavaScript モジュール）の問題を `fastify-static` の構成（`setHeaders`）により解決。
+
+## 安定性と開発効率の向上 (Updates)
+
+- **EBUSY エラー (ファイルロック) の回避**:
+  - Windows 上の Docker ボリュームマウント環境で発生しやすい `EBUSY` エラーを解決。
+  - `write-file-atomic` を廃止し、**バックアップ生成 + リトライロジック (3回/200ms間隔) 付き `fs.writeFile`** に変更。
+  - ファイルアクセス競合時の安定性を大幅に向上。
+- **Live Synchronization**:
+  - `docker-compose.yml` で `server/src` をコンテナにマウント。
+  - サーバー側のソースコードを変更すると、再ビルドなしでコンテナ内のプロセスに反映されます（`ts-node-dev` 等との併用）。
+- **詳細なエラーロギング**:
+  - `NexusRouter.ts` の各エンドポイントにおいて、バリデーションエラーや実行時例外の詳細をサーバーコンソールに出力。
 
 ## Gemini 3.1 の活用
 - **最新モデルの採用**:

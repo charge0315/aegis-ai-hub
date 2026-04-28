@@ -1,8 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import writeFileAtomic from 'write-file-atomic';
-import { InterestsSchema, FeedConfigSchema, Interests, FeedConfig, SyncSettings } from '../models/Schemas.js';
+import { InterestsSchema, FeedConfigSchema, Interests, FeedConfig, SyncSettings, WindowStateSchema } from '../models/Schemas.js';
 
 class SettingsManager {
   private interestsPath: string;
@@ -53,16 +52,19 @@ class SettingsManager {
    * Includes basic conflict resolution based on timestamp.
    */
   async syncSettings({ interests, feedConfig, windowState, lastUpdated }: SyncSettings): Promise<{ success: boolean; timestamp: string; lastUpdated: number }> {
+    console.log('[SettingsManager] syncSettings started');
     // 1. Validate
     const validatedInterests = InterestsSchema.parse(interests);
     const validatedFeedConfig = FeedConfigSchema.parse(feedConfig);
     const validatedWindowState = windowState ? WindowStateSchema.parse(windowState) : undefined;
+    console.log('[SettingsManager] Validation complete');
 
     // 2. Conflict Resolution
     const currentInterests = await this.getInterests();
     const serverLastUpdated = currentInterests.lastUpdated || 0;
     
     if (lastUpdated && lastUpdated < serverLastUpdated) {
+      console.warn(`[SettingsManager] Conflict detected: client=${lastUpdated}, server=${serverLastUpdated}`);
       throw new Error('CONFLICT: サーバー上の設定は送信されたものより新しく更新されています。最新を取得してからやり直してください。');
     }
 
@@ -71,17 +73,21 @@ class SettingsManager {
     validatedInterests.lastUpdated = now;
 
     // 3. Backup and Save Interests
+    console.log(`[SettingsManager] Saving interests to: ${this.interestsPath}`);
     await this._safeWrite(this.interestsPath, validatedInterests);
     
     // 4. Backup and Save Feed Config
+    console.log(`[SettingsManager] Saving feeds to: ${this.feedConfigPath}`);
     await this._safeWrite(this.feedConfigPath, validatedFeedConfig);
 
     // 5. Save Window State
     if (validatedWindowState) {
       const windowStatePath = path.join(path.dirname(this.interestsPath), 'window_state.json');
+      console.log(`[SettingsManager] Saving window state to: ${windowStatePath}`);
       await this._safeWrite(windowStatePath, validatedWindowState);
     }
 
+    console.log('[SettingsManager] syncSettings complete');
     return { 
       success: true, 
       timestamp: new Date().toISOString(),
@@ -101,22 +107,39 @@ class SettingsManager {
 
   /**
    * Internal helper for safe (backup + atomic) write
+   * Docker volume mount on Windows often fails with EBUSY for atomic renames.
+   * Switching to standard write with backup.
    */
   private async _safeWrite(filePath: string, data: any): Promise<void> {
     const content = JSON.stringify(data, null, 2);
     
-    // Create backup
+    // 1. Create backup (ignore errors)
     try {
       const exists = await fs.access(filePath).then(() => true).catch(() => false);
       if (exists) {
         await fs.copyFile(filePath, `${filePath}.bak`);
       }
     } catch (backupError) {
-      console.warn(`Backup failed for ${filePath}:`, backupError);
+      console.warn(`[SettingsManager] Backup failed (continuing):`, backupError);
     }
 
-    // Atomic write
-    await writeFileAtomic(filePath, content);
+    // 2. Direct write with retry for Windows/Docker stability
+    let retries = 3;
+    while (retries > 0) {
+      try {
+        await fs.writeFile(filePath, content, 'utf8');
+        return; // Success
+      } catch (writeError: any) {
+        if (writeError.code === 'EBUSY' && retries > 1) {
+          console.warn(`[SettingsManager] Resource busy, retrying... (${retries} left)`);
+          await new Promise(resolve => setTimeout(resolve, 200));
+          retries--;
+          continue;
+        }
+        console.error(`[SettingsManager] Write failed for ${filePath}:`, writeError);
+        throw new Error(`Failed to write file ${path.basename(filePath)}: ${writeError.message}`);
+      }
+    }
   }
 }
 

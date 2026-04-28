@@ -54,6 +54,7 @@ export const nexusRouter: FastifyPluginAsync<NexusRouterOptions> = async (fastif
       
       return result;
     } catch (error: any) {
+      console.error('[NexusRouter] Sync Settings Error:', error); // Log to server console
       if (error.name === 'ZodError') {
         reply.status(400).send({ error: 'Validation failed', issues: error.issues });
         return;

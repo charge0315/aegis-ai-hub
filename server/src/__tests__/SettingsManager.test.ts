@@ -1,11 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import fs from 'fs/promises';
-import writeFileAtomic from 'write-file-atomic';
 import settingsManager from '../services/SettingsManager';
 import { Interests, FeedConfig } from '../models/Schemas';
 
 vi.mock('fs/promises');
-vi.mock('write-file-atomic');
 
 describe('SettingsManager', () => {
   const mockInterests: Interests = {
@@ -65,7 +63,7 @@ describe('SettingsManager', () => {
 
     expect(result.success).toBe(true);
     expect(result.lastUpdated).toBeGreaterThan(1000);
-    expect(writeFileAtomic).toHaveBeenCalled();
+    expect(fs.writeFile).toHaveBeenCalled();
     expect(fs.copyFile).toHaveBeenCalled(); // Backup should be created
   });
 

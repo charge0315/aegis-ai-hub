@@ -32,12 +32,14 @@ export const nexusApi = {
   },
 
   async syncSettings(settings: NexusSettings, windowState?: any): Promise<unknown> {
-    const payload = {
+    const payload: any = {
       interests: settings.interests,
       feedConfig: settings.feed_urls,
-      windowState,
       lastUpdated: settings.interests.lastUpdated || Date.now()
     };
+    if (windowState) {
+      payload.windowState = windowState;
+    }
     const response = await axios.post(`${API_BASE}/v5/sync-settings`, payload);
     return response.data;
   },

@@ -1,48 +1,5 @@
 {
   "categories": {
-    "ネットワーク・ストレージ": {
-      "emoji": "🛜",
-      "brands": [
-        "Synology",
-        "QNAP",
-        "TP-Link",
-        "ASUS",
-        "NETGEAR",
-        "BUFFALO",
-        "ELECOM",
-        "Ubiquiti",
-        "Western Digital",
-        "I-O DATA",
-        "Cisco",
-        "Cloudflare",
-        "Fortinet",
-        "Palo Alto Networks",
-        "Tailscale",
-        "YAMAHA",
-        "TrueNAS"
-      ],
-      "keywords": [
-        "Wi-Fi 7",
-        "メッシュWi-Fi",
-        "NAS",
-        "ルーター",
-        "10GbE",
-        "VPN",
-        "サイバーセキュリティ",
-        "クラウドストレージ",
-        "バックアップ",
-        "RAID",
-        "光回線",
-        "ゼロトラスト",
-        "SASE",
-        "パスキー (Passkey)",
-        "Wi-Fi 8",
-        "エッジコンピューティング",
-        "2.5GbE"
-      ],
-      "score": 10,
-      "reason": "名称をスッキリさせつつ、インフラ・セキュリティ面を強化するためCiscoやCloudflare、ゼロトラストのキーワードを追加し、通信環境全体の解像度を上げました。"
-    },
     "オーディオ・音楽制作": {
       "emoji": "🎧",
       "brands": [
@@ -768,5 +725,6 @@
       "score": 8,
       "reason": "【新設】デジタルガジェットだけでなく、生活の質（QOL）をダイレクトに向上させる高機能・デザイン志向の生活家電（白物家電の進化）を網羅し、総合的なダッシュボードにするため新設しました。"
     }
-  }
+  },
+  "lastUpdated": 1777349377649
 }

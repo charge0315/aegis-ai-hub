@@ -1,5 +1,5 @@
 import fs from 'fs';
-import writeFileAtomic from 'write-file-atomic';
+import fsPromises from 'fs/promises';
 import { FeedConfigSchema, FeedConfig } from '../models/Schemas.js';
 
 /**
@@ -104,10 +104,22 @@ export class FeedManager {
     }
 
     async saveConfig(): Promise<void> {
-        try {
-            await writeFileAtomic(this.configPath, JSON.stringify(this.config, null, 2));
-        } catch (e: any) {
-            console.error("FeedManager: 設定のアトミック保存に失敗しました。", e.message);
+        const content = JSON.stringify(this.config, null, 2);
+        let retries = 3;
+        while (retries > 0) {
+            try {
+                await fsPromises.writeFile(this.configPath, content, 'utf8');
+                return;
+            } catch (e: any) {
+                if (e.code === 'EBUSY' && retries > 1) {
+                    console.warn(`[FeedManager] Resource busy, retrying... (${retries} left)`);
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                    retries--;
+                    continue;
+                }
+                console.error("FeedManager: 設定の保存に失敗しました。", e.message);
+                break;
+            }
         }
     }
 }

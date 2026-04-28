@@ -61,7 +61,12 @@ async function startServer() {
         await fastify.register(fastifyStatic, {
             root: dashboardPath,
             prefix: '/',
-            wildcard: true // Allow serving files in subdirectories
+            wildcard: true,
+            setHeaders: (res, path) => {
+                if (path.endsWith('.js')) {
+                    res.setHeader('Content-Type', 'application/javascript');
+                }
+            }
         });
 
         // API Router (v5)

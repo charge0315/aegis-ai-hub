@@ -5,9 +5,9 @@ services:
     ports:
       - "3005:3005"
     volumes:
-      - ./data/interests.json:/app/data/interests.json
-      - ./data/feed_config.json:/app/data/feed_config.json
+      - ./data:/app/data
       - ./dashboard:/app/dashboard
+      - ./server/src:/app/src
     environment:
       - INTERESTS_PATH=/app/data/interests.json
       - FEEDS_PATH=/app/data/feed_config.json
