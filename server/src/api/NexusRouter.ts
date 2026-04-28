@@ -64,6 +64,26 @@ export const nexusRouter: FastifyPluginAsync<NexusRouterOptions> = async (fastif
   });
 
   /**
+   * POST /api/v5/suggest-category
+   * カテゴリ名から提案を生成
+   */
+  fastify.post('/suggest-category', async (request: FastifyRequest<{ Body: { categoryName: string } }>, reply: FastifyReply) => {
+    const { categoryName } = request.body;
+    if (!categoryName) {
+      reply.status(400).send({ error: 'Category name is required' });
+      return;
+    }
+
+    try {
+      const suggestions = await scraper.geminiService.suggestCategoryDetails(categoryName);
+      return suggestions;
+    } catch (error: any) {
+      console.error('[NexusRouter] Suggest Category Error:', error);
+      reply.status(500).send({ error: 'Failed to generate suggestions', details: error.message });
+    }
+  });
+
+  /**
    * POST /api/v5/orchestrate
    * 自律ループを開始
    */

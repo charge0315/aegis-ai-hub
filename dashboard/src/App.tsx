@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LayoutDashboard, 
@@ -13,7 +13,9 @@ import { ArticleCard } from './components/ArticleCard';
 import { AgentMonitor } from './components/AgentMonitor';
 import { UnifiedEditor } from './components/UnifiedEditor';
 import { CommandPalette } from './components/CommandPalette';
-import { useNexusSync, useAgentEvents, nexusApi } from './api/nexusApi';
+import { useNexusSync, useAgentEvents, nexusApi, type WindowState } from './api/nexusApi';
+import { CustomDialog } from './components/CustomDialog';
+import { useDialog } from './hooks/useDialog';
 
 type View = 'feed' | 'settings';
 
@@ -22,25 +24,30 @@ const App: React.FC = () => {
   const { settings, articles, loading, error, sync, refetch } = useNexusSync();
   const agentEvents = useAgentEvents();
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  const { dialog, alert: customAlert, confirm: customConfirm, prompt: customPrompt } = useDialog();
 
   // Save window state and update local width for responsive UI
   useEffect(() => {
-    let timeoutId: any;
+    let timeoutId: ReturnType<typeof setTimeout>;
+    
     const handleResize = () => {
       setWindowWidth(window.innerWidth);
+      
+      // Debounce the remote sync to avoid excessive API calls
       clearTimeout(timeoutId);
       timeoutId = setTimeout(() => {
         if (settings) {
-          const state = {
+          const state: WindowState = {
             width: window.outerWidth,
             height: window.outerHeight,
             x: window.screenX,
             y: window.screenY
           };
-          nexusApi.syncSettings(settings, state).catch(console.error);
+          void nexusApi.syncSettings(settings, state).catch(console.error);
         }
       }, 1000);
     };
+
     window.addEventListener('resize', handleResize);
     return () => {
       window.removeEventListener('resize', handleResize);
@@ -63,11 +70,14 @@ const App: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const filteredArticles = articles.filter(article => 
-    article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    article.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    article.brand.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredArticles = useMemo(() => {
+    const query = searchQuery.toLowerCase();
+    return articles.filter(article => 
+      article.title.toLowerCase().includes(query) ||
+      article.category.toLowerCase().includes(query) ||
+      article.brand.toLowerCase().includes(query)
+    );
+  }, [articles, searchQuery]);
 
   const handleTriggerOrchestration = useCallback(async (requirements: string = "Refresh and find new insights based on current interests.") => {
     try {
@@ -95,6 +105,17 @@ const App: React.FC = () => {
 
   return (
     <div className="bg-deep-space min-h-screen text-slate-200 flex transition-all duration-300">
+      <CustomDialog 
+        isOpen={dialog.isOpen}
+        type={dialog.type}
+        title={dialog.title}
+        message={dialog.message}
+        onConfirm={dialog.onConfirm}
+        onCancel={dialog.onCancel}
+        defaultValue={dialog.defaultValue}
+        placeholder={dialog.placeholder}
+      />
+
       {/* Command Palette */}
       <CommandPalette 
         isOpen={isCommandPaletteOpen}
@@ -153,21 +174,21 @@ const App: React.FC = () => {
               />
             </div>
           </div>
-          {!isCompact && (
-            <div className="flex items-center gap-4 ml-4">
-              <button 
-                onClick={() => handleTriggerOrchestration()}
-                className="p-2 text-slate-400 hover:text-white transition-colors"
-                title="Sync with Agents"
-              >
-                <RefreshCcw size={18} />
-              </button>
+          <div className="flex items-center gap-4 ml-4 flex-shrink-0">
+            <button 
+              onClick={() => handleTriggerOrchestration()}
+              className="p-2 text-slate-400 hover:text-white transition-colors"
+              title="Sync with Aegis"
+            >
+              <RefreshCcw size={18} />
+            </button>
+            {!isCompact && (
               <div className="flex items-center gap-2 px-3 py-1 bg-white/5 border border-white/10 rounded-lg text-xs font-mono text-slate-500">
                 <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
                 v5.0 NEXUS
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </header>
 
         {/* Dynamic View Content */}
@@ -240,6 +261,9 @@ const App: React.FC = () => {
                   <UnifiedEditor 
                     currentSettings={settings} 
                     onSave={sync}
+                    alert={customAlert}
+                    confirm={customConfirm}
+                    prompt={customPrompt}
                   />
                 )}
               </motion.div>

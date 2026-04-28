@@ -4,6 +4,13 @@ import type { Article, NexusSettings, AgentStatus } from '../types';
 
 const API_BASE = '/api';
 
+export interface WindowState {
+  width: number;
+  height: number;
+  x: number;
+  y: number;
+}
+
 export const nexusApi = {
   async getArticles(): Promise<Article[]> {
     const response = await axios.get(`${API_BASE}/dashboard`);
@@ -31,8 +38,8 @@ export const nexusApi = {
     };
   },
 
-  async syncSettings(settings: NexusSettings, windowState?: any): Promise<unknown> {
-    const payload: any = {
+  async syncSettings(settings: NexusSettings, windowState?: WindowState): Promise<{ lastUpdated: number }> {
+    const payload: Record<string, unknown> = {
       interests: settings.interests,
       feedConfig: settings.feed_urls,
       lastUpdated: settings.interests.lastUpdated || Date.now()
@@ -41,11 +48,16 @@ export const nexusApi = {
       payload.windowState = windowState;
     }
     const response = await axios.post(`${API_BASE}/v5/sync-settings`, payload);
-    return response.data;
+    return response.data as { lastUpdated: number };
   },
 
   async triggerOrchestration(requirements: string): Promise<void> {
     await axios.post(`${API_BASE}/v5/orchestrate`, { requirements });
+  },
+
+  async suggestCategory(categoryName: string): Promise<{ brands: string[], keywords: string[], emoji: string, reason: string }> {
+    const response = await axios.post(`${API_BASE}/v5/suggest-category`, { categoryName });
+    return response.data;
   }
 };
 
@@ -66,6 +78,7 @@ export function useNexusSync() {
       setArticles(a);
       setError(null);
     } catch (err: unknown) {
+      console.error('Fetch data failed:', err);
       if (err instanceof Error) {
         setError(err.message);
       } else {
@@ -77,20 +90,38 @@ export function useNexusSync() {
   }, []);
 
   useEffect(() => {
-    // Wrap in setTimeout to avoid synchronous setState in effect warning
-    const timer = setTimeout(() => {
-      void fetchData(false);
-    }, 0);
-    return () => clearTimeout(timer);
+    let isMounted = true;
+    
+    const init = async () => {
+      await fetchData(false);
+      if (!isMounted) return;
+    };
+
+    void init();
+    
+    return () => { isMounted = false; };
   }, [fetchData]);
 
-  const sync = async (newSettings: NexusSettings) => {
-    await nexusApi.syncSettings(newSettings);
-    setSettings(newSettings);
-    // Optionally refresh articles
-    const a = await nexusApi.getArticles();
-    setArticles(a);
-  };
+  const sync = useCallback(async (newSettings: NexusSettings) => {
+    const result = await nexusApi.syncSettings(newSettings);
+    // サーバー側で更新された lastUpdated をローカルステートに反映
+    const updatedSettings = {
+      ...newSettings,
+      interests: {
+        ...newSettings.interests,
+        lastUpdated: result.lastUpdated
+      }
+    };
+    setSettings(updatedSettings);
+    
+    // Refresh articles to match new interests
+    try {
+      const a = await nexusApi.getArticles();
+      setArticles(a);
+    } catch (err) {
+      console.error('Failed to refresh articles after sync:', err);
+    }
+  }, []);
 
   return { settings, articles, loading, error, sync, refetch: fetchData };
 }

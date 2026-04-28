@@ -213,4 +213,28 @@ export class GeminiService {
     const result = await this.generateStructured<{ suggestions: any[] }>(prompt, schema);
     return result.suggestions;
   }
+
+  /**
+   * カテゴリ名からブランドとキーワードを提案します。
+   */
+  async suggestCategoryDetails(categoryName: string): Promise<{ brands: string[], keywords: string[], emoji: string, reason: string }> {
+    const schema: ResponseSchema = {
+      type: SchemaType.OBJECT,
+      properties: {
+        brands: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: "関連する主要なブランド5つ" },
+        keywords: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: "関連する重要なキーワード5つ" },
+        emoji: { type: SchemaType.STRING, description: "カテゴリを象徴する絵文字1つ" },
+        reason: { type: SchemaType.STRING, description: "この提案の理由（1文）" }
+      },
+      required: ["brands", "keywords", "emoji", "reason"]
+    };
+
+    const prompt = `
+以下の新しいインテリジェンス・カテゴリ名に関連する、主要なブランドを5つ、および重要なキーワードを5つ提案してください。
+また、そのカテゴリにふさわしい絵文字を1つ選んでください。
+カテゴリ名: "${categoryName}"
+日本語で回答してください。
+`;
+    return await this.generateStructured<any>(prompt, schema);
+  }
 }
