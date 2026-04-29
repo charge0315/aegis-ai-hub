@@ -1,7 +1,8 @@
 services:
-  aegis-api:
+  hephaestus-api:
     build: ./server
-    container_name: aegis-ai-hub
+    image: hephaestus-api
+    container_name: hephaestus-api
     ports:
       - "3005:3005"
     volumes:
