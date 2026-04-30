@@ -22,8 +22,24 @@ export class DiscoveryService {
     async run(interests) {
         console.log("[DiscoveryService] サイト探索プロセスを開始します...");
         // 1. Gemini にサイトを提案させる
-        const suggestedSites = await this.geminiService.discoverSites(interests);
+        let suggestedSites = await this.geminiService.discoverSites(interests);
         console.log(`[DiscoveryService] AIから ${suggestedSites.length} 件のサイト提案がありました。`);
+        // 日本語ソースが少ないカテゴリを特定
+        const categoriesWithFewFeeds = Object.keys(interests.categories).filter(cat => {
+            const activeCount = this.feedManager.getActiveFeeds(cat).length;
+            return activeCount < 2;
+        });
+        if (categoriesWithFewFeeds.length > 0) {
+            console.log(`[DiscoveryService] 以下のカテゴリでソースが不足しているため、英語ソースを探索します: ${categoriesWithFewFeeds.join(', ')}`);
+            try {
+                const englishSites = await this.geminiService.discoverEnglishSites(interests, categoriesWithFewFeeds);
+                console.log(`[DiscoveryService] 英語サイト ${englishSites.length} 件を提案リストに追加しました。`);
+                suggestedSites = [...suggestedSites, ...englishSites];
+            }
+            catch (err) {
+                console.error("[DiscoveryService] 英語サイトの探索に失敗しました:", err);
+            }
+        }
         const validFeeds = [];
         const existingUrls = this.feedManager.getAllActiveFeeds().map(f => f.url);
         // 2. 提案された各サイトの有効性を検証
@@ -50,7 +66,7 @@ export class DiscoveryService {
         // 3. 有効なフィードを feed_config.json に追加
         if (validFeeds.length > 0) {
             for (const feed of validFeeds) {
-                this.feedManager.addFeed(feed.category, feed.url, feed.name);
+                await this.feedManager.addFeed(feed.category, feed.url, feed.name);
             }
             console.log(`[DiscoveryService] 完了: ${validFeeds.length} 件の新しいフィードを登録しました。`);
         }

@@ -185,6 +185,77 @@ export class GeminiService {
     return result.sites;
   }
 
+  /**
+   * 特定のカテゴリに対して英語のRSSフィードを提案します。
+   */
+  async discoverEnglishSites(interests: Interests, targetCategories: string[]): Promise<any[]> {
+    const schema: ResponseSchema = {
+      type: SchemaType.OBJECT,
+      properties: {
+        sites: { 
+          type: SchemaType.ARRAY, 
+          items: { 
+            type: SchemaType.OBJECT, 
+            properties: { 
+              name: { type: SchemaType.STRING }, 
+              url: { type: SchemaType.STRING }, 
+              category: { type: SchemaType.STRING },
+              lang: { type: SchemaType.STRING, enum: ["en"], format: "enum" }
+            }, 
+            required: ["name", "url", "category", "lang"] 
+          } 
+        }
+      },
+      required: ["sites"]
+    };
+
+    const targetInterests = targetCategories.map(cat => ({
+      category: cat,
+      details: interests.categories[cat]
+    }));
+
+    const prompt = `
+以下のカテゴリにおいて、日本語のニュースソースが不足しています。
+世界的に権威のある、英語のRSSフィード（Techニュース、公式ブログ、業界誌など）を提案してください。
+対象カテゴリ: ${JSON.stringify(targetInterests)}
+出力は必ず英語圏のサイトURLを含めてください。
+`;
+    const result = await this.generateStructured<{ sites: any[] }>(prompt, schema);
+    return result.sites;
+  }
+
+  /**
+   * 複数の記事をまとめて日本語に翻訳します。
+   */
+  async translateArticles(articles: { title: string, desc: string }[]): Promise<{ title: string, desc: string }[]> {
+    const schema: ResponseSchema = {
+      type: SchemaType.OBJECT,
+      properties: {
+        translations: {
+          type: SchemaType.ARRAY,
+          items: {
+            type: SchemaType.OBJECT,
+            properties: {
+              title: { type: SchemaType.STRING },
+              desc: { type: SchemaType.STRING }
+            },
+            required: ["title", "desc"]
+          }
+        }
+      },
+      required: ["translations"]
+    };
+
+    const prompt = `
+以下の記事リストを、自然な日本語に翻訳してください。
+技術用語や固有名詞は適切に扱い、ニュースとして読みやすい表現にしてください。
+リスト: ${JSON.stringify(articles)}
+`;
+
+    const result = await this.generateStructured<{ translations: any[] }>(prompt, schema);
+    return result.translations;
+  }
+
   async analyzeTrends(articles: any[], interests: Interests): Promise<any[]> {
     const schema: ResponseSchema = {
       type: SchemaType.OBJECT,

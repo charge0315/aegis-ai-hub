@@ -42,7 +42,7 @@ export class EvolutionJob {
 
             // 1. 設定ファイルのクリーニング (重複排除等)
             console.log("[EvolutionJob] ステップ 1: 設定ファイルの整理を実行中...");
-            this.scraper.feedManager.cleanConfig();
+            await this.scraper.feedManager.cleanConfig();
             this.cleanInterests(interests);
 
             // 2. AI による新しいフィードの探索と登録

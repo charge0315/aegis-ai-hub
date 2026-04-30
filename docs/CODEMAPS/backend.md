@@ -1,7 +1,7 @@
 # Backend Architecture Codemap
 
-**Last Updated:** 2026-05-15
-**Version:** v5.0
+**Last Updated:** 2026-05-20
+**Version:** v5.1
 **Entry Point:** `server/src/index.ts`
 
 ## 概要
@@ -13,31 +13,24 @@
 | :--- | :--- | :--- |
 | `ScraperFacade` | 全てのデータ取得と AI 推論を統括する司令塔。 | `getDashboard`, `getRecommendations` |
 | `DiscoveryService` | AI による新しい RSS フィードの探索と検証。 | `getProposals` |
-| `GeminiService` | 構造化出力（JSON Schema）を用いた記事キュレーション。 | `generateStructured`, `curate` |
+| `EnrichmentService` | 記事の深化（翻訳・要約・ブランド抽出）。 | `enrichArticle` |
+| `GeminiService` | 構造化出力（JSON Schema）を用いた記事キュレーション、翻訳。 | `curate`, `translateArticles` |
 | `SettingsManager` | 設定（interests, feeds）およびウィンドウ状態の永続化管理。 | `syncSettings`, `getWindowState`, `saveWindowState` |
 | `NexusOrchestrator` | 自律ループの実行と SSE による進捗ブロードキャスト。 | `runAutonomousLoop`, `subscribe` |
 
-## v5.0 における重要な変更
+## v5.1 における重要な変更
 
+- **多言語対応と自動翻訳 (`EnrichmentService` / `GeminiService`)**:
+  - `GeminiService.translateArticles` メソッドにより、海外の RSS ソースから取得した記事を日本語へ自動翻訳。
+  - `[JP]` プレフィックスをタイトルに付与し、元の文脈を維持しつつアクセシビリティを向上。
+- **堅牢なファイル IO と EBUSY 回避**:
+  - Windows 上の Docker ボリュームマウント環境における `EBUSY` (ファイルロック) エラーを徹底的に排除。
+  - ファイル書き込み時に最大 3 回のリトライロジック (200ms 間隔) を実装。
 - **一括同期 API (`POST /api/v5/sync-settings`)**:
   - `interests.json` と `feed_config.json` をアトミックに同時更新。
 - **ウィンドウ状態の永続化 (`/api/v5/window-state`)**:
-  - `GET`: `startup.ps1` が起動時にブラウザのサイズ・位置を決定するために使用。
-  - `POST`: フロントエンドがサイズ変更や移動を検知した際に呼び出し。
-  - `window_state.json` ファイルにデータを保存。
-- **SSE (Server-Sent Events) の安定化**:
-  - 自律ループの進捗をリアルタイム配信。
-  - 30秒ごとの **ハートビート (`: heartbeat`)** により、タイムアウトによる切断を防止。
-- **静的ファイル配信の最適化**:
-  - `dashboard/dist` フォルダからの配信に完全移行。
-  - MIME タイプ（特に JavaScript モジュール）の問題を `fastify-static` の構成（`setHeaders`）により解決。
+  - ブラウザのサイズ・位置を `window_state.json` に保存し、再起動時に復元。
 
-## 安定性と開発効率の向上 (Updates)
-
-- **EBUSY エラー (ファイルロック) の回避**:
-  - Windows 上の Docker ボリュームマウント環境で発生しやすい `EBUSY` エラーを解決。
-  - `write-file-atomic` を廃止し、**バックアップ生成 + リトライロジック (3回/200ms間隔) 付き `fs.writeFile`** に変更。
-  - ファイルアクセス競合時の安定性を大幅に向上。
 - **Live Synchronization**:
   - `docker-compose.yml` で `server/src` をコンテナにマウント。
   - サーバー側のソースコードを変更すると、再ビルドなしでコンテナ内のプロセスに反映されます（`ts-node-dev` 等との併用）。

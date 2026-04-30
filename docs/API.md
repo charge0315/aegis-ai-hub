@@ -1,9 +1,9 @@
 # Aegis AI Hub - API & MCP Technical Reference
 
-**Last Updated:** 2026-04-26
-**Version:** 5.0 (Unified Settings Era)
+**Last Updated:** 2026-05-20
+**Version:** 5.1 (Nexus Evolution)
 
-本ドキュメントでは、Aegis AI Hub v5.0 が提供する HTTP API および MCP (Model Context Protocol) ツールの仕様について記述します。
+本ドキュメントでは、Aegis AI Hub v5.1 が提供する HTTP API および MCP (Model Context Protocol) ツールの仕様について記述します。
 
 ## 1. HTTP API サーバー
 デフォルトポート: `3005`
@@ -12,15 +12,15 @@
 #### `GET /api/dashboard`
 最新のパーソナライズ済みニュース記事を取得します。
 - **制限**: レート制限あり (15分100リクエスト)
-- **出力**: カテゴリ別に分類された記事オブジェクト
+- **出力**: カテゴリ別に分類された記事オブジェクト（多言語対応：英語記事は自動的に日本語へ翻訳されます）
 
 #### `GET /api/recommend`
 Gemini AI によって厳選された、重要度の高い 10 記事を取得します。各記事には `geminiReason` フィールドが含まれます。
 
 ---
 
-### 1.2 システム設定・同期 API (v5.0 新設)
-v5.0 では、設定の変更を個別に送るのではなく、UI 側の「下書き（Draft）」を一括で同期する方式を採用しています。
+### 1.2 システム設定・同期 API (v5.1 更新)
+v5.1 では、設定の変更を一括で同期する方式に加え、ウィンドウ状態の永続化をサポートしています。
 
 #### `GET /api/interests`
 現在の興味・カテゴリ・ブランド・キーワードの設定を取得します。
@@ -34,10 +34,14 @@ v5.0 では、設定の変更を個別に送るのではなく、UI 側の「下
   ```json
   {
     "interests": { "categories": { ... }, "learned_keywords": { ... } },
-    "feeds": { "CategoryName": { "active": [], "pool": [] } }
+    "feeds": { "CategoryName": { "active": [], "pool": [] } },
+    "windowState": { "width": 1200, "height": 800, "x": 100, "y": 100 }
   }
   ```
-- **効果**: `interests.json` と `feed_config.json` を同時に更新し、システムの知識構造を再構築します。
+- **効果**: `interests.json`、`feed_config.json`、および `window_state.json` を更新します。
+
+#### `GET /api/window-state` (v5.0+)
+保存されている最新のウィンドウ座標とサイズを取得します。起動スクリプト (`startup.ps1`) でブラウザの初期配置に使用されます。
 
 ---
 

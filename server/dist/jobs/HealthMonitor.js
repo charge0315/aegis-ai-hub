@@ -42,7 +42,7 @@ export class HealthMonitor {
             }
             else {
                 console.warn(`HealthMonitor: フィードの異常を検知 [${res.category}]: ${res.url}`);
-                const nextUrl = this.feedManager.reportFailure(res.category, res.url);
+                const nextUrl = await this.feedManager.reportFailure(res.category, res.url);
                 if (nextUrl) {
                     console.log(`HealthMonitor: 新しいフィード 「${nextUrl}」 に差し替えました。`);
                 }

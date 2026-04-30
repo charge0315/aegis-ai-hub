@@ -1,18 +1,19 @@
 # Aegis AI Hub - System Index
 
-**Project Status:** Next-Gen Architecture (v5.0)
-**Last Updated:** 2026-05-15
+**Project Status:** Next-Gen Architecture (v5.1)
+**Last Updated:** 2026-05-20
 
 ## プロジェクト概要
 Aegis AI Hub は、Gemini 3.1 を中枢に据えた「自律学習型知的ダッシュボード」です。  
-v5.0 では、設定画面の統合（Nexus Editor）、ウィンドウ状態の永続化、そしてデバイスやウィンドウサイズに最適化される「レスポンシブ・スマートレイアウト」を導入しました。また、Windows/Docker 環境における安定性（EBUSY 回避）と、Live Sync による開発効率の向上も実現しています。
+v5.1 では、多言語対応と自動翻訳機能、ダッシュボードの表示サイズ切り替え（Small/Medium/Large）、カテゴリパネルからのフィード詳細表示、そして Nexus Editor のチップ形式リファクタリングを導入しました。
 
 ## 技術ドキュメント (Codemaps)
 
-- [**Backend Architecture**](backend.md) - SOA, 自律進化ジョブ, `sync-settings`, `window-state` API, SSE
-- [**Frontend UI**](frontend.md) - Nexus Editor, レスポンシブ・スマートレイアウト, Fluentデザイン
+- [**Backend Architecture**](backend.md) - SOA, 自律進化ジョブ, 多言語翻訳, 堅牢なファイルIO, SSE
+- [**Frontend UI**](frontend.md) - Nexus Editor (チップ形式), 表示サイズ切替, カテゴリ信号パネル, スマートレイアウト
 - [**API & MCP Reference**](../API.md) - 同期 API と MCP ツールの詳細仕様
 - [**Automation**](automation.md) - ウィンドウ位置復元を含むスタートアップ自動化 (Windows/Docker)
+
 
 ## システム全体俯瞰
 ```mermaid

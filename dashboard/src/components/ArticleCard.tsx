@@ -7,22 +7,31 @@ import type { Article } from '../types';
 interface ArticleCardProps {
   article: Article;
   index?: number;
+  size?: 'small' | 'medium' | 'large';
 }
 
-export const ArticleCard: React.FC<ArticleCardProps> = ({ article, index = 0 }) => {
+export const ArticleCard: React.FC<ArticleCardProps> = ({ article, index = 0, size = 'medium' }) => {
   const [showReason, setShowReason] = useState(false);
+
+  const isSmall = size === 'small';
+  const isLarge = size === 'large';
 
   return (
     <GlassPanel 
-      className="group relative flex flex-col h-full hover:border-primary/50 transition-colors duration-300 article-card"
+      className={`group relative flex flex-col h-full hover:border-primary/50 transition-colors duration-300 article-card cursor-pointer ${
+        isSmall ? 'rounded-xl' : 'rounded-3xl'
+      }`}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: Math.min(index * 0.05, 0.5) }}
       whileHover={{ y: -4 }}
       data-testid="article-card"
+      onClick={() => window.open(article.link, '_blank', 'noopener,noreferrer')}
     >
       {/* Image Section */}
-      <div className="relative aspect-video overflow-hidden bg-slate-800">
+      <div className={`relative overflow-hidden bg-slate-800 ${
+        isSmall ? 'aspect-[4/3]' : 'aspect-video'
+      }`}>
         {article.img ? (
           <img 
             src={article.img} 
@@ -31,23 +40,25 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({ article, index = 0 }) 
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-slate-600 bg-linear-to-br from-slate-900 to-slate-800">
-            <Sparkles size={32} />
+            <Sparkles size={isSmall ? 24 : 32} />
           </div>
         )}
         
         {/* Category Badge */}
-        <div className="absolute top-2 left-2 flex gap-2">
-          <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-primary/80 text-white rounded backdrop-blur-md">
-            {article.category}
-          </span>
-          <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-black/60 text-white rounded backdrop-blur-md border border-white/10">
-            {article.brand}
-          </span>
-        </div>
+        {!isSmall && (
+          <div className="absolute top-2 left-2 flex gap-2">
+            <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-primary/80 text-white rounded backdrop-blur-md">
+              {article.category}
+            </span>
+            <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-black/60 text-white rounded backdrop-blur-md border border-white/10">
+              {article.brand}
+            </span>
+          </div>
+        )}
 
         {/* Score Badge */}
         <div 
-          className="absolute top-2 right-2 flex items-center justify-center w-8 h-8 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-xs font-bold text-accent score-badge"
+          className={`absolute ${isSmall ? 'top-1 right-1 w-6 h-6 text-[8px]' : 'top-2 right-2 w-8 h-8 text-xs'} flex items-center justify-center rounded-full bg-black/60 backdrop-blur-md border border-white/10 font-bold text-accent score-badge`}
           data-testid="article-score"
         >
           {article.score}
@@ -55,25 +66,30 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({ article, index = 0 }) 
       </div>
 
       {/* Content Section */}
-      <div className="p-4 flex-grow flex flex-col">
-        <h3 className="text-sm font-semibold leading-tight mb-2 line-clamp-2 group-hover:text-primary transition-colors">
+      <div className={`${isSmall ? 'p-2' : 'p-4'} flex-grow flex flex-col`}>
+        <h3 className={`${isSmall ? 'text-[11px] leading-tight mb-1' : isLarge ? 'text-lg mb-2' : 'text-sm leading-tight mb-2'} font-semibold line-clamp-2 group-hover:text-primary transition-colors`}>
           {article.title}
         </h3>
         
-        <p className="text-xs text-slate-400 line-clamp-3 mb-4 flex-grow">
-          {article.desc}
-        </p>
+        {!isSmall && (
+          <p className={`${isLarge ? 'text-sm' : 'text-xs'} text-slate-400 line-clamp-3 mb-4 flex-grow`}>
+            {article.desc}
+          </p>
+        )}
 
-        <div className="flex items-center justify-between mt-auto pt-4 border-t border-white/5">
-          <div className="flex items-center gap-2 text-[10px] text-slate-500">
-            <Calendar size={12} />
+        <div className={`flex items-center justify-between mt-auto ${isSmall ? 'pt-2' : 'pt-4'} border-t border-white/5`}>
+          <div className={`flex items-center gap-2 ${isSmall ? 'text-[8px]' : 'text-[10px]'} text-slate-500`}>
+            <Calendar size={isSmall ? 10 : 12} />
             {new Date(article.date).toLocaleDateString()}
           </div>
           
           <div className="flex items-center gap-2">
-            {article.geminiReason && (
+            {article.geminiReason && !isSmall && (
               <button 
-                onClick={() => setShowReason(!showReason)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowReason(!showReason);
+                }}
                 data-testid="reasoning-toggle"
                 className="p-1.5 rounded-full hover:bg-white/10 text-primary transition-colors"
                 title="AI Reasoning"
@@ -85,9 +101,10 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({ article, index = 0 }) 
               href={article.link} 
               target="_blank" 
               rel="noopener noreferrer"
-              className="p-1.5 rounded-full hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+              onClick={(e) => e.stopPropagation()}
+              className={`${isSmall ? 'p-1' : 'p-1.5'} rounded-full hover:bg-white/10 text-slate-400 hover:text-white transition-colors`}
             >
-              <ExternalLink size={14} />
+              <ExternalLink size={isSmall ? 12 : 14} />
             </a>
           </div>
         </div>
@@ -102,6 +119,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({ article, index = 0 }) 
             exit={{ opacity: 0, backdropFilter: 'blur(0px)' }}
             data-testid="reasoning-overlay"
             className="absolute inset-0 z-10 bg-slate-900/80 p-6 flex flex-col"
+            onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-2 text-primary mb-3">
               <Sparkles size={16} />
@@ -111,7 +129,10 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({ article, index = 0 }) 
               {article.geminiReason}
             </div>
             <button 
-              onClick={() => setShowReason(false)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowReason(false);
+              }}
               className="mt-auto w-full py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-white border border-white/10 rounded hover:bg-white/5 transition-all"
             >
               Close

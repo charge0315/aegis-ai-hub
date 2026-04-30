@@ -19,9 +19,12 @@ import { NexusOrchestrator } from './core/NexusOrchestrator.js';
 import SettingsManager from './services/SettingsManager.js';
 import nexusRouter from './api/NexusRouter.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const PROJECT_ROOT = path.resolve(__dirname, '..', '..');
+// In Docker, __dirname might be /app/dist (if compiled) or /app/src (if ts-node)
+// Let's make PROJECT_ROOT more robust
+const PROJECT_ROOT = process.cwd();
 const INTERESTS_PATH = process.env.INTERESTS_PATH || path.join(PROJECT_ROOT, 'data', 'interests.json');
 const FEEDS_PATH = process.env.FEEDS_PATH || path.join(PROJECT_ROOT, 'data', 'feed_config.json');
+console.log(`[Server] Project Root: ${PROJECT_ROOT}`);
 console.log(`[Server] Interests path: ${INTERESTS_PATH}`);
 console.log(`[Server] Feeds path: ${FEEDS_PATH}`);
 // コアサービスの初期化
@@ -39,12 +42,18 @@ const PORT = Number(process.env.PORT) || 3005;
 async function startServer() {
     try {
         await fastify.register(cors);
-        // 静的ファイルの配信 (dashboard) - dashboard is at root/dashboard
-        const dashboardPath = path.join(PROJECT_ROOT, 'dashboard');
+        // 静的ファイルの配信 (dashboard)
+        const dashboardPath = path.join(PROJECT_ROOT, 'dashboard', 'dist');
+        console.log(`[Server] Serving dashboard from: ${dashboardPath}`);
         await fastify.register(fastifyStatic, {
             root: dashboardPath,
             prefix: '/',
-            wildcard: false // we handle SPA fallback manually
+            wildcard: true,
+            setHeaders: (res, path) => {
+                if (path.endsWith('.js')) {
+                    res.setHeader('Content-Type', 'application/javascript');
+                }
+            }
         });
         // API Router (v5)
         await fastify.register(nexusRouter, {
@@ -72,11 +81,11 @@ async function startServer() {
         });
         // SPA fallback
         fastify.setNotFoundHandler((request, reply) => {
-            if (request.url.startsWith('/api/')) {
-                reply.status(404).send({ error: 'API Not Found' });
+            if (request.url.startsWith('/api/') || request.url.startsWith('/assets/')) {
+                reply.status(404).send({ error: 'Not Found' });
                 return;
             }
-            reply.sendFile('index.html');
+            reply.sendFile('index.html'); // This refers to dist/index.html
         });
         /**
          * MCP Server

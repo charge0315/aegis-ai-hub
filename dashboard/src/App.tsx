@@ -18,9 +18,11 @@ import { CustomDialog } from './components/CustomDialog';
 import { useDialog } from './hooks/useDialog';
 
 type View = 'feed' | 'settings';
+type CardSize = 'small' | 'medium' | 'large';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<View>('feed');
+  const [cardSize, setCardSize] = useState<CardSize>('medium');
   const { settings, articles, loading, error, sync, refetch } = useNexusSync();
   const agentEvents = useAgentEvents();
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
@@ -103,6 +105,65 @@ const App: React.FC = () => {
     }
   };
 
+  const handleRefresh = async () => {
+    try {
+      // 1. 最新の記事を再取得
+      await refetch();
+      // 2. 自律ループもトリガー（バックグラウンド）
+      void handleTriggerOrchestration();
+      
+      await customAlert('Feed Refreshing', 'Fetching latest signals and triggering autonomous discovery...', 'info');
+    } catch (err) {
+      console.error("Failed to refresh feed", err);
+      await customAlert('Refresh Failed', 'Could not sync with the server.', 'error');
+    }
+  };
+
+  const groupedArticles = useMemo(() => {
+    const groups: Record<string, typeof articles> = {};
+    if (settings) {
+      Object.keys(settings.interests.categories).forEach(cat => {
+        groups[cat] = filteredArticles.filter(a => a.category === cat);
+      });
+    }
+    return groups;
+  }, [filteredArticles, settings]);
+
+  const handleShowFeeds = async (category: string) => {
+    console.log(`[handleShowFeeds] Request for category: "${category}"`);
+    if (!settings) return;
+
+    // カテゴリ名の完全一致または「ゲーム・配信」のようなケースでの柔軟なマッチングを試みる
+    const feedKey = Object.keys(settings.feed_urls).find(k => 
+      k === category || k.replace(/・/g, '') === category.replace(/・/g, '')
+    );
+    
+    if (!feedKey || !settings.feed_urls[feedKey]) {
+      console.warn(`[handleShowFeeds] No feed configuration found for: "${category}" (tried: "${feedKey}")`);
+      await customAlert('Information', `No feed configuration found for "${category}".`, 'warning');
+      return;
+    }
+    
+    const feedData = settings.feed_urls[feedKey];
+    const activeList = feedData.active.length > 0 
+      ? `【Active】\n${feedData.active.map(url => `• ${url}`).join('\n')}` 
+      : '【Active】\nNo active feeds.';
+    
+    const poolList = feedData.pool.length > 0 
+      ? `\n\n【Pool】\n${feedData.pool.map(url => `• ${url}`).join('\n')}` 
+      : '';
+
+    const failureList = Object.keys(feedData.failures).length > 0
+      ? `\n\n【Failure Status】\n${Object.entries(feedData.failures).map(([url, count]) => `• ${url} (${count} errors)`).join('\n')}`
+      : '';
+
+    await customAlert(
+      `${settings.interests.categories[category]?.emoji || ''} ${category} - Signals`,
+      `${activeList}${poolList}${failureList}`,
+      'info'
+    );
+  };
+
   return (
     <div className="bg-deep-space min-h-screen text-slate-200 flex transition-all duration-300">
       <CustomDialog 
@@ -175,9 +236,28 @@ const App: React.FC = () => {
             </div>
           </div>
           <div className="flex items-center gap-4 ml-4 flex-shrink-0">
+            {currentView === 'feed' && (
+              <div className="flex bg-white/5 border border-white/10 rounded-lg p-1">
+                {(['small', 'medium', 'large'] as CardSize[]).map((size) => (
+                  <button
+                    key={size}
+                    onClick={() => setCardSize(size)}
+                    className={`px-3 py-1 text-[10px] font-bold uppercase transition-all rounded-md ${
+                      cardSize === size 
+                        ? 'bg-primary text-white shadow-lg' 
+                        : 'text-slate-500 hover:text-slate-300'
+                    }`}
+                    title={`Card Size: ${size}`}
+                  >
+                    {size[0]}
+                  </button>
+                ))}
+              </div>
+            )}
             <button 
-              onClick={() => handleTriggerOrchestration()}
-              className="p-2 text-slate-400 hover:text-white transition-colors"
+              onClick={handleRefresh}
+              disabled={loading}
+              className={`p-2 text-slate-400 hover:text-white transition-colors ${loading ? 'animate-spin' : ''}`}
               title="Sync with Aegis"
             >
               <RefreshCcw size={18} />
@@ -224,14 +304,57 @@ const App: React.FC = () => {
                       Retry Connection
                     </button>
                   </div>
-                ) : filteredArticles.length > 0 ? (
-                  <div className={`grid gap-6 items-start auto-rows-min ${
-                    isCompact 
-                      ? 'grid-cols-1' 
-                      : 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4'
-                  }`}>
-                    {filteredArticles.map((article, idx) => (
-                      <ArticleCard key={`${article.link}-${idx}`} article={article} index={idx} />
+                ) : Object.keys(groupedArticles).length > 0 ? (
+                  <div className="space-y-12">
+                    {Object.entries(groupedArticles).map(([category, catArticles]) => (
+                      <section key={category} className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <button 
+                          onClick={() => handleShowFeeds(category)}
+                          className="group flex items-center gap-3 mb-6 hover:translate-x-1 transition-transform"
+                        >
+                          <span className="text-2xl">{settings?.interests.categories[category]?.emoji}</span>
+                          <h3 className="text-xl font-black text-white group-hover:text-primary transition-colors uppercase tracking-tight">
+                            {category}
+                          </h3>
+                          <div className="h-px flex-grow bg-white/5 group-hover:bg-primary/20 transition-colors ml-4 mr-2"></div>
+                          <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${
+                            catArticles.length > 0 
+                              ? 'text-slate-600 bg-white/5 border-white/5 group-hover:border-primary/20' 
+                              : 'text-slate-500 bg-white/5 border-white/5 group-hover:border-alert/20'
+                          } transition-colors`}>
+                            {catArticles.length} SIGNALS
+                          </span>
+                        </button>
+                        
+                        {catArticles.length > 0 ? (
+                          <div className={`grid gap-6 items-start auto-rows-min ${
+                            cardSize === 'small' 
+                              ? 'grid-cols-2 md:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8 gap-3' 
+                              : cardSize === 'medium'
+                                ? 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4'
+                                : 'grid-cols-1 md:grid-cols-1 xl:grid-cols-2 2xl:grid-cols-2 gap-8'
+                          }`}>
+                            {catArticles.map((article, idx) => (
+                              <ArticleCard 
+                                key={`${article.link}-${idx}`} 
+                                article={article} 
+                                index={idx} 
+                                size={cardSize}
+                              />
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="py-12 border-2 border-dashed border-white/5 rounded-3xl flex flex-col items-center justify-center text-slate-600 gap-3 group/empty hover:border-white/10 transition-colors">
+                            <p className="text-sm font-medium italic">No signals found in this category.</p>
+                            <button 
+                              onClick={() => handleShowFeeds(category)}
+                              className="text-[10px] uppercase font-bold tracking-widest text-primary/60 hover:text-primary transition-colors"
+                            >
+                              Check Feed Configuration
+                            </button>
+                          </div>
+                        )}
+                      </section>
                     ))}
                   </div>
                 ) : (
@@ -253,7 +376,7 @@ const App: React.FC = () => {
               <motion.div
                 key="settings"
                 initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
+                animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.2 }}
               >

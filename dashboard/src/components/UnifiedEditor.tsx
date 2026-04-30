@@ -11,7 +11,9 @@ import {
   Cpu, 
   Edit3,
   Trash2,
-  GripVertical
+  GripVertical,
+  X,
+  Sparkles
 } from 'lucide-react';
 import { GlassPanel } from './GlassPanel';
 import { KnowledgeGraph } from './KnowledgeGraph';
@@ -50,6 +52,8 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
   const [activeTab, setActiveTab] = useState<Tab>('editor');
   const [isSaving, setIsSaving] = useState(false);
   const [isSuggesting, setIsSuggesting] = useState(false);
+  const [isSuggestingBrands, setIsSuggestingBrands] = useState(false);
+  const [isSuggestingKeywords, setIsSuggestingKeywords] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(
     Object.keys(currentSettings.interests.categories)[0] || null
   );
@@ -217,6 +221,40 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
     });
   };
 
+  const handleAISuggest = async (field: 'brands' | 'keywords') => {
+    if (!selectedCategory) return;
+    
+    if (field === 'brands') setIsSuggestingBrands(true);
+    else setIsSuggestingKeywords(true);
+
+    try {
+      const suggestions = await nexusApi.suggestCategory(selectedCategory);
+      const newItems = suggestions[field] || [];
+      
+      setDraft(prev => {
+        const currentItems = prev.interests.categories[selectedCategory][field];
+        // 重複を除外して追加
+        const combined = [...new Set([...currentItems, ...newItems])];
+        
+        const newCategories = { ...prev.interests.categories };
+        newCategories[selectedCategory] = { 
+          ...newCategories[selectedCategory], 
+          [field]: combined 
+        };
+        
+        return { ...prev, interests: { ...prev.interests, categories: newCategories } };
+      });
+
+      await customAlert('AI Suggestions Added', `Gemini suggested ${newItems.length} new ${field} for "${selectedCategory}".`, 'success');
+    } catch (err) {
+      console.error(`Failed to get AI suggestions for ${field}:`, err);
+      await customAlert('AI Suggestion Failed', `Could not reach Gemini to get suggestions for ${field}.`, 'error');
+    } finally {
+      if (field === 'brands') setIsSuggestingBrands(false);
+      else setIsSuggestingKeywords(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header & Main Actions */}
@@ -361,42 +399,73 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
                             <Globe size={18} className="text-primary" />
                             Target Brands
                           </h3>
-                          <span className="text-[10px] text-slate-500 font-mono">
-                            {draft.interests.categories[selectedCategory].brands.length} Total
-                          </span>
+                          <div className="flex items-center gap-3">
+                            <button
+                              onClick={() => handleAISuggest('brands')}
+                              disabled={isSuggestingBrands}
+                              className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 hover:bg-primary/20 text-primary rounded-md text-[10px] font-bold uppercase transition-all disabled:opacity-50"
+                              title="AI Suggest Brands"
+                            >
+                              {isSuggestingBrands ? (
+                                <RotateCcw size={12} className="animate-spin" />
+                              ) : (
+                                <Sparkles size={12} />
+                              )}
+                              AI Suggest
+                            </button>
+                            <span className="text-[10px] text-slate-500 font-mono">
+                              {draft.interests.categories[selectedCategory].brands.length} Total
+                            </span>
+                          </div>
                         </div>
-                        <div className="space-y-3">
+                        <div className="flex flex-wrap gap-2">
                           {draft.interests.categories[selectedCategory].brands.map((brand, idx) => (
-                            <div key={idx} className="group flex items-center gap-2">
-                              <input 
-                                type="text"
-                                value={brand}
-                                onChange={(e) => {
+                            <div 
+                              key={idx} 
+                              className="group flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 border border-primary/20 rounded-full text-sm text-primary-foreground animate-in fade-in zoom-in duration-200"
+                            >
+                              <span 
+                                contentEditable
+                                suppressContentEditableWarning
+                                onBlur={(e) => {
+                                  const newVal = e.currentTarget.textContent || '';
                                   const newBrands = [...draft.interests.categories[selectedCategory].brands];
-                                  newBrands[idx] = e.target.value;
-                                  handleUpdateCategory(selectedCategory, 'brands', newBrands);
+                                  newBrands[idx] = newVal;
+                                  handleUpdateCategory(selectedCategory, 'brands', newBrands.filter(b => b));
                                 }}
-                                className="flex-grow bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary/50 transition-colors"
-                              />
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    e.currentTarget.blur();
+                                  }
+                                }}
+                                className="outline-none focus:text-white"
+                              >
+                                {brand}
+                              </span>
                               <button 
                                 onClick={() => {
                                   const newBrands = draft.interests.categories[selectedCategory].brands.filter((_, i) => i !== idx);
                                   handleUpdateCategory(selectedCategory, 'brands', newBrands);
                                 }}
-                                className="p-2 opacity-0 group-hover:opacity-100 text-slate-600 hover:text-alert transition-all"
+                                className="hover:text-alert transition-colors"
                               >
-                                <Trash2 size={16} />
+                                <X size={14} />
                               </button>
                             </div>
                           ))}
                           <button 
-                            onClick={() => {
-                              const newBrands = [...draft.interests.categories[selectedCategory].brands, ''];
-                              handleUpdateCategory(selectedCategory, 'brands', newBrands);
+                            onClick={async () => {
+                              const val = await customPrompt('Add Brand', 'Enter new brand name:');
+                              if (val) {
+                                const newBrands = [...draft.interests.categories[selectedCategory].brands, val];
+                                handleUpdateCategory(selectedCategory, 'brands', newBrands);
+                              }
                             }}
-                            className="w-full py-2 border border-dashed border-white/10 rounded-lg text-slate-500 hover:text-primary hover:border-primary/50 text-xs font-medium transition-all"
+                            className="flex items-center justify-center w-8 h-8 rounded-full border border-dashed border-white/20 text-slate-500 hover:text-primary hover:border-primary/50 transition-all"
+                            title="Add Brand"
                           >
-                            + Add Brand
+                            <Plus size={16} />
                           </button>
                         </div>
                       </GlassPanel>
@@ -408,42 +477,73 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
                             <Hash size={18} className="text-accent" />
                             Signal Keywords
                           </h3>
-                          <span className="text-[10px] text-slate-500 font-mono">
-                            {draft.interests.categories[selectedCategory].keywords.length} Total
-                          </span>
+                          <div className="flex items-center gap-3">
+                            <button
+                              onClick={() => handleAISuggest('keywords')}
+                              disabled={isSuggestingKeywords}
+                              className="flex items-center gap-1.5 px-2 py-1 bg-accent/10 hover:bg-accent/20 text-accent rounded-md text-[10px] font-bold uppercase transition-all disabled:opacity-50"
+                              title="AI Suggest Keywords"
+                            >
+                              {isSuggestingKeywords ? (
+                                <RotateCcw size={12} className="animate-spin" />
+                              ) : (
+                                <Sparkles size={12} />
+                              )}
+                              AI Suggest
+                            </button>
+                            <span className="text-[10px] text-slate-500 font-mono">
+                              {draft.interests.categories[selectedCategory].keywords.length} Total
+                            </span>
+                          </div>
                         </div>
-                        <div className="space-y-3">
+                        <div className="flex flex-wrap gap-2">
                           {draft.interests.categories[selectedCategory].keywords.map((kw, idx) => (
-                            <div key={idx} className="group flex items-center gap-2">
-                              <input 
-                                type="text"
-                                value={kw}
-                                onChange={(e) => {
+                            <div 
+                              key={idx} 
+                              className="group flex items-center gap-1.5 px-3 py-1.5 bg-accent/10 border border-accent/20 rounded-full text-sm text-accent-foreground animate-in fade-in zoom-in duration-200"
+                            >
+                              <span 
+                                contentEditable
+                                suppressContentEditableWarning
+                                onBlur={(e) => {
+                                  const newVal = e.currentTarget.textContent || '';
                                   const newKws = [...draft.interests.categories[selectedCategory].keywords];
-                                  newKws[idx] = e.target.value;
-                                  handleUpdateCategory(selectedCategory, 'keywords', newKws);
+                                  newKws[idx] = newVal;
+                                  handleUpdateCategory(selectedCategory, 'keywords', newKws.filter(k => k));
                                 }}
-                                className="flex-grow bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent/50 transition-colors"
-                              />
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    e.currentTarget.blur();
+                                  }
+                                }}
+                                className="outline-none focus:text-white"
+                              >
+                                {kw}
+                              </span>
                               <button 
                                 onClick={() => {
                                   const newKws = [...draft.interests.categories[selectedCategory].keywords].filter((_, i) => i !== idx);
                                   handleUpdateCategory(selectedCategory, 'keywords', newKws);
                                 }}
-                                className="p-2 opacity-0 group-hover:opacity-100 text-slate-600 hover:text-alert transition-all"
+                                className="hover:text-alert transition-colors"
                               >
-                                <Trash2 size={16} />
+                                <X size={14} />
                               </button>
                             </div>
                           ))}
                           <button 
-                            onClick={() => {
-                              const newKws = [...draft.interests.categories[selectedCategory].keywords, ''];
-                              handleUpdateCategory(selectedCategory, 'keywords', newKws);
+                            onClick={async () => {
+                              const val = await customPrompt('Add Keyword', 'Enter new keyword:');
+                              if (val) {
+                                const newKws = [...draft.interests.categories[selectedCategory].keywords, val];
+                                handleUpdateCategory(selectedCategory, 'keywords', newKws);
+                              }
                             }}
-                            className="w-full py-2 border border-dashed border-white/10 rounded-lg text-slate-500 hover:text-accent hover:border-accent/50 text-xs font-medium transition-all"
+                            className="flex items-center justify-center w-8 h-8 rounded-full border border-dashed border-white/20 text-slate-500 hover:text-accent hover:border-accent/50 transition-all"
+                            title="Add Keyword"
                           >
-                            + Add Keyword
+                            <Plus size={16} />
                           </button>
                         </div>
                       </GlassPanel>

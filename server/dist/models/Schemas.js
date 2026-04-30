@@ -18,17 +18,39 @@ export const InterestCategorySchema = z.object({
     reason: z.string().optional(),
 });
 /**
+ * v5.0 Skill Schema
+ */
+export const SkillSchema = z.object({
+    id: z.string(),
+    name: z.string(),
+    description: z.string(),
+    agent: z.string(),
+    type: z.enum(['tool', 'action', 'logic']),
+    enabled: z.boolean().default(true),
+});
+/**
  * v5.0 Interests Schema
  */
 export const InterestsSchema = z.object({
     categories: z.record(z.string(), InterestCategorySchema),
+    skills: z.array(SkillSchema).optional(),
     lastUpdated: z.number().optional(),
 });
 /**
- * Unified Sync Settings Schema
+ * v5.0 Window State Schema
+ */
+export const WindowStateSchema = z.object({
+    width: z.number(),
+    height: z.number(),
+    x: z.number(),
+    y: z.number(),
+});
+/**
+ * v5.0 Sync Settings Schema
  */
 export const SyncSettingsSchema = z.object({
     interests: InterestsSchema,
     feedConfig: FeedConfigSchema,
+    windowState: WindowStateSchema.optional(),
     lastUpdated: z.number().optional(),
 });

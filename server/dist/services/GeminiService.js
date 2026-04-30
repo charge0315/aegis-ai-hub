@@ -5,7 +5,7 @@ import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
  */
 export class GeminiService {
     genAI;
-    primaryModelName = "gemini-2.0-flash";
+    primaryModelName = "gemini-3.1-pro-preview";
     /**
      * @param {string} apiKey - Google Gemini APIキー
      */
@@ -18,7 +18,7 @@ export class GeminiService {
      * @param {ResponseSchema} schema - JSONスキーマ定義
      * @param {string} [modelName] - 使用するモデル名
      */
-    async generateStructured(prompt, schema, modelName = "gemini-1.5-pro") {
+    async generateStructured(prompt, schema, modelName = "gemini-3.1-pro-preview") {
         if (!this.genAI)
             throw new Error("Gemini APIキーが設定されていません。");
         const model = this.genAI.getGenerativeModel({
@@ -45,7 +45,7 @@ export class GeminiService {
      * @param {any[]} tools
      * @param {string} modelName
      */
-    async generateWithTools(prompt, tools, modelName = "gemini-1.5-pro") {
+    async generateWithTools(prompt, tools, modelName = "gemini-3.1-pro-preview") {
         if (!this.genAI)
             throw new Error("Gemini APIキーが設定されていません。");
         const model = this.genAI.getGenerativeModel({
@@ -68,7 +68,7 @@ export class GeminiService {
     /**
      * チャットセッションを開始
      */
-    createChatSession(modelName = "gemini-1.5-pro", history = [], tools = []) {
+    createChatSession(modelName = "gemini-3.1-pro-preview", history = [], tools = []) {
         if (!this.genAI)
             throw new Error("Gemini APIキーが設定されていません。");
         const model = this.genAI.getGenerativeModel({
@@ -148,6 +148,71 @@ export class GeminiService {
         const result = await this.generateStructured(prompt, schema);
         return result.sites;
     }
+    /**
+     * 特定のカテゴリに対して英語のRSSフィードを提案します。
+     */
+    async discoverEnglishSites(interests, targetCategories) {
+        const schema = {
+            type: SchemaType.OBJECT,
+            properties: {
+                sites: {
+                    type: SchemaType.ARRAY,
+                    items: {
+                        type: SchemaType.OBJECT,
+                        properties: {
+                            name: { type: SchemaType.STRING },
+                            url: { type: SchemaType.STRING },
+                            category: { type: SchemaType.STRING },
+                            lang: { type: SchemaType.STRING, enum: ["en"], format: "enum" }
+                        },
+                        required: ["name", "url", "category", "lang"]
+                    }
+                }
+            },
+            required: ["sites"]
+        };
+        const targetInterests = targetCategories.map(cat => ({
+            category: cat,
+            details: interests.categories[cat]
+        }));
+        const prompt = `
+以下のカテゴリにおいて、日本語のニュースソースが不足しています。
+世界的に権威のある、英語のRSSフィード（Techニュース、公式ブログ、業界誌など）を提案してください。
+対象カテゴリ: ${JSON.stringify(targetInterests)}
+出力は必ず英語圏のサイトURLを含めてください。
+`;
+        const result = await this.generateStructured(prompt, schema);
+        return result.sites;
+    }
+    /**
+     * 複数の記事をまとめて日本語に翻訳します。
+     */
+    async translateArticles(articles) {
+        const schema = {
+            type: SchemaType.OBJECT,
+            properties: {
+                translations: {
+                    type: SchemaType.ARRAY,
+                    items: {
+                        type: SchemaType.OBJECT,
+                        properties: {
+                            title: { type: SchemaType.STRING },
+                            desc: { type: SchemaType.STRING }
+                        },
+                        required: ["title", "desc"]
+                    }
+                }
+            },
+            required: ["translations"]
+        };
+        const prompt = `
+以下の記事リストを、自然な日本語に翻訳してください。
+技術用語や固有名詞は適切に扱い、ニュースとして読みやすい表現にしてください。
+リスト: ${JSON.stringify(articles)}
+`;
+        const result = await this.generateStructured(prompt, schema);
+        return result.translations;
+    }
     async analyzeTrends(articles, interests) {
         const schema = {
             type: SchemaType.OBJECT,
@@ -174,5 +239,27 @@ export class GeminiService {
 `;
         const result = await this.generateStructured(prompt, schema);
         return result.suggestions;
+    }
+    /**
+     * カテゴリ名からブランドとキーワードを提案します。
+     */
+    async suggestCategoryDetails(categoryName) {
+        const schema = {
+            type: SchemaType.OBJECT,
+            properties: {
+                brands: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: "関連する主要なブランド5つ" },
+                keywords: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: "関連する重要なキーワード5つ" },
+                emoji: { type: SchemaType.STRING, description: "カテゴリを象徴する絵文字1つ" },
+                reason: { type: SchemaType.STRING, description: "この提案の理由（1文）" }
+            },
+            required: ["brands", "keywords", "emoji", "reason"]
+        };
+        const prompt = `
+以下の新しいインテリジェンス・カテゴリ名に関連する、主要なブランドを5つ、および重要なキーワードを5つ提案してください。
+また、そのカテゴリにふさわしい絵文字を1つ選んでください。
+カテゴリ名: "${categoryName}"
+日本語で回答してください。
+`;
+        return await this.generateStructured(prompt, schema);
     }
 }

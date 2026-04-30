@@ -23,8 +23,8 @@ export class ScraperFacade {
     constructor(interestsPath: string, feedsPath: string) {
         this.feedManager = new FeedManager(feedsPath);
         this.rssFetcher = new RSSFetcher(10);
-        this.enrichmentService = new EnrichmentService();
         this.geminiService = new GeminiService(process.env.GEMINI_API_KEY);
+        this.enrichmentService = new EnrichmentService(this.geminiService);
     }
 
     /**
@@ -117,7 +117,7 @@ export class ScraperFacade {
 
         for (const res of results) {
             if (!res.success) {
-                this.feedManager.reportFailure(res.category, res.url);
+                await this.feedManager.reportFailure(res.category, res.url);
                 continue;
             }
             this.feedManager.reportSuccess(res.category, res.url);

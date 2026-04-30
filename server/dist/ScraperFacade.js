@@ -20,8 +20,8 @@ export class ScraperFacade {
     constructor(interestsPath, feedsPath) {
         this.feedManager = new FeedManager(feedsPath);
         this.rssFetcher = new RSSFetcher(10);
-        this.enrichmentService = new EnrichmentService();
         this.geminiService = new GeminiService(process.env.GEMINI_API_KEY);
+        this.enrichmentService = new EnrichmentService(this.geminiService);
     }
     /**
      * Gemini APIを活用し、ユーザーの興味に最適化されたおすすめ記事10選を生成します。
@@ -100,7 +100,7 @@ export class ScraperFacade {
         const allArticles = [];
         for (const res of results) {
             if (!res.success) {
-                this.feedManager.reportFailure(res.category, res.url);
+                await this.feedManager.reportFailure(res.category, res.url);
                 continue;
             }
             this.feedManager.reportSuccess(res.category, res.url);

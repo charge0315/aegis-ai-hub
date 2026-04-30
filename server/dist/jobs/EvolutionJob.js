@@ -28,7 +28,7 @@ export class EvolutionJob {
             const interests = JSON.parse(fs.readFileSync(this.interestsPath, 'utf8'));
             // 1. 設定ファイルのクリーニング (重複排除等)
             console.log("[EvolutionJob] ステップ 1: 設定ファイルの整理を実行中...");
-            this.scraper.feedManager.cleanConfig();
+            await this.scraper.feedManager.cleanConfig();
             this.cleanInterests(interests);
             // 2. AI による新しいフィードの探索と登録
             console.log("[EvolutionJob] ステップ 2: AI による新しいソースの探索を実行中...");

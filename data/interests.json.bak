@@ -1,5 +1,68 @@
 {
   "categories": {
+    "ゲーム・配信": {
+      "emoji": "🎮",
+      "brands": [
+        "Sony Interactive Entertainment",
+        "Nintendo",
+        "SEGA",
+        "Capcom",
+        "Square Enix",
+        "バンダイナムコエンターテインメント",
+        "CD PROJEKT RED",
+        "HoYoverse",
+        "Epic Games",
+        "Valve",
+        "FromSoftware",
+        "Riot Games",
+        "Electronic Arts",
+        "Pocketpair",
+        "ZETA DIVISION",
+        "Crazy Raccoon",
+        "Tencent Games",
+        "KRAFTON",
+        "Naughty Dog",
+        "Elgato",
+        "AVerMedia",
+        "OBS Studio",
+        "SCUF Gaming",
+        "Secretlab",
+        "ZOWIE",
+        "SteelSeries"
+      ],
+      "keywords": [
+        "PS5 Pro",
+        "Nintendo Switch 2",
+        "Xbox",
+        "Steam",
+        "Steam Deck",
+        "GeForce NOW",
+        "eスポーツ",
+        "Twitch",
+        "Discord",
+        "Valorant",
+        "Apex Legends",
+        "ストリートファイター6",
+        "モンスターハンターワイルズ",
+        "原神",
+        "崩壊：スターレイル",
+        "パルワールド",
+        "ゲーミングUMPC",
+        "DLSS / FSR",
+        "レイトレーシング",
+        "インディーゲーム",
+        "VTuber",
+        "キャプチャーボード",
+        "クラウドゲーミング",
+        "ゲーミングルーター",
+        "フレームジェネレーション",
+        "リロードキャンセル",
+        "ストリーマー",
+        "仁王"
+      ],
+      "score": 10,
+      "reason": "クリエイターエコノミーの文脈として欠かせない「ゲーム配信・ストリーミング機材（Elgato, AVerMedia）」をこのカテゴリに統合し、プレイから配信までを一元化しました。"
+    },
     "AI・ソフトウェア": {
       "emoji": "🤖",
       "brands": [
@@ -34,9 +97,9 @@
       "keywords": [
         "ChatGPT",
         "GPT-4o",
-        "Claude 3.5",
-        "Gemini 1.5",
-        "Llama 3",
+        "Claude",
+        "Gemini",
+        "Llama",
         "Copilot",
         "AIエージェント",
         "RAG",
@@ -120,67 +183,24 @@
       "score": 10,
       "reason": "直感的な名称に変更。AIインフラとして存在感を増すSupermicroを追加し、GPUや最新のRTX 50シリーズといった、直近のハードウェア・トレンドワードを更新しました。"
     },
-    "ゲーム・配信": {
-      "emoji": "🎮",
+    "ギター・アンプ・エフェクター": {
+      "emoji": "🆕",
       "brands": [
-        "Sony Interactive Entertainment",
-        "Nintendo",
-        "SEGA",
-        "Capcom",
-        "Square Enix",
-        "バンダイナムコエンターテインメント",
-        "CD PROJEKT RED",
-        "HoYoverse",
-        "Epic Games",
-        "Valve",
-        "FromSoftware",
-        "Riot Games",
-        "Electronic Arts",
-        "Pocketpair",
-        "ZETA DIVISION",
-        "Crazy Raccoon",
-        "Tencent Games",
-        "KRAFTON",
-        "Naughty Dog",
-        "Elgato",
-        "AVerMedia",
-        "OBS Studio",
-        "SCUF Gaming",
-        "Secretlab",
-        "ZOWIE",
-        "SteelSeries"
+        "フェンダー",
+        "ギブソン",
+        "マーシャル",
+        "BOSS",
+        "アイバニーズ"
       ],
       "keywords": [
-        "PS5 Pro",
-        "Nintendo Switch 2",
-        "Xbox",
-        "Steam",
-        "Steam Deck",
-        "GeForce NOW",
-        "eスポーツ",
-        "Twitch",
-        "Discord",
-        "Valorant",
-        "Apex Legends",
-        "ストリートファイター6",
-        "モンスターハンターワイルズ",
-        "原神",
-        "崩壊：スターレイル",
-        "パルワールド",
-        "ゲーミングUMPC",
-        "DLSS / FSR",
-        "レイトレーシング",
-        "インディーゲーム",
-        "VTuber",
-        "キャプチャーボード",
-        "クラウドゲーミング",
-        "ゲーミングルーター",
-        "フレームジェネレーション",
-        "リロードキャンセル",
-        "ストリーマー"
+        "エレキギター",
+        "真空管アンプ",
+        "オーバードライブ",
+        "ペダルボード",
+        "音作り"
       ],
-      "score": 10,
-      "reason": "クリエイターエコノミーの文脈として欠かせない「ゲーム配信・ストリーミング機材（Elgato, AVerMedia）」をこのカテゴリに統合し、プレイから配信までを一元化しました。"
+      "score": 5,
+      "reason": "Manually added category."
     },
     "オーディオ・音楽制作": {
       "emoji": "🎧",
@@ -578,7 +598,12 @@
         "Nebula",
         "Braun",
         "Miele",
-        "Snow Peak"
+        "Snow Peak",
+        "無印良品",
+        "IKEA",
+        "ニトリ",
+        "ユニクロ",
+        "スノーピーク"
       ],
       "keywords": [
         "ドラム式洗濯機",
@@ -592,11 +617,35 @@
         "超短焦点プロジェクター",
         "スチームアイロン",
         "スマートライティング",
-        "サウナヒーター"
+        "サウナヒーター",
+        "ミニマリスト",
+        "ワークライフバランス",
+        "サステナブル",
+        "ウェルビーイング",
+        "QOL"
       ],
       "score": 8,
       "reason": "【新設】デジタルガジェットだけでなく、生活の質（QOL）をダイレクトに向上させる高機能・デザイン志向の生活家電（白物家電の進化）を網羅し、総合的なダッシュボードにするため新設しました。"
+    },
+    "ロードバイク・MTB・サイクリング": {
+      "emoji": "🚴",
+      "brands": [
+        "シマノ",
+        "トレック",
+        "スペシャライズド",
+        "ジャイアント",
+        "ビアンキ"
+      ],
+      "keywords": [
+        "ツーリング",
+        "ヒルクライム",
+        "コンポーネント",
+        "クロスバイク",
+        "サイクルウェア"
+      ],
+      "score": 5,
+      "reason": "世界的に知名度が高くサイクリストに支持されている代表的なブランドと、自転車の多様な楽しみ方や関連アイテムを示すキーワードを選定しました。"
     }
   },
-  "lastUpdated": 1777356865568
+  "lastUpdated": 1777531928800
 }
