@@ -52,7 +52,7 @@ export interface NexusSettings {
 export interface AgentStatus {
   id: string;
   name: string;
-  status: 'idle' | 'working' | 'error' | 'success';
+  status: 'idle' | 'working' | 'error' | 'success' | 'refresh';
   lastMessage: string;
   timestamp: string;
 }
@@ -62,4 +62,35 @@ export interface NexusState {
   draft: NexusSettings;
   isDirty: boolean;
   lastUpdated: string;
+}
+
+// Electron IPC Bridge definitions
+export interface AgentEventData {
+  agentId: string;
+  status: 'idle' | 'working' | 'error' | 'success' | 'refresh';
+  message: string;
+  timestamp?: string;
+}
+
+export interface NexusApiBridge {
+  getArticles: (options?: Record<string, unknown>) => Promise<Article[]>;
+  getSettings: () => Promise<NexusSettings>;
+  syncSettings: (settings: NexusSettings) => Promise<{ lastUpdated: number }>;
+  triggerOrchestration: () => Promise<{ success: boolean; newFeedsCount: number }>;
+  onAgentEvent: (callback: (data: AgentEventData) => void) => void;
+  suggestCategory: (categoryName: string) => Promise<{
+    brands: string[];
+    keywords: string[];
+    emoji: string;
+    reason: string;
+  }>;
+  getApiKey: () => Promise<string>;
+  saveApiKey: (apiKey: string) => Promise<{ success: boolean }>;
+  windowControl: (action: 'minimize' | 'maximize' | 'close') => void;
+}
+
+declare global {
+  interface Window {
+    nexusApi: NexusApiBridge;
+  }
 }

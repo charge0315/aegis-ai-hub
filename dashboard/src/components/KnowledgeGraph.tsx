@@ -82,20 +82,20 @@ export const KnowledgeGraph: React.FC<KnowledgeGraphProps> = ({ settings, onKeyw
       });
 
     node.call(d3.drag<SVGGElement, Node>()
-        .on("start", (event, d) => {
+        .on("start", (event: d3.D3DragEvent<SVGGElement, Node, Node>, d) => {
           if (!event.active) simulation.alphaTarget(0.3).restart();
           d.fx = d.x;
           d.fy = d.y;
         })
-        .on("drag", (event, d) => {
+        .on("drag", (event: d3.D3DragEvent<SVGGElement, Node, Node>, d) => {
           d.fx = event.x;
           d.fy = event.y;
         })
-        .on("end", (event, d) => {
+        .on("end", (event: d3.D3DragEvent<SVGGElement, Node, Node>, d) => {
           if (!event.active) simulation.alphaTarget(0);
           d.fx = null;
           d.fy = null;
-        }) as unknown as (selection: d3.Selection<SVGGElement, Node, SVGGElement, unknown>) => void);
+        }));
 
     // Node circles with gradients/glow
     const defs = svg.append("defs");
@@ -145,11 +145,13 @@ export const KnowledgeGraph: React.FC<KnowledgeGraphProps> = ({ settings, onKeyw
     });
 
     // Zoom support
-    svg.call(d3.zoom<SVGSVGElement, unknown>()
+    const zoom = d3.zoom<SVGSVGElement, unknown>()
       .scaleExtent([0.5, 3])
-      .on("zoom", (event) => {
-        g.attr("transform", event.transform);
-      }) as unknown as (selection: d3.Selection<SVGSVGElement, unknown, null, undefined>) => void);
+      .on("zoom", (event: d3.D3ZoomEvent<SVGSVGElement, unknown>) => {
+        g.attr("transform", event.transform.toString());
+      });
+
+    svg.call(zoom);
 
   }, [settings, onKeywordToggle, onBrandToggle]);
 
@@ -183,7 +185,7 @@ export const KnowledgeGraph: React.FC<KnowledgeGraphProps> = ({ settings, onKeyw
         <p>💡 <b>Interactive:</b> Drag to reorganize, use mouse wheel to zoom, or click nodes to toggle weighting.</p>
       </div>
 
-      <svg ref={svgRef} className="w-full h-full" />
+      <svg ref={svgRef} className="w-full h-full" data-testid="knowledge-graph-svg" />
     </div>
   );
 };

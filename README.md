@@ -1,63 +1,66 @@
-# Aegis AI Hub 🛡️🤖 - v5.1 Nexus Evolution
+# Aegis AI Hub 🛡️🤖 - v5.2 NEXUS
 
 ユーザーの興味に特化した、究極の自律学習型知的ニュース・ダッシュボード。  
-最新の **Gemini 3.1 シリーズ** を中枢に、多言語翻訳と洗練された UI インタラクションを統合した、インテリジェンス・エージェントの決定版。
+最新の **Gemini 3.1 シリーズ** を中枢に、Windows 11 の **Mica Glassmorphism** デザインと高度な自律エージェントを融合させたプロダクション・エディション。
 
-## 🌟 Aegis v5.1 の主要な進化点
+## 🌟 Aegis v5.2 NEXUS の主要な進化点
 
-### 1. 多言語対応と自動翻訳 (Global Intelligence)
-世界中の情報をシームレスに。
-- **インテリジェント翻訳**: 海外の RSS フィードから取得した英語記事を、Gemini が文脈を維持したまま日本語へ自動翻訳。
-- **ローカライズ・プレフィックス**: 翻訳済み記事には `[JP]` を付与し、一目で判別可能。
+### 1. Windows 11 Native Glass (Mica)
+デスクトップと調和する、次世代のビジュアル体験。
+- **Mica Integration**: Windows 11 ネイティブのすりガラス効果を Electron で実現。
+- **Refined Transparency**: 背景色 `#101112` と 20% の透過率により、視認性と審美性を両立。
+- **Sidebar Aesthetic**: 洗練された白色のガラス素材を採用したサイドバーデザイン。
 
-### 2. フレキシブル・ビュー & 信号パネル
-ユーザーの「今」のニーズに合わせた情報密度。
-- **表示サイズ切り替え (S / M / L)**: 記事カードのサイズを 3 段階で即座に変更可能。大量の信号を俯瞰する Small モジュールから、詳細を読み込む Large モジュールまで対応。
-- **カテゴリ信号パネル**: カテゴリ見出しをクリックすることで、背後で動作している RSS フィードの稼働状況やエラー状態をリアルタイムに確認可能。
+### 2. 進化した UI アーキテクチャ (Robust UI)
+プロダクション品質の安定性と使い勝手を追求。
+- **React Portals**: `CustomDialog` に採用。画面のどこからでも完璧に中央配置される堅牢なオーバーレイ。
+- **Global Control**: `Ctrl+Q` による安全なアプリケーション終了や、`Ctrl+K` のコマンドパレット。
+- **High-Quality Assets**: `v5.2 NEXUS` 専用の新しいアセット群とマルチサイズ・アイコン。
 
-### 3. Nexus Editor v2 (チップ形式リファクタリング)
-設定画面のユーザー体験を大幅に向上。
-- **チップ形式のブランド・ワード管理**: キーワードやブランドをタグ（チップ）として視覚化。インプレース編集や簡単な削除に対応。
-- **ドラッグ＆ドロップ再構成**: カテゴリの表示順序を直感的なドラッグ操作で変更可能。
+### 3. 即戦力の知識ベース (Knowledge Out-of-the-box)
+インストールした瞬間から、最高品質の情報が流れ込みます。
+- **Default Data Sets**: ゲーム、AI、PCハードウェア、オーディオ、XR等の専門的なカテゴリとフィードを内蔵。
+- **Autonomous Discovery**: あなたの興味に基づき、AI が自律的に新しい情報源を探索し続けます。
 
-### 4. プロダクション級の堅牢性 (Stabilization)
-- **ファイル IO の安定化**: Windows/Docker 環境での `EBUSY` エラーを回避するため、リトライロジック付きの堅牢な書き込み処理を実装。
-- **ウィンドウ状態の完全な永続化**: サイズ、位置、表示設定をシームレスに保存・復元。
 
 ## 🛠 テックスタック
 
-- **Backend**: Node.js, Fastify, TypeScript
-- **AI**: Gemini 3.1 Pro Preview / Flash (Multilingual Translation & Structured Output)
-- **Frontend**: React 18, Vite, Tailwind CSS 3.4+, Framer Motion
-- **Protocol**: MCP (Model Context Protocol) サーバー機能搭載
+- **Core**: Electron (Mica Enabled), Node.js, TypeScript
+- **Bundler**: esbuild (Main Process), Vite (Renderer)
+- **AI**: Gemini 3.1 Pro / Flash (Dynamic Intelligence)
+- **Frontend**: React 19 (Portals & Context), Tailwind CSS, Framer Motion
+- **Installer**: electron-builder
 
 
-## 🚀 起動とセットアップ
+## 🚀 インストールとセットアップ
 
-### 1. 環境変数の設定
-`server/.env` ファイルに Gemini API キーを設定。
+### ユーザー向け手順
+1. 配布されたインストーラー (`Aegis-Nexus-Setup.exe`) を実行。
+2. アプリを起動し、右上の設定アイコン（歯車）をクリック。
+3. **「System Settings」** タブを選択。
+4. [Google AI Studio](https://aistudio.google.com/app/apikey) で取得した Gemini API キーを入力して「Apply API Key」をクリック。
+
+### 開発者向け：ビルドと実行
 ```bash
-GEMINI_API_KEY=your_api_key_here
+cd dashboard
+npm install              # 依存関係のインストール
+npm run electron:dev     # 開発モードで起動 (HMR有効)
+npm run electron:build   # インストーラーの生成 (release/ に出力)
 ```
 
-### 2. クイックスタート (Windows)
-```powershell
-./scripts/startup.ps1 -Install
-```
-※ 実行ログは `./startup.log` に出力されます。
-
-### 3. Docker を利用した起動
-```bash
-docker-compose up -d
-```
+### ビルドスクリプトの詳細
+- `build`: フロントエンド (Vite) のプロダクションビルド。
+- `build:electron`: メインプロセスの esbuild バンドル生成。
+- `dist`: フロントエンドとメインプロセスのビルドを行い、インストーラーを作成。
+- `electron:build`: `dist` のエイリアス。
 
 ## 👨‍💻 技術リファレンス (Codemaps)
 
 詳細な設計ドキュメントは `docs/CODEMAPS/` に集約されています。
-- [**INDEX.md**](./docs/CODEMAPS/INDEX.md) - プロジェクト全体の俯瞰図とモジュール構成
-- [**automation.md**](./docs/CODEMAPS/automation.md) - スタートアップ自動化と Docker 構成
-- [**frontend.md**](./docs/CODEMAPS/frontend.md) - Nexus Editor, Skill Registry, Fluent デザイン
-- [**backend.md**](./docs/CODEMAPS/backend.md) - SOA, 自律進化, SSE, Gemini 3.1 基盤
+- [**INDEX.md**](./docs/CODEMAPS/INDEX.md) - プロダクション構成とデータフローの全体像
+- [**backend.md**](./docs/CODEMAPS/backend.md) - esbuild バンドル, API キー永続化, IPC ハンドラー
+- [**frontend.md**](./docs/CODEMAPS/frontend.md) - System Settings タブ, UI/UX デザインパターン
+- [**automation.md**](./docs/CODEMAPS/automation.md) - パッケージング手順, E2E テスト
 
 ---
 *Aegis AI Hub - Precision Engineering for Intellectual Excellence. 🚀*

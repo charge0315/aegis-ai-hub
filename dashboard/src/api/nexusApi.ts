@@ -1,8 +1,5 @@
-import axios from 'axios';
 import { useState, useEffect, useCallback } from 'react';
 import type { Article, NexusSettings, AgentStatus } from '../types';
-
-const API_BASE = '/api';
 
 export interface WindowState {
   width: number;
@@ -11,56 +8,82 @@ export interface WindowState {
   y: number;
 }
 
+// Fallback for non-Electron environments (e.g. Playwright tests)
+const BACKEND_URL = 'http://localhost:3005';
+
+/**
+ * Electron IPC Bridge または HTTP API を介した API 呼び出し
+ */
 export const nexusApi = {
   async getArticles(): Promise<Article[]> {
-    const response = await axios.get(`${API_BASE}/dashboard`);
-    const data = response.data;
+    if (window.nexusApi) {
+      return await window.nexusApi.getArticles();
+    }
+    const res = await fetch(`${BACKEND_URL}/api/dashboard`);
+    const data = await res.json();
     
-    // Flatten the categorized object into a single array
+    // data is Record<string, { emoji: string, articles: Article[] }>
     const allArticles: Article[] = [];
-    Object.keys(data).forEach(category => {
-      if (data[category] && Array.isArray(data[category].articles)) {
-        allArticles.push(...data[category].articles);
+    const groupedData = data as Record<string, { emoji: string, articles: Article[] }>;
+    Object.values(groupedData).forEach((group) => {
+      if (group && Array.isArray(group.articles)) {
+        allArticles.push(...group.articles);
       }
     });
-    
     return allArticles;
   },
 
   async getSettings(): Promise<NexusSettings> {
-    const [interests, feeds] = await Promise.all([
-      axios.get(`${API_BASE}/v5/interests`),
-      axios.get(`${API_BASE}/v5/feeds`)
-    ]);
-    return {
-      interests: interests.data,
-      feed_urls: feeds.data
-    };
+    if (window.nexusApi) {
+      return await window.nexusApi.getSettings();
+    }
+    const res = await fetch(`${BACKEND_URL}/api/v5/interests`);
+    const interests = await res.json();
+    const resFeeds = await fetch(`${BACKEND_URL}/api/v5/feeds`);
+    const feeds = await resFeeds.json();
+    return { interests, feed_urls: feeds };
   },
 
-  async syncSettings(settings: NexusSettings, windowState?: WindowState): Promise<{ lastUpdated: number }> {
-    const payload: Record<string, unknown> = {
-      interests: settings.interests,
-      feedConfig: settings.feed_urls,
-      lastUpdated: settings.interests.lastUpdated || Date.now()
-    };
-    if (windowState) {
-      payload.windowState = windowState;
+  async syncSettings(settings: NexusSettings): Promise<{ lastUpdated: number }> {
+    if (window.nexusApi) {
+      return await window.nexusApi.syncSettings(settings);
     }
-    const response = await axios.post(`${API_BASE}/v5/sync-settings`, payload);
-    return response.data as { lastUpdated: number };
+    const res = await fetch(`${BACKEND_URL}/api/v5/sync-settings`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ interests: settings.interests, feedConfig: settings.feed_urls })
+    });
+    return await res.json();
   },
 
   async triggerOrchestration(requirements: string): Promise<void> {
-    await axios.post(`${API_BASE}/v5/orchestrate`, { requirements });
+    if (window.nexusApi) {
+      await window.nexusApi.triggerOrchestration();
+      return;
+    }
+    await fetch(`${BACKEND_URL}/api/v5/orchestrate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ requirements })
+    });
   },
 
   async suggestCategory(categoryName: string): Promise<{ brands: string[], keywords: string[], emoji: string, reason: string }> {
-    const response = await axios.post(`${API_BASE}/v5/suggest-category`, { categoryName });
-    return response.data;
+    if (window.nexusApi) {
+      return await window.nexusApi.suggestCategory(categoryName);
+    }
+    const res = await fetch(`${BACKEND_URL}/api/v5/suggest-category`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ categoryName })
+    });
+    return await res.json();
   }
 };
 
+/**
+ * データ取得と同期のためのカスタムフック
+ */
 export function useNexusSync() {
   const [settings, setSettings] = useState<NexusSettings | null>(null);
   const [articles, setArticles] = useState<Article[]>([]);
@@ -103,30 +126,32 @@ export function useNexusSync() {
   }, [fetchData]);
 
   const sync = useCallback(async (newSettings: NexusSettings) => {
-    const result = await nexusApi.syncSettings(newSettings);
-    // サーバー側で更新された lastUpdated をローカルステートに反映
-    const updatedSettings = {
-      ...newSettings,
-      interests: {
-        ...newSettings.interests,
-        lastUpdated: result.lastUpdated
-      }
-    };
-    setSettings(updatedSettings);
-    
-    // Refresh articles to match new interests
     try {
+      const result = await nexusApi.syncSettings(newSettings);
+      const updatedSettings = {
+        ...newSettings,
+        interests: {
+          ...newSettings.interests,
+          lastUpdated: result.lastUpdated
+        }
+      };
+      setSettings(updatedSettings);
+      
+      // 同期後に記事をリフレッシュ
       const a = await nexusApi.getArticles();
       setArticles(a);
     } catch (err) {
-      console.error('Failed to refresh articles after sync:', err);
+      console.error('Failed to sync settings:', err);
     }
   }, []);
 
   return { settings, articles, loading, error, sync, refetch: fetchData };
 }
 
-export function useAgentEvents() {
+/**
+ * エージェントイベントを受信するためのカスタムフック
+ */
+export function useAgentEvents(onRefresh?: () => void) {
   const [events, setEvents] = useState<AgentStatus[]>([
     { id: 'architect', name: 'Architect', status: 'idle', lastMessage: '', timestamp: '' },
     { id: 'curator', name: 'Curator', status: 'idle', lastMessage: '', timestamp: '' },
@@ -135,17 +160,43 @@ export function useAgentEvents() {
   ]);
 
   useEffect(() => {
-    console.log('[SSE] Connecting to /api/v5/events...');
-    const eventSource = new EventSource(`${API_BASE}/v5/events`);
+    if (!window.nexusApi) {
+      // Fallback for browser: Use SSE
+      console.log('[Browser] Connecting to SSE for agent events...');
+      const eventSource = new EventSource(`${BACKEND_URL}/api/v5/events`);
+      
+      eventSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.status === 'refresh') {
+            console.log('[Browser] Refresh signal received');
+            onRefresh?.();
+            return;
+          }
+          if (data.agentId) {
+            setEvents(prev => prev.map(agent => 
+              agent.id === data.agentId 
+                ? { ...agent, status: data.status, lastMessage: data.message, timestamp: data.timestamp || new Date().toISOString() }
+                : agent
+            ));
+          }
+        } catch (err) {
+          console.error('[Browser] Failed to process SSE event', err);
+        }
+      };
 
-    eventSource.onopen = () => {
-      console.log('[SSE] Connection established.');
-    };
+      return () => eventSource.close();
+    }
 
-    eventSource.onmessage = (event) => {
+    console.log('[Electron] Registering agent event listener...');
+    
+    window.nexusApi.onAgentEvent((data) => {
       try {
-        console.log('[SSE] Received event:', event.data);
-        const data = JSON.parse(event.data);
+        console.log('[Electron] Received agent event:', data);
+        if (data.status === 'refresh') {
+          onRefresh?.();
+          return;
+        }
         if (data.agentId) {
           setEvents(prev => prev.map(agent => 
             agent.id === data.agentId 
@@ -154,20 +205,10 @@ export function useAgentEvents() {
           ));
         }
       } catch (err) {
-        console.error('[SSE] Failed to parse event', err);
+        console.error('[Electron] Failed to process agent event', err);
       }
-    };
-
-    eventSource.onerror = (err) => {
-      console.error('[SSE] Connection error/closed', err);
-      eventSource.close();
-    };
-
-    return () => {
-      console.log('[SSE] Closing connection.');
-      eventSource.close();
-    };
-  }, []);
+    });
+  }, [onRefresh]);
 
   return events;
 }

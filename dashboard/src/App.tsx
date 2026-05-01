@@ -3,17 +3,17 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LayoutDashboard, 
   Settings2, 
-  Shield, 
   Search, 
   RefreshCcw,
   AlertCircle,
-  Loader2
+  Loader2,
+  Activity
 } from 'lucide-react';
 import { ArticleCard } from './components/ArticleCard';
 import { AgentMonitor } from './components/AgentMonitor';
 import { UnifiedEditor } from './components/UnifiedEditor';
 import { CommandPalette } from './components/CommandPalette';
-import { useNexusSync, useAgentEvents, nexusApi, type WindowState } from './api/nexusApi';
+import { useNexusSync, useAgentEvents, nexusApi } from './api/nexusApi';
 import { CustomDialog } from './components/CustomDialog';
 import { useDialog } from './hooks/useDialog';
 
@@ -24,28 +24,26 @@ const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<View>('feed');
   const [cardSize, setCardSize] = useState<CardSize>('medium');
   const { settings, articles, loading, error, sync, refetch } = useNexusSync();
-  const agentEvents = useAgentEvents();
+  const agentEvents = useAgentEvents(useCallback(() => {
+    console.log('[App] Auto-refreshing data...');
+    void refetch(false);
+  }, [refetch]));
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   const { dialog, alert: customAlert, confirm: customConfirm, prompt: customPrompt } = useDialog();
 
   // Save window state and update local width for responsive UI
   useEffect(() => {
-    let timeoutId: ReturnType<typeof setTimeout>;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
     
     const handleResize = () => {
       setWindowWidth(window.innerWidth);
       
       // Debounce the remote sync to avoid excessive API calls
-      clearTimeout(timeoutId);
+      if (timeoutId) clearTimeout(timeoutId);
       timeoutId = setTimeout(() => {
         if (settings) {
-          const state: WindowState = {
-            width: window.outerWidth,
-            height: window.outerHeight,
-            x: window.screenX,
-            y: window.screenY
-          };
-          void nexusApi.syncSettings(settings, state).catch(console.error);
+          // windowState は Electron 側で自動的に管理されるため、ここでは設定のみを同期
+          void nexusApi.syncSettings(settings).catch(console.error);
         }
       }, 1000);
     };
@@ -53,7 +51,7 @@ const App: React.FC = () => {
     window.addEventListener('resize', handleResize);
     return () => {
       window.removeEventListener('resize', handleResize);
-      clearTimeout(timeoutId);
+      if (timeoutId) clearTimeout(timeoutId);
     };
   }, [settings]);
 
@@ -165,20 +163,10 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="bg-deep-space min-h-screen text-slate-200 flex transition-all duration-300">
-      <CustomDialog 
-        isOpen={dialog.isOpen}
-        type={dialog.type}
-        title={dialog.title}
-        message={dialog.message}
-        onConfirm={dialog.onConfirm}
-        onCancel={dialog.onCancel}
-        defaultValue={dialog.defaultValue}
-        placeholder={dialog.placeholder}
-      />
-
+    <div className="bg-deep-space min-h-screen text-slate-200 flex">
       {/* Command Palette */}
       <CommandPalette 
+        key={isCommandPaletteOpen ? 'open' : 'closed'}
         isOpen={isCommandPaletteOpen}
         onClose={() => setIsCommandPaletteOpen(false)}
         settings={settings}
@@ -188,15 +176,16 @@ const App: React.FC = () => {
       />
 
       {/* Sidebar Navigation */}
-      <aside className={`${isCompact ? 'w-20 px-3' : 'w-64 p-6'} border-r border-white/5 bg-black/20 backdrop-blur-xl flex flex-col sticky top-0 h-screen z-30 transition-all duration-300`}>
-        <div className={`flex items-center ${isCompact ? 'justify-center' : 'gap-3 px-2'} mb-10 mt-6`} data-testid="app-logo">
-          <div className="w-8 h-8 rounded-lg bg-primary flex-shrink-0 flex items-center justify-center shadow-lg shadow-primary/20">
-            <Shield size={20} className="text-white" />
-          </div>
-          {!isCompact && <span className="text-lg font-bold tracking-tight text-white uppercase italic">Aegis <span className="text-primary">Nexus</span></span>}
+      <aside 
+        className={`${isCompact ? 'w-20 px-3' : 'w-64 p-6'} sidebar-glass flex flex-col sticky top-0 h-screen z-30 transition-all duration-300`}
+        style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
+      >
+        <div className={`flex items-center ${isCompact ? 'justify-center' : 'gap-3 px-2'} mb-10 mt-6 no-drag`} data-testid="app-logo">
+          <img src="/app-icon.png" alt="Aegis Logo" className="w-10 h-10 rounded-xl flex-shrink-0 shadow-lg shadow-black/40 object-cover" />
+          {!isCompact && <span className="text-lg font-black tracking-tight text-white uppercase italic">Aegis <span className="text-primary">Nexus</span></span>}
         </div>
 
-        <nav className="space-y-4 flex-grow">
+        <nav className="space-y-4 flex-grow no-drag">
           <NavItem 
             active={currentView === 'feed'} 
             onClick={() => setCurrentView('feed')}
@@ -213,7 +202,7 @@ const App: React.FC = () => {
           />
         </nav>
 
-        <div className={`mt-auto py-6 border-t border-white/5 ${isCompact ? 'flex justify-center' : ''}`}>
+        <div className={`mt-auto py-6 border-t border-white/5 ${isCompact ? 'flex justify-center' : ''} no-drag`}>
           <AgentMonitor agents={agentEvents} compact={isCompact} />
         </div>
       </aside>
@@ -221,7 +210,7 @@ const App: React.FC = () => {
       {/* Main Content Area */}
       <main className="flex-grow flex flex-col min-h-screen">
         {/* Header */}
-        <header className={`h-16 border-b border-white/5 bg-black/10 backdrop-blur-md flex items-center justify-between ${isCompact ? 'px-4' : 'px-8'} sticky top-0 z-20`}>
+        <header className={`h-16 border-b border-white/5 bg-white/[0.02] backdrop-blur-3xl flex items-center justify-between ${isCompact ? 'px-4' : 'px-8'} sticky top-0 z-20`}>
           <div className="flex items-center gap-6 flex-grow">
             <div className={`relative ${isCompact ? 'w-full' : 'w-96'}`}>
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
@@ -265,7 +254,7 @@ const App: React.FC = () => {
             {!isCompact && (
               <div className="flex items-center gap-2 px-3 py-1 bg-white/5 border border-white/10 rounded-lg text-xs font-mono text-slate-500">
                 <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
-                v5.0 NEXUS
+                v5.2 NEXUS
               </div>
             )}
           </div>
@@ -394,6 +383,17 @@ const App: React.FC = () => {
           </AnimatePresence>
         </div>
       </main>
+
+      <CustomDialog 
+        isOpen={dialog.isOpen}
+        type={dialog.type}
+        title={dialog.title}
+        message={dialog.message}
+        onConfirm={dialog.onConfirm}
+        onCancel={dialog.onCancel}
+        defaultValue={dialog.defaultValue}
+        placeholder={dialog.placeholder}
+      />
     </div>
   );
 };

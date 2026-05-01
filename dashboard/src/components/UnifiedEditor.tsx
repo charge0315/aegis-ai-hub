@@ -13,7 +13,8 @@ import {
   Trash2,
   GripVertical,
   X,
-  Sparkles
+  Sparkles,
+  Key
 } from 'lucide-react';
 import { GlassPanel } from './GlassPanel';
 import { KnowledgeGraph } from './KnowledgeGraph';
@@ -30,7 +31,7 @@ interface UnifiedEditorProps {
   prompt: (title: string, message: string, defaultValue?: string, placeholder?: string) => Promise<string | null>;
 }
 
-type Tab = 'editor' | 'graph' | 'skills';
+type Tab = 'editor' | 'graph' | 'skills' | 'system';
 
 const DEFAULT_SKILLS: Skill[] = [
   { id: 'rss-fetch', name: 'RSS Fetcher', description: 'Retrieves raw signals from configured sources with deduplication.', agent: 'Discovery', type: 'tool', enabled: true },
@@ -54,9 +55,16 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [isSuggestingBrands, setIsSuggestingBrands] = useState(false);
   const [isSuggestingKeywords, setIsSuggestingKeywords] = useState(false);
+  const [apiKey, setApiKey] = useState<string>('');
+  const [isSavingApiKey, setIsSavingApiKey] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(
     Object.keys(currentSettings.interests.categories)[0] || null
   );
+
+  // 初回ロード時にAPIキーを取得
+  React.useEffect(() => {
+    window.nexusApi.getApiKey().then(setApiKey);
+  }, []);
 
   const isDirty = JSON.stringify(draft) !== JSON.stringify(currentSettings);
   const categoryKeys = Object.keys(draft.interests.categories);
@@ -138,9 +146,17 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
     try {
       await onSave(draft);
       await customAlert('Success', 'Configuration saved successfully!', 'success');
-    } catch (error: any) {
-      console.error('Save failed:', error);
-      const message = error.response?.data?.details || error.message || 'Unknown error';
+    } catch (err: unknown) {
+      console.error('Save failed:', err);
+      let message = 'Unknown error';
+      
+      if (err instanceof Error) {
+        message = err.message;
+        const axiosError = err as { response?: { data?: { details?: string } } };
+        if (axiosError.response?.data?.details) {
+          message = axiosError.response.data.details;
+        }
+      }
       
       if (message.includes('CONFLICT')) {
         const shouldReload = await customConfirm('Sync Conflict', 'The configuration on the server is newer. Would you like to discard your changes and reload the latest version?');
@@ -157,6 +173,19 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
 
   const handleReset = () => {
     setDraft(currentSettings);
+  };
+
+  const handleSaveApiKey = async () => {
+    setIsSavingApiKey(true);
+    try {
+      await window.nexusApi.saveApiKey(apiKey);
+      await customAlert('Success', 'Gemini API Key saved and applied.', 'success');
+    } catch (err) {
+      console.error('Failed to save API key:', err);
+      await customAlert('Error', 'Failed to save API key.', 'error');
+    } finally {
+      setIsSavingApiKey(false);
+    }
   };
 
   const handleKeywordToggle = (category: string, keyword: string, enabled: boolean) => {
@@ -316,6 +345,13 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
           icon={<Cpu size={18} />} 
           label="Skill Registry" 
           data-testid="tab-skills"
+        />
+        <TabButton 
+          active={activeTab === 'system'} 
+          onClick={() => setActiveTab('system')} 
+          icon={<Settings2 size={18} />} 
+          label="System Settings" 
+          data-testid="tab-system"
         />
       </div>
 
@@ -591,6 +627,67 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
                 skills={draft.interests.skills} 
                 onToggleSkill={handleToggleSkill} 
               />
+            </motion.div>
+          )}
+
+          {activeTab === 'system' && (
+            <motion.div
+              key="system"
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              className="max-w-2xl mx-auto space-y-8"
+            >
+              <GlassPanel className="p-8 space-y-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-primary/10 text-primary rounded-2xl">
+                    <Key size={24} />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-white">Gemini API Intelligence</h3>
+                    <p className="text-sm text-slate-500">Securely manage your Google Gemini API credentials.</p>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <label className="text-xs font-bold text-slate-400 uppercase tracking-widest px-1">
+                    Gemini API Key
+                  </label>
+                  <div className="relative group">
+                    <input
+                      type="password"
+                      value={apiKey}
+                      onChange={(e) => setApiKey(e.target.value)}
+                      placeholder="AIzaSy..."
+                      className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary/50 transition-all font-mono"
+                    />
+                    <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none opacity-50">
+                      <Key size={16} />
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-slate-600 px-1">
+                    Your key is stored locally on this machine. It is never transmitted except to Google Gemini API endpoints.
+                  </p>
+                </div>
+
+                <div className="flex justify-end pt-4">
+                  <button
+                    onClick={handleSaveApiKey}
+                    disabled={isSavingApiKey}
+                    className="flex items-center gap-2 px-6 py-2.5 text-sm font-bold bg-primary text-white rounded-xl transition-all shadow-lg shadow-primary/20 hover:shadow-primary/40 active:scale-95 disabled:opacity-50"
+                  >
+                    <Save size={18} />
+                    {isSavingApiKey ? 'Saving...' : 'Apply API Key'}
+                  </button>
+                </div>
+              </GlassPanel>
+
+              <div className="p-6 bg-slate-900/50 border border-white/5 rounded-2xl">
+                <h4 className="text-sm font-bold text-slate-300 mb-2">Usage Note</h4>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  Aegis Nexus requires a valid Gemini API Key to perform intelligent news curation, category analysis, and autonomous site discovery. You can obtain a key for free at the <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Google AI Studio</a>.
+                </p>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>

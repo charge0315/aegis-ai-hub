@@ -35,7 +35,7 @@ export const SkillRegistry: React.FC<SkillRegistryProps> = ({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4" data-testid="mcp-skills-list">
         {skills.map((skill, idx) => (
           <motion.div
             key={skill.id}

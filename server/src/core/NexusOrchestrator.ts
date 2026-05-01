@@ -121,6 +121,8 @@ export class NexusOrchestrator {
       }
 
       this.notify({ status: "idle", message: "全ての自律タスクが正常に完了しました。" });
+      // フロントエンドにデータのリフレッシュを促す
+      this.notify({ status: "refresh", message: "Updating intelligence feed..." });
 
     } catch (error: any) {
       console.error("[NexusOrchestrator] Error:", error);

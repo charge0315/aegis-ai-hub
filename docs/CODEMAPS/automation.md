@@ -1,35 +1,46 @@
-# Automation & Lifecycle Codemap
+# Automation & Quality Codemap
 
-**Last Updated:** 2026-04-28
-**Version:** v5.0 (Persistence-enabled Startup)
-**Key File:** `scripts/startup.ps1`
+**Last Updated:** 2026-06-05
+**Version:** v5.2 (Production Ready)
+**Key Tools:** Playwright, esbuild, electron-builder
 
 ## 概要
-Aegis AI Hub は、Windows 起動時の自動立ち上げ、常時監視、そして自律的な進化（学習）という3層の自動化レイヤーにより、メンテナンスフリーな運用を提供します。
+Aegis AI Hub v5.2 では、インストーラー配布に向けたビルドパイプラインの自動化と、プロダクション環境での安定性を担保するテスト体制を確立しました。
 
-## 1. 起動自動化 (`startup.ps1`)
-v5.0 では、システムの堅牢性とパーソナライズを強化するために以下の機能が導入されました：
+## 1. ビルド・パイプライン
+`dashboard/package.json` に定義されたスクリプトにより、複雑なビルド工程を自動化しています。
 
-- **ウィンドウ状態の復元**: 
-  - 起動時、バックエンドから保存済みのウィンドウ位置とサイズを取得。
-  - 初回起動時や設定がない場合は、デフォルトで「画面右側・幅1/3・縦長」の最適化されたレイアウトで起動します。
-- **インストール**: `startup.ps1 -Install` を実行すると、Windows の `Startup` フォルダにショートカットを作成。ショートカットの引数処理（クォート）が修正され、スペースを含むパスでも正しく動作します。
-- **ログ出力**: 実行状況はプロジェクトルートの `startup.log` に詳細に記録されます。
-- **Docker & API 疎通確認**: Docker Desktop およびバックエンド API が完全に利用可能になるまで待機し、エラー画面の発生を防止します。
-- **ブラウザ起動**: Chrome または Edge を「アプリ・モード (`--app`)」で、復元された位置・サイズを適用して起動します。
+| コマンド | 処理内容 | 成果物 |
+| :--- | :--- | :--- |
+| `npm run build` | Vite + TypeScript によるフロントエンドのビルド。 | `dashboard/dist/` |
+| `npm run build:electron` | esbuild によるメインプロセスのバンドル。 | `electron/main.bundle.cjs` |
+| `npm run dist` | 全ビルドを実行後、インストーラーを生成。 | `release/*.exe`, `release/*.msi` |
+| `npm run electron:build` | `dist` のエイリアス。 | 同上 |
 
-## 2. 常時監視・自己修復 (`HealthMonitor`)
-- **役割**: RSS フィードの死活監視。
-- **動作**: 定期的に全フィードへ疎通確認を行い、タイムアウトや 404 エラーが続くフィードを `feed_config.json` で自動的に非アクティブ化。システムのダウンタイムを最小化します。
+### バンドル戦略
+- **Main Process**: `esbuild` を使用。`node_modules` への依存を排除（`electron` 除く）し、単一の CJS ファイルに出力。これにより、パッケージサイズを削減し、起動速度を向上させています。
+- **Renderer Process**: `Vite` を使用。アセットの最適化とコード分割を実施。
 
-## 3. 自律進化ジョブ (`EvolutionJob`)
-- **役割**: システムの知的成長と設定の最適化。
-- **ライフサイクル**:
-  1. **クリーンアップ**: 重複したキーワードや不要な設定を整理。
-  2. **AI探索**: `Gemini 3.1` を用い、最新の興味に合致する新サイトを自動発見。
-  3. **トレンド学習**: 取得した最新記事を分析し、新しい注目ブランドやキーワードを `learned_keywords` として自動蓄積。
+## 2. E2E テスト (Playwright)
+デスクトップアプリとしての振る舞いを検証します。
 
-## Docker による一貫した実行環境
-- **Node.js サーバー**: `docker-compose.yml` は最新の仕様（versionタグ廃止等）に準拠し、警告を解消。
-- **静的配信**: `dashboard/dist` フォルダからプロダクションビルドされた資産を配信し、適切な MIME タイプで動作します。
-- **永続データ**: `./data` ボリュームをマウントすることで、コンテナが再起動しても AI が学習した `interests.json` や `feed_config.json` を保持。
+- **`data-testid` による安定性**: 主要コンポーネントに付与されたテストIDにより、UI変更の影響を受けにくいテストを実現。
+- **タイムアウト戦略**: AI 推論や重いスクレイピング処理を考慮し、20〜30秒の動的待機を実装。
+- **カバレッジ**: 記事の表示、設定の保存、APIキーの反映、ナレッジグラフの描画を網羅。
+
+## 3. パッケージング (electron-builder)
+`dashboard/package.json` の `build` セクションで設定されています。
+
+- **アイコン**: `public/app-icon.png` を使用。
+- **NSIS**: Windows ユーザー向けの標準的なインストーラー（カスタムインストールパス対応、デスクトップショートカット作成）。
+- **アセット同梱**: `dist/**/*`, `electron/index.cjs`, `electron/main.bundle.cjs`, `electron/preload.cjs` のみを同梱し、不要なソースコードを除外。
+
+## テスト実行コマンド
+```powershell
+# E2Eテストの実行
+cd dashboard
+npm run test:e2e
+
+# レポートの確認
+npx playwright show-report
+```

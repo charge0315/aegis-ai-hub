@@ -99,13 +99,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      // Use a small timeout to avoid synchronous setState during effect
-      const timer = setTimeout(() => {
-        setQuery('');
-        setSelectedIndex(0);
-        inputRef.current?.focus();
-      }, 10);
-      return () => clearTimeout(timer);
+      inputRef.current?.focus();
     }
   }, [isOpen]);
 

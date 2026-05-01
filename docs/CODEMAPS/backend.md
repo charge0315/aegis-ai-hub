@@ -1,49 +1,44 @@
 # Backend Architecture Codemap
 
-**Last Updated:** 2026-05-20
-**Version:** v5.1
-**Entry Point:** `server/src/index.ts`
+**Last Updated:** 2026-06-05
+**Version:** v5.2 NEXUS
+**Entry Point:** `dashboard/electron/index.cjs` (Hybrid Entry)
 
 ## 概要
-バックエンドは、Fastify をベースとしたサービス指向アーキテクチャ (SOA) で構成され、AI サービス (Gemini 3.1) と RSS 処理層、そして MCP サーバー機能を統合しています。
+バックエンド（Electron メインプロセス）は、プロダクション環境でのパフォーマンス最適化に加え、Windows 11 の最新機能への対応と、専門的な知識ベースの初期セットアップを自動化する仕組みを備えています。
 
-## サービス構成
+## システム・インテグレーション
 
-| サービス名 | 役割 | 主要メソッド |
+### 1. Windows 11 Native Glass (Mica)
+`BrowserWindow` の設定により、Windows 11 標準の Mica 効果を有効化しています：
+- `backgroundMaterial: 'mica'`: ウィンドウ背面にシステムレベルの半透明効果を適用。
+- `backgroundColor: '#101112'`: Mica 素材と調和する深みのある背景色を指定。
+- `frame: false`: カスタムタイトルバーの実装により、スナップレイアウトを維持しつつモダンな外観を提供。
+
+### 2. グローバル・ショートカット
+アプリケーションのライフサイクル管理のため、以下のシステムショートカットを登録しています：
+- `CommandOrControl+Q`: アプリケーションを安全に終了。未保存のデータ損失を防ぎつつ、プロセスを確実にクリーンアップします。
+
+## データ・マイグレーションと初期化
+
+### 1. SettingsManager (デフォルト・データ)
+初回起動時に、AI、ゲーム、PCハードウェア、オーディオ等の専門的な知識ベースを自動生成します。
+- **知識ベース**: `SettingsManager.ts` 内に定義された 7 つの主要カテゴリ、数百の関連ブランド、キーワードが含まれます。
+- **自動セットアップ**: `interests.json` および `feed_config.json` が存在しない場合、これらの高品質な初期設定が自動的に `AppData` 内に展開されます。
+
+### 2. API キーの永続化 (`credentials.json`)
+ユーザー個別の Gemini API キーを `credentials.json` で管理し、GeminiService への動的な供給を可能にしています。
+
+## コア・サービス構成
+
+| サービス名 | 役割 | v5.2 における進化 |
 | :--- | :--- | :--- |
-| `ScraperFacade` | 全てのデータ取得と AI 推論を統括する司令塔。 | `getDashboard`, `getRecommendations` |
-| `DiscoveryService` | AI による新しい RSS フィードの探索と検証。 | `getProposals` |
-| `EnrichmentService` | 記事の深化（翻訳・要約・ブランド抽出）。 | `enrichArticle` |
-| `GeminiService` | 構造化出力（JSON Schema）を用いた記事キュレーション、翻訳。 | `curate`, `translateArticles` |
-| `SettingsManager` | 設定（interests, feeds）およびウィンドウ状態の永続化管理。 | `syncSettings`, `getWindowState`, `saveWindowState` |
-| `NexusOrchestrator` | 自律ループの実行と SSE による進捗ブロードキャスト。 | `runAutonomousLoop`, `subscribe` |
+| `SettingsManager` | 設定とデータの永続化 | **膨大な専門知識ベースの初期化ロジック**、アトミック保存。 |
+| `GeminiService` | AI 推論 | 最新の Gemini 3.1 をサポート。動的な API キー更新に対応。 |
+| `DiscoveryService` | 自律フィード探索 | ユーザーの興味に基づき、Web 上から新規 RSS を自動発見。 |
+| `NexusOrchestrator` | 全体制御 | 定期的なエージェント・スキャンのスケジュールと競合制御。 |
 
-## v5.1 における重要な変更
-
-- **多言語対応と自動翻訳 (`EnrichmentService` / `GeminiService`)**:
-  - `GeminiService.translateArticles` メソッドにより、海外の RSS ソースから取得した記事を日本語へ自動翻訳。
-  - `[JP]` プレフィックスをタイトルに付与し、元の文脈を維持しつつアクセシビリティを向上。
-- **堅牢なファイル IO と EBUSY 回避**:
-  - Windows 上の Docker ボリュームマウント環境における `EBUSY` (ファイルロック) エラーを徹底的に排除。
-  - ファイル書き込み時に最大 3 回のリトライロジック (200ms 間隔) を実装。
-- **一括同期 API (`POST /api/v5/sync-settings`)**:
-  - `interests.json` と `feed_config.json` をアトミックに同時更新。
-- **ウィンドウ状態の永続化 (`/api/v5/window-state`)**:
-  - ブラウザのサイズ・位置を `window_state.json` に保存し、再起動時に復元。
-
-- **Live Synchronization**:
-  - `docker-compose.yml` で `server/src` をコンテナにマウント。
-  - サーバー側のソースコードを変更すると、再ビルドなしでコンテナ内のプロセスに反映されます（`ts-node-dev` 等との併用）。
-- **詳細なエラーロギング**:
-  - `NexusRouter.ts` の各エンドポイントにおいて、バリデーションエラーや実行時例外の詳細をサーバーコンソールに出力。
-
-## Gemini 3.1 の活用
-- **最新モデルの採用**:
-  - `gemini-3.1-pro-preview`: 高度な推論と構造化出力が必要なタスクに使用。
-  - `gemini-1.5-flash` / `flash-lite`: 速度とコスト効率が求められるスクレイピング解析に使用。
-- **Structured Output**: `generationConfig.responseSchema` を活用し、プロンプトに頼らない正確な JSON 取得を実現。
-
-## セキュリティ & 信頼性
-- **CORS 構成**: フロントエンドからの安全なクロスオリジン通信を許可。
-- **SPA Fallback**: ルート以外のパスへのアクセスを `index.html` へ転送し、React Router との整合性を確保。
-- **エラーハンドリング**: 404 エラーの適切な処理と、AI 推論失敗時のフォールバック。
+## 配布とビルド (electron-builder)
+- **アイコン管理**: `public/app-icon.png` をインストーラーおよび実行ファイルのアイコンとして適用。
+- **NSIS インストーラー**: Windows 向けのクリーンなインストール体験を提供。
+- **プロダクション・パス**: 全てのデータは `%APPDATA%/aegis-nexus/` 配下に隔離され、ポータビリティと安全性を確保。

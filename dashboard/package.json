@@ -1,24 +1,66 @@
 {
   "name": "dashboard",
   "private": true,
-  "version": "0.0.0",
+  "version": "5.2.0",
+  "description": "Next-gen Intelligence Command Center powered by Gemini 3.1",
+  "author": "Aegis AI Hub Team",
   "type": "module",
+  "main": "electron/index.cjs",
   "scripts": {
+
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:electron": "npx esbuild electron/main.cjs --bundle --platform=node --target=node20 --outfile=electron/main.bundle.cjs --external:electron --loader:.ts=ts",
+    "dist": "npm run build && npm run build:electron && electron-builder",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "electron:dev": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && electron .\"",
+    "electron:build": "npm run dist"
+  },
+  "build": {
+    "appId": "com.aegis.nexus",
+    "productName": "Aegis Nexus",
+    "copyright": "Copyright © 2026 Aegis AI Hub",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/index.cjs",
+      "electron/main.bundle.cjs",
+      "electron/preload.cjs"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "public/app-icon.png",
+      "verifyUpdateCodeSignature": false
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Aegis Nexus"
+    }
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "axios": "^1.15.2",
+    "cheerio": "^1.2.0",
     "clsx": "^2.1.1",
     "d3": "^7.9.0",
     "framer-motion": "^12.38.0",
     "lucide-react": "^1.11.0",
+    "p-limit": "^7.3.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
-    "tailwind-merge": "^3.5.0"
+    "rss-parser": "^3.13.0",
+    "tailwind-merge": "^3.5.0",
+    "zod": "^4.4.1"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -30,6 +72,10 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
     "autoprefixer": "^10.5.0",
+    "concurrently": "^9.2.1",
+    "electron": "^41.3.0",
+    "electron-builder": "^26.8.1",
+    "esbuild-register": "^3.6.0",
     "eslint": "^10.2.1",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
@@ -38,6 +84,7 @@
     "tailwindcss": "^4.2.4",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.58.2",
-    "vite": "^8.0.10"
+    "vite": "^8.0.10",
+    "wait-on": "^9.0.5"
   }
 }
