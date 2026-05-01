@@ -15172,37 +15172,77 @@ var init_SettingsManager = __esm({
         try {
           await import_promises.default.mkdir(this.dataDir, { recursive: true });
           const defaultInterests = {
-            categories: {
-              "AI & Future Tech": {
-                emoji: "\u{1F916}",
-                brands: ["Google Gemini", "OpenAI", "Anthropic", "NVIDIA", "Microsoft"],
-                keywords: ["LLM", "Agent", "GPU", "Machine Learning", "Quantum Computing"],
-                score: 9,
-                reason: "Core interest in next-generation intelligence."
+            "categories": {
+              "\u30B2\u30FC\u30E0\u30FB\u914D\u4FE1": {
+                "emoji": "\u{1F3AE}",
+                "brands": ["Sony Interactive Entertainment", "Nintendo", "SEGA", "Capcom", "Square Enix", "\u30D0\u30F3\u30C0\u30A4\u30CA\u30E0\u30B3\u30A8\u30F3\u30BF\u30FC\u30C6\u30A4\u30F3\u30E1\u30F3\u30C8", "CD PROJEKT RED", "HoYoverse", "Epic Games", "Valve", "FromSoftware", "Riot Games", "Electronic Arts", "Pocketpair", "ZETA DIVISION", "Crazy Raccoon", "Tencent Games", "KRAFTON", "Naughty Dog", "Elgato", "AVerMedia", "OBS Studio", "SCUF Gaming", "Secretlab", "ZOWIE", "SteelSeries"],
+                "keywords": ["PS5 Pro", "Nintendo Switch 2", "Xbox", "Steam", "Steam Deck", "GeForce NOW", "e\u30B9\u30DD\u30FC\u30C4", "Twitch", "Discord", "Valorant", "Apex Legends", "\u30B9\u30C8\u30EA\u30FC\u30C8\u30D5\u30A1\u30A4\u30BF\u30FC6", "\u30E2\u30F3\u30B9\u30BF\u30FC\u30CF\u30F3\u30BF\u30FC\u30EF\u30A4\u30EB\u30BA", "\u539F\u795E", "\u5D29\u58CA\uFF1A\u30B9\u30BF\u30FC\u30EC\u30A4\u30EB", "\u30D1\u30EB\u30EF\u30FC\u30EB\u30C9", "\u30B2\u30FC\u30DF\u30F3\u30B0UMPC", "DLSS / FSR", "\u30EC\u30A4\u30C8\u30EC\u30FC\u30B7\u30F3\u30B0", "\u30A4\u30F3\u30C7\u30A3\u30FC\u30B2\u30FC\u30E0", "VTuber", "\u30AD\u30E3\u30D7\u30C1\u30E3\u30FC\u30DC\u30FC\u30C9", "\u30AF\u30E9\u30A6\u30C9\u30B2\u30FC\u30DF\u30F3\u30B0", "\u30B2\u30FC\u30DF\u30F3\u30B0\u30EB\u30FC\u30BF\u30FC", "\u30D5\u30EC\u30FC\u30E0\u30B8\u30A7\u30CD\u30EC\u30FC\u30B7\u30E7\u30F3", "\u30EA\u30ED\u30FC\u30C9\u30AD\u30E3\u30F3\u30BB\u30EB", "\u30B9\u30C8\u30EA\u30FC\u30DE\u30FC", "\u4EC1\u738B"],
+                "score": 10,
+                "reason": "\u30AF\u30EA\u30A8\u30A4\u30BF\u30FC\u30A8\u30B3\u30CE\u30DF\u30FC\u306E\u6587\u8108\u3068\u3057\u3066\u6B20\u304B\u305B\u306A\u3044\u300C\u30B2\u30FC\u30E0\u914D\u4FE1\u30FB\u30B9\u30C8\u30EA\u30FC\u30DF\u30F3\u30B0\u6A5F\u6750\uFF08Elgato, AVerMedia\uFF09\u300D\u3092\u3053\u306E\u30AB\u30C6\u30B4\u30EA\u306B\u7D71\u5408\u3057\u3001\u30D7\u30EC\u30A4\u304B\u3089\u914D\u4FE1\u307E\u3067\u3092\u4E00\u5143\u5316\u3057\u307E\u3057\u305F\u3002"
               },
-              "Cybersecurity": {
-                emoji: "\u{1F6E1}\uFE0F",
-                brands: ["CrowdStrike", "Cloudflare", "SentinelOne", "Palo Alto Networks"],
-                keywords: ["Zero Trust", "Exploit", "Ransomware", "Encryption", "Threat Intel"],
-                score: 8,
-                reason: "Critical monitoring for intelligence assets."
+              "AI\u30FB\u30BD\u30D5\u30C8\u30A6\u30A7\u30A2": {
+                "emoji": "\u{1F916}",
+                "brands": ["OpenAI", "Anthropic", "Google", "Microsoft", "Meta", "DeepSeek", "GitHub", "Genspark", "Mistral AI", "Hugging Face", "Perplexity", "Midjourney", "Stability AI", "Notion", "Figma", "Cursor", "Vercel", "Groq", "xAI", "Cohere", "Canva", "Runway", "Luma AI", "Zapier", "ElevenLabs", "Poe", "Weights & Biases"],
+                "keywords": ["ChatGPT", "GPT-4o", "Claude", "Gemini", "Llama", "Copilot", "AI\u30A8\u30FC\u30B8\u30A7\u30F3\u30C8", "RAG", "\u30ED\u30FC\u30AB\u30EBLLM", "LangChain", "\u753B\u50CF\u751F\u6210AI", "\u52D5\u753B\u751F\u6210AI", "\u97F3\u697D\u751F\u6210AI", "Sora", "SaaS", "Zenn", "Qiita", "VLM (\u8996\u899A\u8A00\u8A9E\u30E2\u30C7\u30EB)", "AI\u691C\u7D22", "Dify", "SLM (\u5C0F\u898F\u6A21\u8A00\u8A9E\u30E2\u30C7\u30EB)", "\u30CE\u30FC\u30B3\u30FC\u30C9/\u30ED\u30FC\u30B3\u30FC\u30C9", "MoE (Mixture of Experts)", "GPU\u30AF\u30E9\u30B9\u30BF\u30FC", "\u30D7\u30ED\u30F3\u30D7\u30C8\u30A8\u30F3\u30B8\u30CB\u30A2\u30EA\u30F3\u30B0", "AI\u30B3\u30FC\u30C7\u30A3\u30F3\u30B0\u30A2\u30B7\u30B9\u30BF\u30F3\u30C8", "\u97F3\u58F0\u5408\u6210AI"],
+                "score": 10,
+                "reason": "\u540D\u79F0\u3092\u7C21\u6F54\u5316\u3002\u8FD1\u5E74\u306E\u30AA\u30FC\u30D7\u30F3\u30E2\u30C7\u30EB\u3084\u65B0\u8208AI\u306E\u53F0\u982D\u3092\u53D7\u3051\u300CDeepSeek\u300D\u306A\u3069\u306E\u91CD\u8981\u30D6\u30E9\u30F3\u30C9\u3068\u6700\u65B0\u30E2\u30C7\u30EB\u540D\u3092\u8FFD\u52A0\u3002\u307E\u305F\u3001\u97F3\u697D\u751F\u6210AI\u306A\u3069\u306E\u30AF\u30EA\u30A8\u30A4\u30C6\u30A3\u30D6AI\u30C8\u30EC\u30F3\u30C9\u3092\u88DC\u5B8C\u3057\u307E\u3057\u305F\u3002"
+              },
+              "PC\u30D1\u30FC\u30C4": {
+                "emoji": "\u2699\uFE0F",
+                "brands": ["NVIDIA", "AMD", "Intel", "Qualcomm", "Arm", "TSMC", "ASML", "ASRock", "ZOTAC", "GIGABYTE", "Corsair", "KIOXIA", "Western Digital", "Crucial", "Broadcom", "SK hynix", "Samsung Foundry", "Noctua", "Lian Li", "Supermicro", "Phanteks", "NZXT", "Cooler Master", "be quiet!", "Micron"],
+                "keywords": ["RTX 50\u30B7\u30EA\u30FC\u30BA", "Ryzen", "Core Ultra", "Snapdragon X", "NPU", "GPU", "\u30DE\u30B6\u30FC\u30DC\u30FC\u30C9", "\u30E1\u30E2\u30EA", "SSD", "\u81EA\u4F5CPC", "\u51B7\u5374\u30AF\u30FC\u30E9\u30FC", "\u6C34\u51B7", "AI PC", "HBM (\u5E83\u5E2F\u57DF\u30E1\u30E2\u30EA)", "2nm\u30D7\u30ED\u30BB\u30B9", "\u30C1\u30C3\u30D7\u30EC\u30C3\u30C8", "RISC-V", "\u88CF\u914D\u7DDA\u30DE\u30B6\u30FC\u30DC\u30FC\u30C9", "PCIe 5.0", "GDDR7", "\u30AC\u30E9\u30B9\u57FA\u677F", "AI\u30A2\u30AF\u30BB\u30E9\u30EC\u30FC\u30BF", "\u30B7\u30EA\u30B3\u30F3\u30D5\u30A9\u30C8\u30CB\u30AF\u30B9"],
+                "score": 10,
+                "reason": "\u76F4\u611F\u7684\u306A\u540D\u79F0\u306B\u5909\u66F4\u3002AI\u30A4\u30F3\u30D5\u30E9\u3068\u3057\u3066\u5B58\u5728\u611F\u3092\u5897\u3059Supermicro\u3092\u8FFD\u52A0\u3057\u3001GPU\u3084\u6700\u65B0\u306ERTX 50\u30B7\u30EA\u30FC\u30BA\u3068\u3044\u3063\u305F\u3001\u76F4\u8FD1\u306E\u30CF\u30FC\u30C9\u30A6\u30A7\u30A2\u30FB\u30C8\u30EC\u30F3\u30C9\u30EF\u30FC\u30C9\u3092\u66F4\u65B0\u3057\u307E\u3057\u305F\u3002"
+              },
+              "\u30AA\u30FC\u30C7\u30A3\u30AA\u30FB\u97F3\u697D\u5236\u4F5C": {
+                "emoji": "\u{1F3A7}",
+                "brands": ["Sony", "Audio-Technica", "Technics", "Sennheiser", "Bose", "Shokz", "YAMAHA", "Roland", "KORG", "Fender", "Gibson", "Furch", "Universal Audio", "Focusrite", "Steinberg", "Apple Music", "Spotify", "FiiO", "Moondrop", "Genelec", "Teenage Engineering", "Native Instruments", "Sonos", "Shure", "Neumann", "AKG", "beyerdynamic", "Arturia", "Ableton"],
+                "keywords": ["\u30EF\u30A4\u30E4\u30EC\u30B9\u30A4\u30E4\u30DB\u30F3", "\u30D8\u30C3\u30C9\u30DB\u30F3", "\u30CE\u30A4\u30BA\u30AD\u30E3\u30F3\u30BB\u30EA\u30F3\u30B0", "\u7A7A\u9593\u30AA\u30FC\u30C7\u30A3\u30AA", "\u30CF\u30A4\u30EC\u30BE", "\u30B5\u30A6\u30F3\u30C9\u30D0\u30FC", "\u30DD\u30C3\u30C9\u30AD\u30E3\u30B9\u30C8", "\u30AE\u30BF\u30FC", "\u30A2\u30B3\u30FC\u30B9\u30C6\u30A3\u30C3\u30AF\u30AE\u30BF\u30FC", "\u30A2\u30F3\u30D7", "\u30A8\u30D5\u30A7\u30AF\u30BF\u30FC", "\u30AA\u30FC\u30C7\u30A3\u30AA\u30A4\u30F3\u30BF\u30FC\u30D5\u30A7\u30FC\u30B9", "DAW", "DAC", "DTM", "\u30AA\u30FC\u30D7\u30F3\u30A4\u30E4\u30FC\u578B\u30A4\u30E4\u30DB\u30F3", "LDAC", "MEMS\u30B9\u30D4\u30FC\u30AB\u30FC", "\u30C9\u30EB\u30D3\u30FC\u30A2\u30C8\u30E2\u30B9", "VST\u30D7\u30E9\u30B0\u30A4\u30F3", "MIDI\u30AD\u30FC\u30DC\u30FC\u30C9", "\u30B7\u30F3\u30BB\u30B5\u30A4\u30B6\u30FC", "IEM (\u30A4\u30F3\u30A4\u30E4\u30FC\u30E2\u30CB\u30BF\u30FC)", "\u30DE\u30B9\u30BF\u30EA\u30F3\u30B0AI", "32bit Float\u9332\u97F3", "\u30D0\u30A4\u30CE\u30FC\u30E9\u30EB\u30DE\u30A4\u30AF", "\u30D7\u30E9\u30CA\u30FC\u30DE\u30B0\u30CD\u30C6\u30A3\u30C3\u30AF"],
+                "score": 10,
+                "reason": "\u30B9\u30DE\u30FC\u30C8\u30B9\u30D4\u30FC\u30AB\u30FC/\u30AA\u30FC\u30C7\u30A3\u30AA\u3068\u3057\u3066\u8A55\u4FA1\u306E\u9AD8\u3044Sonos\u3084\u3001\u30DE\u30A4\u30AF\u30FB\u30AA\u30FC\u30C7\u30A3\u30AA\u306E\u5B9A\u756AShure\u3092\u8FFD\u52A0\u3057\u3001\u30EA\u30B9\u30CB\u30F3\u30B0\u3068\u5236\u4F5C\u6A5F\u6750\u306E\u30CF\u30A4\u30D6\u30EA\u30C3\u30C9\u30AB\u30C6\u30B4\u30EA\u3068\u3057\u3066\u5B8C\u6210\u5EA6\u3092\u9AD8\u3081\u307E\u3057\u305F\u3002"
+              },
+              "PC\u30FB\u30C7\u30D0\u30A4\u30B9": {
+                "emoji": "\u{1F4BB}",
+                "brands": ["Apple", "HP", "Dell", "Lenovo", "ASUS", "MSI", "Minisforum", "Logicool", "Razer", "Wooting", "Keychron", "HHKB", "REALFORCE", "ELECOM", "FLEXISPOT", "Herman Miller", "Ergotron", "Steelcase", "GPD", "AYANEO", "NuPhy", "Wacom", "BenQ", "LG", "PFU", "Epomaker", "Kinesis", "TourBox", "Grovemade"],
+                "keywords": ["Mac", "MacBook", "\u30B2\u30FC\u30DF\u30F3\u30B0PC", "\u30DF\u30CBPC", "\u30DD\u30FC\u30BF\u30D6\u30EB\u30B2\u30FC\u30DF\u30F3\u30B0PC", "\u30E1\u30AB\u30CB\u30AB\u30EB\u30AD\u30FC\u30DC\u30FC\u30C9", "\u30B2\u30FC\u30DF\u30F3\u30B0\u30DE\u30A6\u30B9", "\u30B2\u30FC\u30DF\u30F3\u30B0\u30E2\u30CB\u30BF\u30FC", "\u30C7\u30B9\u30AF\u30BB\u30C3\u30C8\u30A2\u30C3\u30D7", "\u96FB\u52D5\u6607\u964D\u30C7\u30B9\u30AF", "\u30E2\u30CB\u30BF\u30FC\u30A2\u30FC\u30E0", "Thunderbolt 5", "Copilot+ PC", "\u30E9\u30D4\u30C3\u30C9\u30C8\u30EA\u30AC\u30FC", "\u30C7\u30B9\u30AF\u30C4\u30A2\u30FC", "\u30A6\u30EB\u30C8\u30E9\u30EF\u30A4\u30C9\u30E2\u30CB\u30BF\u30FC", "\u30AC\u30B9\u30B9\u30D7\u30EA\u30F3\u30B0\u5F0F", "\u30DA\u30F3\u30BF\u30D6\u30EC\u30C3\u30C8", "\u6DB2\u30BF\u30D6", "NPU\u642D\u8F09PC", "8000Hz\u30DD\u30FC\u30EA\u30F3\u30B0\u30EC\u30FC\u30C8", "\u30DE\u30B0\u30CD\u30C6\u30A3\u30C3\u30AF\u30AD\u30FC\u30B9\u30A4\u30C3\u30C1", "\u5DE6\u624B\u30C7\u30D0\u30A4\u30B9", "PBT\u30AD\u30FC\u30AD\u30E3\u30C3\u30D7"],
+                "score": 10,
+                "reason": "\u5165\u529B\u6A5F\u5668\u3068\u30C7\u30A3\u30B9\u30D7\u30EC\u30A4\u74B0\u5883\u306E\u91CD\u8981\u6027\u3092\u5F37\u8ABF\u3059\u308B\u305F\u3081\u540D\u79F0\u3092\u5909\u66F4\u3002\u30E2\u30CB\u30BF\u30FC\u5E02\u5834\u3067\u6B20\u304B\u305B\u306A\u3044BenQ\u3001LG\u3092\u8FFD\u52A0\u3057\u3001\u6700\u65B0\u898F\u683C\uFF08Thunderbolt 5\uFF09\u3092\u88DC\u5B8C\u3057\u307E\u3057\u305F\u3002"
+              },
+              "\u5468\u8FBA\u6A5F\u5668\u30FBPC\u30A2\u30AF\u30BB\u30B5\u30EA": {
+                "emoji": "\u26A1",
+                "brands": ["Anker", "CIO", "Belkin", "UGREEN", "EcoFlow", "Jackery", "BLUETTI", "Baseus", "Sharge", "SATECHI", "MOFT", "dbrand", "Zendure", "NITECORE", "Orico", "Hyper", "Nomad", "PITAKA"],
+                "keywords": ["\u30E2\u30D0\u30A4\u30EB\u30D0\u30C3\u30C6\u30EA\u30FC", "\u6025\u901F\u5145\u96FB\u5668", "USB-C", "Qi2", "MagSafe", "\u7A92\u5316\u30AC\u30EA\u30A6\u30E0 (GaN)", "\u30B1\u30FC\u30D6\u30EB", "\u30DD\u30FC\u30BF\u30D6\u30EB\u96FB\u6E90", "\u30BD\u30FC\u30E9\u30FC\u30D1\u30CD\u30EB", "USB4", "\u30D1\u30B9\u30B9\u30EB\u30FC\u5145\u96FB", "\u30EA\u30F3\u9178\u9244\u30EA\u30C1\u30A6\u30E0\u30A4\u30AA\u30F3\u96FB\u6C60", "USB PD EPR (240W)", "PPS (Programmable Power Supply)", "Thunderbolt 4\u30C9\u30C3\u30AF", "\u30BD\u30EA\u30C3\u30C9\u30B9\u30C6\u30FC\u30C8\u30D0\u30C3\u30C6\u30EA\u30FC", "\u30B1\u30FC\u30D6\u30EB\u30DE\u30CD\u30B8\u30E1\u30F3\u30C8", "V\u30DE\u30A6\u30F3\u30C8\u30D0\u30C3\u30C6\u30EA\u30FC", "GaNFast"],
+                "score": 10,
+                "reason": "\u30AC\u30B8\u30A7\u30C3\u30C8\u306E\u904B\u7528\u306B\u76F4\u7D50\u3059\u308B\u96FB\u6E90\u7CFB\u30D6\u30E9\u30F3\u30C9\u306BZendure\u3092\u8FFD\u52A0\u3057\u3001\u540D\u79F0\u3092\u4E00\u822C\u7684\u306A\u300C\u5468\u8FBA\u6A5F\u5668\u300D\u306B\u5909\u66F4\u3059\u308B\u3053\u3068\u3067\u3001\u3088\u308A\u5E83\u7BC4\u306A\u30A2\u30AF\u30BB\u30B5\u30EA\u30CB\u30E5\u30FC\u30B9\u3092\u30AB\u30D0\u30FC\u3067\u304D\u308B\u3088\u3046\u306B\u3057\u307E\u3057\u305F\u3002"
+              },
+              "\u30E2\u30D0\u30A4\u30EB\u30FB\u30BF\u30D6\u30EC\u30C3\u30C8": {
+                "emoji": "\u{1F4F1}",
+                "brands": ["Apple", "Google", "Samsung", "Sony", "Xiaomi", "HUAWEI", "OPPO", "Nothing", "Motorola", "ASUS", "XREAL", "VITURE", "PICO", "vivo", "HONOR", "HTC", "Rokid", "Bigscreen", "Meta", "Immersed", "Lenovo", "Shiftall", "OnePlus", "TCL"],
+                "keywords": ["iPhone", "iPad", "Android", "Android\u30BF\u30D6\u30EC\u30C3\u30C8", "Xperia", "Pixel", "Galaxy", "\u6298\u308A\u305F\u305F\u307F\u30B9\u30DE\u30DB", "\u7A7A\u9593\u30B3\u30F3\u30D4\u30E5\u30FC\u30C6\u30A3\u30F3\u30B0", "Apple Vision Pro", "Meta Quest 3", "XR", "AR", "VR", "\u30B9\u30DE\u30FC\u30C8\u30B0\u30E9\u30B9", "\u30AA\u30F3\u30C7\u30D0\u30A4\u30B9AI", "\u885B\u661F\u901A\u4FE1", "\u30DE\u30A4\u30AF\u30EDOLED", "\u7A7A\u9593\u30D3\u30C7\u30AA", "\u30AB\u30E9\u30FC\u30D1\u30B9\u30B9\u30EB\u30FC", "\u30C1\u30BF\u30F3\u30D5\u30EC\u30FC\u30E0", "120Hz\u30EA\u30D5\u30EC\u30C3\u30B7\u30E5\u30EC\u30FC\u30C8", "\u30A2\u30A4\u30C8\u30E9\u30C3\u30AD\u30F3\u30B0", "\u30CF\u30F3\u30C9\u30C8\u30E9\u30C3\u30AD\u30F3\u30B0", "BCI\u9023\u643A"],
+                "score": 10,
+                "reason": "\u540D\u79F0\u3092\u300C\u30E2\u30D0\u30A4\u30EB\u300D\u306B\u7D71\u5408\u3002XR\u9818\u57DF\u306E\u57FA\u76E4\u30D7\u30E9\u30C3\u30C8\u30D5\u30A9\u30FC\u30E0\u3067\u3042\u308BMeta\u3001\u30B9\u30DE\u30FC\u30C8\u30B0\u30E9\u30B9\u5E02\u5834\u3092\u727D\u5F15\u3059\u308BVITURE\u3092\u88DC\u5B8C\u3057\u3001\u30E2\u30D0\u30A4\u30EB\u3068XR\u306E\u30B7\u30FC\u30E0\u30EC\u30B9\u306A\u60C5\u5831\u9023\u643A\u3092\u5F37\u5316\u3057\u307E\u3057\u305F\u3002"
               }
             },
-            lastUpdated: Date.now()
+            "lastUpdated": Date.now()
           };
           const defaultFeedConfig = {
-            "AI & Future Tech": {
-              active: ["https://hnrss.org/frontpage", "https://feeds.feedburner.com/TechCrunch/"],
-              pool: [],
-              failures: {}
+            "AI\u30FB\u30BD\u30D5\u30C8\u30A6\u30A7\u30A2": {
+              "active": ["https://japan.googleblog.com/atom.xml", "https://zenn.dev/topics/ai/feed", "https://atmarkit.itmedia.co.jp/rss/rssit.xml"],
+              "pool": [],
+              "failures": {}
             },
-            "Cybersecurity": {
-              active: ["https://krebsonsecurity.com/feed/", "https://www.darkreading.com/rss.xml"],
-              pool: [],
-              failures: {}
+            "\u30B2\u30FC\u30E0": {
+              "active": ["https://www.4gamer.net/rss/index.xml", "https://news.denfaminicogamer.jp/feed"],
+              "pool": ["https://www.famitsu.com/rss/all.xml", "https://game.watch.impress.co.jp/data/rss/gmw/index.rdf"],
+              "failures": {}
+            },
+            "PC\u30FB\u30CF\u30FC\u30C9\u30A6\u30A7\u30A2": {
+              "active": ["https://ascii.jp/digital/rss.xml", "https://rss.itmedia.co.jp/rss/2.0/pcuser.xml"],
+              "pool": ["https://akiba-pc.watch.impress.co.jp/data/rss/akiba/index.rdf", "https://srad.jp/srad.rss"],
+              "failures": {}
             }
           };
-          await this._ensureFile(this.interestsPath, defaultInterests);
+          await this._ensureFile(this.interestsPath, { categories: defaultInterests.categories, lastUpdated: Date.now() });
           await this._ensureFile(this.feedConfigPath, defaultFeedConfig);
           await this._ensureFile(this.credentialsPath, { geminiApiKey: "" });
         } catch (err) {
@@ -84899,7 +84939,7 @@ var init_ScoringService = __esm({
 });
 
 // electron/main.cjs
-var { app: app2, BrowserWindow, ipcMain } = require("electron");
+var { app: app2, BrowserWindow, ipcMain, globalShortcut } = require("electron");
 var path2 = require("path");
 var fs3 = require("fs");
 var SettingsManager2 = (init_SettingsManager(), __toCommonJS(SettingsManager_exports)).default;
@@ -84930,18 +84970,20 @@ async function initBackend() {
 function createWindow() {
   const isDev = process.env.NODE_ENV === "development" || !app2.isPackaged;
   mainWindow = new BrowserWindow({
-    width: 1280,
-    height: 800,
+    width: 1440,
+    height: 900,
     minWidth: 800,
     minHeight: 600,
-    transparent: true,
+    // スナップ機能を有効にするため、透明度はfalseに戻す
+    transparent: false,
     frame: false,
     hasShadow: true,
     resizable: true,
-    // Windowsのスナップ機能を有効化するための設定
     thickFrame: true,
     titleBarStyle: "hidden",
-    backgroundColor: "#00000000",
+    // Windows 11標準の高級すりガラス効果 (Mica) を適用
+    backgroundMaterial: "mica",
+    backgroundColor: "#101112",
     icon: path2.join(__dirname, "../public/app-icon.png"),
     webPreferences: {
       nodeIntegration: false,
@@ -85061,6 +85103,15 @@ app2.whenReady().then(async () => {
   await initBackend();
   registerIpcHandlers();
   createWindow();
+  if (app2.isPackaged) {
+    app2.setLoginItemSettings({
+      openAtLogin: true,
+      path: app2.getPath("exe")
+    });
+  }
+  globalShortcut.register("CommandOrControl+Q", () => {
+    app2.quit();
+  });
   app2.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow();
