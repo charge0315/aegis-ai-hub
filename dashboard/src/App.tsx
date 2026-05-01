@@ -6,8 +6,7 @@ import {
   Search, 
   RefreshCcw,
   AlertCircle,
-  Loader2,
-  Activity
+  Loader2
 } from 'lucide-react';
 import { ArticleCard } from './components/ArticleCard';
 import { AgentMonitor } from './components/AgentMonitor';
