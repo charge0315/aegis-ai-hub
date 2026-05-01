@@ -1,60 +1,21 @@
-# Aegis AI Hub v5.0 - Windows Startup Script
-# Powered by Gemini 3.1 - Fully Autonomous News Infrastructure
-param (
-    [switch]$Install
-)
+# Aegis Nexus v5.2 - Startup Configuration Script
+# This script handles cleaning up old Docker-based startup logic and sets up the new Desktop App.
 
-$ScriptDir = $PSScriptRoot
-$ProjectRoot = Split-Path $ScriptDir -Parent
-$LogFile = Join-Path $ProjectRoot "startup.log"
+$ProjectRoot = Get-Location
+$StartupFolder = "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Startup"
+$OldShortcut = Join-Path $StartupFolder "AegisAIHub.lnk"
 
-function Write-Log {
-    param([string]$Message, [string]$Color = "White")
-    $Timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $FullMessage = "[$Timestamp] $Message"
-    Add-Content -Path $LogFile -Value $FullMessage
-    Write-Host $Message -ForegroundColor $Color
+Write-Host "--- Aegis Nexus v5.2 Migration ---" -ForegroundColor Cyan
+
+# 1. Old Docker-based cleanup
+if (Test-Path $OldShortcut) {
+    Write-Host "Removing legacy Docker-based startup shortcut..." -ForegroundColor Yellow
+    Remove-Item $OldShortcut -Force
 }
 
-cd $ProjectRoot
-"--- Startup Session started at $(Get-Date) ---" | Out-File $LogFile
+# 2. Modern Desktop App Setup
+# The app now manages its own startup via 'app.setLoginItemSettings' in production.
+# For development/manual setup, we point to the project folder.
 
-if ($Install) {
-    Write-Log 'Installing Aegis AI Hub to Startup...' 'Yellow'
-    $StartupFolder = [System.Environment]::GetFolderPath('Startup')
-    
-    $OldShortcuts = @('GadgetConcierge.lnk', 'GadgetConciergeStartup.lnk', 'AegisConcierge.lnk', 'AegisAIHub.lnk')
-    foreach ($old in $OldShortcuts) {
-        $oldPath = Join-Path $StartupFolder $old
-        if (Test-Path $oldPath) {
-            Remove-Item $oldPath -Force
-            Write-Log "Old shortcut removed: $old" 'Gray'
-        }
-    }
-
-    $ShortcutPath = Join-Path $StartupFolder 'AegisAIHub.lnk'
-    $WshShell = New-Object -ComObject WScript.Shell
-    $Shortcut = $WshShell.CreateShortcut($ShortcutPath)
-    $Shortcut.TargetPath = 'powershell.exe'
-    # Use double quotes for the file path, and ensure they are preserved in the shortcut
-    $Shortcut.Arguments = "-ExecutionPolicy Bypass -WindowStyle Hidden -File ""$PSCommandPath"""
-    $Shortcut.WorkingDirectory = $ProjectRoot
-    $Shortcut.IconLocation = 'chrome.exe,0'
-    $Shortcut.Description = 'Aegis AI Hub - Autonomous Intelligence Dashboard'
-    $Shortcut.Save()
-    
-    Write-Log 'Installation Complete!' 'Green'
-    exit
-}
-
-Write-Log 'Starting Aegis AI Hub (Desktop App)...' 'Cyan'
-cd "$ProjectRoot/dashboard"
-
-# 開発モードか製品モードか判断（distがあれば製品モードとみなす）
-if (Test-Path "dist") {
-    npm run electron:build
-} else {
-    npm run electron:dev
-}
-
-Write-Log 'Aegis AI Hub is ready.' 'Yellow'
+Write-Host "Cleanup complete. The Desktop App (v5.2) will now manage its own auto-launch settings." -ForegroundColor Green
+Write-Host "To manually launch in dev mode: cd dashboard; npm run electron:dev" -ForegroundColor Gray

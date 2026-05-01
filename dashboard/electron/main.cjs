@@ -198,6 +198,14 @@ app.whenReady().then(async () => {
   registerIpcHandlers();
   createWindow();
 
+  // Windows起動時の自動実行設定（本番環境のみ）
+  if (app.isPackaged) {
+    app.setLoginItemSettings({
+      openAtLogin: true,
+      path: app.getPath('exe'),
+    });
+  }
+
   // Ctrl+Q でアプリを終了するショートカットを登録
   globalShortcut.register('CommandOrControl+Q', () => {
     app.quit();
