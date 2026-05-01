@@ -36,7 +36,7 @@ test.describe('Aegis Nexus E2E Tests', () => {
     
     // スキルレジストリタブに切り替え
     await page.getByTestId('tab-skills').click();
-    await expect(page.getByTestId('mcp-skills-list')).toBeVisible();
+    await expect(page.getByTestId('skills-list')).toBeVisible();
   });
 
   test('should trigger command palette with Ctrl+k', async ({ page }) => {

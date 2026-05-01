@@ -26,7 +26,7 @@ export const SkillRegistry: React.FC<SkillRegistryProps> = ({
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-xl font-bold text-white">Agent Skill Registry</h3>
-          <p className="text-slate-500 text-sm">Capabilities currently deployed in the Aegis MCP cluster.</p>
+          <p className="text-slate-500 text-sm">Capabilities currently deployed in the Aegis cluster.</p>
         </div>
         <div className="flex gap-2">
           <div className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-xs text-slate-400">
@@ -35,7 +35,7 @@ export const SkillRegistry: React.FC<SkillRegistryProps> = ({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4" data-testid="mcp-skills-list">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4" data-testid="skills-list">
         {skills.map((skill, idx) => (
           <motion.div
             key={skill.id}

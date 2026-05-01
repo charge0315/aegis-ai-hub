@@ -23,7 +23,7 @@ Aegis Nexusは、単なるニュースアグリゲーターを超え、Gemini 3.
 
 ### Must-Have (Sprint 1-2)
 1.  **Multi-Agent Orchestration**: `Architect`, `Curator`, `Discovery`, `Archivist` の4つの専門エージェントによる自律ワークフロー。
-2.  **Gemini 3.1 Native Integration**: Tool Calling (Function Calling) を活用した、動的なスキル（MCPツール）の実行。
+2.  **Gemini 3.1 Native Integration**: Tool Calling (Function Calling) を活用した、動的なスキルの実行。
 3.  **Unified Nexus Editor**: 「下書き」ベースの設定管理の進化版。変更箇所のビジュアル・ディファレンシャル表示。
 4.  **Real-time Intelligence Feed**: カテゴリ・ブランド・重要度に基づいたMasonryレイアウトのニュースフィード。
 5.  **AI Reasoning Overlay**: なぜその記事が選ばれたか、どのキーワードに反応したかを、記事カード上にツールチップで表示。
@@ -33,7 +33,7 @@ Aegis Nexusは、単なるニュースアグリゲーターを超え、Gemini 3.
 7.  **Command Center (Ctrl+K)**: アプリ内の全操作、検索、エージェントへの指令を即座に実行できるコマンドパレット。
 8.  **Interactive Knowledge Graph**: 学習したキーワードとカテゴリの関連性を可視化し、クリックで重み付けを調整可能。
 9.  **Automated Quality Gates**: 実装が完了するたびに、`gan-evaluator`がPlaywrightを走らせ、UIのデグレードを自動検知。
-10. **Skill Registry (MCP)**: エージェントが利用可能な「スキル」を動的にプラグインとして追加・削除できるインターフェース。
+10. **Skill Registry**: エージェントが利用可能な「スキル」を動的にプラグインとして追加・削除できるインターフェース。
 11. **Dark/Light Adaptive Glass**: 環境光やOS設定に合わせた最適な透過率の自動調整。
 
 ### Nice-to-Have (Sprint 5+)
@@ -45,7 +45,7 @@ Aegis Nexusは、単なるニュースアグリゲーターを超え、Gemini 3.
 
 ## Technical Stack
 - **Frontend**: Vite + React (TypeScript) + Tailwind CSS + Framer Motion
-- **Backend**: Node.js (Fastify) + Gemini 3.1 SDK + MCP SDK
+- **Backend**: Node.js (Fastify) + Gemini 3.1 SDK
 - **Database**: SQLite (Local storage) + JSON File (Config persistence)
 - **Testing**: Playwright (E2E), Vitest (Unit/Integration)
 

@@ -18,7 +18,7 @@ v5.2 NEXUS では、Windows 11 との親和性を極限まで高めた **Mica Gl
 
 - [**Backend Architecture**](backend.md) - Mica 統合, 設定マネージャー, エージェント・オーケストレーション
 - [**Frontend UI**](frontend.md) - Glassmorphism デザイン, React Portals, v5.2 UI 仕様
-- [**API & MCP Reference**](../API.md) - 同期 API と MCP ツールの詳細仕様
+- [**API Reference**](../API.md) - 同期 API の詳細仕様
 - [**Automation**](automation.md) - electron-builder によるパッケージング, E2E テスト
 
 
