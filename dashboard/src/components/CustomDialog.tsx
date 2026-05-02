@@ -1,146 +1,84 @@
-import React from 'react';
-import { createPortal } from 'react-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { AlertCircle, CheckCircle, Info, XCircle, Shield } from 'lucide-react';
-
-export type DialogType = 'info' | 'success' | 'warning' | 'error' | 'confirm' | 'prompt';
+import React, { useEffect } from 'react';
 
 interface CustomDialogProps {
   isOpen: boolean;
-  type: DialogType;
+  type: string;
   title: string;
-  message: string;
+  message: any;
   onConfirm: (value?: string) => void;
   onCancel?: () => void;
-  confirmLabel?: string;
-  cancelLabel?: string;
-  defaultValue?: string;
-  placeholder?: string;
 }
 
-const DialogContent: React.FC<Omit<CustomDialogProps, 'isOpen'>> = ({
-  type,
+export const CustomDialog: React.FC<CustomDialogProps> = ({
+  isOpen,
   title,
   message,
   onConfirm,
-  onCancel,
-  confirmLabel = 'OK',
-  cancelLabel = 'Cancel',
-  defaultValue = '',
-  placeholder = 'Type here...'
+  onCancel
 }) => {
-  const [inputValue, setInputValue] = React.useState(defaultValue);
+  // ダイアログが開いた瞬間に、React内部からアラートを出すデバッグ
+  useEffect(() => {
+    if (isOpen) {
+      console.log(`[DEBUG] Dialog should be visible now: ${title}`);
+    }
+  }, [isOpen, title]);
 
-  const dialogConfig = {
-    success: { icon: <CheckCircle className="text-primary" size={32} />, color: 'bg-primary' },
-    warning: { icon: <AlertCircle className="text-accent" size={32} />, color: 'bg-accent' },
-    error: { icon: <XCircle className="text-alert" size={32} />, color: 'bg-alert' },
-    confirm: { icon: <Shield className="text-primary" size={32} />, color: 'bg-primary' },
-    prompt: { icon: <Shield className="text-accent" size={32} />, color: 'bg-accent' },
-    info: { icon: <Info className="text-slate-400" size={32} />, color: 'bg-slate-500' },
-  };
-
-  const { icon, color: accentColor } = dialogConfig[type] || dialogConfig.info;
-
-  const handleConfirm = () => {
-    onConfirm(type === 'prompt' ? inputValue : undefined);
-  };
+  if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-none">
-      {/* Backdrop */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        onClick={onCancel || handleConfirm}
-        className="absolute inset-0 bg-black/80 backdrop-blur-md pointer-events-auto"
-      />
-      
-      {/* Content Container */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="relative w-full max-w-md bg-deep-space border border-white/10 rounded-3xl shadow-2xl pointer-events-auto overflow-hidden flex flex-col"
+    <div 
+      style={{ 
+        position: 'fixed', 
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 9999999, // 桁違いに大きく
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        backgroundColor: 'rgba(255, 0, 0, 0.5)', // テスト用に背景を半透明の赤に
+        pointerEvents: 'auto'
+      }}
+    >
+      <div
         style={{ 
-          height: 'auto',
-          minHeight: '0', 
-          flexShrink: 1,
-          flexGrow: 0
+          width: '90%',
+          maxWidth: '500px',
+          backgroundColor: 'white', // 真っ白にして視認性を最大に
+          color: 'black',
+          padding: '40px',
+          borderRadius: '20px',
+          boxShadow: '0 0 100px rgba(0,0,0,1)',
+          position: 'relative',
+          zIndex: 10000000
         }}
       >
-        {/* Top accent bar */}
-        <div className={`h-1.5 w-full shrink-0 ${accentColor}`} />
+        <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '20px' }}>{title}</h2>
         
-        <div className="p-8 flex flex-col relative z-10">
-          <div className="flex items-center gap-4 mb-6 shrink-0">
-            <div className="p-3 bg-white/5 rounded-2xl shrink-0">
-              {icon}
-            </div>
-            <div>
-              <h3 className="text-xl font-bold text-white uppercase tracking-tight leading-tight">{title}</h3>
-              <div className="h-1 w-12 bg-white/10 mt-1 rounded-full" />
-            </div>
-          </div>
-          
-          <div className="mb-8 overflow-y-auto max-h-[50vh]">
-            <p className="text-slate-400 leading-relaxed whitespace-pre-wrap">
-              {message}
-            </p>
-          </div>
+        <div style={{ marginBottom: '30px', maxHeight: '300px', overflowY: 'auto' }}>
+          {message}
+        </div>
 
-          {type === 'prompt' && (
-            <div className="mb-8 shrink-0">
-              <input
-                autoFocus
-                type="text"
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleConfirm()}
-                placeholder={placeholder}
-                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-accent/50 transition-colors"
-              />
-            </div>
-          )}
-          
-          <div className="flex gap-3 justify-end mt-auto shrink-0">
-            {(type === 'confirm' || type === 'prompt') && (
-              <button
-                onClick={onCancel}
-                className="px-6 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:text-white hover:bg-white/5 transition-all"
-              >
-                {cancelLabel}
-              </button>
-            )}
-            <button
-              onClick={handleConfirm}
-              className={`px-8 py-2.5 rounded-xl text-sm font-bold text-white transition-all shadow-lg active:scale-95 ${accentColor} hover:brightness-110`}
-            >
-              {confirmLabel}
-            </button>
-          </div>
-        </div>
-        
-        {/* Decorative shield background */}
-        <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
-          <Shield size={120} />
-        </div>
-      </motion.div>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            if (onCancel) onCancel();
+            else onConfirm();
+          }}
+          style={{ 
+            width: '100%',
+            padding: '15px',
+            backgroundColor: '#000',
+            color: 'white',
+            fontWeight: 'bold',
+            borderRadius: '10px',
+            cursor: 'pointer'
+          }}
+        >
+          CLOSE
+        </button>
+      </div>
     </div>
-  );
-};
-
-export const CustomDialog: React.FC<CustomDialogProps> = (props) => {
-  return createPortal(
-    <AnimatePresence>
-      {props.isOpen && (
-        <DialogContent 
-          key="dialog-content"
-          {...props}
-        />
-      )}
-    </AnimatePresence>,
-    document.body
   );
 };

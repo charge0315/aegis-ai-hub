@@ -10,26 +10,28 @@
 - **Acrylic Integration**: Windows 11 ネイティブの **Acrylic素材** を Electron で実現。
 - **Refined Transparency**: 背景色 `#101112` と最適化された透過率により、視認性と審美性を両立。
 - **FancyZones Support**: Windows PowerToys の FancyZones (スナップ機能) に完全対応。
-- **Unified Design**: ヘッダーとサイドバーの透過デザインを統一し、シームレスな外観を提供。
+- **Unified Design**: ヘッダーとサイドバーの背景を `sidebar-glass` で統一し、シームレスな一体感を提供。
+- **Optimized Visibility**: 記事カードの透過度を 75% に調整し、透過環境下でのテキスト可読性を最大化。
 
 ### 2. Standalone Server Architecture
 信頼性と柔軟性を向上させた新アーキテクチャ。
 - **Fastify Backend**: MCP (Model Context Protocol) から **Fastify ベースのスタンドアロンサーバー** へ完全移行。
 - **Lightweight**: `@modelcontextprotocol/sdk` への依存を排除し、フットプリントを削減。
 - **Dual-Mode API**: Electron IPC だけでなく、標準的な HTTP/JSON API による操作も可能。
+- **Dev-Sync System**: 開発環境の設定をアプリの実行環境（AppData）へ自動同期する仕組みを確立。
 
 ### 3. 進化した UI アーキテクチャ (Robust UI)
 プロダクション品質の安定性と使い勝手を追求。
-- **React Portals**: `CustomDialog` に採用。画面のどこからでも完璧に中央配置される堅牢なオーバーレイ。
+- **Inline Dialog System**: `App.tsx` へのインライン化により、透過環境下での安定性が向上。
+- **Precision Positioning**: 右側メインコンテンツ領域の正確な中心にダイアログを配置。サイドバー幅を考慮した動的オフセットを採用。
 - **Global Control**: `Ctrl+Q` による安全なアプリケーション終了や、`Ctrl+K` のコマンドパレット。
-- **Vertical Scrolling**: 柔軟なレイアウトに対応する縦スクロールの最適化。
-- **Background Residency**: システムトレイ常駐をサポート。ウィンドウを閉じてもバックグラウンドで動作し続け、トレイアイコンからいつでも再表示可能。
-- **Auto-Launch**: Windows 起動時の自動実行をサポート。スタートアップ時にバックグラウンドで静かに起動します。
+- **Vertical Scrolling**: `overflow-x: hidden` 調整により、レイアウトを崩さずスムーズな縦スクロールを実現。
 
-### 4. 即戦力の知識ベース (Knowledge Out-of-the-box)
+### 4. 即戦力の知識ベース & AI Discovery
 インストールした瞬間から、最高品質の情報が流れ込みます。
 - **Default Data Sets**: ゲーム、AI、PCハードウェア、オーディオ、XR等の専門的なカテゴリとフィードを内蔵。
-- **Autonomous Discovery**: あなたの興味に基づき、AI が自律的に新しい情報源を探索し続けます。
+- **AI Discovery 2.0**: カテゴリ名クリックで Gemini API が新しいニュースソースを自律探索。直接的なフィード URL (RSS/Atom) をワンクリックで追加可能。
+- **Smart Prompting**: サイト URL ではなく、直接的なフィードエンドポイントを優先的に取得する高度な AI プロンプトを搭載。
 
 
 ## 🛠 テックスタック

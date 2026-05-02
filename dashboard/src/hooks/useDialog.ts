@@ -5,7 +5,7 @@ interface DialogState {
   isOpen: boolean;
   type: DialogType;
   title: string;
-  message: string;
+  message: React.ReactNode;
   onConfirm: (value?: string) => void;
   onCancel?: () => void;
   defaultValue?: string;
@@ -29,7 +29,7 @@ export function useDialog() {
     setDialog(prev => ({ ...prev, isOpen: false }));
   }, []);
 
-  const alert = useCallback((title: string, message: string, type: DialogType = 'info') => {
+  const alert = useCallback((title: string, message: React.ReactNode, type: DialogType = 'info') => {
     return new Promise<void>((resolve) => {
       showDialog({
         title,
@@ -43,7 +43,7 @@ export function useDialog() {
     });
   }, [showDialog, hideDialog]);
 
-  const confirm = useCallback((title: string, message: string) => {
+  const confirm = useCallback((title: string, message: React.ReactNode) => {
     return new Promise<boolean>((resolve) => {
       showDialog({
         title,
@@ -61,12 +61,12 @@ export function useDialog() {
     });
   }, [showDialog, hideDialog]);
 
-  const prompt = useCallback((title: string, message: string, defaultValue: string = '', placeholder: string = 'Type here...') => {
+  const prompt = useCallback((title: string, message: React.ReactNode, defaultValue: string = '', placeholder: string = 'Type here...') => {
     return new Promise<string | null>((resolve) => {
       showDialog({
         title,
         message,
-        type: 'prompt',
+        type,
         defaultValue,
         placeholder,
         onConfirm: (value) => {

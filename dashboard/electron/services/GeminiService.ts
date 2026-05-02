@@ -122,10 +122,10 @@ export class GeminiService {
           items: { 
             type: SchemaType.OBJECT, 
             properties: { 
-              name: { type: SchemaType.STRING }, 
-              url: { type: SchemaType.STRING }, 
-              category: { type: SchemaType.STRING }, 
-              reason: { type: SchemaType.STRING } 
+              name: { type: SchemaType.STRING, description: "サイト名" }, 
+              url: { type: SchemaType.STRING, description: "RSS/Atomフィードの直接のURL (例: https://example.com/feed)" }, 
+              category: { type: SchemaType.STRING, description: "対応するカテゴリ名" }, 
+              reason: { type: SchemaType.STRING, description: "推奨理由" } 
             }, 
             required: ["name", "url", "category", "reason"] 
           } 
@@ -157,7 +157,18 @@ export class GeminiService {
       },
       required: ["sites", "brands", "keywords"]
     };
-    const prompt = `現在の興味リストに基づき、進化提案（サイト、ブランド、キーワード）を生成してください: ${JSON.stringify(interests)}`;
+
+    const prompt = `
+あなたはニュースソースの専門家です。現在の興味リストに基づき、進化提案（フィード、ブランド、キーワード）を生成してください。
+
+**重要ルール:**
+1. sitesのURLは、必ず「RSSフィード」または「Atomフィード」の直接のURLを指定してください。サイトのホームページURLは絶対に含めないでください。
+2. 日本語の信頼できるニュースサイトを最優先してください。
+3. フィードURLの例: \`https://www.famitsu.com/rss/all.xml\`, \`https://snrec.jp/feed\`, \`https://japan.googleblog.com/atom.xml\`
+4. カテゴリ名は、入力された interests のキー名と正確に一致させてください。
+
+現在の興味リスト: ${JSON.stringify(interests)}
+`;
     return await this.generateStructured<Record<string, unknown>>(prompt, schema);
   }
 
@@ -208,7 +219,7 @@ export class GeminiService {
             type: SchemaType.OBJECT, 
             properties: { 
               name: { type: SchemaType.STRING }, 
-              url: { type: SchemaType.STRING }, 
+              url: { type: SchemaType.STRING, description: "有効なRSS/Atomフィードの直接URL (例: https://example.com/rss)" }, 
               category: { type: SchemaType.STRING } 
             }, 
             required: ["name", "url", "category"] 
@@ -217,7 +228,12 @@ export class GeminiService {
       },
       required: ["sites"]
     };
-    const prompt = `ユーザーの興味に合致する新しいRSSフィードのURLを提案してください: ${JSON.stringify(interests)}`;
+    const prompt = `
+以下の興味設定に合致する、新しいニュースソースを提案してください。
+URLは必ず「RSSフィード」または「Atomフィード」の直接のURLを指定し、ホームページのURLは絶対に含めないでください。
+日本語のサイトを優先してください。
+興味設定: ${JSON.stringify(interests.categories)}
+`;
     const result = await this.generateStructured<{ sites: Record<string, unknown>[] }>(prompt, schema);
     return result.sites;
   }

@@ -78,6 +78,14 @@ export const nexusApi = {
       body: JSON.stringify({ categoryName })
     });
     return await res.json();
+  },
+
+  async getProposals(): Promise<any> {
+    if (window.nexusApi) {
+      return await window.nexusApi.getProposals();
+    }
+    const res = await fetch(`${BACKEND_URL}/api/v5/proposals`);
+    return await res.json();
   }
 };
 

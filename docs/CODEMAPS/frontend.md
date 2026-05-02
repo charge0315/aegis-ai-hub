@@ -1,6 +1,6 @@
 # Frontend UI Codemap
 
-**Last Updated:** 2026-06-15
+**Last Updated:** 2026-06-16
 **Version:** 5.2 NEXUS
 **Entry Point:** `dashboard/src/main.tsx`
 
@@ -13,34 +13,28 @@ Aegis AI Hub v5.2 NEXUS のフロントエンドは、Windows 11 の **Acrylic G
 Windows 11 のネイティブな素材感を実現するためのレイヤー構造：
 - **Base Layer**: Electron の `backgroundMaterial: 'acrylic'` を適用。
 - **App Background**: `#101112` を基調としつつ、Acrylic 素材を活かすために不透明度を 30% 前後に調整 (`.window-base`)。
-- **Unified Transparency**: ヘッダーとサイドバーの透過デザインを統一。境界線を最小限にし、シームレスな外観を実現。
+- **Unified Transparency**: ヘッダーの背景をサイドバーと同じ `sidebar-glass` に統一。ウィンドウ全体での一体感を向上させ、シームレスな外観を実現。
 - **FancyZones Support**: `transparent: false` 設定と `thickFrame: true` により、Windows PowerToys の FancyZones (スナップ機能) に完全対応。
 
 ### 2. Layout & Scrolling
-- **Vertical Scrolling**: コンテンツ量の増加に対応し、全体的な縦スクロールを最適化。
+- **Vertical Scrolling**: `overflow-x: hidden` を適用し、全体的な縦スクロールを最適化。
 - **Smooth Scroll**: カスタムスクロールバー (`::-webkit-scrollbar`) による洗練された操作感。
 
-### 3. UI Robustness (React Portals)
-- **CustomDialog**: React Portals を使用して `document.body` に直接レンダリング。親要素のスタイルに影響されない堅牢なオーバーレイ。
-- **Framer Motion**: コンポーネントの出現・消失、タブ切り替え時にスムーズなアニメーションを提供。
+### 3. UI Robustness & Dialogs
+- **Inline Dialog System**: `CustomDialog` を `App.tsx` 内にインライン配置することで、透過ウィンドウ環境下での描画安定性を確保。
+- **Precision Positioning**: サイドバーの幅を考慮した動的オフセット計算により、右側のメインコンテンツ領域の正確な中心にダイアログを表示。
+- **High Visibility**: 透過背景に左右されないよう、ダイアログ背景色とボーダー設定を最適化。
 
 ## コア・コンポーネント
 
 | コンポーネント | 役割 | 特徴 |
 | :--- | :--- | :--- |
-| `App.tsx` | ルートレイアウト | 統一された透過デザインの管理、ビュー切り替え。 |
-| `CustomDialog.tsx` | 汎用ダイアログ | **React Portals** 実装。 |
-| `ArticleCard.tsx` | 記事カード | **視認性重視の Glass デザイン**。背景の不透明度を高め、テキストの可読性を向上。 |
+| `App.tsx` | ルートレイアウト | 統一された透過デザイン、インラインダイアログの管理、ビュー切り替え。 |
+| `CustomDialog.tsx` | 汎用ダイアログ | 精密な中央配置と高視認性。 |
+| `ArticleCard.tsx` | 記事カード | **不透明度 75% の最適化**。背景のノイズを抑え、可読性を最大化。 |
 | `UnifiedEditor.tsx` | 設定管理 | System Settings タブでの API キー管理とカテゴリ編集。 |
 
-## API 連携 (`src/api/nexusApi.ts`)
-- **Dual-Mode Bridge**: 
-    - Electron 環境下では `ipcRenderer` を介した高速な通信。
-    - ヘッドレス/Web 環境下では Fastify サーバーへの HTTP API 呼び出し。
-- **Hook-based Data Fetching**: `useNexusSync` フックによるリアクティブなデータ取得と設定同期。
-- **SSE Support**: エージェントのイベント受信に Server-Sent Events (SSE) をサポート（Web 環境用）。
-
-## インタラクション
+## インテリジェント機能
+- **AI Discovery Trigger**: サイドバーのカテゴリ名をクリックすることで、Gemini API による新規フィード探索を即座に開始。
 - **Command Palette**: `Ctrl + K` によるクイックアクセス。
 - **Global Exit**: `Ctrl + Q` による安全なアプリケーション終了。
-- **Window Controls**: カスタムタイトルバーによる最小化、最大化、閉じる操作。

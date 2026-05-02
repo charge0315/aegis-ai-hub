@@ -38,6 +38,11 @@ contextBridge.exposeInMainWorld('nexusApi', {
   suggestCategory: (categoryName) => ipcRenderer.invoke('suggest-category', categoryName),
 
   /**
+   * AIによる新しいフィードや改善の提案を取得します。
+   */
+  getProposals: () => ipcRenderer.invoke('get-proposals'),
+
+  /**
    * Gemini APIキーを取得します。
    */
   getApiKey: () => ipcRenderer.invoke('get-api-key'),

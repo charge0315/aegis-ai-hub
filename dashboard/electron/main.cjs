@@ -110,7 +110,7 @@ function registerIpcHandlers() {
   ipcMain.handle('get-settings', async () => {
     const interests = await SettingsManager.getInterests();
     const feedConfig = await SettingsManager.getFeedConfig();
-    return { interests, feedConfig };
+    return { interests, feed_urls: feedConfig };
   });
 
   // 設定同期
@@ -190,6 +190,18 @@ function registerIpcHandlers() {
       return await geminiService.suggestCategoryDetails(categoryName);
     } catch (error) {
       console.error('Failed to suggest category:', error);
+      throw error;
+    }
+  });
+
+  // 進化提案を取得 (疎通確認済みフィードなど)
+  ipcMain.handle('get-proposals', async () => {
+    console.log('[Main] Getting evolution proposals...');
+    try {
+      const interests = await SettingsManager.getInterests();
+      return await discoveryService.getProposals(interests);
+    } catch (error) {
+      console.error('Failed to get proposals:', error);
       throw error;
     }
   });
