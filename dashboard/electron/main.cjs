@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, globalShortcut } = require('electron');
+const { app, BrowserWindow, ipcMain, globalShortcut, Tray, Menu } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -12,6 +12,7 @@ const { RSSFetcher } = require('./services/RSSFetcher');
 const { ScoringService } = require('./services/ScoringService');
 
 let mainWindow;
+let tray;
 let geminiService;
 let feedManager;
 let rssFetcher;
@@ -40,22 +41,23 @@ async function initBackend() {
 
 function createWindow() {
   const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
+  const startMinimized = process.argv.includes('--hidden');
   
   mainWindow = new BrowserWindow({
     width: 1440,
     height: 900,
     minWidth: 800,
     minHeight: 600,
-    // スナップ機能を有効にするため、透明度はfalseに戻す
-    transparent: false,
+    show: false,
+    // FancyZones対応のため不透明(false)に設定
+    transparent: false, 
     frame: false,
     hasShadow: true,
     resizable: true,
     thickFrame: true,
     titleBarStyle: 'hidden', 
-    // Windows 11標準の高級すりガラス効果 (Mica) を適用
-    backgroundMaterial: 'mica',
-    backgroundColor: '#101112', 
+    // Windows 11 の透過素材を Acrylic に設定
+    backgroundMaterial: 'acrylic', 
     icon: path.join(__dirname, '../public/app-icon.png'),
     webPreferences: {
       nodeIntegration: false,
@@ -64,12 +66,42 @@ function createWindow() {
     },
   });
 
+  mainWindow.once('ready-to-show', () => {
+    mainWindow.show();
+  });
+
   if (isDev) {
     mainWindow.loadURL('http://localhost:5173');
     // mainWindow.webContents.openDevTools();
   } else {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
   }
+
+  // 閉じるボタンが押されたときに終了せず隠す設定（オプション）
+  mainWindow.on('close', (event) => {
+    if (!app.isQuitting) {
+      event.preventDefault();
+      mainWindow.hide();
+    }
+    return false;
+  });
+}
+
+// トレイアイコンの設定
+function createTray() {
+  const iconPath = path.join(__dirname, '../public/app-icon.png');
+  tray = new Tray(iconPath);
+  const contextMenu = Menu.buildFromTemplate([
+    { label: 'Aegis Nexus を表示', click: () => mainWindow.show() },
+    { type: 'separator' },
+    { label: '終了', click: () => {
+      app.isQuitting = true;
+      app.quit();
+    }}
+  ]);
+  tray.setToolTip('Aegis AI Hub');
+  tray.setContextMenu(contextMenu);
+  tray.on('double-click', () => mainWindow.show());
 }
 
 // IPC ハンドラの登録
@@ -197,14 +229,15 @@ app.whenReady().then(async () => {
   await initBackend();
   registerIpcHandlers();
   createWindow();
+  createTray();
 
-  // Windows起動時の自動実行設定（本番環境のみ）
-  if (app.isPackaged) {
-    app.setLoginItemSettings({
-      openAtLogin: true,
-      path: app.getPath('exe'),
-    });
-  }
+  // Windows起動時の自動実行設定
+  const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
+  app.setLoginItemSettings({
+    openAtLogin: true,
+    path: isDev ? process.execPath : app.getPath('exe'),
+    args: isDev ? [path.resolve(process.argv[1]), '--hidden'] : ['--hidden']
+  });
 
   // Ctrl+Q でアプリを終了するショートカットを登録
   globalShortcut.register('CommandOrControl+Q', () => {

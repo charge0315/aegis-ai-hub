@@ -86,7 +86,7 @@ class SettingsManager {
 
       const defaultFeedConfig = {
         "AI・ソフトウェア": {
-          "active": ["https://japan.googleblog.com/atom.xml", "https://zenn.dev/topics/ai/feed", "https://atmarkit.itmedia.co.jp/rss/rssit.xml"],
+          "active": ["https://japan.googleblog.com/atom.xml", "https://zenn.dev/topics/ai/feed", "https://rss.itmedia.co.jp/rss/2.0/ait.xml"],
           "pool": [],
           "failures": {}
         },

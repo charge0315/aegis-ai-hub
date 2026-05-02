@@ -1,46 +1,56 @@
 # Aegis AI Hub - API & Technical Reference
 
-**Last Updated:** 2026-06-05
+**Last Updated:** 2026-06-15
 **Version:** 5.2 (Production Ready)
 
-本ドキュメントでは、Aegis AI Hub v5.2 が提供する内部 API、IPC (Inter-Process Communication)、およびデータ管理の仕様について記述します。
+本ドキュメントでは、Aegis AI Hub v5.2 が提供する Fastify REST API および Electron IPC (Inter-Process Communication) の仕様について記述します。
 
-## 1. Electron IPC Bridge (Main ↔ Renderer)
-プロダクション版では、セキュアなコンテキスト・ブリッジを介して以下の機能が提供されます。
+## 1. Fastify REST API (Backend Server)
+v5.2 より、従来の MCP 構成に代わり Fastify ベースのスタンドアロンサーバーが導入されました。
 
-### 1.1 設定・同期
-- `nexusApi.syncSettings(payload)`: 興味関心、フィード設定、ウィンドウ状態を一括保存。
-- `nexusApi.getSettings()`: 現在の全ての設定を取得。
+### 1.1 基本情報
+- **ベース URL**: `http://localhost:3005`
+- **API プレフィックス**: `/api/v5`
 
-### 1.2 API キー管理 (v5.2 新設)
-- `nexusApi.getApiKey()`: 保存済みの Gemini API キーを取得。
-- `nexusApi.saveApiKey(key)`: 新しい API キーを `credentials.json` に永続化。
-
-### 1.3 AI 進化・提案
-- `nexusApi.suggestCategory(name)`: 特定のカテゴリ名に基づき、AI がブランドとキーワードを提案。
+### 1.2 エンドポイント
+- **`GET /api/v5/interests`**: 現在の興味関心設定を取得。
+- **`GET /api/v5/feeds`**: 購読中のフィード設定を取得。
+- **`POST /api/v5/sync-settings`**: 興味関心およびフィード設定を同期・保存。
+- **`GET /api/dashboard`**: スコアリング済みの全記事を取得（ダッシュボード用）。
+- **`POST /api/v5/suggest-category`**: 特定のカテゴリ名に基づき、AI によるブランド・キーワード提案を取得。
+- **`POST /api/v5/orchestrate`**: エージェントによる自律探索/解析サイクルを手動実行。
+- **`GET /api/v5/events`**: エージェントのステータス更新をリアルタイムで受信 (SSE: Server-Sent Events)。
 
 ---
 
-## 2. データ永続化 (Persistence)
+## 2. Electron IPC Bridge (Main ↔ Renderer)
+Electron アプリケーション内では、セキュアなコンテキスト・ブリッジを介して以下の機能が提供されます。
+
+### 2.1 機能一覧
+- `nexusApi.getArticles()`: 記事一覧の取得。
+- `nexusApi.getSettings()`: 設定一式の取得。
+- `nexusApi.syncSettings(payload)`: 設定の同期。
+- `nexusApi.saveApiKey(key)`: Gemini API キーの永続化。
+- `nexusApi.onAgentEvent(callback)`: エージェントイベントの購読。
+
+---
+
+## 3. データ永続化 (Persistence)
 プロダクション環境では、OS 標準のユーザーデータ領域にデータが保存されます。
 
 - **`credentials.json`**: Gemini API キー。
-- **`interests.json`**: ユーザーの興味関心（カテゴリ、ブランド、キーワード）。
-- **`feed_config.json`**: 購読中の RSS フィードと発見されたプール。
-- **`window_state.json`**: ウィンドウの座標とサイズ。
+- **`interests.json`**: ユーザーの興味関心。
+- **`feed_config.json`**: 購読中の RSS フィード。
 
----
-
-## 3. ディレクトリ構造 (Production)
+### ディレクトリ構造 (Windows)
 ```
 %APPDATA%/aegis-nexus/
 └── data/
     ├── credentials.json
     ├── interests.json
-    ├── feed_config.json
-    └── window_state.json
+    └── feed_config.json
 ```
 
 ## 4. セキュリティ
-- API キーはローカルにのみ保存され、外部サーバー（Gemini API 除く）に送信されることはありません。
-- IPC 通信は、`preload.cjs` で定義されたホワイトリスト方式のメソッドのみが許可されます。
+- **Local-Only**: API キーはローカルにのみ保存され、外部サーバー（Google Gemini API を除く）に送信されることはありません。
+- **Sandboxed IPC**: レンダラープロセスからは、ホワイトリスト化された IPC メソッドのみ呼び出し可能です。

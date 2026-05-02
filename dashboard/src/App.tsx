@@ -162,7 +162,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="bg-deep-space min-h-screen text-slate-200 flex">
+    <div className="window-base text-slate-200">
       {/* Command Palette */}
       <CommandPalette 
         key={isCommandPaletteOpen ? 'open' : 'closed'}
@@ -209,7 +209,7 @@ const App: React.FC = () => {
       {/* Main Content Area */}
       <main className="flex-grow flex flex-col min-h-screen">
         {/* Header */}
-        <header className={`h-16 border-b border-white/5 bg-white/[0.02] backdrop-blur-3xl flex items-center justify-between ${isCompact ? 'px-4' : 'px-8'} sticky top-0 z-20`}>
+        <header className={`h-16 border-b border-white/5 sidebar-glass flex items-center justify-between ${isCompact ? 'px-4' : 'px-8'} sticky top-0 z-20`}>
           <div className="flex items-center gap-6 flex-grow">
             <div className={`relative ${isCompact ? 'w-full' : 'w-96'}`}>
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />

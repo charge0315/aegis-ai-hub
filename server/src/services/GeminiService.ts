@@ -1,16 +1,6 @@
 import { GoogleGenerativeAI, GenerativeModel, ChatSession, ResponseSchema, SchemaType } from "@google/generative-ai";
 import { Interests } from "../models/Schemas.js";
 
-export interface ToolCall {
-  name: string;
-  args: any;
-}
-
-export interface ToolCallingResponse {
-  text: string;
-  toolCalls: ToolCall[];
-}
-
 export interface CuratedArticle {
   id: number;
   title: string;
@@ -23,7 +13,7 @@ export interface CuratedArticle {
 
 /**
  * GeminiService: Gemini 3.1 APIを中枢に、Structured Output（スキーマ強制）
- * および Tool Calling を活用したAIリクエスト基盤。
+ * を活用したAIリクエスト基盤。
  */
 export class GeminiService {
   private genAI: GoogleGenerativeAI | null;
@@ -65,44 +55,13 @@ export class GeminiService {
   }
 
   /**
-   * Tool Calling (Function Calling) を利用した生成
-   * @param {string} prompt 
-   * @param {any[]} tools 
-   * @param {string} modelName 
-   */
-  async generateWithTools(prompt: string, tools: any[], modelName: string = "gemini-3.1-pro-preview"): Promise<ToolCallingResponse> {
-    if (!this.genAI) throw new Error("Gemini APIキーが設定されていません。");
-
-    const model: GenerativeModel = this.genAI.getGenerativeModel({
-      model: modelName,
-      tools: [{ functionDeclarations: tools }],
-    });
-
-    const chat = model.startChat();
-    const result = await chat.sendMessage(prompt);
-    const response = await result.response;
-    
-    const parts = response.candidates?.[0]?.content?.parts || [];
-    const toolCalls = parts.filter(p => p.functionCall).map(tc => ({
-      name: tc.functionCall!.name,
-      args: tc.functionCall!.args
-    }));
-    
-    return {
-      text: response.text(),
-      toolCalls: toolCalls
-    };
-  }
-
-  /**
    * チャットセッションを開始
    */
-  createChatSession(modelName: string = "gemini-3.1-pro-preview", history: any[] = [], tools: any[] = []): ChatSession {
+  createChatSession(modelName: string = "gemini-3.1-pro-preview", history: any[] = []): ChatSession {
     if (!this.genAI) throw new Error("Gemini APIキーが設定されていません。");
 
     const model: GenerativeModel = this.genAI.getGenerativeModel({
       model: modelName,
-      tools: tools.length > 0 ? [{ functionDeclarations: tools }] : undefined,
     });
 
     return model.startChat({

@@ -1,16 +1,6 @@
 import { GoogleGenerativeAI, GenerativeModel, ChatSession, ResponseSchema, SchemaType, Content } from "@google/generative-ai";
 import { Interests } from "../models/Schemas";
 
-export interface ToolCall {
-  name: string;
-  args: Record<string, unknown>;
-}
-
-export interface ToolCallingResponse {
-  text: string;
-  toolCalls: ToolCall[];
-}
-
 export interface CuratedArticle {
   id: number;
   title: string;
@@ -24,7 +14,7 @@ export interface CuratedArticle {
 
 /**
  * GeminiService: Gemini 3.1 APIを中枢に、Structured Output（スキーマ強制）
- * および Tool Calling を活用したAIリクエスト基盤。
+ * を活用したAIリクエスト基盤。
  */
 export class GeminiService {
   private genAI: GoogleGenerativeAI | null;
@@ -73,46 +63,13 @@ export class GeminiService {
   }
 
   /**
-   * Tool Calling (Function Calling) を利用した生成
-   * @param {string} prompt 
-   * @param {unknown[]} tools 
-   * @param {string} modelName 
-   */
-  async generateWithTools(prompt: string, tools: unknown[], modelName: string = "gemini-3.1-pro-preview"): Promise<ToolCallingResponse> {
-    if (!this.genAI) throw new Error("Gemini APIキーが設定されていません。");
-
-    const model: GenerativeModel = this.genAI.getGenerativeModel({
-      model: modelName,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      tools: [{ functionDeclarations: tools as any[] }],
-    });
-
-    const chat = model.startChat();
-    const result = await chat.sendMessage(prompt);
-    const response = await result.response;
-    
-    const parts = response.candidates?.[0]?.content?.parts || [];
-    const toolCalls = parts.filter(p => p.functionCall).map(tc => ({
-      name: tc.functionCall!.name,
-      args: tc.functionCall!.args as Record<string, unknown>
-    }));
-    
-    return {
-      text: response.text(),
-      toolCalls: toolCalls
-    };
-  }
-
-  /**
    * チャットセッションを開始
    */
-  createChatSession(modelName: string = "gemini-3.1-pro-preview", history: Content[] = [], tools: unknown[] = []): ChatSession {
+  createChatSession(modelName: string = "gemini-3.1-pro-preview", history: Content[] = []): ChatSession {
     if (!this.genAI) throw new Error("Gemini APIキーが設定されていません。");
 
     const model: GenerativeModel = this.genAI.getGenerativeModel({
       model: modelName,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      tools: tools.length > 0 ? [{ functionDeclarations: tools as any[] }] : undefined,
     });
 
     return model.startChat({
