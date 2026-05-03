@@ -15604,16 +15604,20 @@ var init_GeminiService = __esm({
         this.genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
       }
       /**
-       * APIキーを動的に更新します（設定画面からの変更時に使用）。
+       * ユーザーがシステム設定からAPIキーを変更した際、アプリケーションを再起動することなく
+       * 即座にAIエンジンを再起動（モデルへの接続を再確立）するためのフックメソッド。
        */
       updateApiKey(apiKey) {
         this.genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
       }
       /**
-       * 構造化データを生成します。
-       * @param {string} prompt - プロンプト
-       * @param {ResponseSchema} schema - JSONスキーマ定義
-       * @param {string} [modelName] - 使用するモデル名
+       * AIの「自由な発話」を封じ、あらかじめシステムが定義したZod（JSON）スキーマ通りの
+       * 厳格なデータ構造でのみ返答を許すためのコア・インターフェース。
+       * これにより、"JSONパースエラー" という生成AI特有の不確実性を根本から排除します。
+       * 
+       * @param {string} prompt - AIに与える指示文（コンテキスト）
+       * @param {ResponseSchema} schema - 返してほしいデータの構造定義（バリデーションの要）
+       * @param {string} [modelName] - タスクの複雑さに応じてモデルを切り替えるためのオプション
        */
       async generateStructured(prompt, schema, modelName = this.primaryModelName) {
         if (!this.genAI) {
@@ -76110,15 +76114,29 @@ var init_EnrichmentService = __esm({
         };
       }
       /**
-       * 記事に画像がない場合、元サイトからog:imageを抽出しようと試みます。
-       * また、英語等の非日本語記事を日本語に翻訳します。
+       * 不完全な記事データを検査し、可能な限りのメタデータを補完して情報の質を底上げします。
+       * 特に、アイキャッチ画像の確保（視覚的魅力の維持）と、母国語へのローカライズ（可読性の確保）を担います。
        */
       async enrich(article) {
         if (!article.img) {
           try {
             const { data: data2 } = await axios_default.get(article.link, { timeout: 5e3, headers: { "User-Agent": "AegisAIHubBot/1.0" } });
             const $2 = load(data2);
-            const ogImage = $2('meta[property="og:image"]').attr("content") || $2('meta[name="twitter:image"]').attr("content") || $2('link[rel="image_src"]').attr("href");
+            let ogImage = $2('meta[property="og:image"]').attr("content") || $2('meta[name="twitter:image"]').attr("content") || $2('link[rel="image_src"]').attr("href");
+            if (!ogImage) {
+              const contentAreas = $2("article, main, .content, .post, .entry");
+              const imgElements = contentAreas.length > 0 ? contentAreas.find("img") : $2("img");
+              imgElements.each((_, el) => {
+                const src = $2(el).attr("src") || $2(el).attr("data-src");
+                if (src && /\.(jpg|jpeg|png|webp)/i.test(src)) {
+                  try {
+                    ogImage = new URL(src, article.link).href;
+                    return false;
+                  } catch (e) {
+                  }
+                }
+              });
+            }
             if (ogImage && ogImage.startsWith("http")) {
               article.img = ogImage;
             } else {
@@ -76146,20 +76164,23 @@ var init_EnrichmentService = __esm({
         return article;
       }
       /**
-       * 日本語が含まれていないか判定します（簡易版）。
+       * テキストが翻訳対象（非日本語）であるかを高速に振り分けるための関所。
+       * ここで厳密な言語判定は行わず、あくまで「日本語特有の文字が含まれているか」のみで軽量に判断します。
        */
       isNotJapanese(text3) {
         const jpRegex = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF]/;
         return !jpRegex.test(text3);
       }
       /**
-       * カテゴリに応じたスタイリッシュな代替画像を返します。
+       * 画像が一切見つからなかった記事に対して、システムが提供するデフォルトの「顔」。
+       * カテゴリごとの雰囲気に合わせた高品質な写真を提供し、画面全体の美観を損なわないようにします。
        */
       getPlaceholder(category) {
         return this.placeholders[category] || "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400";
       }
       /**
-       * RSSアイテムから標準的な画像フィールドを抽出します（基本パース用）。
+       * RSSフィードの初期取得時に、付帯情報から最も軽量・高速に画像URLを引き出すための第一次フィルター。
+       * 外部へのHTTPリクエストを発生させないため、パフォーマンスへの影響が極めて小さいのが特徴です。
        */
       extractBasicImage(item) {
         const mediaContent = item.mediaContent;
@@ -76176,7 +76197,9 @@ var init_EnrichmentService = __esm({
         if (enclosure?.url) return enclosure.url;
         if (item.itunesImage) return String(item.itunesImage);
         const snippet = item.description || "";
-        const matches = snippet.match(/src="([^"]+\.(jpg|png|gif|jpeg))"/i);
+        const content = item.content || item.contentEncoded || "";
+        const fullContent = `${snippet} ${content}`;
+        const matches = fullContent.match(/src=["']([^"']+\.(jpg|png|gif|jpeg|webp))["']/i);
         if (matches && matches[1]) return matches[1];
         return null;
       }
