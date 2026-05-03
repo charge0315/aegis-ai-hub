@@ -9,7 +9,7 @@ interface CustomDialogProps {
   isOpen: boolean;
   type: DialogType;
   title: string;
-  message: any;
+  message: React.ReactNode;
   defaultValue?: string;
   placeholder?: string;
   onConfirm: (value?: string) => void;
@@ -30,6 +30,7 @@ export const CustomDialog: React.FC<CustomDialogProps> = ({
 
   useEffect(() => {
     if (isOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setInputValue(defaultValue);
     }
   }, [isOpen, defaultValue]);

@@ -8,9 +8,10 @@ interface ArticleCardProps {
   article: Article;
   index?: number;
   size?: 'small' | 'medium' | 'large';
+  showImages?: boolean;
 }
 
-export const ArticleCard: React.FC<ArticleCardProps> = ({ article, index = 0, size = 'medium' }) => {
+export const ArticleCard: React.FC<ArticleCardProps> = ({ article, index = 0, size = 'medium', showImages = true }) => {
   const [showReason, setShowReason] = useState(false);
   const [imageError, setImageError] = useState(false);
 
@@ -49,51 +50,65 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({ article, index = 0, si
       onClick={() => window.open(article.link, '_blank', 'noopener,noreferrer')}
     >
       {/* Image Section */}
-      <div className={`relative overflow-hidden bg-slate-800 ${
-        isSmall ? 'aspect-[4/3]' : 'aspect-video'
-      }`}>
-        {article.img && !imageError ? (
-          <img 
-            src={article.img} 
-            alt={article.title} 
-            onError={() => setImageError(true)}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          />
-        ) : (
-          <div className={`w-full h-full flex items-center justify-center text-white/40 bg-linear-to-br ${getFallbackGradient()} relative overflow-hidden`}>
-            {/* 背景の装飾的な要素 */}
-            <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
-            <div className="relative z-1 flex flex-col items-center gap-2">
-              <Sparkles size={isSmall ? 24 : 40} className="text-white/30" />
-              {!isSmall && <span className="text-[9px] font-black uppercase tracking-[0.2em] opacity-40">Signal Synthesized</span>}
+      {showImages && (
+        <div className={`relative overflow-hidden bg-slate-800 shrink-0 ${
+          isSmall ? 'aspect-[4/3]' : 'aspect-video'
+        }`}>
+          {article.img && !imageError ? (
+            <img 
+              src={article.img} 
+              alt={article.title} 
+              onError={() => setImageError(true)}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            />
+          ) : (
+            <div className={`w-full h-full flex items-center justify-center text-white/40 bg-linear-to-br ${getFallbackGradient()} relative overflow-hidden`}>
+              {/* 背景の装飾的な要素 */}
+              <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
+              <div className="relative z-1 flex flex-col items-center gap-2">
+                <Sparkles size={isSmall ? 24 : 40} className="text-white/30" />
+                {!isSmall && <span className="text-[9px] font-black uppercase tracking-[0.2em] opacity-40">Signal Synthesized</span>}
+              </div>
+            </div>
+          )}
+          
+          {/* Category Badge */}
+          {!isSmall && (
+            <div className="absolute top-2 left-2 flex gap-2">
+              <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-primary/80 text-white rounded backdrop-blur-md">
+                {article.category}
+              </span>
+              <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-black/60 text-white rounded backdrop-blur-md border border-white/10">
+                {article.brand}
+              </span>
+            </div>
+          )}
+
+          {/* Score Badge */}
+          <div 
+            className={`absolute ${isSmall ? 'top-1 right-1 w-6 h-6 text-[8px]' : 'top-2 right-2 w-8 h-8 text-xs'} flex items-center justify-center rounded-full bg-black/60 backdrop-blur-md border border-white/10 font-bold text-accent score-badge`}
+            data-testid="article-score"
+          >
+            {article.score}
+          </div>
+        </div>
+      )}
+
+      {/* Content Section */}
+      <div className={`${isSmall ? 'p-2' : 'p-4'} flex-grow flex flex-col relative`}>
+        {!showImages && (
+          <div className="absolute top-2 right-2 flex gap-2">
+            {!isSmall && (
+              <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-primary/20 text-primary rounded border border-primary/20">
+                {article.category}
+              </span>
+            )}
+            <div className="w-6 h-6 flex items-center justify-center rounded-full bg-black/40 border border-white/10 font-bold text-[10px] text-accent">
+              {article.score}
             </div>
           </div>
         )}
-        
-        {/* Category Badge */}
-        {!isSmall && (
-          <div className="absolute top-2 left-2 flex gap-2">
-            <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-primary/80 text-white rounded backdrop-blur-md">
-              {article.category}
-            </span>
-            <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-black/60 text-white rounded backdrop-blur-md border border-white/10">
-              {article.brand}
-            </span>
-          </div>
-        )}
-
-        {/* Score Badge */}
-        <div 
-          className={`absolute ${isSmall ? 'top-1 right-1 w-6 h-6 text-[8px]' : 'top-2 right-2 w-8 h-8 text-xs'} flex items-center justify-center rounded-full bg-black/60 backdrop-blur-md border border-white/10 font-bold text-accent score-badge`}
-          data-testid="article-score"
-        >
-          {article.score}
-        </div>
-      </div>
-
-      {/* Content Section */}
-      <div className={`${isSmall ? 'p-2' : 'p-4'} flex-grow flex flex-col`}>
-        <h3 className={`${isSmall ? 'text-[11px] leading-tight mb-1' : isLarge ? 'text-lg mb-2' : 'text-sm leading-tight mb-2'} font-semibold line-clamp-2 group-hover:text-primary transition-colors`}>
+        <h3 className={`${isSmall ? 'text-[11px] leading-tight mb-1' : isLarge ? 'text-lg mb-2' : 'text-sm leading-tight mb-2'} font-semibold line-clamp-2 group-hover:text-primary transition-colors ${!showImages ? 'pr-20' : ''}`}>
           {article.title}
         </h3>
         

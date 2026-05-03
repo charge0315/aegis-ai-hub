@@ -6,7 +6,11 @@ import {
   Search, 
   RefreshCcw,
   Sparkles,
-  X
+  X,
+  Image as ImageIcon,
+  ImageOff,
+  LayoutGrid,
+  List as ListIcon
 } from 'lucide-react';
 import { ArticleCard } from './components/ArticleCard';
 import { AgentMonitor } from './components/AgentMonitor';
@@ -19,6 +23,8 @@ const App: React.FC = () => {
   const { settings, articles, loading, sync, refetch } = useNexusSync();
   const [searchQuery, setSearchQuery] = useState('');
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+  const [feedSize, setFeedSize] = useState<'small' | 'medium' | 'large'>('medium');
+  const [showImages, setShowImages] = useState(true);
 
   // --- RESPONSIVE STATE ---
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
@@ -84,12 +90,12 @@ const App: React.FC = () => {
             setDialogContent(<p className="text-center py-10 animate-pulse text-xs text-slate-500 font-bold uppercase tracking-widest">AI Discovery in Progress...</p>);
             try {
               const proposals = await nexusApi.getProposals();
-              const catProposals = (proposals.sites as any[] || []).filter((s: any) => s.category === category);
+              const catProposals = (proposals.sites as { url: string; name: string; reason: string; category: string }[] || []).filter(s => s.category === category);
               
               setDialogTitle(`Discovery: ${category}`);
               setDialogContent(
                 <div className="space-y-4">
-                  {catProposals.length > 0 ? catProposals.map((s: any) => (
+                  {catProposals.length > 0 ? catProposals.map(s => (
                     <div key={s.url} className="p-4 bg-primary/5 border border-primary/20 rounded-2xl">
                       <p className="font-bold text-sm text-white mb-1">{s.name}</p>
                       <p className="text-[10px] opacity-50 mb-3 truncate font-mono">{s.url}</p>
@@ -111,7 +117,7 @@ const App: React.FC = () => {
                   <button onClick={() => setIsDialogOpen(false)} className="w-full py-2 text-[10px] font-bold uppercase tracking-widest text-slate-500">Close</button>
                 </div>
               );
-            } catch (err) {
+            } catch {
               setDialogTitle("Connection Error");
               setDialogContent(<p className="text-xs text-alert text-center py-4">Failed to consult Discovery Agent.</p>);
             }
@@ -192,7 +198,7 @@ const App: React.FC = () => {
           onTriggerOrchestration={async (req) => { await nexusApi.triggerOrchestration(req); }}
         />
 
-        <aside className={`${isCompact ? 'w-20 px-3' : 'w-64 p-6'} sidebar-glass flex flex-col sticky top-0 h-screen z-30 transition-all duration-300`}>
+        <aside className={`${isCompact ? 'w-20 px-3' : 'w-64 p-6'} sidebar-glass flex flex-col sticky top-0 h-screen z-30 transition-all duration-300 drag`}>
           <div className={`mb-10 mt-6 flex ${isCompact ? 'justify-center' : 'px-2'}`}>
             <div className="w-10 h-10 rounded-xl overflow-hidden shadow-2xl bg-primary/20 flex items-center justify-center">
               <img 
@@ -210,7 +216,7 @@ const App: React.FC = () => {
               />
             </div>
           </div>
-          <nav className="space-y-4 flex-grow">
+          <nav className="space-y-4 flex-grow no-drag">
             <button onClick={() => setCurrentView('feed')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${currentView === 'feed' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-slate-400 hover:bg-white/5'}`}>
               <LayoutDashboard size={18} /> {!isCompact && <span className="text-sm font-bold">Intelligence Feed</span>}
             </button>
@@ -224,26 +230,50 @@ const App: React.FC = () => {
         </aside>
 
         <main className="flex-grow flex flex-col min-h-screen">
-          <header className={`h-16 border-b border-white/5 sidebar-glass flex items-center justify-between ${isCompact ? 'px-4' : 'px-8'} sticky top-0 z-20`}>
-            <div className="flex items-center gap-6 flex-grow">
+          <header className={`h-16 border-b border-white/5 sidebar-glass flex items-center justify-between ${isCompact ? 'px-4' : 'px-8'} sticky top-0 z-20 drag`}>
+            <div className="flex items-center gap-6 flex-grow no-drag">
               <Search size={16} className="text-slate-500" />
               <input type="text" placeholder="Search signals..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="bg-transparent outline-none text-sm w-full text-white placeholder-slate-600" />
             </div>
-            <motion.button 
-              onClick={() => refetch()} 
-              disabled={loading}
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              className="p-2 text-slate-400 hover:text-white transition-colors disabled:opacity-50"
-            >
-              <motion.div
-                animate={loading ? { rotate: 360 } : { rotate: 0 }}
-                transition={loading ? { duration: 1, repeat: Infinity, ease: "linear" } : { duration: 0.5 }}
-                className="flex items-center justify-center"
+            <div className="flex items-center gap-4 no-drag">
+              {currentView === 'feed' && (
+                <div className="flex items-center gap-2 mr-4 border-r border-white/10 pr-6">
+                  <div className="flex bg-black/20 rounded-lg p-1 mr-2">
+                    <button onClick={() => setFeedSize('small')} className={`p-1.5 rounded-md transition-all ${feedSize === 'small' ? 'bg-white/10 text-white' : 'text-slate-500 hover:text-white'}`} title="Small Grid">
+                      <ListIcon size={14} />
+                    </button>
+                    <button onClick={() => setFeedSize('medium')} className={`p-1.5 rounded-md transition-all ${feedSize === 'medium' ? 'bg-white/10 text-white' : 'text-slate-500 hover:text-white'}`} title="Medium Grid">
+                      <LayoutGrid size={14} />
+                    </button>
+                    <button onClick={() => setFeedSize('large')} className={`p-1.5 rounded-md transition-all ${feedSize === 'large' ? 'bg-white/10 text-white' : 'text-slate-500 hover:text-white'}`} title="Large Grid">
+                      <LayoutDashboard size={14} />
+                    </button>
+                  </div>
+                  <button 
+                    onClick={() => setShowImages(!showImages)} 
+                    className={`p-1.5 rounded-lg border transition-all ${showImages ? 'bg-primary/20 border-primary/30 text-primary' : 'bg-white/5 border-white/10 text-slate-400'}`}
+                    title={showImages ? "Hide Images" : "Show Images"}
+                  >
+                    {showImages ? <ImageIcon size={16} /> : <ImageOff size={16} />}
+                  </button>
+                </div>
+              )}
+              <motion.button 
+                onClick={() => refetch()} 
+                disabled={loading}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                className="p-2 text-slate-400 hover:text-white transition-colors disabled:opacity-50"
               >
-                <RefreshCcw size={18} />
-              </motion.div>
-            </motion.button>
+                <motion.div
+                  animate={loading ? { rotate: 360 } : { rotate: 0 }}
+                  transition={loading ? { duration: 1, repeat: Infinity, ease: "linear" } : { duration: 0.5 }}
+                  className="flex items-center justify-center"
+                >
+                  <RefreshCcw size={18} />
+                </motion.div>
+              </motion.button>
+            </div>
           </header>
 
           <div className={`flex-grow ${isCompact ? 'p-4' : 'p-8'}`}>
@@ -293,9 +323,9 @@ const App: React.FC = () => {
                           <div className="h-px w-20 bg-white/5 group-hover:w-32 group-hover:bg-primary/30 transition-all"></div>
                           <span className="text-[10px] font-mono bg-white/5 px-2 py-0.5 rounded border border-white/5 opacity-60">{catArticles.length} SIGNALS</span>
                         </button>
-                        <div className={`grid gap-6 ${isCompact ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4'}`}>
+                        <div className={`grid gap-6 ${feedSize === 'small' ? (isCompact ? 'grid-cols-2 md:grid-cols-3 xl:grid-cols-4' : 'grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6') : feedSize === 'large' ? (isCompact ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2 xl:grid-cols-2') : (isCompact ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4')}`}>
                           {catArticles.map((article, idx) => (
-                            <ArticleCard key={idx} article={article} index={idx} size="medium" />
+                            <ArticleCard key={idx} article={article} index={idx} size={feedSize} showImages={showImages} />
                           ))}
                         </div>
                       </section>
@@ -308,8 +338,8 @@ const App: React.FC = () => {
                 currentSettings={settings} 
                 onSave={sync} 
                 alert={(t, m) => { setDialogTitle(t); setDialogContent(m); setIsDialogOpen(true); return Promise.resolve(); }} 
-                confirm={async (_t, _m) => { return true; }} 
-                prompt={async (_t, _m) => { return ''; }} 
+                confirm={async () => { return true; }} 
+                prompt={async () => { return ''; }} 
               />
             )}
           </div>

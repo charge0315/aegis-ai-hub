@@ -29,6 +29,8 @@
 
 ### 3. 進化した UI アーキテクチャ (Robust UI)
 プロダクション品質の安定性と使い勝手を追求。
+- **Flexible Feed Layout**: ヘッダーから記事カードのサイズ（Small/Medium/Large）と画像表示のON/OFF（テキストモード）を即座に切り替え可能。
+- **Native Window Interaction**: アプリケーション上部のヘッダーやサイドバーを掴んで自由に移動・リサイズできるネイティブウィンドウと同等のドラッグ体験。
 - **Inline Dialog System**: `App.tsx` へのインライン化により、透過環境下での安定性が向上。
 - **Precision Positioning**: 右側メインコンテンツ領域の正確な中心にダイアログを配置。サイドバー幅を考慮した動的オフセットを採用。
 - **Global Control**: `Ctrl+Q` による安全なアプリケーション終了や、`Ctrl+K` のコマンドパレット。
