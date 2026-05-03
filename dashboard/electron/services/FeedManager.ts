@@ -41,21 +41,37 @@ export class FeedManager {
         );
     }
 
-    async reportFailure(category: string, url: string): Promise<string | null> {
+    async reportFailure(category: string, url: string, fetcher?: { validateFeed: (url: string) => Promise<{ ok: boolean }> }): Promise<string | null> {
         const catData = this.config[category];
         if (!catData) return null;
 
         catData.failures[url] = (catData.failures[url] || 0) + 1;
 
+        // 3回以上失敗した場合、差し替えを試みる
         if (catData.failures[url] >= 3 && catData.pool.length > 0) {
-            const nextUrl = catData.pool.shift();
-            if (nextUrl) {
+            console.warn(`[FeedManager] Feed ${url} has failed ${catData.failures[url]} times. Attempting replacement...`);
+            
+            while (catData.pool.length > 0) {
+                const nextUrl = catData.pool.shift();
+                if (!nextUrl) break;
+
+                // 検証器がある場合は、昇格前にチェック
+                if (fetcher) {
+                    const check = await fetcher.validateFeed(nextUrl);
+                    if (!check.ok) {
+                        console.warn(`[FeedManager] Pool feed ${nextUrl} is also invalid. Skipping...`);
+                        continue;
+                    }
+                }
+
                 console.log(`FeedManager: フィードを差し替えます [${category}]: ${url} -> ${nextUrl}`);
                 catData.active = catData.active.map(u => u === url ? nextUrl : u);
                 delete catData.failures[url];
                 await this.saveConfig();
                 return nextUrl;
             }
+            
+            console.error(`[FeedManager] No valid replacement found in pool for [${category}]`);
         }
         return null;
     }
@@ -68,9 +84,9 @@ export class FeedManager {
     }
 
     /**
-     * 新しいフィードをプールに追加します。
+     * 新しいフィードをプールに追加します。追加前に必ずヘルスチェックを行います。
      */
-    async addFeed(category: string, url: string, name: string = ""): Promise<boolean> {
+    async addFeed(category: string, url: string, fetcher: { validateFeed: (url: string) => Promise<{ ok: boolean }> }, name: string = ""): Promise<boolean> {
         if (!this.config[category]) {
             this.config[category] = { active: [], pool: [], failures: {} };
         }
@@ -78,13 +94,21 @@ export class FeedManager {
         const catData = this.config[category];
         // 重複チェック
         const allUrls = [...catData.active, ...catData.pool];
-        if (!allUrls.includes(url)) {
-            catData.pool.push(url);
-            console.log(`[FeedManager] New feed added to pool [${category}]: ${name || url}`);
-            await this.saveConfig();
-            return true;
+        if (allUrls.includes(url)) {
+            return false;
         }
-        return false;
+
+        // ヘルスチェックの強制
+        const check = await fetcher.validateFeed(url);
+        if (!check.ok) {
+            console.warn(`[FeedManager] 追加拒否: フィードが不通または無効です: ${url}`);
+            return false;
+        }
+
+        catData.pool.push(url);
+        console.log(`[FeedManager] New valid feed added to pool [${category}]: ${name || url}`);
+        await this.saveConfig();
+        return true;
     }
 
     /**

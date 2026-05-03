@@ -13,7 +13,14 @@
 - **Unified Design**: ヘッダーとサイドバーの背景を `sidebar-glass` で統一し、シームレスな一体感を提供。
 - **Optimized Visibility**: 記事カードの透過度を 75% に調整し、透過環境下でのテキスト可読性を最大化。
 
-### 2. Standalone Server Architecture
+### 2. Robust RSS & Data Management
+情報の信頼性と鮮度を極限まで追求。
+- **Auto Health Check**: フィード取得失敗時に `RSSFetcher` が自動的にバリデーションを実行。3回連続失敗でプール内の代替ソースへ自動昇格。
+- **Validation Guardrail**: フィードの新規追加や設定同期の際、必ず有効性を検証。無効な URL の登録を未然に防止。
+- **Article Freshness Filter**: 3ヶ月（90日）以上前の古い記事を自動的にフィルタリング。常に最新のトレンドのみを表示。
+- **Environment-Adaptive Paths**: 開発環境ではワークスペースの `data/`、パッケージ後は `%APPDATA%` を自動的に使い分ける適応型パス解決を導入。
+
+### 3. Standalone Server Architecture
 信頼性と柔軟性を向上させた新アーキテクチャ。
 - **Fastify Backend**: MCP (Model Context Protocol) から **Fastify ベースのスタンドアロンサーバー** へ完全移行。
 - **Lightweight**: `@modelcontextprotocol/sdk` への依存を排除し、フットプリントを削減。

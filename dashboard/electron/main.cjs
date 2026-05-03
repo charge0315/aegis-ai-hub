@@ -29,7 +29,13 @@ async function initBackend() {
   const apiKey = await SettingsManager.getApiKey();
   geminiService = new GeminiService(apiKey);
   
-  const feedConfigPath = path.join(app.getPath('userData'), 'data', 'feed_config.json');
+  // 開発環境と製品環境でデータディレクトリを分岐
+  const dataDir = !app.isPackaged 
+    ? path.resolve(app.getAppPath(), '..', 'data')
+    : path.join(app.getPath('userData'), 'data');
+
+  const feedConfigPath = path.join(dataDir, 'feed_config.json');
+  console.log(`[Main] Using FeedManager config: ${feedConfigPath}`);
   feedManager = new FeedManager(feedConfigPath);
   rssFetcher = new RSSFetcher();
   
@@ -116,7 +122,7 @@ function registerIpcHandlers() {
   // 設定同期
   ipcMain.handle('sync-settings', async (event, settings) => {
     try {
-      const result = await SettingsManager.syncSettings(settings);
+      const result = await SettingsManager.syncSettings(settings, rssFetcher);
       // 同期後にFeedManagerの設定もリロード
       const feedConfigPath = path.join(app.getPath('userData'), 'data', 'feed_config.json');
       feedManager = new FeedManager(feedConfigPath);
@@ -135,12 +141,30 @@ function registerIpcHandlers() {
       const scoringService = new ScoringService(interests);
       const activeFeeds = feedManager.getAllActiveFeeds();
       
+      console.log(`[Main] Active feeds count: ${activeFeeds.length}`);
       let allArticles = [];
+      let totalFetchedItems = 0;
+      const stats = {};
+      
+      const threeMonthsAgo = Date.now() - (90 * 24 * 60 * 60 * 1000);
       
       for (const feed of activeFeeds) {
         try {
           const items = await rssFetcher.fetch(feed.url);
+          // 成功したら失敗カウントをリセット
+          feedManager.reportSuccess(feed.category, feed.url);
+          
+          totalFetchedItems += items.length;
+          stats[feed.category] = (stats[feed.category] || 0) + items.length;
+
           for (const item of items) {
+            const articleDate = new Date(item.isoDate || item.pubDate || Date.now()).getTime();
+            
+            // 3ヶ月以上前の記事はスキップ
+            if (articleDate < threeMonthsAgo) {
+              continue;
+            }
+
             const category = scoringService.detectCategory(item.title || '', item.contentSnippet || '', feed.category);
             const score = scoringService.calculateScore(item.title || '', item.contentSnippet || '', category);
             const brand = scoringService.extractBrand(item.title || '');
@@ -159,11 +183,19 @@ function registerIpcHandlers() {
           }
         } catch (err) {
           console.error(`Failed to fetch feed ${feed.url}:`, err);
+          // 失敗を報告。3回連続で失敗し、かつプールに有効な代替がある場合は自動差し替えが発生
+          await feedManager.reportFailure(feed.category, feed.url, rssFetcher);
         }
       }
 
+      console.log(`[Main] Total items fetched: ${totalFetchedItems}`);
+      console.log(`[Main] Stats by category:`, JSON.stringify(stats, null, 2));
+
       // スコア順にソートして上位100件を返す
-      return allArticles.sort((a, b) => b.score - a.score).slice(0, 100);
+      const sorted = allArticles.sort((a, b) => b.score - a.score).slice(0, 100);
+      console.log(`[Main] Returning ${sorted.length} articles after scoring.`);
+      
+      return sorted;
     } catch (error) {
       console.error('Failed to get articles:', error);
       throw error;

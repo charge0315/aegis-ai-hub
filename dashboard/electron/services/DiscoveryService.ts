@@ -94,7 +94,7 @@ export class DiscoveryService {
         // 3. 有効なフィードを feed_config.json に追加
         if (validFeeds.length > 0) {
             for (const feed of validFeeds) {
-                await this.feedManager.addFeed(feed.category, feed.url, feed.name);
+                await this.feedManager.addFeed(feed.category, feed.url, this.rssFetcher, feed.name);
             }
             console.log(`[DiscoveryService] 完了: ${validFeeds.length} 件の新しいフィードを登録しました。`);
         } else {

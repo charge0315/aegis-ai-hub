@@ -10,16 +10,21 @@ class SettingsManager {
   private dataDir: string;
 
   constructor() {
-    // Electron環境では app.getPath('userData') を使用
-    this.dataDir = path.join(app.getPath('userData'), 'data');
+    // 開発環境ではプロジェクトルートの data ディレクトリを、
+    // パッケージ後は app.getPath('userData') を使用するように分岐
+    if (!app.isPackaged) {
+      // 開発時は workspace/data を参照 (dashboard/electron/services から見た相対パス)
+      this.dataDir = path.resolve(app.getAppPath(), '..', 'data');
+    } else {
+      this.dataDir = path.join(app.getPath('userData'), 'data');
+    }
     
     this.interestsPath = path.join(this.dataDir, 'interests.json');
     this.feedConfigPath = path.join(this.dataDir, 'feed_config.json');
     this.credentialsPath = path.join(this.dataDir, 'credentials.json');
     
-    console.log(`[SettingsManager] Using interests path: ${this.interestsPath}`);
-    console.log(`[SettingsManager] Using feed config path: ${this.feedConfigPath}`);
-    console.log(`[SettingsManager] Using credentials path: ${this.credentialsPath}`);
+    console.log(`[SettingsManager] Mode: ${app.isPackaged ? 'Production' : 'Development'}`);
+    console.log(`[SettingsManager] Data Directory: ${this.dataDir}`);
   }
 
   /**
@@ -172,10 +177,11 @@ class SettingsManager {
 
   /**
    * Save settings with validation, backup, and atomic write.
+   * フィードの更新がある場合は、必ずヘルスチェックを行います。
    */
-  async syncSettings({ interests, feedConfig, windowState, lastUpdated }: SyncSettings): Promise<{ success: boolean; timestamp: string; lastUpdated: number }> {
+  async syncSettings({ interests, feedConfig, windowState, lastUpdated }: SyncSettings, fetcher?: { validateFeed: (url: string) => Promise<{ ok: boolean; status: string | number }> }): Promise<{ success: boolean; timestamp: string; lastUpdated: number }> {
     console.log('[SettingsManager] syncSettings started');
-    // 1. Validate
+    // 1. Validate Schema
     const validatedInterests = InterestsSchema.parse(interests);
     const validatedFeedConfig = FeedConfigSchema.parse(feedConfig);
     const validatedWindowState = windowState ? WindowStateSchema.parse(windowState) : undefined;
@@ -189,10 +195,37 @@ class SettingsManager {
       throw new Error('CONFLICT: Settings on device are newer.');
     }
 
+    // 3. New Feed Health Check
+    if (fetcher) {
+      const currentFeedConfig = await this.getFeedConfig();
+      const currentUrls = new Set(Object.values(currentFeedConfig).flatMap(c => [...c.active, ...c.pool]));
+      const newUrls: { url: string; category: string }[] = [];
+
+      for (const [category, data] of Object.entries(validatedFeedConfig)) {
+        for (const url of [...data.active, ...data.pool]) {
+          if (!currentUrls.has(url)) {
+            newUrls.push({ url, category });
+          }
+        }
+      }
+
+      if (newUrls.length > 0) {
+        console.log(`[SettingsManager] Validating ${newUrls.length} new feeds...`);
+        for (const item of newUrls) {
+          const check = await fetcher.validateFeed(item.url);
+          if (!check.ok) {
+            console.error(`[SettingsManager] Validation failed for new feed: ${item.url} (Status: ${check.status})`);
+            throw new Error(`VALIDATION_FAILED: ${item.url} is invalid (Status: ${check.status})`);
+          }
+        }
+        console.log('[SettingsManager] All new feeds are valid.');
+      }
+    }
+
     const now = Date.now();
     validatedInterests.lastUpdated = now;
 
-    // 3. Save
+    // 4. Save
     await this._safeWrite(this.interestsPath, validatedInterests);
     await this._safeWrite(this.feedConfigPath, validatedFeedConfig);
 
