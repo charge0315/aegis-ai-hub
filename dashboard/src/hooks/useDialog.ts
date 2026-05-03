@@ -15,7 +15,7 @@ interface DialogState {
 export function useDialog() {
   const [dialog, setDialog] = useState<DialogState>({
     isOpen: false,
-    type: 'info',
+    type: 'alert',
     title: '',
     message: '',
     onConfirm: () => {},
@@ -29,7 +29,7 @@ export function useDialog() {
     setDialog(prev => ({ ...prev, isOpen: false }));
   }, []);
 
-  const alert = useCallback((title: string, message: React.ReactNode, type: DialogType = 'info') => {
+  const alert = useCallback((title: string, message: React.ReactNode, type: DialogType = 'alert') => {
     return new Promise<void>((resolve) => {
       showDialog({
         title,
@@ -66,7 +66,7 @@ export function useDialog() {
       showDialog({
         title,
         message,
-        type,
+        type: 'prompt',
         defaultValue,
         placeholder,
         onConfirm: (value) => {

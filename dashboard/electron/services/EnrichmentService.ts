@@ -14,11 +14,18 @@ export class EnrichmentService {
     constructor(geminiService?: GeminiService) {
         this.geminiService = geminiService || null;
         this.placeholders = {
-            '音楽・ギター・DTM': "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400",
-            'AI・ソフトウェア': "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=400",
-            'PC・ハードウェア': "https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?w=400",
-            'ロードバイク': "https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=400",
-            'ゲーム': "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=400"
+            'ゲーム・配信': "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=800",
+            'AI・ソフトウェア': "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800",
+            'PCパーツ': "https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?w=800",
+            'オーディオ・音楽制作': "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=800",
+            'PC・デバイス': "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=800",
+            '周辺機器・PCアクセサリ': "https://images.unsplash.com/photo-1527443224154-c4a3942d3a06?w=800",
+            'モバイル・タブレット': "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=800",
+            'モビリティ・自転車・EV': "https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=800",
+            'セール・EC情報': "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=800",
+            'カメラ・クリエイティブ': "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800",
+            'ライフスタイル': "https://images.unsplash.com/photo-1513694203232-719a280e022f?w=800",
+            'ロードバイク・MTB・サイクリング': "https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=800"
         };
     }
 

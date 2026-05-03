@@ -15157,13 +15157,16 @@ var init_SettingsManager = __esm({
       credentialsPath;
       dataDir;
       constructor() {
-        this.dataDir = import_path.default.join(import_electron.app.getPath("userData"), "data");
+        if (!import_electron.app.isPackaged) {
+          this.dataDir = import_path.default.resolve(import_electron.app.getAppPath(), "..", "data");
+        } else {
+          this.dataDir = import_path.default.join(import_electron.app.getPath("userData"), "data");
+        }
         this.interestsPath = import_path.default.join(this.dataDir, "interests.json");
         this.feedConfigPath = import_path.default.join(this.dataDir, "feed_config.json");
         this.credentialsPath = import_path.default.join(this.dataDir, "credentials.json");
-        console.log(`[SettingsManager] Using interests path: ${this.interestsPath}`);
-        console.log(`[SettingsManager] Using feed config path: ${this.feedConfigPath}`);
-        console.log(`[SettingsManager] Using credentials path: ${this.credentialsPath}`);
+        console.log(`[SettingsManager] Mode: ${import_electron.app.isPackaged ? "Production" : "Development"}`);
+        console.log(`[SettingsManager] Data Directory: ${this.dataDir}`);
       }
       /**
        * 初期化：データディレクトリの作成
@@ -15227,7 +15230,7 @@ var init_SettingsManager = __esm({
           };
           const defaultFeedConfig = {
             "AI\u30FB\u30BD\u30D5\u30C8\u30A6\u30A7\u30A2": {
-              "active": ["https://japan.googleblog.com/atom.xml", "https://zenn.dev/topics/ai/feed", "https://atmarkit.itmedia.co.jp/rss/rssit.xml"],
+              "active": ["https://japan.googleblog.com/atom.xml", "https://zenn.dev/topics/ai/feed", "https://rss.itmedia.co.jp/rss/2.0/ait.xml"],
               "pool": [],
               "failures": {}
             },
@@ -15305,8 +15308,9 @@ var init_SettingsManager = __esm({
       }
       /**
        * Save settings with validation, backup, and atomic write.
+       * フィードの更新がある場合は、必ずヘルスチェックを行います。
        */
-      async syncSettings({ interests, feedConfig, windowState, lastUpdated }) {
+      async syncSettings({ interests, feedConfig, windowState, lastUpdated }, fetcher) {
         console.log("[SettingsManager] syncSettings started");
         const validatedInterests = InterestsSchema.parse(interests);
         const validatedFeedConfig = FeedConfigSchema.parse(feedConfig);
@@ -15316,6 +15320,29 @@ var init_SettingsManager = __esm({
         if (lastUpdated && lastUpdated < serverLastUpdated) {
           console.warn(`[SettingsManager] Conflict detected: client=${lastUpdated}, server=${serverLastUpdated}`);
           throw new Error("CONFLICT: Settings on device are newer.");
+        }
+        if (fetcher) {
+          const currentFeedConfig = await this.getFeedConfig();
+          const currentUrls = new Set(Object.values(currentFeedConfig).flatMap((c) => [...c.active, ...c.pool]));
+          const newUrls = [];
+          for (const [category, data2] of Object.entries(validatedFeedConfig)) {
+            for (const url3 of [...data2.active, ...data2.pool]) {
+              if (!currentUrls.has(url3)) {
+                newUrls.push({ url: url3, category });
+              }
+            }
+          }
+          if (newUrls.length > 0) {
+            console.log(`[SettingsManager] Validating ${newUrls.length} new feeds...`);
+            for (const item of newUrls) {
+              const check2 = await fetcher.validateFeed(item.url);
+              if (!check2.ok) {
+                console.error(`[SettingsManager] Validation failed for new feed: ${item.url} (Status: ${check2.status})`);
+                throw new Error(`VALIDATION_FAILED: ${item.url} is invalid (Status: ${check2.status})`);
+              }
+            }
+            console.log("[SettingsManager] All new feeds are valid.");
+          }
         }
         const now = Date.now();
         validatedInterests.lastUpdated = now;
@@ -16410,40 +16437,12 @@ var init_GeminiService = __esm({
         }
       }
       /**
-       * Tool Calling (Function Calling) を利用した生成
-       * @param {string} prompt 
-       * @param {unknown[]} tools 
-       * @param {string} modelName 
-       */
-      async generateWithTools(prompt, tools, modelName = "gemini-3.1-pro-preview") {
-        if (!this.genAI) throw new Error("Gemini API\u30AD\u30FC\u304C\u8A2D\u5B9A\u3055\u308C\u3066\u3044\u307E\u305B\u3093\u3002");
-        const model = this.genAI.getGenerativeModel({
-          model: modelName,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          tools: [{ functionDeclarations: tools }]
-        });
-        const chat = model.startChat();
-        const result = await chat.sendMessage(prompt);
-        const response = await result.response;
-        const parts = response.candidates?.[0]?.content?.parts || [];
-        const toolCalls = parts.filter((p) => p.functionCall).map((tc) => ({
-          name: tc.functionCall.name,
-          args: tc.functionCall.args
-        }));
-        return {
-          text: response.text(),
-          toolCalls
-        };
-      }
-      /**
        * チャットセッションを開始
        */
-      createChatSession(modelName = "gemini-3.1-pro-preview", history = [], tools = []) {
+      createChatSession(modelName = "gemini-3.1-pro-preview", history = []) {
         if (!this.genAI) throw new Error("Gemini API\u30AD\u30FC\u304C\u8A2D\u5B9A\u3055\u308C\u3066\u3044\u307E\u305B\u3093\u3002");
         const model = this.genAI.getGenerativeModel({
-          model: modelName,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          tools: tools.length > 0 ? [{ functionDeclarations: tools }] : void 0
+          model: modelName
         });
         return model.startChat({
           history
@@ -16491,10 +16490,10 @@ var init_GeminiService = __esm({
               items: {
                 type: SchemaType.OBJECT,
                 properties: {
-                  name: { type: SchemaType.STRING },
-                  url: { type: SchemaType.STRING },
-                  category: { type: SchemaType.STRING },
-                  reason: { type: SchemaType.STRING }
+                  name: { type: SchemaType.STRING, description: "\u30B5\u30A4\u30C8\u540D" },
+                  url: { type: SchemaType.STRING, description: "RSS/Atom\u30D5\u30A3\u30FC\u30C9\u306E\u76F4\u63A5\u306EURL (\u4F8B: https://example.com/feed)" },
+                  category: { type: SchemaType.STRING, description: "\u5BFE\u5FDC\u3059\u308B\u30AB\u30C6\u30B4\u30EA\u540D" },
+                  reason: { type: SchemaType.STRING, description: "\u63A8\u5968\u7406\u7531" }
                 },
                 required: ["name", "url", "category", "reason"]
               }
@@ -16526,7 +16525,17 @@ var init_GeminiService = __esm({
           },
           required: ["sites", "brands", "keywords"]
         };
-        const prompt = `\u73FE\u5728\u306E\u8208\u5473\u30EA\u30B9\u30C8\u306B\u57FA\u3065\u304D\u3001\u9032\u5316\u63D0\u6848\uFF08\u30B5\u30A4\u30C8\u3001\u30D6\u30E9\u30F3\u30C9\u3001\u30AD\u30FC\u30EF\u30FC\u30C9\uFF09\u3092\u751F\u6210\u3057\u3066\u304F\u3060\u3055\u3044: ${JSON.stringify(interests)}`;
+        const prompt = `
+\u3042\u306A\u305F\u306F\u30CB\u30E5\u30FC\u30B9\u30BD\u30FC\u30B9\u306E\u5C02\u9580\u5BB6\u3067\u3059\u3002\u73FE\u5728\u306E\u8208\u5473\u30EA\u30B9\u30C8\u306B\u57FA\u3065\u304D\u3001\u9032\u5316\u63D0\u6848\uFF08\u30D5\u30A3\u30FC\u30C9\u3001\u30D6\u30E9\u30F3\u30C9\u3001\u30AD\u30FC\u30EF\u30FC\u30C9\uFF09\u3092\u751F\u6210\u3057\u3066\u304F\u3060\u3055\u3044\u3002
+
+**\u91CD\u8981\u30EB\u30FC\u30EB:**
+1. sites\u306EURL\u306F\u3001\u5FC5\u305A\u300CRSS\u30D5\u30A3\u30FC\u30C9\u300D\u307E\u305F\u306F\u300CAtom\u30D5\u30A3\u30FC\u30C9\u300D\u306E\u76F4\u63A5\u306EURL\u3092\u6307\u5B9A\u3057\u3066\u304F\u3060\u3055\u3044\u3002\u30B5\u30A4\u30C8\u306E\u30DB\u30FC\u30E0\u30DA\u30FC\u30B8URL\u306F\u7D76\u5BFE\u306B\u542B\u3081\u306A\u3044\u3067\u304F\u3060\u3055\u3044\u3002
+2. \u65E5\u672C\u8A9E\u306E\u4FE1\u983C\u3067\u304D\u308B\u30CB\u30E5\u30FC\u30B9\u30B5\u30A4\u30C8\u3092\u6700\u512A\u5148\u3057\u3066\u304F\u3060\u3055\u3044\u3002
+3. \u30D5\u30A3\u30FC\u30C9URL\u306E\u4F8B: \`https://www.famitsu.com/rss/all.xml\`, \`https://snrec.jp/feed\`, \`https://japan.googleblog.com/atom.xml\`
+4. \u30AB\u30C6\u30B4\u30EA\u540D\u306F\u3001\u5165\u529B\u3055\u308C\u305F interests \u306E\u30AD\u30FC\u540D\u3068\u6B63\u78BA\u306B\u4E00\u81F4\u3055\u305B\u3066\u304F\u3060\u3055\u3044\u3002
+
+\u73FE\u5728\u306E\u8208\u5473\u30EA\u30B9\u30C8: ${JSON.stringify(interests)}
+`;
         return await this.generateStructured(prompt, schema);
       }
       async getRestructureProposal(interests) {
@@ -16571,7 +16580,7 @@ var init_GeminiService = __esm({
                 type: SchemaType.OBJECT,
                 properties: {
                   name: { type: SchemaType.STRING },
-                  url: { type: SchemaType.STRING },
+                  url: { type: SchemaType.STRING, description: "\u6709\u52B9\u306ARSS/Atom\u30D5\u30A3\u30FC\u30C9\u306E\u76F4\u63A5URL (\u4F8B: https://example.com/rss)" },
                   category: { type: SchemaType.STRING }
                 },
                 required: ["name", "url", "category"]
@@ -16580,7 +16589,12 @@ var init_GeminiService = __esm({
           },
           required: ["sites"]
         };
-        const prompt = `\u30E6\u30FC\u30B6\u30FC\u306E\u8208\u5473\u306B\u5408\u81F4\u3059\u308B\u65B0\u3057\u3044RSS\u30D5\u30A3\u30FC\u30C9\u306EURL\u3092\u63D0\u6848\u3057\u3066\u304F\u3060\u3055\u3044: ${JSON.stringify(interests)}`;
+        const prompt = `
+\u4EE5\u4E0B\u306E\u8208\u5473\u8A2D\u5B9A\u306B\u5408\u81F4\u3059\u308B\u3001\u65B0\u3057\u3044\u30CB\u30E5\u30FC\u30B9\u30BD\u30FC\u30B9\u3092\u63D0\u6848\u3057\u3066\u304F\u3060\u3055\u3044\u3002
+URL\u306F\u5FC5\u305A\u300CRSS\u30D5\u30A3\u30FC\u30C9\u300D\u307E\u305F\u306F\u300CAtom\u30D5\u30A3\u30FC\u30C9\u300D\u306E\u76F4\u63A5\u306EURL\u3092\u6307\u5B9A\u3057\u3001\u30DB\u30FC\u30E0\u30DA\u30FC\u30B8\u306EURL\u306F\u7D76\u5BFE\u306B\u542B\u3081\u306A\u3044\u3067\u304F\u3060\u3055\u3044\u3002
+\u65E5\u672C\u8A9E\u306E\u30B5\u30A4\u30C8\u3092\u512A\u5148\u3057\u3066\u304F\u3060\u3055\u3044\u3002
+\u8208\u5473\u8A2D\u5B9A: ${JSON.stringify(interests.categories)}
+`;
         const result = await this.generateStructured(prompt, schema);
         return result.sites;
       }
@@ -16744,19 +16758,29 @@ var init_FeedManager = __esm({
           ([category, data2]) => data2.active.map((url3) => ({ category, url: url3 }))
         );
       }
-      async reportFailure(category, url3) {
+      async reportFailure(category, url3, fetcher) {
         const catData = this.config[category];
         if (!catData) return null;
         catData.failures[url3] = (catData.failures[url3] || 0) + 1;
         if (catData.failures[url3] >= 3 && catData.pool.length > 0) {
-          const nextUrl = catData.pool.shift();
-          if (nextUrl) {
+          console.warn(`[FeedManager] Feed ${url3} has failed ${catData.failures[url3]} times. Attempting replacement...`);
+          while (catData.pool.length > 0) {
+            const nextUrl = catData.pool.shift();
+            if (!nextUrl) break;
+            if (fetcher) {
+              const check2 = await fetcher.validateFeed(nextUrl);
+              if (!check2.ok) {
+                console.warn(`[FeedManager] Pool feed ${nextUrl} is also invalid. Skipping...`);
+                continue;
+              }
+            }
             console.log(`FeedManager: \u30D5\u30A3\u30FC\u30C9\u3092\u5DEE\u3057\u66FF\u3048\u307E\u3059 [${category}]: ${url3} -> ${nextUrl}`);
             catData.active = catData.active.map((u) => u === url3 ? nextUrl : u);
             delete catData.failures[url3];
             await this.saveConfig();
             return nextUrl;
           }
+          console.error(`[FeedManager] No valid replacement found in pool for [${category}]`);
         }
         return null;
       }
@@ -16767,21 +16791,26 @@ var init_FeedManager = __esm({
         }
       }
       /**
-       * 新しいフィードをプールに追加します。
+       * 新しいフィードをプールに追加します。追加前に必ずヘルスチェックを行います。
        */
-      async addFeed(category, url3, name = "") {
+      async addFeed(category, url3, fetcher, name = "") {
         if (!this.config[category]) {
           this.config[category] = { active: [], pool: [], failures: {} };
         }
         const catData = this.config[category];
         const allUrls = [...catData.active, ...catData.pool];
-        if (!allUrls.includes(url3)) {
-          catData.pool.push(url3);
-          console.log(`[FeedManager] New feed added to pool [${category}]: ${name || url3}`);
-          await this.saveConfig();
-          return true;
+        if (allUrls.includes(url3)) {
+          return false;
         }
-        return false;
+        const check2 = await fetcher.validateFeed(url3);
+        if (!check2.ok) {
+          console.warn(`[FeedManager] \u8FFD\u52A0\u62D2\u5426: \u30D5\u30A3\u30FC\u30C9\u304C\u4E0D\u901A\u307E\u305F\u306F\u7121\u52B9\u3067\u3059: ${url3}`);
+          return false;
+        }
+        catData.pool.push(url3);
+        console.log(`[FeedManager] New valid feed added to pool [${category}]: ${name || url3}`);
+        await this.saveConfig();
+        return true;
       }
       /**
        * 設定ファイルを整理し、無効なURLや重複を削除します。
@@ -16891,7 +16920,7 @@ var init_DiscoveryService = __esm({
         }
         if (validFeeds.length > 0) {
           for (const feed of validFeeds) {
-            await this.feedManager.addFeed(feed.category, feed.url, feed.name);
+            await this.feedManager.addFeed(feed.category, feed.url, this.rssFetcher, feed.name);
           }
           console.log(`[DiscoveryService] \u5B8C\u4E86: ${validFeeds.length} \u4EF6\u306E\u65B0\u3057\u3044\u30D5\u30A3\u30FC\u30C9\u3092\u767B\u9332\u3057\u307E\u3057\u305F\u3002`);
         } else {
@@ -77728,11 +77757,18 @@ var init_EnrichmentService = __esm({
       constructor(geminiService2) {
         this.geminiService = geminiService2 || null;
         this.placeholders = {
-          "\u97F3\u697D\u30FB\u30AE\u30BF\u30FC\u30FBDTM": "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400",
-          "AI\u30FB\u30BD\u30D5\u30C8\u30A6\u30A7\u30A2": "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=400",
-          "PC\u30FB\u30CF\u30FC\u30C9\u30A6\u30A7\u30A2": "https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?w=400",
-          "\u30ED\u30FC\u30C9\u30D0\u30A4\u30AF": "https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=400",
-          "\u30B2\u30FC\u30E0": "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=400"
+          "\u30B2\u30FC\u30E0\u30FB\u914D\u4FE1": "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=800",
+          "AI\u30FB\u30BD\u30D5\u30C8\u30A6\u30A7\u30A2": "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800",
+          "PC\u30D1\u30FC\u30C4": "https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?w=800",
+          "\u30AA\u30FC\u30C7\u30A3\u30AA\u30FB\u97F3\u697D\u5236\u4F5C": "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=800",
+          "PC\u30FB\u30C7\u30D0\u30A4\u30B9": "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=800",
+          "\u5468\u8FBA\u6A5F\u5668\u30FBPC\u30A2\u30AF\u30BB\u30B5\u30EA": "https://images.unsplash.com/photo-1527443224154-c4a3942d3a06?w=800",
+          "\u30E2\u30D0\u30A4\u30EB\u30FB\u30BF\u30D6\u30EC\u30C3\u30C8": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=800",
+          "\u30E2\u30D3\u30EA\u30C6\u30A3\u30FB\u81EA\u8EE2\u8ECA\u30FBEV": "https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=800",
+          "\u30BB\u30FC\u30EB\u30FBEC\u60C5\u5831": "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=800",
+          "\u30AB\u30E1\u30E9\u30FB\u30AF\u30EA\u30A8\u30A4\u30C6\u30A3\u30D6": "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800",
+          "\u30E9\u30A4\u30D5\u30B9\u30BF\u30A4\u30EB": "https://images.unsplash.com/photo-1513694203232-719a280e022f?w=800",
+          "\u30ED\u30FC\u30C9\u30D0\u30A4\u30AF\u30FBMTB\u30FB\u30B5\u30A4\u30AF\u30EA\u30F3\u30B0": "https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=800"
         };
       }
       /**
@@ -84824,7 +84860,30 @@ var init_RSSFetcher = __esm({
             const errorMessage = e instanceof Error ? e.message : String(e);
             const error51 = new Error(`Fetch failed: ${url3} (${errorMessage})`);
             error51.cause = e;
+            if (errorMessage.includes("Status code")) {
+              const match = errorMessage.match(/Status code (\d+)/);
+              if (match) error51.statusCode = parseInt(match[1], 10);
+            }
             throw error51;
+          }
+        });
+      }
+      /**
+       * フィードの有効性を個別に検証します（ヘルスチェック用）。
+       */
+      async validateFeed(url3) {
+        return this.limit(async () => {
+          try {
+            const feed = await this.parser.parseURL(url3);
+            return { ok: true, status: 200 };
+          } catch (e) {
+            const errorMessage = e instanceof Error ? e.message : String(e);
+            let status = "ERROR";
+            if (errorMessage.includes("Status code")) {
+              const match = errorMessage.match(/Status code (\d+)/);
+              if (match) status = parseInt(match[1], 10);
+            }
+            return { ok: false, status, error: errorMessage };
           }
         });
       }
@@ -84939,7 +84998,7 @@ var init_ScoringService = __esm({
 });
 
 // electron/main.cjs
-var { app: app2, BrowserWindow, ipcMain, globalShortcut } = require("electron");
+var { app: app2, BrowserWindow, ipcMain, globalShortcut, Tray, Menu } = require("electron");
 var path2 = require("path");
 var fs3 = require("fs");
 var SettingsManager2 = (init_SettingsManager(), __toCommonJS(SettingsManager_exports)).default;
@@ -84950,6 +85009,7 @@ var { EnrichmentService: EnrichmentService2 } = (init_EnrichmentService(), __toC
 var { RSSFetcher: RSSFetcher2 } = (init_RSSFetcher(), __toCommonJS(RSSFetcher_exports));
 var { ScoringService: ScoringService2 } = (init_ScoringService(), __toCommonJS(ScoringService_exports));
 var mainWindow;
+var tray;
 var geminiService;
 var feedManager;
 var rssFetcher;
@@ -84960,7 +85020,9 @@ async function initBackend() {
   await SettingsManager2.init();
   const apiKey = await SettingsManager2.getApiKey();
   geminiService = new GeminiService2(apiKey);
-  const feedConfigPath = path2.join(app2.getPath("userData"), "data", "feed_config.json");
+  const dataDir = !app2.isPackaged ? path2.resolve(app2.getAppPath(), "..", "data") : path2.join(app2.getPath("userData"), "data");
+  const feedConfigPath = path2.join(dataDir, "feed_config.json");
+  console.log(`[Main] Using FeedManager config: ${feedConfigPath}`);
   feedManager = new FeedManager2(feedConfigPath);
   rssFetcher = new RSSFetcher2();
   discoveryService = new DiscoveryService2(geminiService, rssFetcher, feedManager);
@@ -84969,21 +85031,22 @@ async function initBackend() {
 }
 function createWindow() {
   const isDev = process.env.NODE_ENV === "development" || !app2.isPackaged;
+  const startMinimized = process.argv.includes("--hidden");
   mainWindow = new BrowserWindow({
     width: 1440,
     height: 900,
     minWidth: 800,
     minHeight: 600,
-    // スナップ機能を有効にするため、透明度はfalseに戻す
+    show: false,
+    // FancyZones対応のため不透明(false)に設定
     transparent: false,
     frame: false,
     hasShadow: true,
     resizable: true,
     thickFrame: true,
     titleBarStyle: "hidden",
-    // Windows 11標準の高級すりガラス効果 (Mica) を適用
-    backgroundMaterial: "mica",
-    backgroundColor: "#101112",
+    // Windows 11 の透過素材を Acrylic に設定
+    backgroundMaterial: "acrylic",
     icon: path2.join(__dirname, "../public/app-icon.png"),
     webPreferences: {
       nodeIntegration: false,
@@ -84991,21 +85054,46 @@ function createWindow() {
       preload: path2.join(__dirname, "preload.cjs")
     }
   });
+  mainWindow.once("ready-to-show", () => {
+    mainWindow.show();
+  });
   if (isDev) {
     mainWindow.loadURL("http://localhost:5173");
   } else {
     mainWindow.loadFile(path2.join(__dirname, "../dist/index.html"));
   }
+  mainWindow.on("close", (event) => {
+    if (!app2.isQuitting) {
+      event.preventDefault();
+      mainWindow.hide();
+    }
+    return false;
+  });
+}
+function createTray() {
+  const iconPath = path2.join(__dirname, "../public/app-icon.png");
+  tray = new Tray(iconPath);
+  const contextMenu = Menu.buildFromTemplate([
+    { label: "Aegis Nexus \u3092\u8868\u793A", click: () => mainWindow.show() },
+    { type: "separator" },
+    { label: "\u7D42\u4E86", click: () => {
+      app2.isQuitting = true;
+      app2.quit();
+    } }
+  ]);
+  tray.setToolTip("Aegis AI Hub");
+  tray.setContextMenu(contextMenu);
+  tray.on("double-click", () => mainWindow.show());
 }
 function registerIpcHandlers() {
   ipcMain.handle("get-settings", async () => {
     const interests = await SettingsManager2.getInterests();
     const feedConfig = await SettingsManager2.getFeedConfig();
-    return { interests, feedConfig };
+    return { interests, feed_urls: feedConfig };
   });
   ipcMain.handle("sync-settings", async (event, settings) => {
     try {
-      const result = await SettingsManager2.syncSettings(settings);
+      const result = await SettingsManager2.syncSettings(settings, rssFetcher);
       const feedConfigPath = path2.join(app2.getPath("userData"), "data", "feed_config.json");
       feedManager = new FeedManager2(feedConfigPath);
       return result;
@@ -85020,11 +85108,22 @@ function registerIpcHandlers() {
       const interests = await SettingsManager2.getInterests();
       const scoringService = new ScoringService2(interests);
       const activeFeeds = feedManager.getAllActiveFeeds();
+      console.log(`[Main] Active feeds count: ${activeFeeds.length}`);
       let allArticles = [];
+      let totalFetchedItems = 0;
+      const stats = {};
+      const threeMonthsAgo = Date.now() - 90 * 24 * 60 * 60 * 1e3;
       for (const feed of activeFeeds) {
         try {
           const items = await rssFetcher.fetch(feed.url);
+          feedManager.reportSuccess(feed.category, feed.url);
+          totalFetchedItems += items.length;
+          stats[feed.category] = (stats[feed.category] || 0) + items.length;
           for (const item of items) {
+            const articleDate = new Date(item.isoDate || item.pubDate || Date.now()).getTime();
+            if (articleDate < threeMonthsAgo) {
+              continue;
+            }
             const category = scoringService.detectCategory(item.title || "", item.contentSnippet || "", feed.category);
             const score = scoringService.calculateScore(item.title || "", item.contentSnippet || "", category);
             const brand = scoringService.extractBrand(item.title || "");
@@ -85042,9 +85141,14 @@ function registerIpcHandlers() {
           }
         } catch (err) {
           console.error(`Failed to fetch feed ${feed.url}:`, err);
+          await feedManager.reportFailure(feed.category, feed.url, rssFetcher);
         }
       }
-      return allArticles.sort((a, b) => b.score - a.score).slice(0, 100);
+      console.log(`[Main] Total items fetched: ${totalFetchedItems}`);
+      console.log(`[Main] Stats by category:`, JSON.stringify(stats, null, 2));
+      const sorted = allArticles.sort((a, b) => b.score - a.score).slice(0, 100);
+      console.log(`[Main] Returning ${sorted.length} articles after scoring.`);
+      return sorted;
     } catch (error51) {
       console.error("Failed to get articles:", error51);
       throw error51;
@@ -85067,6 +85171,16 @@ function registerIpcHandlers() {
       return await geminiService.suggestCategoryDetails(categoryName);
     } catch (error51) {
       console.error("Failed to suggest category:", error51);
+      throw error51;
+    }
+  });
+  ipcMain.handle("get-proposals", async () => {
+    console.log("[Main] Getting evolution proposals...");
+    try {
+      const interests = await SettingsManager2.getInterests();
+      return await discoveryService.getProposals(interests);
+    } catch (error51) {
+      console.error("Failed to get proposals:", error51);
       throw error51;
     }
   });
@@ -85103,12 +85217,13 @@ app2.whenReady().then(async () => {
   await initBackend();
   registerIpcHandlers();
   createWindow();
-  if (app2.isPackaged) {
-    app2.setLoginItemSettings({
-      openAtLogin: true,
-      path: app2.getPath("exe")
-    });
-  }
+  createTray();
+  const isDev = process.env.NODE_ENV === "development" || !app2.isPackaged;
+  app2.setLoginItemSettings({
+    openAtLogin: true,
+    path: isDev ? process.execPath : app2.getPath("exe"),
+    args: isDev ? [path2.resolve(process.argv[1]), "--hidden"] : ["--hidden"]
+  });
   globalShortcut.register("CommandOrControl+Q", () => {
     app2.quit();
   });

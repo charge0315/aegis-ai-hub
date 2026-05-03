@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { motion } from 'framer-motion';
 import { 
   LayoutDashboard, 
   Settings2, 
@@ -182,7 +183,14 @@ const App: React.FC = () => {
       )}
 
       <div className="window-base text-slate-200">
-        <CommandPalette isOpen={isCommandPaletteOpen} onClose={() => setIsCommandPaletteOpen(false)} settings={settings} onNavigate={(v) => setCurrentView(v)} onSync={() => settings && sync(settings)} />
+        <CommandPalette 
+          isOpen={isCommandPaletteOpen} 
+          onClose={() => setIsCommandPaletteOpen(false)} 
+          settings={settings} 
+          onNavigate={(v) => setCurrentView(v)} 
+          onSync={async () => { if (settings) await sync(settings); }} 
+          onTriggerOrchestration={async (req) => { await nexusApi.triggerOrchestration(req); }}
+        />
 
         <aside className={`${isCompact ? 'w-20 px-3' : 'w-64 p-6'} sidebar-glass flex flex-col sticky top-0 h-screen z-30 transition-all duration-300`}>
           <div className={`mb-10 mt-6 flex ${isCompact ? 'justify-center' : 'px-2'}`}>
@@ -207,7 +215,21 @@ const App: React.FC = () => {
               <Search size={16} className="text-slate-500" />
               <input type="text" placeholder="Search signals..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="bg-transparent outline-none text-sm w-full text-white placeholder-slate-600" />
             </div>
-            <button onClick={() => refetch()} className="p-2 text-slate-400 hover:text-white transition-colors"><RefreshCcw size={18} /></button>
+            <motion.button 
+              onClick={() => refetch()} 
+              disabled={loading}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              className="p-2 text-slate-400 hover:text-white transition-colors disabled:opacity-50"
+            >
+              <motion.div
+                animate={loading ? { rotate: 360 } : { rotate: 0 }}
+                transition={loading ? { duration: 1, repeat: Infinity, ease: "linear" } : { duration: 0.5 }}
+                className="flex items-center justify-center"
+              >
+                <RefreshCcw size={18} />
+              </motion.div>
+            </motion.button>
           </header>
 
           <div className={`flex-grow ${isCompact ? 'p-4' : 'p-8'}`}>
@@ -239,7 +261,13 @@ const App: React.FC = () => {
                 </div>
               </div>
             ) : (
-              settings && <UnifiedEditor currentSettings={settings} onSave={sync} alert={(t, m) => { setDialogTitle(t); setDialogContent(m); setIsDialogOpen(true); return Promise.resolve(); }} confirm={async (t, m) => { return true; }} prompt={async (t, m) => { return ''; }} />
+              settings && <UnifiedEditor 
+                currentSettings={settings} 
+                onSave={sync} 
+                alert={(t, m) => { setDialogTitle(t); setDialogContent(m); setIsDialogOpen(true); return Promise.resolve(); }} 
+                confirm={async (_t, _m) => { return true; }} 
+                prompt={async (_t, _m) => { return ''; }} 
+              />
             )}
           </div>
         </main>

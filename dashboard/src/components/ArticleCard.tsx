@@ -12,9 +12,29 @@ interface ArticleCardProps {
 
 export const ArticleCard: React.FC<ArticleCardProps> = ({ article, index = 0, size = 'medium' }) => {
   const [showReason, setShowReason] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   const isSmall = size === 'small';
   const isLarge = size === 'large';
+
+  // カテゴリに応じたグラデーション生成（フォールバック用）
+  const getFallbackGradient = () => {
+    const gradients: Record<string, string> = {
+      'ゲーム・配信': 'from-indigo-600 to-purple-600',
+      'AI・ソフトウェア': 'from-blue-600 to-cyan-600',
+      'PCパーツ': 'from-orange-600 to-red-600',
+      'オーディオ・音楽制作': 'from-pink-600 to-rose-600',
+      'PC・デバイス': 'from-slate-600 to-slate-800',
+      '周辺機器・PCアクセサリ': 'from-emerald-600 to-teal-600',
+      'モバイル・タブレット': 'from-violet-600 to-purple-800',
+      'モビリティ・自転車・EV': 'from-lime-600 to-green-700',
+      'セール・EC情報': 'from-yellow-500 to-orange-600',
+      'カメラ・クリエイティブ': 'from-amber-600 to-orange-700',
+      'ライフスタイル': 'from-sky-600 to-indigo-700',
+      'ロードバイク・MTB・サイクリング': 'from-red-600 to-orange-600'
+    };
+    return gradients[article.category] || 'from-slate-700 to-slate-900';
+  };
 
   return (
     <GlassPanel 
@@ -32,15 +52,21 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({ article, index = 0, si
       <div className={`relative overflow-hidden bg-slate-800 ${
         isSmall ? 'aspect-[4/3]' : 'aspect-video'
       }`}>
-        {article.img ? (
+        {article.img && !imageError ? (
           <img 
             src={article.img} 
             alt={article.title} 
+            onError={() => setImageError(true)}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-slate-600 bg-linear-to-br from-slate-900 to-slate-800">
-            <Sparkles size={isSmall ? 24 : 32} />
+          <div className={`w-full h-full flex items-center justify-center text-white/40 bg-linear-to-br ${getFallbackGradient()} relative overflow-hidden`}>
+            {/* 背景の装飾的な要素 */}
+            <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
+            <div className="relative z-1 flex flex-col items-center gap-2">
+              <Sparkles size={isSmall ? 24 : 40} className="text-white/30" />
+              {!isSmall && <span className="text-[9px] font-black uppercase tracking-[0.2em] opacity-40">Signal Synthesized</span>}
+            </div>
           </div>
         )}
         

@@ -1,8 +1,10 @@
 import React, { useEffect } from 'react';
 
+export type DialogType = 'alert' | 'confirm' | 'prompt' | 'info' | 'warning' | 'success' | 'error';
+
 interface CustomDialogProps {
   isOpen: boolean;
-  type: string;
+  type: DialogType;
   title: string;
   message: any;
   onConfirm: (value?: string) => void;

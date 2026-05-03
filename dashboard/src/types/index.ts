@@ -86,6 +86,7 @@ export interface NexusApiBridge {
   }>;
   getApiKey: () => Promise<string>;
   saveApiKey: (apiKey: string) => Promise<{ success: boolean }>;
+  getProposals: () => Promise<any>;
   windowControl: (action: 'minimize' | 'maximize' | 'close') => void;
 }
 
