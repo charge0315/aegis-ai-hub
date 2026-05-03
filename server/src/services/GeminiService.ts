@@ -13,9 +13,10 @@ export interface CuratedArticle {
 }
 
 /**
- * GeminiService: Gemini 3.1 APIを中枢に、Structured Output（スキーマ強制）
- * を活用したAIリクエスト基盤。
- * サーバー・Electron両環境で共有される統合版。
+ * Aegis AI Hubの「思考エンジン」として機能する中核サービス。
+ * Google Gemini 3.1 APIを利用し、ただテキストを生成するのではなく「Structured Output（スキーマ強制）」
+ * を用いることで、AIの出力をプログラムが確実に解釈できる堅牢なデータ構造へと変換します。
+ * これにより、AIの推論結果をシームレスにシステムのビジネスロジックへ組み込むことを可能にします。
  */
 export class GeminiService {
   private genAI: GoogleGenerativeAI | null;
@@ -29,17 +30,21 @@ export class GeminiService {
   }
 
   /**
-   * APIキーを動的に更新します（設定画面からの変更時に使用）。
+   * ユーザーがシステム設定からAPIキーを変更した際、アプリケーションを再起動することなく
+   * 即座にAIエンジンを再起動（モデルへの接続を再確立）するためのフックメソッド。
    */
   updateApiKey(apiKey: string): void {
     this.genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
   }
 
   /**
-   * 構造化データを生成します。
-   * @param {string} prompt - プロンプト
-   * @param {ResponseSchema} schema - JSONスキーマ定義
-   * @param {string} [modelName] - 使用するモデル名
+   * AIの「自由な発話」を封じ、あらかじめシステムが定義したZod（JSON）スキーマ通りの
+   * 厳格なデータ構造でのみ返答を許すためのコア・インターフェース。
+   * これにより、"JSONパースエラー" という生成AI特有の不確実性を根本から排除します。
+   * 
+   * @param {string} prompt - AIに与える指示文（コンテキスト）
+   * @param {ResponseSchema} schema - 返してほしいデータの構造定義（バリデーションの要）
+   * @param {string} [modelName] - タスクの複雑さに応じてモデルを切り替えるためのオプション
    */
   async generateStructured<T>(prompt: string, schema: ResponseSchema, modelName: string = this.primaryModelName): Promise<T> {
     if (!this.genAI) {

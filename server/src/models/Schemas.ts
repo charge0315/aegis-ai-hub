@@ -1,7 +1,8 @@
 import { z } from 'zod';
 
 /**
- * v5.2 Feed Configuration Schema
+ * システムが外部から受信するフィード情報（ニュースソース）の健全性を担保するための型定義。
+ * 万が一不正なURLが混入してアプリ全体がクラッシュするのを防ぐ「関所」として機能します。
  */
 export const FeedConfigSchema = z.record(
   z.string(),
@@ -15,7 +16,8 @@ export const FeedConfigSchema = z.record(
 export type FeedConfig = z.infer<typeof FeedConfigSchema>;
 
 /**
- * v5.2 Interest Category Schema
+ * ユーザーの個人的な嗜好（カテゴリごとの関心度や抽出キーワード）を定義するスキーマ。
+ * これがAegis AI Hubの「パーソナライズの核」となり、AIがどの情報に重み付けをするかの基準となります。
  */
 export const InterestCategorySchema = z.object({
   emoji: z.string(),
@@ -28,7 +30,8 @@ export const InterestCategorySchema = z.object({
 export type InterestCategory = z.infer<typeof InterestCategorySchema>;
 
 /**
- * v5.2 Skill Schema
+ * エージェントが自律的に実行可能な「スキル」を定義するスキーマ。
+ * 単なるアクションの羅列ではなく、どのアクションが有効（enabled）かを制御するスイッチでもあります。
  */
 export const SkillSchema = z.object({
   id: z.string(),
@@ -42,7 +45,8 @@ export const SkillSchema = z.object({
 export type Skill = z.infer<typeof SkillSchema>;
 
 /**
- * v5.2 Interests Schema
+ * システムが学習した「ユーザーの興味関心の全体像（プロファイル）」を束ねるスキーマ。
+ * AIによる自動学習（トレンド分析）によって定期的に拡張・アップデートされる生きたデータです。
  */
 export const InterestsSchema = z.object({
   categories: z.record(z.string(), InterestCategorySchema),
@@ -53,7 +57,8 @@ export const InterestsSchema = z.object({
 export type Interests = z.infer<typeof InterestsSchema>;
 
 /**
- * v5.2 Window State Schema
+ * UIの利便性を維持するためのウィンドウ状態スキーマ。
+ * 次回起動時にも「ユーザーが一番使いやすかった画面サイズと位置」を復元するために記憶します。
  */
 export const WindowStateSchema = z.object({
   width: z.number(),
