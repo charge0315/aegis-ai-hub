@@ -52,10 +52,10 @@ export class EvolutionJob {
             // 3. 最新記事から新しい興味（ブランド・キーワード）を抽出
             console.log("[EvolutionJob] ステップ 3: 最新記事からトレンドを抽出中...");
             // ScraperFacade を通じて最新記事を取得
-            const articles = await this.scraper._fetchAndProcessArticles(interests);
+            const articles = await this.scraper.fetchAndProcessArticles(interests);
             const topArticles = articles.slice(0, 50).map((a: any) => ({ title: a.title, desc: a.desc, brand: a.brand }));
             
-            const newSuggestions: TrendSuggestion[] = await this.scraper.geminiService.analyzeTrends(topArticles, interests);
+            const newSuggestions = await this.scraper.geminiService.analyzeTrends(topArticles, interests) as unknown as TrendSuggestion[];
             if (newSuggestions && newSuggestions.length > 0) {
                 console.log(`[EvolutionJob] AI から ${newSuggestions.length} 件の新しい興味提案があります。`);
                 this.updateLearnedKeywords(interests, newSuggestions);

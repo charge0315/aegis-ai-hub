@@ -1,38 +1,41 @@
 import { FastifyPluginAsync, FastifyRequest, FastifyReply } from 'fastify';
-import SettingsManager from '../services/SettingsManager.js';
-import { SyncSettingsSchema, SyncSettings } from '../models/Schemas.js';
+import { SettingsManager } from '../services/SettingsManager.js';
+import { SyncSettingsSchema } from '../models/Schemas.js';
 import { NexusOrchestrator } from '../core/NexusOrchestrator.js';
+import { ScraperFacade } from '../ScraperFacade.js';
+import { DiscoveryService } from '../services/DiscoveryService.js';
 
 interface NexusRouterOptions {
-  scraper: any;
-  evolution: any;
+  scraper: ScraperFacade;
+  evolution: DiscoveryService;
   orchestrator: NexusOrchestrator;
+  settingsManager: SettingsManager;
 }
 
 export const nexusRouter: FastifyPluginAsync<NexusRouterOptions> = async (fastify, options) => {
-  const { scraper, evolution, orchestrator } = options;
+  const { scraper, evolution, orchestrator, settingsManager } = options;
 
   /**
    * GET /api/v5/interests
    */
-  fastify.get('/interests', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.get('/interests', async (_request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const interests = await SettingsManager.getInterests();
-      return interests;
-    } catch (error: any) {
-      reply.status(500).send({ error: 'Failed to retrieve interests', details: error.message });
+      return await settingsManager.getInterests();
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : String(error);
+      reply.status(500).send({ error: 'Failed to retrieve interests', details: msg });
     }
   });
 
   /**
    * GET /api/v5/feeds
    */
-  fastify.get('/feeds', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.get('/feeds', async (_request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const feedConfig = await SettingsManager.getFeedConfig();
-      return feedConfig;
-    } catch (error: any) {
-      reply.status(500).send({ error: 'Failed to retrieve feed configuration', details: error.message });
+      return await settingsManager.getFeedConfig();
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : String(error);
+      reply.status(500).send({ error: 'Failed to retrieve feed configuration', details: msg });
     }
   });
 
@@ -41,31 +44,29 @@ export const nexusRouter: FastifyPluginAsync<NexusRouterOptions> = async (fastif
    */
   fastify.post('/sync-settings', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      // Validate request body
       const validated = SyncSettingsSchema.parse(request.body);
-      
-      // Perform sync (atomic file write + backup)
-      const result = await SettingsManager.syncSettings(validated);
-      
+      const result = await settingsManager.syncSettings(validated);
+
       // Refresh in-memory states of services
       if (scraper && scraper.feedManager) {
         scraper.feedManager.config = validated.feedConfig;
       }
-      
+
       return result;
-    } catch (error: any) {
-      console.error('[NexusRouter] Sync Settings Error:', error); // Log to server console
-      if (error.name === 'ZodError') {
-        reply.status(400).send({ error: 'Validation failed', issues: error.issues });
+    } catch (error: unknown) {
+      console.error('[NexusRouter] Sync Settings Error:', error);
+      if (error && typeof error === 'object' && 'name' in error && error.name === 'ZodError') {
+        const zodError = error as unknown as { issues: unknown[] };
+        reply.status(400).send({ error: 'Validation failed', issues: zodError.issues });
         return;
       }
-      reply.status(500).send({ error: 'Failed to sync settings', details: error.message });
+      const msg = error instanceof Error ? error.message : String(error);
+      reply.status(500).send({ error: 'Failed to sync settings', details: msg });
     }
   });
 
   /**
    * POST /api/v5/suggest-category
-   * カテゴリ名から提案を生成
    */
   fastify.post('/suggest-category', async (request: FastifyRequest<{ Body: { categoryName: string } }>, reply: FastifyReply) => {
     const { categoryName } = request.body;
@@ -75,17 +76,29 @@ export const nexusRouter: FastifyPluginAsync<NexusRouterOptions> = async (fastif
     }
 
     try {
-      const suggestions = await scraper.geminiService.suggestCategoryDetails(categoryName);
-      return suggestions;
-    } catch (error: any) {
-      console.error('[NexusRouter] Suggest Category Error:', error);
-      reply.status(500).send({ error: 'Failed to generate suggestions', details: error.message });
+      return await scraper.geminiService.suggestCategoryDetails(categoryName);
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : String(error);
+      reply.status(500).send({ error: 'Failed to generate suggestions', details: msg });
+    }
+  });
+
+  /**
+   * GET /api/v5/proposals
+   * AIによる進化提案を取得
+   */
+  fastify.get('/proposals', async (_request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const interests = await settingsManager.getInterests();
+      return await evolution.getProposals(interests);
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : String(error);
+      reply.status(500).send({ error: 'Failed to get proposals', details: msg });
     }
   });
 
   /**
    * POST /api/v5/orchestrate
-   * 自律ループを開始
    */
   fastify.post('/orchestrate', async (request: FastifyRequest<{ Body: { requirements: string } }>, reply: FastifyReply) => {
     const { requirements } = request.body;
@@ -95,25 +108,26 @@ export const nexusRouter: FastifyPluginAsync<NexusRouterOptions> = async (fastif
     }
 
     try {
-      // 非同期でループを開始
       orchestrator.runAutonomousLoop(requirements).catch(err => {
         console.error('[Orchestrator Loop Error]', err);
       });
       return { status: 'accepted', message: 'Autonomous loop started' };
-    } catch (error: any) {
-      reply.status(500).send({ error: error.message });
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : String(error);
+      reply.status(500).send({ error: msg });
     }
   });
 
   /**
    * GET /api/v5/window-state
    */
-  fastify.get('/window-state', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.get('/window-state', async (_request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const state = await SettingsManager.getWindowState();
+      const state = await settingsManager.getWindowState();
       return state || { error: 'Not Found' };
-    } catch (error: any) {
-      reply.status(500).send({ error: 'Failed to retrieve window state' });
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : String(error);
+      reply.status(500).send({ error: 'Failed to retrieve window state', details: msg });
     }
   });
 
@@ -129,15 +143,13 @@ export const nexusRouter: FastifyPluginAsync<NexusRouterOptions> = async (fastif
       'Access-Control-Allow-Origin': '*'
     };
     reply.raw.writeHead(200, headers);
-    reply.raw.write('\n'); // Send initial padding
+    reply.raw.write('\n');
 
     orchestrator.subscribe(reply);
-    
-    // 初回接続時の通知
+
     const initialMsg = JSON.stringify({ status: 'connected', message: 'SSE Connection Established', timestamp: new Date().toISOString() });
     reply.raw.write(`data: ${initialMsg}\n\n`);
 
-    // Keep connection alive with heartbeat
     const keepAlive = setInterval(() => {
       reply.raw.write(': heartbeat\n\n');
     }, 30000);

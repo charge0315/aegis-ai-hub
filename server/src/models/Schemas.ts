@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 /**
- * v5.0 Feed Configuration Schema
+ * v5.2 Feed Configuration Schema
  */
 export const FeedConfigSchema = z.record(
   z.string(),
@@ -15,7 +15,7 @@ export const FeedConfigSchema = z.record(
 export type FeedConfig = z.infer<typeof FeedConfigSchema>;
 
 /**
- * v5.0 Interest Category Schema
+ * v5.2 Interest Category Schema
  */
 export const InterestCategorySchema = z.object({
   emoji: z.string(),
@@ -28,7 +28,7 @@ export const InterestCategorySchema = z.object({
 export type InterestCategory = z.infer<typeof InterestCategorySchema>;
 
 /**
- * v5.0 Skill Schema
+ * v5.2 Skill Schema
  */
 export const SkillSchema = z.object({
   id: z.string(),
@@ -42,7 +42,7 @@ export const SkillSchema = z.object({
 export type Skill = z.infer<typeof SkillSchema>;
 
 /**
- * v5.0 Interests Schema
+ * v5.2 Interests Schema
  */
 export const InterestsSchema = z.object({
   categories: z.record(z.string(), InterestCategorySchema),
@@ -53,7 +53,7 @@ export const InterestsSchema = z.object({
 export type Interests = z.infer<typeof InterestsSchema>;
 
 /**
- * v5.0 Window State Schema
+ * v5.2 Window State Schema
  */
 export const WindowStateSchema = z.object({
   width: z.number(),
@@ -65,7 +65,7 @@ export const WindowStateSchema = z.object({
 export type WindowState = z.infer<typeof WindowStateSchema>;
 
 /**
- * v5.0 Sync Settings Schema
+ * v5.2 Sync Settings Schema
  */
 export const SyncSettingsSchema = z.object({
   interests: InterestsSchema,
@@ -74,5 +74,13 @@ export const SyncSettingsSchema = z.object({
   lastUpdated: z.number().optional(),
 });
 
-
 export type SyncSettings = z.infer<typeof SyncSettingsSchema>;
+
+/**
+ * v5.2 Credentials Schema
+ */
+export const CredentialsSchema = z.object({
+  geminiApiKey: z.string().optional(),
+});
+
+export type Credentials = z.infer<typeof CredentialsSchema>;

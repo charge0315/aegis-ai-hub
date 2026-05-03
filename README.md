@@ -41,6 +41,17 @@
 - **Smart Prompting**: サイト URL ではなく、直接的なフィードエンドポイントを優先的に取得する高度な AI プロンプトを搭載。
 
 
+## 📁 ディレクトリ構成
+
+- **`dashboard/`**: React/Viteによるフロントエンド。Electronのエントリーポイント(`main.cjs`)とIPC用の`preload.cjs`、暗号化処理用の`ElectronSettingsManager.ts`が含まれます。
+- **`server/`**: コアとなるビジネスロジック。FastifyベースのスタンドアロンAPIサーバーと、インテリジェンス・エージェント（NexusOrchestratorなど）が含まれます。
+- **`docs/`**: システム仕様、API設計、開発用コードマップ等のドキュメント群。
+- **`data/`**: 開発時における設定ファイル群（フィード設定、興味関心、資格情報）の保存場所（製品版は `%APPDATA%` 以下に保存）。
+
+## 🛡️ セキュリティとプライバシー
+- **暗号化**: ユーザーが登録したAPIキー(`credentials.json`)は、Electronの `safeStorage` 機構を用いてOSネイティブの暗号化によって保護されます。
+- **ローカルファースト**: 全ての情報ソースや分析データはローカルに保存され、設定データが外部サーバーに送信されることはありません（Google Geminiへのプロンプト送信時を除く）。
+
 ## 🛠 テックスタック
 
 - **Core**: Electron (Acrylic Enabled), Fastify (Backend Server), Node.js, TypeScript

@@ -34,7 +34,7 @@ export class ScraperFacade {
      */
     async getRecommendations(interests: Interests): Promise<any[]> {
         try {
-            const allArticles = await this._fetchAndProcessArticles(interests);
+            const allArticles = await this.fetchAndProcessArticles(interests);
             const candidates = this._sortAndSlice(allArticles, 30);
 
             if (candidates.length === 0) {
@@ -42,10 +42,10 @@ export class ScraperFacade {
             }
 
             console.log(`[ScraperFacade] Geminiによるキュレーションを開始 (${candidates.length}件を評価中)...`);
-            const recommendations = await this.geminiService.curate(candidates, interests);
+            const recommendations = await this.geminiService.curate(candidates as unknown as Record<string, unknown>[], interests);
             
             // 推薦された10件に対して優先的に画像補完を実行し、視覚的な品質を向上させる
-            await Promise.all(recommendations.map(a => this.enrichmentService.enrich(a as any)));
+            await Promise.all(recommendations.map((a: any) => this.enrichmentService.enrich(a as any)));
 
             return recommendations;
         } catch (e: any) {
@@ -61,11 +61,11 @@ export class ScraperFacade {
      */
     async getDashboard(interests: Interests): Promise<Record<string, any>> {
         console.log(`[ScraperFacade] パーソナライズド・ダッシュボードを構築中...`);
-        const allArticles = await this._fetchAndProcessArticles(interests);
+        const allArticles = await this.fetchAndProcessArticles(interests);
 
         // スコアと鮮度のバランスが良い上位50件を詳細エンリッチメントの対象とする
         const topArticles = this._sortAndSlice(allArticles, 50);
-        await Promise.all(topArticles.map(a => this.enrichmentService.enrich(a)));
+        await Promise.all(topArticles.map((a: any) => this.enrichmentService.enrich(a)));
 
         const dashboard: Record<string, any> = {};
         for (const catName in interests.categories) {
@@ -106,11 +106,10 @@ export class ScraperFacade {
      * @param interests - ユーザーの興味データ
      * @returns 正規化された記事オブジェクトの配列
      */
-    public async _fetchAndProcessArticles(interests: Interests): Promise<Article[]> {
+    async fetchAndProcessArticles(interests: Interests): Promise<Article[]> {
         const scorer = new ScoringService(interests);
         const feeds = this.feedManager.getAllActiveFeeds();
-        const oneMonthAgo = new Date();
-        oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+        const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
 
         const results = await this.rssFetcher.fetchAll(feeds);
         const allArticles: Article[] = [];
@@ -124,24 +123,26 @@ export class ScraperFacade {
 
             if (res.items) {
                 for (const item of res.items) {
-                    // 1ヶ月以上前の古い記事はノイズとして除外
-                    const pubDate = new Date(item.isoDate || item.pubDate);
-                    if (pubDate < oneMonthAgo) continue;
+                    // 90日以上前の古い記事はノイズとして除外
+                    const record = item as Record<string, unknown>;
+                    const pubDate = new Date(String(record.isoDate || record.pubDate || ''));
+                    if (pubDate < ninetyDaysAgo) continue;
 
-                    // スコアリングとメタ情報の抽出
-                    const detectedCat = scorer.detectCategory(item.title, item.contentSnippet, res.category);
-                    const score = scorer.calculateScore(item.title, item.contentSnippet, detectedCat);
-                    const brand = scorer.extractBrand(item.title);
+                    const title = String(record.title || '');
+                    const snippet = String(record.contentSnippet || record.description || '');
+                    const detectedCat = scorer.detectCategory(title, snippet, res.category);
+                    const score = scorer.calculateScore(title, snippet, detectedCat);
+                    const brand = scorer.extractBrand(title);
 
                     allArticles.push(new Article({
-                        title: item.title,
-                        link: item.link,
-                        desc: item.contentSnippet || item.description,
+                        title: record.title,
+                        link: record.link,
+                        desc: record.contentSnippet || record.description,
                         brand: brand,
                         score: score,
                         category: detectedCat,
-                        date: item.isoDate || item.pubDate,
-                        img: this.enrichmentService.extractBasicImage(item)
+                        date: record.isoDate || record.pubDate,
+                        img: this.enrichmentService.extractBasicImage(record)
                     }));
                 }
             }

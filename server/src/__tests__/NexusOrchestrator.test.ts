@@ -20,7 +20,7 @@ describe('NexusOrchestrator', () => {
     // GeminiService is mocked, so we can just instantiate it
     mockGeminiService = new (GeminiService as any)();
     orchestrator = new NexusOrchestrator(mockGeminiService);
-    
+
     // Mock Fastify-like response object
     mockRes = {
       write: vi.fn(),
@@ -55,12 +55,10 @@ describe('NexusOrchestrator', () => {
     await orchestrator.runAutonomousLoop('test requirements');
 
     // Check progress notifications (using stringContaining to be flexible with JSON formatting)
-    expect(mockRes.raw.write).toHaveBeenCalledWith(expect.stringContaining('"status":"start"'));
-    expect(mockRes.raw.write).toHaveBeenCalledWith(expect.stringContaining('"status":"planning"'));
-    expect(mockRes.raw.write).toHaveBeenCalledWith(expect.stringContaining('"status":"plan_ready"'));
-    expect(mockRes.raw.write).toHaveBeenCalledWith(expect.stringContaining('"status":"executing"'));
-    expect(mockRes.raw.write).toHaveBeenCalledWith(expect.stringContaining('"status":"complete"'));
+    expect(mockRes.raw.write).toHaveBeenCalledWith(expect.stringContaining('"status":"working"'));
+    expect(mockRes.raw.write).toHaveBeenCalledWith(expect.stringContaining('"status":"success"'));
     expect(mockRes.raw.write).toHaveBeenCalledWith(expect.stringContaining('"status":"idle"'));
+    expect(mockRes.raw.write).toHaveBeenCalledWith(expect.stringContaining('"status":"refresh"'));
   });
 
   it('should handle errors and notify error status', async () => {
@@ -80,10 +78,10 @@ describe('NexusOrchestrator', () => {
     vi.mocked(ArchitectAgent.prototype.plan).mockReturnValue(new Promise(resolve => setTimeout(() => resolve(mockPlan as any), 50)));
 
     const firstRun = orchestrator.runAutonomousLoop('req 1');
-    
+
     // Attempting second run while first is active should throw
     await expect(orchestrator.runAutonomousLoop('req 2')).rejects.toThrow('Orchestrator is already running.');
-    
+
     await firstRun;
   });
 });

@@ -80,7 +80,7 @@ export const nexusApi = {
     return await res.json();
   },
 
-  async getProposals(): Promise<any> {
+  async getProposals(): Promise<Record<string, unknown>> {
     if (window.nexusApi) {
       return await window.nexusApi.getProposals();
     }
@@ -200,7 +200,6 @@ export function useAgentEvents(onRefresh?: () => void) {
     
     window.nexusApi.onAgentEvent((data) => {
       try {
-        console.log('[Electron] Received agent event:', data);
         if (data.status === 'refresh') {
           onRefresh?.();
           return;
@@ -216,6 +215,14 @@ export function useAgentEvents(onRefresh?: () => void) {
         console.error('[Electron] Failed to process agent event', err);
       }
     });
+
+    // Electronリスナーのクリーンアップ
+    return () => {
+      // ipcRendererのリスナーを削除
+      if (window.nexusApi?.removeAgentEventListener) {
+        window.nexusApi.removeAgentEventListener();
+      }
+    };
   }, [onRefresh]);
 
   return events;

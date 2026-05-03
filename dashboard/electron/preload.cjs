@@ -33,6 +33,11 @@ contextBridge.exposeInMainWorld('nexusApi', {
   onAgentEvent: (callback) => ipcRenderer.on('agent-event', (event, data) => callback(data)),
 
   /**
+   * エージェントからのリアルタイムイベントの受信を解除します。
+   */
+  removeAgentEventListener: () => ipcRenderer.removeAllListeners('agent-event'),
+
+  /**
    * カテゴリー名に基づいた詳細設定（ブランド、キーワード、絵文字）を提案します。
    */
   suggestCategory: (categoryName) => ipcRenderer.invoke('suggest-category', categoryName),

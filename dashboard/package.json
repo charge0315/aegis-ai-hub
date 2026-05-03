@@ -1,5 +1,5 @@
 {
-  "name": "dashboard",
+  "name": "aegis-nexus",
   "private": true,
   "version": "5.2.0",
   "description": "Next-gen Intelligence Command Center powered by Gemini 3.1",
@@ -7,7 +7,6 @@
   "type": "module",
   "main": "electron/index.cjs",
   "scripts": {
-
     "dev": "vite",
     "build": "tsc -b && vite build",
     "build:electron": "npx esbuild electron/main.cjs --bundle --platform=node --target=node20 --outfile=electron/main.bundle.cjs --external:electron --loader:.ts=ts",
@@ -27,9 +26,20 @@
     },
     "files": [
       "dist/**/*",
+      "public/**/*",
       "electron/index.cjs",
       "electron/main.bundle.cjs",
       "electron/preload.cjs"
+    ],
+    "extraResources": [
+      {
+        "from": "../data",
+        "to": "default-data",
+        "filter": [
+          "interests.json",
+          "feed_config.json"
+        ]
+      }
     ],
     "win": {
       "target": [

@@ -84,7 +84,7 @@ const App: React.FC = () => {
             setDialogContent(<p className="text-center py-10 animate-pulse text-xs text-slate-500 font-bold uppercase tracking-widest">AI Discovery in Progress...</p>);
             try {
               const proposals = await nexusApi.getProposals();
-              const catProposals = proposals.sites.filter((s: any) => s.category === category);
+              const catProposals = (proposals.sites as any[] || []).filter((s: any) => s.category === category);
               
               setDialogTitle(`Discovery: ${category}`);
               setDialogContent(
@@ -194,7 +194,21 @@ const App: React.FC = () => {
 
         <aside className={`${isCompact ? 'w-20 px-3' : 'w-64 p-6'} sidebar-glass flex flex-col sticky top-0 h-screen z-30 transition-all duration-300`}>
           <div className={`mb-10 mt-6 flex ${isCompact ? 'justify-center' : 'px-2'}`}>
-            <img src="/app-icon.png" className="w-10 h-10 rounded-xl shadow-2xl" />
+            <div className="w-10 h-10 rounded-xl overflow-hidden shadow-2xl bg-primary/20 flex items-center justify-center">
+              <img 
+                src="./app-icon.png" 
+                alt="Nexus" 
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  // 画像読み込み失敗時のフォールバック
+                  e.currentTarget.style.display = 'none';
+                  const parent = e.currentTarget.parentElement;
+                  if (parent) {
+                    parent.innerHTML = '<span class="text-xs font-black text-primary">NEXUS</span>';
+                  }
+                }}
+              />
+            </div>
           </div>
           <nav className="space-y-4 flex-grow">
             <button onClick={() => setCurrentView('feed')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${currentView === 'feed' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-slate-400 hover:bg-white/5'}`}>
@@ -239,26 +253,55 @@ const App: React.FC = () => {
                   <h2 className="text-4xl font-black text-white tracking-tight mb-2">Intelligence Feed</h2>
                   <p className="text-slate-500 text-sm font-medium">Synthesizing signals from your designated node cluster.</p>
                 </div>
-                <div className="space-y-16">
-                  {Object.entries(groupedArticles).map(([category, catArticles]) => (
-                    <section key={category}>
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); void handleShowFeeds(category); }}
-                        className="group text-xl font-black mb-8 hover:text-primary transition-all flex items-center gap-4 uppercase tracking-tighter"
-                      >
-                        <span className="text-2xl">{settings?.interests.categories[category]?.emoji}</span>
-                        {category}
-                        <div className="h-px w-20 bg-white/5 group-hover:w-32 group-hover:bg-primary/30 transition-all"></div>
-                        <span className="text-[10px] font-mono bg-white/5 px-2 py-0.5 rounded border border-white/5 opacity-60">{catArticles.length} SIGNALS</span>
-                      </button>
-                      <div className={`grid gap-6 ${isCompact ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4'}`}>
-                        {catArticles.map((article, idx) => (
-                          <ArticleCard key={idx} article={article} index={idx} size="medium" />
-                        ))}
+
+                {loading && articles.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-20 space-y-6">
+                    <div className="relative">
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                        className="w-16 h-16 border-4 border-primary/20 border-t-primary rounded-full"
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <Sparkles size={24} className="text-primary animate-pulse" />
                       </div>
-                    </section>
-                  ))}
-                </div>
+                    </div>
+                    <div className="text-center space-y-2">
+                      <h3 className="text-lg font-bold text-white uppercase tracking-widest">Intercepting Signals</h3>
+                      <p className="text-slate-500 text-xs font-mono">Initializing node handshake & decrypting packet streams...</p>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6 w-full opacity-20 pointer-events-none">
+                      {[1, 2, 3, 4].map((i) => (
+                        <div key={i} className="h-64 rounded-3xl bg-white/5 animate-pulse" />
+                      ))}
+                    </div>
+                  </div>
+                ) : articles.length === 0 && !loading ? (
+                  <div className="flex flex-col items-center justify-center py-20 text-slate-600">
+                    <p>No active signals detected. Check your feed configuration.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-16">
+                    {Object.entries(groupedArticles).map(([category, catArticles]) => (
+                      <section key={category}>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); void handleShowFeeds(category); }}
+                          className="group text-xl font-black mb-8 hover:text-primary transition-all flex items-center gap-4 uppercase tracking-tighter"
+                        >
+                          <span className="text-2xl">{settings?.interests.categories[category]?.emoji}</span>
+                          {category}
+                          <div className="h-px w-20 bg-white/5 group-hover:w-32 group-hover:bg-primary/30 transition-all"></div>
+                          <span className="text-[10px] font-mono bg-white/5 px-2 py-0.5 rounded border border-white/5 opacity-60">{catArticles.length} SIGNALS</span>
+                        </button>
+                        <div className={`grid gap-6 ${isCompact ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4'}`}>
+                          {catArticles.map((article, idx) => (
+                            <ArticleCard key={idx} article={article} index={idx} size="medium" />
+                          ))}
+                        </div>
+                      </section>
+                    ))}
+                  </div>
+                )}
               </div>
             ) : (
               settings && <UnifiedEditor 

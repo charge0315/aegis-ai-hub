@@ -2,14 +2,17 @@ const { app, BrowserWindow, ipcMain, globalShortcut, Tray, Menu } = require('ele
 const path = require('path');
 const fs = require('fs');
 
+// アプリ名の明示的設定（パスの整合性確保）
+app.setName('Aegis Nexus');
+
 // サービスのインポート (TypeScriptファイルの動的読み込み)
-const SettingsManager = require('./services/SettingsManager').default;
-const { GeminiService } = require('./services/GeminiService');
-const { FeedManager } = require('./services/FeedManager');
-const { DiscoveryService } = require('./services/DiscoveryService');
-const { EnrichmentService } = require('./services/EnrichmentService');
-const { RSSFetcher } = require('./services/RSSFetcher');
-const { ScoringService } = require('./services/ScoringService');
+const { ElectronSettingsManager } = require('./ElectronSettingsManager');
+const { GeminiService } = require('../../server/src/services/GeminiService');
+const { FeedManager } = require('../../server/src/services/FeedManager');
+const { DiscoveryService } = require('../../server/src/services/DiscoveryService');
+const { EnrichmentService } = require('../../server/src/services/EnrichmentService');
+const { RSSFetcher } = require('../../server/src/services/RSSFetcher');
+const { ScoringService } = require('../../server/src/services/ScoringService');
 
 let mainWindow;
 let tray;
@@ -19,21 +22,26 @@ let rssFetcher;
 let discoveryService;
 let enrichmentService;
 
+// ユーティリティ: データディレクトリの取得
+function getDataDir() {
+  return !app.isPackaged 
+    ? path.resolve(app.getAppPath(), '..', 'data')
+    : path.join(app.getPath('userData'), 'data');
+}
+
 async function initBackend() {
   console.log('[Main] Backend services initializing...');
   
+  const dataDir = getDataDir();
+  const settingsManager = new ElectronSettingsManager({ dataDir });
+  
   // 1. 設定マネージャーの初期化（ディレクトリ作成など）
-  await SettingsManager.init();
+  await settingsManager.init();
   
   // 2. インスタンス生成
-  const apiKey = await SettingsManager.getApiKey();
+  const apiKey = await settingsManager.getApiKey();
   geminiService = new GeminiService(apiKey);
   
-  // 開発環境と製品環境でデータディレクトリを分岐
-  const dataDir = !app.isPackaged 
-    ? path.resolve(app.getAppPath(), '..', 'data')
-    : path.join(app.getPath('userData'), 'data');
-
   const feedConfigPath = path.join(dataDir, 'feed_config.json');
   console.log(`[Main] Using FeedManager config: ${feedConfigPath}`);
   feedManager = new FeedManager(feedConfigPath);
@@ -114,17 +122,21 @@ function createTray() {
 function registerIpcHandlers() {
   // 設定取得
   ipcMain.handle('get-settings', async () => {
-    const interests = await SettingsManager.getInterests();
-    const feedConfig = await SettingsManager.getFeedConfig();
+    const dataDir = getDataDir();
+    const settingsManager = new ElectronSettingsManager({ dataDir });
+    const interests = await settingsManager.getInterests();
+    const feedConfig = await settingsManager.getFeedConfig();
     return { interests, feed_urls: feedConfig };
   });
 
   // 設定同期
   ipcMain.handle('sync-settings', async (event, settings) => {
     try {
-      const result = await SettingsManager.syncSettings(settings, rssFetcher);
+      const dataDir = getDataDir();
+      const settingsManager = new ElectronSettingsManager({ dataDir });
+      const result = await settingsManager.syncSettings(settings, rssFetcher);
       // 同期後にFeedManagerの設定もリロード
-      const feedConfigPath = path.join(app.getPath('userData'), 'data', 'feed_config.json');
+      const feedConfigPath = path.join(dataDir, 'feed_config.json');
       feedManager = new FeedManager(feedConfigPath);
       return result;
     } catch (error) {
@@ -137,7 +149,9 @@ function registerIpcHandlers() {
   ipcMain.handle('get-articles', async (event, options) => {
     console.log('[Main] Fetching articles with options:', options);
     try {
-      const interests = await SettingsManager.getInterests();
+      const dataDir = getDataDir();
+      const settingsManager = new ElectronSettingsManager({ dataDir });
+      const interests = await settingsManager.getInterests();
       const scoringService = new ScoringService(interests);
       const activeFeeds = feedManager.getAllActiveFeeds();
       
@@ -206,7 +220,9 @@ function registerIpcHandlers() {
   ipcMain.handle('trigger-orchestration', async () => {
     console.log('[Main] Triggering orchestration...');
     try {
-      const interests = await SettingsManager.getInterests();
+      const dataDir = getDataDir();
+      const settingsManager = new ElectronSettingsManager({ dataDir });
+      const interests = await settingsManager.getInterests();
       const newFeeds = await discoveryService.run(interests);
       return { success: true, newFeedsCount: newFeeds.length };
     } catch (error) {
@@ -230,7 +246,9 @@ function registerIpcHandlers() {
   ipcMain.handle('get-proposals', async () => {
     console.log('[Main] Getting evolution proposals...');
     try {
-      const interests = await SettingsManager.getInterests();
+      const dataDir = getDataDir();
+      const settingsManager = new ElectronSettingsManager({ dataDir });
+      const interests = await settingsManager.getInterests();
       return await discoveryService.getProposals(interests);
     } catch (error) {
       console.error('Failed to get proposals:', error);
@@ -240,13 +258,17 @@ function registerIpcHandlers() {
 
   // APIキー取得
   ipcMain.handle('get-api-key', async () => {
-    return await SettingsManager.getApiKey();
+    const dataDir = getDataDir();
+    const settingsManager = new ElectronSettingsManager({ dataDir });
+    return await settingsManager.getApiKey();
   });
 
   // APIキー保存
   ipcMain.handle('save-api-key', async (event, apiKey) => {
     try {
-      await SettingsManager.saveApiKey(apiKey);
+      const dataDir = getDataDir();
+      const settingsManager = new ElectronSettingsManager({ dataDir });
+      await settingsManager.saveApiKey(apiKey);
       geminiService.updateApiKey(apiKey);
       return { success: true };
     } catch (error) {
@@ -284,9 +306,17 @@ app.whenReady().then(async () => {
   });
 
   // Ctrl+Q でアプリを終了するショートカットを登録
-  globalShortcut.register('CommandOrControl+Q', () => {
+  const ret = globalShortcut.register('CommandOrControl+Q', () => {
+    console.log('[Main] Quit shortcut (Ctrl+Q) triggered.');
+    app.isQuitting = true;
     app.quit();
   });
+
+  if (!ret) {
+    console.warn('[Main] Registration failed for global shortcut Ctrl+Q.');
+  } else {
+    console.log('[Main] Global shortcut Ctrl+Q registered successfully.');
+  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

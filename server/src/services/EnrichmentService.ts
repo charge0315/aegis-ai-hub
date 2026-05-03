@@ -86,18 +86,26 @@ export class EnrichmentService {
     /**
      * RSSアイテムから標準的な画像フィールドを抽出します（基本パース用）。
      */
-    extractBasicImage(item: any): string | null {
-        if (item.mediaContent) {
-            const media = item.mediaContent;
-            if (media.$ && media.$.url) return media.$.url;
-            if (Array.isArray(media) && media[0]?.$.url) return media[0].$.url;
+    extractBasicImage(item: Record<string, unknown>): string | null {
+        const mediaContent = item.mediaContent as Record<string, Record<string, string>> | Array<Record<string, Record<string, string>>> | undefined;
+        if (mediaContent) {
+            if (Array.isArray(mediaContent)) {
+                if (mediaContent[0]?.$?.url) return mediaContent[0].$.url;
+            } else if (mediaContent.$?.url) {
+                return mediaContent.$.url;
+            }
         }
-        if (item.mediaThumbnail?.$?.url) return item.mediaThumbnail.$.url;
-        if (item.enclosure?.url) return item.enclosure.url;
-        if (item.itunesImage) return item.itunesImage;
-        
+
+        const mediaThumbnail = item.mediaThumbnail as Record<string, Record<string, string>> | undefined;
+        if (mediaThumbnail?.$?.url) return mediaThumbnail.$.url;
+
+        const enclosure = item.enclosure as Record<string, string> | undefined;
+        if (enclosure?.url) return enclosure.url;
+
+        if (item.itunesImage) return String(item.itunesImage);
+
         // 4Gamer等の特殊パターン
-        const snippet = item.description || "";
+        const snippet = (item.description as string) || "";
         const matches = snippet.match(/src="([^"]+\.(jpg|png|gif|jpeg))"/i);
         if (matches && matches[1]) return matches[1];
 

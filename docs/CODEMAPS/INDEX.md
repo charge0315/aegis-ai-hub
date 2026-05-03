@@ -65,4 +65,4 @@ graph TD
 - プロダクション環境では、OS 標準のユーザーデータ領域 (`%APPDATA%` 等) に保存されます。
 - `interests.json`: カテゴリ、ブランド、キーワード。
 - `feed_config.json`: AI とユーザーが共同管理する情報源。
-- `credentials.json`: ユーザーが設定した API キー。
+- `credentials.json`: ユーザーが設定した API キー。Electronの `safeStorage` によってOSレベルで安全に暗号化されます。

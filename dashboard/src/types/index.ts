@@ -78,6 +78,7 @@ export interface NexusApiBridge {
   syncSettings: (settings: NexusSettings) => Promise<{ lastUpdated: number }>;
   triggerOrchestration: () => Promise<{ success: boolean; newFeedsCount: number }>;
   onAgentEvent: (callback: (data: AgentEventData) => void) => void;
+  removeAgentEventListener: () => void;
   suggestCategory: (categoryName: string) => Promise<{
     brands: string[];
     keywords: string[];

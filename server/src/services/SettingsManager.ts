@@ -1,102 +1,136 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { fileURLToPath } from 'url';
-import { InterestsSchema, FeedConfigSchema, Interests, FeedConfig, SyncSettings, WindowStateSchema } from '../models/Schemas.js';
+import { InterestsSchema, FeedConfigSchema, Interests, FeedConfig, WindowStateSchema, CredentialsSchema, Credentials } from '../models/Schemas.js';
 
-class SettingsManager {
-  private interestsPath: string;
-  private feedConfigPath: string;
+export interface SettingsManagerConfig {
+  dataDir: string;
+}
 
-  constructor() {
-    // Priority: 1. Environment variables, 2. Root data directory
-    const __dirname = path.dirname(fileURLToPath(import.meta.url));
-    const projectRoot = path.resolve(__dirname, '..', '..', '..');
-    
-    this.interestsPath = process.env.INTERESTS_PATH || path.resolve(projectRoot, 'data', 'interests.json');
-    this.feedConfigPath = process.env.FEEDS_PATH || path.resolve(projectRoot, 'data', 'feed_config.json');
-    
-    console.log(`[SettingsManager] Using interests path: ${this.interestsPath}`);
-    console.log(`[SettingsManager] Using feed config path: ${this.feedConfigPath}`);
+/**
+ * 設定ファイル管理の統合版。
+ * サーバーモード: コンストラクタで dataDir を指定。
+ * Electronモード: ElectronSettingsManager を使用して Electron 固有のロジックを追加。
+ */
+export class SettingsManager {
+  protected dataDir: string;
+  protected interestsPath: string;
+  protected feedConfigPath: string;
+  protected credentialsPath: string;
+
+  constructor(config: SettingsManagerConfig) {
+    this.dataDir = config.dataDir;
+    this.interestsPath = path.join(this.dataDir, 'interests.json');
+    this.feedConfigPath = path.join(this.dataDir, 'feed_config.json');
+    this.credentialsPath = path.join(this.dataDir, 'credentials.json');
   }
 
-  /**
-   * Read and validate interests.json
-   */
+  async init(): Promise<void> {
+    await fs.mkdir(this.dataDir, { recursive: true });
+    await this._ensureFile(this.interestsPath, { categories: {}, lastUpdated: Date.now() });
+    await this._ensureFile(this.feedConfigPath, {});
+    await this._ensureFile(this.credentialsPath, { geminiApiKey: '' });
+  }
+
+  protected async _ensureFile(filePath: string, defaultContent: unknown): Promise<void> {
+    try {
+      await fs.access(filePath);
+    } catch {
+      await fs.writeFile(filePath, JSON.stringify(defaultContent, null, 2), 'utf8');
+    }
+  }
+
+  async getApiKey(): Promise<string> {
+    try {
+      const data = await fs.readFile(this.credentialsPath, 'utf8');
+      const json = JSON.parse(data);
+      const creds = CredentialsSchema.parse(json);
+      return creds.geminiApiKey || process.env.GEMINI_API_KEY || '';
+    } catch {
+      return process.env.GEMINI_API_KEY || '';
+    }
+  }
+
+  async saveApiKey(apiKey: string): Promise<void> {
+    const creds: Credentials = { geminiApiKey: apiKey };
+    await this._safeWrite(this.credentialsPath, creds);
+  }
+
   async getInterests(): Promise<Interests> {
     try {
       const data = await fs.readFile(this.interestsPath, 'utf8');
       const json = JSON.parse(data);
       return InterestsSchema.parse(json);
-    } catch (error) {
-      console.error('Failed to load interests:', error);
-      throw error;
+    } catch {
+      return { categories: {}, lastUpdated: Date.now() };
     }
   }
 
-  /**
-   * Read and validate feed_config.json
-   */
   async getFeedConfig(): Promise<FeedConfig> {
     try {
       const data = await fs.readFile(this.feedConfigPath, 'utf8');
       const json = JSON.parse(data);
       return FeedConfigSchema.parse(json);
-    } catch (error) {
-      console.error('Failed to load feed config:', error);
-      throw error;
+    } catch {
+      return {};
     }
   }
 
-  /**
-   * Save settings with validation, backup, and atomic write.
-   * Includes basic conflict resolution based on timestamp.
-   */
-  async syncSettings({ interests, feedConfig, windowState, lastUpdated }: SyncSettings): Promise<{ success: boolean; timestamp: string; lastUpdated: number }> {
-    console.log('[SettingsManager] syncSettings started');
-    // 1. Validate
+  async syncSettings(
+    { interests, feedConfig, windowState, lastUpdated }: { interests: Interests; feedConfig: FeedConfig; windowState?: unknown; lastUpdated?: number },
+    fetcher?: { validateFeed: (url: string) => Promise<{ ok: boolean; status: string | number }> }
+  ): Promise<{ success: boolean; timestamp: string; lastUpdated: number }> {
     const validatedInterests = InterestsSchema.parse(interests);
     const validatedFeedConfig = FeedConfigSchema.parse(feedConfig);
     const validatedWindowState = windowState ? WindowStateSchema.parse(windowState) : undefined;
-    console.log('[SettingsManager] Validation complete');
 
-    // 2. Conflict Resolution
+    // Conflict Resolution
     const currentInterests = await this.getInterests();
     const serverLastUpdated = currentInterests.lastUpdated || 0;
-    
+
     if (lastUpdated && lastUpdated < serverLastUpdated) {
-      console.warn(`[SettingsManager] Conflict detected: client=${lastUpdated}, server=${serverLastUpdated}`);
-      throw new Error('CONFLICT: サーバー上の設定は送信されたものより新しく更新されています。最新を取得してからやり直してください。');
+      throw new Error('CONFLICT: Settings on device are newer.');
     }
 
-    // 更新日時をサーバー側で付与/更新
+    // New Feed Health Check
+    if (fetcher) {
+      const currentFeedConfig = await this.getFeedConfig();
+      const currentUrls = new Set(Object.values(currentFeedConfig).flatMap(c => [...c.active, ...c.pool]));
+      const newUrls: { url: string; category: string }[] = [];
+
+      for (const [category, data] of Object.entries(validatedFeedConfig)) {
+        for (const url of [...data.active, ...data.pool]) {
+          if (!currentUrls.has(url)) {
+            newUrls.push({ url, category });
+          }
+        }
+      }
+
+      if (newUrls.length > 0) {
+        for (const item of newUrls) {
+          const check = await fetcher.validateFeed(item.url);
+          if (!check.ok) {
+            throw new Error(`VALIDATION_FAILED: ${item.url} is invalid (Status: ${check.status})`);
+          }
+        }
+      }
+    }
+
     const now = Date.now();
     validatedInterests.lastUpdated = now;
 
-    // 3. Backup and Save Interests
-    console.log(`[SettingsManager] Saving interests to: ${this.interestsPath}`);
     await this._safeWrite(this.interestsPath, validatedInterests);
-    
-    // 4. Backup and Save Feed Config
-    console.log(`[SettingsManager] Saving feeds to: ${this.feedConfigPath}`);
     await this._safeWrite(this.feedConfigPath, validatedFeedConfig);
 
-    // 5. Save Window State
     if (validatedWindowState) {
-      const windowStatePath = path.join(path.dirname(this.interestsPath), 'window_state.json');
-      console.log(`[SettingsManager] Saving window state to: ${windowStatePath}`);
+      const windowStatePath = path.join(this.dataDir, 'window_state.json');
       await this._safeWrite(windowStatePath, validatedWindowState);
     }
 
-    console.log('[SettingsManager] syncSettings complete');
-    return { 
-      success: true, 
-      timestamp: new Date().toISOString(),
-      lastUpdated: now
-    };
+    return { success: true, timestamp: new Date().toISOString(), lastUpdated: now };
   }
 
-  async getWindowState(): Promise<any | null> {
-    const windowStatePath = path.join(path.dirname(this.interestsPath), 'window_state.json');
+  async getWindowState(): Promise<unknown | null> {
+    const windowStatePath = path.join(this.dataDir, 'window_state.json');
     try {
       const content = await fs.readFile(windowStatePath, 'utf-8');
       return JSON.parse(content);
@@ -105,42 +139,18 @@ class SettingsManager {
     }
   }
 
-  /**
-   * Internal helper for safe (backup + atomic) write
-   * Docker volume mount on Windows often fails with EBUSY for atomic renames.
-   * Switching to standard write with backup.
-   */
-  private async _safeWrite(filePath: string, data: any): Promise<void> {
+  protected async _safeWrite(filePath: string, data: unknown): Promise<void> {
     const content = JSON.stringify(data, null, 2);
-    
-    // 1. Create backup (ignore errors)
     try {
       const exists = await fs.access(filePath).then(() => true).catch(() => false);
       if (exists) {
         await fs.copyFile(filePath, `${filePath}.bak`);
       }
-    } catch (backupError) {
-      console.warn(`[SettingsManager] Backup failed (continuing):`, backupError);
-    }
-
-    // 2. Direct write with retry for Windows/Docker stability
-    let retries = 3;
-    while (retries > 0) {
-      try {
-        await fs.writeFile(filePath, content, 'utf8');
-        return; // Success
-      } catch (writeError: any) {
-        if (writeError.code === 'EBUSY' && retries > 1) {
-          console.warn(`[SettingsManager] Resource busy, retrying... (${retries} left)`);
-          await new Promise(resolve => setTimeout(resolve, 200));
-          retries--;
-          continue;
-        }
-        console.error(`[SettingsManager] Write failed for ${filePath}:`, writeError);
-        throw new Error(`Failed to write file ${path.basename(filePath)}: ${writeError.message}`);
-      }
+      await fs.writeFile(filePath, content, 'utf8');
+    } catch (writeError: unknown) {
+      const msg = writeError instanceof Error ? writeError.message : String(writeError);
+      console.error(`[SettingsManager] Write failed for ${filePath}: ${msg}`);
+      throw writeError;
     }
   }
 }
-
-export default new SettingsManager();

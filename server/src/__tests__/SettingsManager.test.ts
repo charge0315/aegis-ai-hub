@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import fs from 'fs/promises';
-import settingsManager from '../services/SettingsManager';
+import { SettingsManager } from '../services/SettingsManager.js';
 import { Interests, FeedConfig } from '../models/Schemas';
 
 vi.mock('fs/promises');
@@ -27,8 +27,11 @@ describe('SettingsManager', () => {
     }
   };
 
+  let settingsManager: SettingsManager;
+
   beforeEach(() => {
     vi.clearAllMocks();
+    settingsManager = new SettingsManager({ dataDir: '/mock/data' });
   });
 
   it('should read interests and feed config correctly', async () => {
@@ -43,9 +46,10 @@ describe('SettingsManager', () => {
     expect(feedConfig).toEqual(mockFeedConfig);
   });
 
-  it('should throw error if validation fails', async () => {
+  it('should return default interests if validation fails', async () => {
     vi.mocked(fs.readFile).mockResolvedValueOnce(JSON.stringify({ invalid: 'data' }));
-    await expect(settingsManager.getInterests()).rejects.toThrow();
+    const result = await settingsManager.getInterests();
+    expect(result.categories).toEqual({});
   });
 
   it('should sync settings successfully if there is no conflict', async () => {

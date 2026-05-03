@@ -1,3 +1,4 @@
+import { FastifyReply } from 'fastify';
 import { ArchitectAgent, ExecutionPlan } from "../agents/ArchitectAgent.js";
 import { CuratorAgent } from "../agents/CuratorAgent.js";
 import { DiscoveryAgent } from "../agents/DiscoveryAgent.js";
@@ -7,7 +8,7 @@ import { GeminiService } from "../services/GeminiService.js";
 export interface OrchestratorNotification {
   status: string;
   message: string;
-  data?: any;
+  data?: unknown;
   agentId?: string;
   timestamp?: string;
 }
@@ -22,7 +23,7 @@ export class NexusOrchestrator {
   private discovery: DiscoveryAgent;
   private archivist: ArchivistAgent;
   
-  private subscribers: Set<any> = new Set();
+  private subscribers: Set<FastifyReply> = new Set();
   private isRunning: boolean = false;
 
   /**
@@ -40,13 +41,11 @@ export class NexusOrchestrator {
    * フロントエンドへの通知を購読するためのSSEハンドラ登録。
    * FastifyのSSE方式に合わせて調整が必要。
    */
-  public subscribe(res: any): void {
+  public subscribe(res: FastifyReply): void {
     this.subscribers.add(res);
-    // Note: Fastify's response object might have different events
     if (res.raw) {
       res.raw.on('close', () => this.subscribers.delete(res));
-    } else {
-      res.on('close', () => this.subscribers.delete(res));
+      res.raw.on('error', () => this.subscribers.delete(res));
     }
   }
 
@@ -61,11 +60,10 @@ export class NexusOrchestrator {
       try {
         if (res.raw) {
           res.raw.write(payload);
-        } else {
-          res.write(payload);
         }
-      } catch (err) {
-        console.error("[NexusOrchestrator] Notification failed", err);
+      } catch {
+        // 書き込み失敗した購読者を除去してメモリリーク防止
+        this.subscribers.delete(res);
       }
     }
   }

@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI, GenerativeModel, ChatSession, ResponseSchema, SchemaType } from "@google/generative-ai";
+import { GoogleGenerativeAI, GenerativeModel, ChatSession, ResponseSchema, SchemaType, Content } from "@google/generative-ai";
 import { Interests } from "../models/Schemas.js";
 
 export interface CuratedArticle {
@@ -7,13 +7,15 @@ export interface CuratedArticle {
   url?: string;
   content?: string;
   category?: string;
+  brand?: string;
   geminiReason?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /**
  * GeminiService: Gemini 3.1 APIを中枢に、Structured Output（スキーマ強制）
  * を活用したAIリクエスト基盤。
+ * サーバー・Electron両環境で共有される統合版。
  */
 export class GeminiService {
   private genAI: GoogleGenerativeAI | null;
@@ -27,13 +29,22 @@ export class GeminiService {
   }
 
   /**
+   * APIキーを動的に更新します（設定画面からの変更時に使用）。
+   */
+  updateApiKey(apiKey: string): void {
+    this.genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
+  }
+
+  /**
    * 構造化データを生成します。
    * @param {string} prompt - プロンプト
    * @param {ResponseSchema} schema - JSONスキーマ定義
    * @param {string} [modelName] - 使用するモデル名
    */
-  async generateStructured<T>(prompt: string, schema: ResponseSchema, modelName: string = "gemini-3.1-pro-preview"): Promise<T> {
-    if (!this.genAI) throw new Error("Gemini APIキーが設定されていません。");
+  async generateStructured<T>(prompt: string, schema: ResponseSchema, modelName: string = this.primaryModelName): Promise<T> {
+    if (!this.genAI) {
+      throw new Error("Gemini APIキーが設定されていません。System Settingsタブで設定してください。");
+    }
 
     const model: GenerativeModel = this.genAI.getGenerativeModel({
       model: modelName,
@@ -48,16 +59,19 @@ export class GeminiService {
       const response = await result.response;
       const text = response.text();
       return JSON.parse(text) as T;
-    } catch (error: any) {
-      console.error(`[GeminiService] Error with model ${modelName}: ${error.message}`);
-      throw error;
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(`[GeminiService] Error with model ${modelName}: ${errorMessage}`);
+      const detailedError = new Error(`Gemini API Error: ${errorMessage}`);
+      (detailedError as Error & { originalError: unknown }).originalError = error;
+      throw detailedError;
     }
   }
 
   /**
    * チャットセッションを開始
    */
-  createChatSession(modelName: string = "gemini-3.1-pro-preview", history: any[] = []): ChatSession {
+  createChatSession(modelName: string = this.primaryModelName, history: Content[] = []): ChatSession {
     if (!this.genAI) throw new Error("Gemini APIキーが設定されていません。");
 
     const model: GenerativeModel = this.genAI.getGenerativeModel({
@@ -69,12 +83,12 @@ export class GeminiService {
     });
   }
 
-  // --- Backward Compatibility / Convenience Methods ---
+  // --- Convenience Methods ---
 
   /**
    * ニュースの厳選
    */
-  async curate(articlesPool: any[], interests: Interests): Promise<CuratedArticle[]> {
+  async curate(articlesPool: Record<string, unknown>[], interests: Interests): Promise<CuratedArticle[]> {
     const schema: ResponseSchema = {
       type: SchemaType.OBJECT,
       properties: {
@@ -96,73 +110,157 @@ export class GeminiService {
     const prompt = `
 ユーザーの興味に基づいて、最新記事候補の中から最適な10件を選んでください。
 興味: ${JSON.stringify(interests.categories)}
-候補: ${JSON.stringify(articlesPool.slice(0, 30).map((a, i) => ({ id: i, title: a.title })))}
+候補: ${JSON.stringify(articlesPool.slice(0, 30).map((a, i) => ({ id: i, title: String(a.title) })))}
 `;
     const result = await this.generateStructured<{ selections: { id: number; reason: string }[] }>(prompt, schema);
     return result.selections.map(item => ({
       ...articlesPool[item.id],
       geminiReason: item.reason
-    }));
+    } as CuratedArticle));
   }
 
-  async getEvolutionProposals(interests: Interests): Promise<any> {
+  async getEvolutionProposals(interests: Interests): Promise<Record<string, unknown>> {
     const schema: ResponseSchema = {
       type: SchemaType.OBJECT,
       properties: {
-        sites: { type: SchemaType.ARRAY, items: { type: SchemaType.OBJECT, properties: { name: { type: SchemaType.STRING }, url: { type: SchemaType.STRING }, category: { type: SchemaType.STRING }, reason: { type: SchemaType.STRING } }, required: ["name", "url", "category", "reason"] } },
-        brands: { type: SchemaType.ARRAY, items: { type: SchemaType.OBJECT, properties: { value: { type: SchemaType.STRING }, category: { type: SchemaType.STRING }, reason: { type: SchemaType.STRING } }, required: ["value", "category", "reason"] } },
-        keywords: { type: SchemaType.ARRAY, items: { type: SchemaType.OBJECT, properties: { value: { type: SchemaType.STRING }, category: { type: SchemaType.STRING }, reason: { type: SchemaType.STRING } }, required: ["value", "category", "reason"] } }
+        sites: {
+          type: SchemaType.ARRAY,
+          items: {
+            type: SchemaType.OBJECT,
+            properties: {
+              name: { type: SchemaType.STRING, description: "サイト名" },
+              url: { type: SchemaType.STRING, description: "RSS/Atomフィードの直接のURL" },
+              category: { type: SchemaType.STRING, description: "対応するカテゴリ名" },
+              reason: { type: SchemaType.STRING, description: "推奨理由" }
+            },
+            required: ["name", "url", "category", "reason"]
+          }
+        },
+        brands: {
+          type: SchemaType.ARRAY,
+          items: {
+            type: SchemaType.OBJECT,
+            properties: {
+              value: { type: SchemaType.STRING },
+              category: { type: SchemaType.STRING },
+              reason: { type: SchemaType.STRING }
+            },
+            required: ["value", "category", "reason"]
+          }
+        },
+        keywords: {
+          type: SchemaType.ARRAY,
+          items: {
+            type: SchemaType.OBJECT,
+            properties: {
+              value: { type: SchemaType.STRING },
+              category: { type: SchemaType.STRING },
+              reason: { type: SchemaType.STRING }
+            },
+            required: ["value", "category", "reason"]
+          }
+        }
       },
       required: ["sites", "brands", "keywords"]
     };
-    const prompt = `現在の興味リストに基づき、進化提案（サイト、ブランド、キーワード）を生成してください: ${JSON.stringify(interests)}`;
-    return await this.generateStructured<any>(prompt, schema);
+
+    const prompt = `
+あなたはニュースソースの専門家です。現在の興味リストに基づき、進化提案（フィード、ブランド、キーワード）を生成してください。
+
+**重要ルール:**
+1. sitesのURLは、必ず「RSSフィード」または「Atomフィード」の直接のURLを指定してください。
+2. 日本語の信頼できるニュースサイトを最優先してください。
+3. カテゴリ名は、入力された interests のキー名と正確に一致させてください。
+
+現在の興味リスト: ${JSON.stringify(interests)}
+`;
+    return await this.generateStructured<Record<string, unknown>>(prompt, schema);
   }
 
-  async getRestructureProposal(interests: Interests): Promise<any> {
+  async getRestructureProposal(interests: Interests): Promise<Record<string, unknown>> {
     const schema: ResponseSchema = {
       type: SchemaType.OBJECT,
       properties: {
-        categories: { type: SchemaType.OBJECT, additionalProperties: { type: SchemaType.OBJECT, properties: { emoji: { type: SchemaType.STRING }, brands: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } }, keywords: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } }, score: { type: SchemaType.NUMBER }, reason: { type: SchemaType.STRING } }, required: ["emoji", "brands", "keywords", "score", "reason"] } } as any
+        categories: {
+          type: SchemaType.ARRAY,
+          items: {
+            type: SchemaType.OBJECT,
+            properties: {
+              name: { type: SchemaType.STRING },
+              emoji: { type: SchemaType.STRING },
+              brands: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+              keywords: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+              score: { type: SchemaType.NUMBER },
+              reason: { type: SchemaType.STRING }
+            },
+            required: ["name", "emoji", "brands", "keywords", "score", "reason"]
+          }
+        }
       },
       required: ["categories"]
     };
-    const prompt = `現在の興味設定を分析し、再構築案を提示してください: ${JSON.stringify(interests)}`;
-    return await this.generateStructured<any>(prompt, schema);
+    const prompt = `現在の興味設定を分析し、再構築案を提示してください。出力は categories 配列として返してください: ${JSON.stringify(interests)}`;
+    const result = await this.generateStructured<{ categories: Array<Record<string, unknown>> }>(prompt, schema);
+
+    // 互換性のためにオブジェクト形式に変換
+    const categories: Record<string, unknown> = {};
+    result.categories.forEach(cat => {
+      const name = String(cat.name);
+      const { name: _, ...details } = cat;
+      categories[name] = details;
+    });
+
+    return { categories };
   }
 
-  async discoverSites(interests: Interests): Promise<any[]> {
+  async discoverSites(interests: Interests): Promise<Record<string, unknown>[]> {
     const schema: ResponseSchema = {
       type: SchemaType.OBJECT,
       properties: {
-        sites: { type: SchemaType.ARRAY, items: { type: SchemaType.OBJECT, properties: { name: { type: SchemaType.STRING }, url: { type: SchemaType.STRING }, category: { type: SchemaType.STRING } }, required: ["name", "url", "category"] } }
+        sites: {
+          type: SchemaType.ARRAY,
+          items: {
+            type: SchemaType.OBJECT,
+            properties: {
+              name: { type: SchemaType.STRING },
+              url: { type: SchemaType.STRING, description: "有効なRSS/Atomフィードの直接URL" },
+              category: { type: SchemaType.STRING }
+            },
+            required: ["name", "url", "category"]
+          }
+        }
       },
       required: ["sites"]
     };
-    const prompt = `ユーザーの興味に合致する新しいRSSフィードのURLを提案してください: ${JSON.stringify(interests)}`;
-    const result = await this.generateStructured<{ sites: any[] }>(prompt, schema);
+    const prompt = `
+以下の興味設定に合致する、新しいニュースソースを提案してください。
+URLは必ず「RSSフィード」または「Atomフィード」の直接のURLを指定し、ホームページのURLは絶対に含めないでください。
+日本語のサイトを優先してください。
+興味設定: ${JSON.stringify(interests.categories)}
+`;
+    const result = await this.generateStructured<{ sites: Record<string, unknown>[] }>(prompt, schema);
     return result.sites;
   }
 
   /**
    * 特定のカテゴリに対して英語のRSSフィードを提案します。
    */
-  async discoverEnglishSites(interests: Interests, targetCategories: string[]): Promise<any[]> {
+  async discoverEnglishSites(interests: Interests, targetCategories: string[]): Promise<Record<string, unknown>[]> {
     const schema: ResponseSchema = {
       type: SchemaType.OBJECT,
       properties: {
-        sites: { 
-          type: SchemaType.ARRAY, 
-          items: { 
-            type: SchemaType.OBJECT, 
-            properties: { 
-              name: { type: SchemaType.STRING }, 
-              url: { type: SchemaType.STRING }, 
+        sites: {
+          type: SchemaType.ARRAY,
+          items: {
+            type: SchemaType.OBJECT,
+            properties: {
+              name: { type: SchemaType.STRING },
+              url: { type: SchemaType.STRING },
               category: { type: SchemaType.STRING },
-              lang: { type: SchemaType.STRING, enum: ["en"], format: "enum" }
-            }, 
-            required: ["name", "url", "category", "lang"] 
-          } 
+              lang: { type: SchemaType.STRING, description: "Language code (e.g. 'en')" }
+            },
+            required: ["name", "url", "category", "lang"]
+          }
         }
       },
       required: ["sites"]
@@ -179,7 +277,7 @@ export class GeminiService {
 対象カテゴリ: ${JSON.stringify(targetInterests)}
 出力は必ず英語圏のサイトURLを含めてください。
 `;
-    const result = await this.generateStructured<{ sites: any[] }>(prompt, schema);
+    const result = await this.generateStructured<{ sites: Record<string, unknown>[] }>(prompt, schema);
     return result.sites;
   }
 
@@ -211,11 +309,11 @@ export class GeminiService {
 リスト: ${JSON.stringify(articles)}
 `;
 
-    const result = await this.generateStructured<{ translations: any[] }>(prompt, schema);
+    const result = await this.generateStructured<{ translations: { title: string, desc: string }[] }>(prompt, schema);
     return result.translations;
   }
 
-  async analyzeTrends(articles: any[], interests: Interests): Promise<any[]> {
+  async analyzeTrends(articles: Record<string, unknown>[], interests: Interests): Promise<Record<string, unknown>[]> {
     const schema: ResponseSchema = {
       type: SchemaType.OBJECT,
       properties: {
@@ -240,7 +338,7 @@ export class GeminiService {
 興味設定: ${JSON.stringify(interests.categories)}
 最新記事: ${JSON.stringify(articles)}
 `;
-    const result = await this.generateStructured<{ suggestions: any[] }>(prompt, schema);
+    const result = await this.generateStructured<{ suggestions: Record<string, unknown>[] }>(prompt, schema);
     return result.suggestions;
   }
 
@@ -265,6 +363,6 @@ export class GeminiService {
 カテゴリ名: "${categoryName}"
 日本語で回答してください。
 `;
-    return await this.generateStructured<any>(prompt, schema);
+    return await this.generateStructured<{ brands: string[], keywords: string[], emoji: string, reason: string }>(prompt, schema);
   }
 }
