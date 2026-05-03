@@ -1,3 +1,11 @@
+/**
+ * Aegis Nexus Dashboard - Main Application Component
+ * 
+ * ダッシュボード全体の「中枢神経系」として機能するトップレベルコンポーネント。
+ * バックエンド（エージェント群）からの情報を視覚化し、ユーザーが「知の統合」を
+ * 効率的に行えるよう、フィードの閲覧とシステム設定のルーティングを管理します。
+ * また、ウィンドウのリサイズや透過モード（Acrylic）などのネイティブ体験も統括します。
+ */
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { 
@@ -19,14 +27,23 @@ import { CommandPalette } from './components/CommandPalette';
 import { useNexusSync, useAgentEvents, nexusApi } from './api/nexusApi';
 
 const App: React.FC = () => {
+  // --- PRIMARY CONTEXT STATE ---
+  // ユーザーが現在「情報の消費（feed）」をしているか、「システムの調整（settings）」をしているかの状態
   const [currentView, setCurrentView] = useState<'feed' | 'settings'>('feed');
+  
+  // バックエンド（NexusOrchestrator）との同期とデータ取得を司るコアフック
   const { settings, articles, loading, sync, refetch } = useNexusSync();
+  
+  // --- COGNITIVE FILTER STATE ---
+  // ユーザーの認知的負荷を調整するための表示制御ステート群
   const [searchQuery, setSearchQuery] = useState('');
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [feedSize, setFeedSize] = useState<'small' | 'medium' | 'large'>('medium');
   const [showImages, setShowImages] = useState(true);
 
   // --- RESPONSIVE STATE ---
+  // WindowsのFancyZonesなどで画面が分割された際、自動的にナビゲーションを
+  // 最小化（Compact）してコンテンツ領域を確保するためのレイアウト適応ロジック
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
@@ -37,14 +54,22 @@ const App: React.FC = () => {
   const sidebarWidth = isCompact ? 80 : 256;
 
   // --- SIMPLE DIALOG STATE ---
+  // アプリケーション全体を覆うブロッキング・ダイアログの制御。
+  // 設定の警告やAIディスカバリーなど、ユーザーの完全な注意が必要な処理で使用します。
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [dialogTitle, setDialogTitle] = useState('');
   const [dialogContent, setDialogContent] = useState<React.ReactNode>(null);
 
+  // バックエンドの自律エージェントの活動状態を監視。
+  // エージェントが新しい情報を発見（同期完了）した際、即座にUIへ反映（refetch）させます。
   const agentEvents = useAgentEvents(useCallback(() => {
     void refetch(false);
   }, [refetch]));
 
+  /**
+   * 検索クエリに基づくシグナル（記事）の絞り込み。
+   * 大量の記事データが流れてきても、再レンダリングコストを抑えるためにメモ化しています。
+   */
   const filteredArticles = useMemo(() => {
     const query = searchQuery.toLowerCase();
     return articles.filter(article => 
@@ -53,6 +78,10 @@ const App: React.FC = () => {
     );
   }, [articles, searchQuery]);
 
+  /**
+   * ユーザーの「興味（Interests）」カテゴリに基づいて記事をグループ化。
+   * これにより、ユーザーは自分の関心領域ごとに整理された形で情報を消化できます。
+   */
   const groupedArticles = useMemo(() => {
     const groups: Record<string, typeof articles> = {};
     if (settings) {
@@ -63,9 +92,14 @@ const App: React.FC = () => {
     return groups;
   }, [filteredArticles, settings]);
 
+  /**
+   * 特定のカテゴリに関する情報源（フィード）の管理と、AIによる新規開拓（Discovery）を司る。
+   * ユーザーが未知の優良情報源を安全に探せるよう、AIエージェントにプロンプトを投げます。
+   */
   const handleShowFeeds = async (category: string) => {
     if (!settings) return;
 
+    // カテゴリ名と設定キーの不整合（ドットや記号の揺れ）を吸収するための正規化処理
     const feedKey = Object.keys(settings.feed_urls).find(k => 
       k === category || k.replace(/・/g, '') === category.replace(/・/g, '')
     );
@@ -134,6 +168,8 @@ const App: React.FC = () => {
   return (
     <React.Fragment>
       {/* --- IRONCLAD CENTERED DIALOG --- */}
+      {/* アプリケーションの状態を一時停止し、ユーザーの決定を促すモーダルレイヤー。
+          背後（サイドバーなど）への誤操作を防ぐための Ironclad（鉄壁）な設計です。 */}
       {isDialogOpen && (
         <div style={{ 
           position: 'fixed', 
@@ -144,11 +180,12 @@ const App: React.FC = () => {
           zIndex: 999999, 
           display: 'grid', 
           placeItems: 'center',
-          // SHIFT CENTER: The dialog container itself handles the offset
+          // SHIFT CENTER: サイドバーが展開されている場合でも、メインコンテンツの
+          // 「視覚的な中心」にダイアログが配置されるようにオフセットを計算します。
           paddingLeft: `${sidebarWidth}px`,
-          pointerEvents: 'none' // Click through empty area to backdrop
+          pointerEvents: 'none' // Backdrop側にクリックを透過させるための措置
         }}>
-          {/* Global Backdrop - Covers entire screen */}
+          {/* Global Backdrop - 画面全体を暗くし、背後の情報をボカす（認知負荷の低減） */}
           <div 
             onClick={() => setIsDialogOpen(false)} 
             style={{ 
@@ -163,7 +200,7 @@ const App: React.FC = () => {
             }}
           ></div>
           
-          {/* Dialog Box - Content events are active */}
+          {/* Dialog Box - 実際の操作領域（イベントを再有効化） */}
           <div style={{ 
             width: '100%', 
             maxWidth: '460px', 
@@ -174,7 +211,7 @@ const App: React.FC = () => {
             boxShadow: '0 50px 100px -20px rgba(0,0,0,0.9)', 
             overflow: 'hidden',
             position: 'relative',
-            pointerEvents: 'auto', // Reactivate clicks for dialog content
+            pointerEvents: 'auto', // ダイアログ内部のクリック操作を許可
             zIndex: 1
           }}>
             <div className="flex justify-between items-center mb-8">
@@ -189,6 +226,7 @@ const App: React.FC = () => {
       )}
 
       <div className="window-base text-slate-200">
+        {/* キーボード駆動のユーザー向け：素早いナビゲーションとシステム制御 */}
         <CommandPalette 
           isOpen={isCommandPaletteOpen} 
           onClose={() => setIsCommandPaletteOpen(false)} 
@@ -198,6 +236,8 @@ const App: React.FC = () => {
           onTriggerOrchestration={async (req) => { await nexusApi.triggerOrchestration(req); }}
         />
 
+        {/* 左側ナビゲーション（サイドバー）。
+            dragクラスによって、ウィンドウ全体を移動させるための「つかみしろ」として機能します。 */}
         <aside className={`${isCompact ? 'w-20 px-3' : 'w-64 p-6'} sidebar-glass flex flex-col sticky top-0 h-screen z-30 transition-all duration-300 drag`}>
           <div className={`mb-10 mt-6 flex ${isCompact ? 'justify-center' : 'px-2'}`}>
             <div className="w-10 h-10 rounded-xl overflow-hidden shadow-2xl bg-primary/20 flex items-center justify-center">
@@ -230,6 +270,9 @@ const App: React.FC = () => {
         </aside>
 
         <main className="flex-grow flex flex-col min-h-screen">
+          {/* メインヘッダー。
+              検索ボックスと表示オプション（UIカスタマイズ）を提供し、
+              ここもウィンドウ移動のドラッグ領域（drag）として機能します。 */}
           <header className={`h-16 border-b border-white/5 sidebar-glass flex items-center justify-between ${isCompact ? 'px-4' : 'px-8'} sticky top-0 z-20 drag`}>
             <div className="flex items-center gap-6 flex-grow no-drag">
               <Search size={16} className="text-slate-500" />
@@ -284,6 +327,8 @@ const App: React.FC = () => {
                   <p className="text-slate-500 text-sm font-medium">Synthesizing signals from your designated node cluster.</p>
                 </div>
 
+                {/* 起動直後、まだエージェントがデータを構築している間のローディングステート。
+                    ユーザーに「バックグラウンドで高度な処理が走っている」ことを視覚的に伝えます。 */}
                 {loading && articles.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-20 space-y-6">
                     <div className="relative">
@@ -312,6 +357,8 @@ const App: React.FC = () => {
                   </div>
                 ) : (
                   <div className="space-y-16">
+                    {/* 関心カテゴリごとに記事をマッピングして表示。
+                        各セクションは論理的な情報の塊としてユーザーに提示されます。 */}
                     {Object.entries(groupedArticles).map(([category, catArticles]) => (
                       <section key={category}>
                         <button 

@@ -4,6 +4,14 @@ import { ExternalLink, Sparkles, Calendar } from 'lucide-react';
 import { GlassPanel } from './GlassPanel';
 import type { Article } from '../types';
 
+/**
+ * ArticleCard Component
+ * 
+ * 単一の「インテリジェンス・シグナル（記事）」を視覚化するためのコンポーネント。
+ * ユーザーの認知負荷を調整するため、親コンポーネントからの指示（size, showImages）に基づき、
+ * リッチなビジュアル表現（large）から高密度な情報リスト（small）まで動的に変形します。
+ */
+
 interface ArticleCardProps {
   article: Article;
   index?: number;
@@ -18,7 +26,12 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({ article, index = 0, si
   const isSmall = size === 'small';
   const isLarge = size === 'large';
 
-  // カテゴリに応じたグラデーション生成（フォールバック用）
+  /**
+   * カテゴリに応じたグラデーション生成（フォールバック用）
+   * 情報源に画像が存在しない、または読み込みに失敗した場合でも、
+   * 「ダッシュボードの近未来的で洗練されたデザイン（Aesthetics）」を損なわないよう、
+   * カテゴリごとに意味付けされた独自のカラーグラデーションを適用します。
+   */
   const getFallbackGradient = () => {
     const gradients: Record<string, string> = {
       'ゲーム・配信': 'from-indigo-600 to-purple-600',
@@ -38,6 +51,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({ article, index = 0, si
   };
 
   return (
+    // GlassPanel: 背景の透過とブラー効果を利用し、重層的でリッチなUI（Glassmorphism）を実現するベース基盤
     <GlassPanel 
       className={`group relative flex flex-col h-full hover:border-primary/50 transition-colors duration-300 article-card cursor-pointer ${
         isSmall ? 'rounded-xl' : 'rounded-3xl'
@@ -49,7 +63,8 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({ article, index = 0, si
       data-testid="article-card"
       onClick={() => window.open(article.link, '_blank', 'noopener,noreferrer')}
     >
-      {/* Image Section */}
+      {/* Image Section - 視覚的なフック（アンカー）の提供。
+          テキストモード（showImages=false）の場合は、情報密度を高めるために空間ごと省略されます。 */}
       {showImages && (
         <div className={`relative overflow-hidden bg-slate-800 shrink-0 ${
           isSmall ? 'aspect-[4/3]' : 'aspect-video'
@@ -62,6 +77,8 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({ article, index = 0, si
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             />
           ) : (
+            // 画像がない場合のフォールバックUI。ダミー画像ではなく、生成されたグラデーションと
+            // テクスチャ（carbon-fibre）を重ねることで、プレミアム感を維持します。
             <div className={`w-full h-full flex items-center justify-center text-white/40 bg-linear-to-br ${getFallbackGradient()} relative overflow-hidden`}>
               {/* 背景の装飾的な要素 */}
               <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
@@ -72,7 +89,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({ article, index = 0, si
             </div>
           )}
           
-          {/* Category Badge */}
+          {/* Category Badge - 情報のコンテキスト（属するジャンルと提供元）を画像上にオーバーレイし、空間を節約 */}
           {!isSmall && (
             <div className="absolute top-2 left-2 flex gap-2">
               <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-primary/80 text-white rounded backdrop-blur-md">
@@ -84,7 +101,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({ article, index = 0, si
             </div>
           )}
 
-          {/* Score Badge */}
+          {/* Score Badge - AIエージェントによる評価スコア。ユーザーが読むべき記事を即座に判断するための最重要指標 */}
           <div 
             className={`absolute ${isSmall ? 'top-1 right-1 w-6 h-6 text-[8px]' : 'top-2 right-2 w-8 h-8 text-xs'} flex items-center justify-center rounded-full bg-black/60 backdrop-blur-md border border-white/10 font-bold text-accent score-badge`}
             data-testid="article-score"
@@ -94,9 +111,10 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({ article, index = 0, si
         </div>
       )}
 
-      {/* Content Section */}
+      {/* Content Section - 記事のメタデータと本文。情報ヒエラルキーを明確にし、流し読みを容易にします */}
       <div className={`${isSmall ? 'p-2' : 'p-4'} flex-grow flex flex-col relative`}>
         {!showImages && (
+          // テキストモード時のみ、画像上にあったバッジ類をこちらに配置して情報を補完
           <div className="absolute top-2 right-2 flex gap-2">
             {!isSmall && (
               <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-primary/20 text-primary rounded border border-primary/20">
@@ -151,7 +169,9 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({ article, index = 0, si
         </div>
       </div>
 
-      {/* AI Reasoning Overlay */}
+      {/* AI Reasoning Overlay
+          バックエンドのGeminiエージェントが「なぜこの記事を抽出したか」の思考プロセス（Reasoning）を透過的に提示するUI。
+          ブラックボックス化を防ぎ、システムに対するユーザーの信頼性を担保する意図があります。 */}
       <AnimatePresence>
         {showReason && article.geminiReason && (
           <motion.div
