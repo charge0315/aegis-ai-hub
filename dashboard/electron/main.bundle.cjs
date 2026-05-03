@@ -16416,30 +16416,32 @@ var init_GeminiService = __esm({
        * @param {ResponseSchema} schema - JSONスキーマ定義
        * @param {string} [modelName] - 使用するモデル名
        */
-      async generateStructured(prompt, schema, modelName = "gemini-3.1-pro-preview") {
-        if (!this.genAI) throw new Error("Gemini API\u30AD\u30FC\u304C\u8A2D\u5B9A\u3055\u308C\u3066\u3044\u307E\u305B\u3093\u3002");
-        const model = this.genAI.getGenerativeModel({
-          model: modelName,
-          generationConfig: {
-            responseMimeType: "application/json",
-            responseSchema: schema
-          }
-        });
+      async generateStructured(prompt, schema, modelName = "gemini-3.1-flash-lite-preview") {
+        if (!this.genAI) throw new Error("Gemini API\u30AD\u30FC\u304C\u8A2D\u5B9A\u3055\u308C\u3066\u3044\u307E\u305B\u3093\u3002System Settings\u30BF\u30D6\u3067\u8A2D\u5B9A\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
         try {
+          const model = this.genAI.getGenerativeModel({
+            model: modelName,
+            generationConfig: {
+              responseMimeType: "application/json",
+              responseSchema: schema
+            }
+          });
           const result = await model.generateContent(prompt);
           const response = await result.response;
           const text3 = response.text();
           return JSON.parse(text3);
         } catch (error51) {
           const errorMessage = error51 instanceof Error ? error51.message : String(error51);
-          console.error(`[GeminiService] Error with model ${modelName}: ${errorMessage}`);
-          throw error51;
+          console.error(`[GeminiService] Error with model ${modelName}:`, errorMessage);
+          const detailedError = new Error(`Gemini API Error (${modelName}): ${errorMessage}`);
+          detailedError.originalError = error51;
+          throw detailedError;
         }
       }
       /**
        * チャットセッションを開始
        */
-      createChatSession(modelName = "gemini-3.1-pro-preview", history = []) {
+      createChatSession(modelName = "gemini-3.1-flash-lite-preview", history = []) {
         if (!this.genAI) throw new Error("Gemini API\u30AD\u30FC\u304C\u8A2D\u5B9A\u3055\u308C\u3066\u3044\u307E\u305B\u3093\u3002");
         const model = this.genAI.getGenerativeModel({
           model: modelName

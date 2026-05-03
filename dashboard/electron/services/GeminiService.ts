@@ -39,33 +39,38 @@ export class GeminiService {
    * @param {ResponseSchema} schema - JSONスキーマ定義
    * @param {string} [modelName] - 使用するモデル名
    */
-  async generateStructured<T>(prompt: string, schema: ResponseSchema, modelName: string = "gemini-3.1-pro-preview"): Promise<T> {
-    if (!this.genAI) throw new Error("Gemini APIキーが設定されていません。");
-
-    const model: GenerativeModel = this.genAI.getGenerativeModel({
-      model: modelName,
-      generationConfig: {
-        responseMimeType: "application/json",
-        responseSchema: schema,
-      },
-    });
+  async generateStructured<T>(prompt: string, schema: ResponseSchema, modelName: string = "gemini-3.1-flash-lite-preview"): Promise<T> {
+    if (!this.genAI) throw new Error("Gemini APIキーが設定されていません。System Settingsタブで設定してください。");
 
     try {
+      const model: GenerativeModel = this.genAI.getGenerativeModel({
+        model: modelName,
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: schema,
+        },
+      });
+
       const result = await model.generateContent(prompt);
       const response = await result.response;
       const text = response.text();
       return JSON.parse(text) as T;
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      console.error(`[GeminiService] Error with model ${modelName}: ${errorMessage}`);
-      throw error;
+      console.error(`[GeminiService] Error with model ${modelName}:`, errorMessage);
+      
+      // ネットワークエラーや認証エラーなど、特定の原因を付与して再スロー
+      const detailedError = new Error(`Gemini API Error (${modelName}): ${errorMessage}`);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (detailedError as any).originalError = error;
+      throw detailedError;
     }
   }
 
   /**
    * チャットセッションを開始
    */
-  createChatSession(modelName: string = "gemini-3.1-pro-preview", history: Content[] = []): ChatSession {
+  createChatSession(modelName: string = "gemini-3.1-flash-lite-preview", history: Content[] = []): ChatSession {
     if (!this.genAI) throw new Error("Gemini APIキーが設定されていません。");
 
     const model: GenerativeModel = this.genAI.getGenerativeModel({
