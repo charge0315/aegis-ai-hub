@@ -45,6 +45,7 @@ export class ScraperFacade {
      */
     async getRecommendations(interests: Interests): Promise<any[]> {
         try {
+            await this.enrichmentService.init(); // キャッシュの初期化
             const allArticles = await this.fetchAndProcessArticles(interests);
             const candidates = this._sortAndSlice(allArticles, 30);
 
@@ -56,7 +57,7 @@ export class ScraperFacade {
             const recommendations = await this.geminiService.curate(candidates as unknown as Record<string, unknown>[], interests);
             
             // 推薦された10件に対して優先的に画像補完を実行し、視覚的な品質を向上させる
-            await Promise.all(recommendations.map((a: any) => this.enrichmentService.enrich(a as any)));
+            await this.enrichmentService.enrichAll(recommendations as any[]);
 
             return recommendations;
         } catch (e: any) {
@@ -76,11 +77,12 @@ export class ScraperFacade {
      */
     async getDashboard(interests: Interests): Promise<Record<string, any>> {
         console.log(`[ScraperFacade] パーソナライズド・ダッシュボードを構築中...`);
+        await this.enrichmentService.init(); // キャッシュの初期化
         const allArticles = await this.fetchAndProcessArticles(interests);
 
         // スコアと鮮度のバランスが良い上位50件を詳細エンリッチメントの対象とする
         const topArticles = this._sortAndSlice(allArticles, 50);
-        await Promise.all(topArticles.map((a: any) => this.enrichmentService.enrich(a)));
+        await this.enrichmentService.enrichAll(topArticles as any[]);
 
         const dashboard: Record<string, any> = {};
         for (const catName in interests.categories) {

@@ -1,7 +1,13 @@
 import * as cheerio from 'cheerio';
 import axios from 'axios';
+import pLimit from 'p-limit';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { ArticleType } from '../models/Article.js';
 import { GeminiService } from './GeminiService.js';
+import { ImageCacheManager } from './ImageCacheManager.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /**
  * 外部ソースから取得した生の情報を、ユーザーにとって価値のある「リッチな記事」へと昇華させるためのサービス。
@@ -11,9 +17,15 @@ import { GeminiService } from './GeminiService.js';
 export class EnrichmentService {
     private placeholders: Record<string, string>;
     private geminiService: GeminiService | null = null;
+    private cacheManager: ImageCacheManager;
+    private limit = pLimit(5); // 同時実行数を5に制限
 
     constructor(geminiService?: GeminiService) {
         this.geminiService = geminiService || null;
+        // プロジェクトルートの data ディレクトリを指定
+        const cacheDir = path.resolve(__dirname, '../../data');
+        this.cacheManager = new ImageCacheManager(cacheDir);
+        
         this.placeholders = {
             '音楽・ギター・DTM': "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400",
             'AI・ソフトウェア': "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=400",
@@ -24,66 +36,53 @@ export class EnrichmentService {
     }
 
     /**
+     * キャッシュマネージャーの初期化
+     */
+    async init(): Promise<void> {
+        await this.cacheManager.init();
+    }
+
+    /**
+     * 複数の記事を一括でエンリッチメントします。
+     * 並列実行数を制限し、サーバーや相手サイトへの負荷を抑えます。
+     */
+    async enrichAll(articles: ArticleType[]): Promise<ArticleType[]> {
+        const tasks = articles.map(article => this.limit(() => this.enrich(article)));
+        return Promise.all(tasks);
+    }
+
+    /**
      * 不完全な記事データを検査し、可能な限りのメタデータを補完して情報の質を底上げします。
      * 特に、アイキャッチ画像の確保（視覚的魅力の維持）と、母国語へのローカライズ（可読性の確保）を担います。
      */
     async enrich(article: ArticleType): Promise<ArticleType> {
         // --- 視覚的メタデータの補完フェーズ ---
-        // UI上で記事が「文字だけの無味乾燥なブロック」になるのを防ぐため、必ず何らかの画像を紐付けます。
         if (!article.img) {
-            try {
-                // 記事の元ページを取得し、隠されたメタデータや本文を直接解剖します。
-                const { data } = await axios.get(article.link, { timeout: 5000, headers: { 'User-Agent': 'AegisAIHubBot/1.0' } });
-                const $ = cheerio.load(data);
-                
-                // 優先度高：サイト運営者が意図して設定したSNS共有用画像（og:image等）を採用し、
-                // 最も記事の内容を正しく表すビジュアルを確保します。
-                let ogImage = $('meta[property="og:image"]').attr('content') || 
-                              $('meta[name="twitter:image"]').attr('content') ||
-                              $('link[rel="image_src"]').attr('href');
-
-                // 優先度中：専用のメタタグがないサイトに対する救済措置。
-                // 記事のHTML構造そのものを探索し、本文と思われる領域から妥当な画像を泥臭く発掘します。
-                if (!ogImage) {
-                    const contentAreas = $('article, main, .content, .post, .entry');
-                    const imgElements = contentAreas.length > 0 ? contentAreas.find('img') : $('img');
+            // 1. キャッシュを確認
+            const cachedImg = this.cacheManager.get(article.link);
+            if (cachedImg) {
+                article.img = cachedImg;
+            } else {
+                try {
+                    // 2. スクレイピングによる抽出
+                    const foundImg = await this.scrapeImage(article.link);
                     
-                    imgElements.each((_, el) => {
-                        const src = $(el).attr('src') || $(el).attr('data-src');
-                        
-                        // トラッキング用の1px画像やUIアイコンといった「ノイズ」を排除し、
-                        // 記事の主題に沿った本物の画像（写真やイラスト）だけを厳選します。
-                        if (src && /\.(jpg|jpeg|png|webp)/i.test(src)) {
-                            try {
-                                // 相対パス（/images/xxx.png 等）のままではアプリから参照できないため、
-                                // 記事の元URLを基準とした完全なアクセス可能URL（絶対パス）へと再構築します。
-                                ogImage = new URL(src, article.link).href;
-                                return false; // 条件を満たす最初の1枚で探索を打ち切る
-                            } catch (e) {
-                                // 再構築に失敗した画像は諦め、次の候補を探し続けます。
-                            }
-                        }
-                    });
-                }
-
-                if (ogImage && ogImage.startsWith('http')) {
-                    article.img = ogImage;
-                } else {
-                    // 最終防衛線：全ての画像探索アルゴリズムが空振りに終わった場合でも、
-                    // UIのレイアウト崩れを防ぐため、カテゴリの文脈に沿った美しいダミー画像をあてがいます。
+                    if (foundImg) {
+                        article.img = foundImg;
+                        await this.cacheManager.set(article.link, foundImg);
+                    } else {
+                        // 最終防衛線：カテゴリ別プレースホルダー
+                        article.img = this.getPlaceholder(article.category);
+                    }
+                } catch (e) {
+                    console.error(`[EnrichmentService] Failed to scrape image for ${article.link}:`, e);
                     article.img = this.getPlaceholder(article.category);
                 }
-            } catch (e) {
-                // ネットワークエラー等でアクセス不能な場合も、システムを停止させずにダミー画像で保護します。
-                article.img = this.getPlaceholder(article.category);
             }
         }
 
         // --- 言語のローカライズフェーズ ---
-        // ユーザーが海外の優秀な情報源にもストレスなくアクセスできるよう、
-        // 記事が日本語でないと判断された場合は自動的に母国語の要約へと変換します。
         if (this.geminiService && this.isNotJapanese(article.title)) {
-            console.log(`[EnrichmentService] 翻訳を実行中: ${article.title}`);
             try {
                 const translations = await this.geminiService.translateArticles([{
                     title: article.title,
@@ -91,7 +90,6 @@ export class EnrichmentService {
                 }]);
                 
                 if (translations && translations.length > 0) {
-                    // 翻訳済みであることを明示しつつ、タイトルと概要を置き換えます。
                     article.title = `[JP] ${translations[0].title}`;
                     article.desc = translations[0].desc;
                 }
@@ -104,8 +102,66 @@ export class EnrichmentService {
     }
 
     /**
-     * テキストが翻訳対象（非日本語）であるかを高速に振り分けるための関所。
-     * ここで厳密な言語判定は行わず、あくまで「日本語特有の文字が含まれているか」のみで軽量に判断します。
+     * 記事URLから最適な画像を抽出します。
+     */
+    private async scrapeImage(url: string): Promise<string | null> {
+        try {
+            const { data } = await axios.get(url, { 
+                timeout: 8000, 
+                headers: { 
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' 
+                } 
+            });
+            const $ = cheerio.load(data);
+            
+            // 1. OGP / Meta Tags (High priority)
+            let imgUrl = $('meta[property="og:image"]').attr('content') || 
+                         $('meta[name="twitter:image"]').attr('content') ||
+                         $('meta[name="image"]').attr('content') ||
+                         $('meta[name="thumbnail"]').attr('content') ||
+                         $('link[rel="image_src"]').attr('href') ||
+                         $('link[rel="shortcut icon"]').attr('href');
+
+            // 2. Content Heuristics (Fallback)
+            if (!imgUrl) {
+                const contentAreas = $('article, main, [role="main"], .post-content, .entry-content, #content, .article-body');
+                const imgElements = contentAreas.length > 0 ? contentAreas.find('img') : $('img');
+                
+                imgElements.each((_, el) => {
+                    const src = $(el).attr('src') || $(el).attr('data-src') || $(el).attr('data-lazy-src');
+                    
+                    if (src && /\.(jpg|jpeg|png|webp|gif)/i.test(src)) {
+                        // アイコンやバナー（小さい画像）を避けるヒューリスティクス
+                        const width = $(el).attr('width');
+                        const height = $(el).attr('height');
+                        if (width && parseInt(width) < 100) return true; // continue
+                        if (height && parseInt(height) < 100) return true;
+
+                        imgUrl = src;
+                        return false; // break
+                    }
+                });
+            }
+
+            if (imgUrl) {
+                try {
+                    // 相対URLを絶対URLに変換
+                    const absoluteUrl = new URL(imgUrl, url).href;
+                    if (absoluteUrl.startsWith('http')) {
+                        return absoluteUrl;
+                    }
+                } catch (e) {
+                    // URL解析失敗
+                }
+            }
+        } catch (e) {
+            // リクエスト失敗
+        }
+        return null;
+    }
+
+    /**
+     * テキストが翻訳対象（非日本語）であるかを判定します。
      */
     private isNotJapanese(text: string): boolean {
         const jpRegex = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF]/;
@@ -114,7 +170,6 @@ export class EnrichmentService {
 
     /**
      * 画像が一切見つからなかった記事に対して、システムが提供するデフォルトの「顔」。
-     * カテゴリごとの雰囲気に合わせた高品質な写真を提供し、画面全体の美観を損なわないようにします。
      */
     getPlaceholder(category: string): string {
         return this.placeholders[category] || "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400";
@@ -122,10 +177,9 @@ export class EnrichmentService {
 
     /**
      * RSSフィードの初期取得時に、付帯情報から最も軽量・高速に画像URLを引き出すための第一次フィルター。
-     * 外部へのHTTPリクエストを発生させないため、パフォーマンスへの影響が極めて小さいのが特徴です。
      */
     extractBasicImage(item: Record<string, unknown>): string | null {
-        const mediaContent = item.mediaContent as Record<string, Record<string, string>> | Array<Record<string, Record<string, string>>> | undefined;
+        const mediaContent = item.mediaContent as any;
         if (mediaContent) {
             if (Array.isArray(mediaContent)) {
                 if (mediaContent[0]?.$?.url) return mediaContent[0].$.url;
@@ -134,17 +188,14 @@ export class EnrichmentService {
             }
         }
 
-        const mediaThumbnail = item.mediaThumbnail as Record<string, Record<string, string>> | undefined;
+        const mediaThumbnail = item.mediaThumbnail as any;
         if (mediaThumbnail?.$?.url) return mediaThumbnail.$.url;
 
-        const enclosure = item.enclosure as Record<string, string> | undefined;
+        const enclosure = item.enclosure as any;
         if (enclosure?.url) return enclosure.url;
 
         if (item.itunesImage) return String(item.itunesImage);
 
-        // フィードの仕様が標準から外れているサイト（4Gamer等）や、
-        // 記事全文をまるごとフィードに含めているサイトへの対策。
-        // パースしきれなかった生テキストの海から、直接画像リンクを正規表現でサルベージします。
         const snippet = (item.description as string) || "";
         const content = (item.content as string) || (item.contentEncoded as string) || "";
         const fullContent = `${snippet} ${content}`;
