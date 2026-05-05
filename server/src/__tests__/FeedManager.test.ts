@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { FeedManager } from '../services/FeedManager.js';
+import { FeedManager } from '../services/FeedManager';
 import fs from 'fs';
 import fsPromises from 'fs/promises';
 

@@ -1,4 +1,4 @@
-import { GeminiService } from "../services/GeminiService.js";
+import { GeminiService } from "../services/GeminiService";
 import { ResponseSchema } from "@google/generative-ai";
 
 /**

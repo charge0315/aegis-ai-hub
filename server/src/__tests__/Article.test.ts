@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { Article, ArticleType } from '../models/Article.js';
+import { Article, ArticleType } from '../models/Article';
 
 describe('Article Model', () => {
     it('should correctly initialize with valid data', () => {

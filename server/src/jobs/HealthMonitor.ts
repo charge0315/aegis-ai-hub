@@ -1,5 +1,5 @@
-import { RSSFetcher } from '../services/RSSFetcher.js';
-import { FeedManager } from '../services/FeedManager.js';
+import { RSSFetcher } from '../services/RSSFetcher';
+import { FeedManager } from '../services/FeedManager';
 
 /**
  * フィードの健康状態を監視し、故障したフィードを自動的に差し替えるジョブ

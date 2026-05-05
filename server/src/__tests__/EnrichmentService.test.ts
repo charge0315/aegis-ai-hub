@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { EnrichmentService } from '../services/EnrichmentService.js';
+import { EnrichmentService } from '../services/EnrichmentService';
 import axios from 'axios';
 import fs from 'fs/promises';
 import path from 'path';

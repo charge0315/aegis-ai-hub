@@ -48,7 +48,7 @@ async function initBackend() {
   rssFetcher = new RSSFetcher();
   
   discoveryService = new DiscoveryService(geminiService, rssFetcher, feedManager);
-  enrichmentService = new EnrichmentService(geminiService);
+  enrichmentService = new EnrichmentService(geminiService, dataDir);
 
   console.log('[Main] Backend services ready.');
 }
@@ -299,11 +299,22 @@ app.whenReady().then(async () => {
 
   // Windows起動時の自動実行設定
   const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
-  app.setLoginItemSettings({
-    openAtLogin: true,
-    path: isDev ? process.execPath : app.getPath('exe'),
-    args: isDev ? [path.resolve(process.argv[1]), '--hidden'] : ['--hidden']
-  });
+  if (!isDev) {
+    app.setLoginItemSettings({
+      openAtLogin: true,
+      path: app.getPath('exe'),
+      args: ['--hidden']
+    });
+  } else {
+    // 開発環境ではスタートアップ登録を解除（誤って登録された場合のクリーンアップ）
+    // 意図: 開発中のアプリがWindows起動時に自動実行され、Viteサーバー未起動によるエラーが出るのを防ぐためです。
+    app.setLoginItemSettings({
+      openAtLogin: false,
+      path: process.execPath,
+      args: [path.resolve(process.argv[1] || '.'), '--hidden']
+    });
+    console.log('[Main] Startup registration disabled in development mode.');
+  }
 
   // Ctrl+Q でアプリを終了するショートカットを登録
   const ret = globalShortcut.register('CommandOrControl+Q', () => {

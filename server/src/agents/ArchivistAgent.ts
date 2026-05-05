@@ -1,5 +1,5 @@
-import { BaseAgent } from "./BaseAgent.js";
-import { GeminiService } from "../services/GeminiService.js";
+import { BaseAgent } from "./BaseAgent";
+import { GeminiService } from "../services/GeminiService";
 import { ResponseSchema, SchemaType } from "@google/generative-ai";
 
 export interface ArchiveResult {

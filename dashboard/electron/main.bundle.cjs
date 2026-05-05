@@ -284,10 +284,10 @@ function mergeDefs(...defs) {
 function cloneDef(schema) {
   return mergeDefs(schema._zod.def);
 }
-function getElementAtPath(obj, path3) {
-  if (!path3)
+function getElementAtPath(obj, path5) {
+  if (!path5)
     return obj;
-  return path3.reduce((acc, key) => acc?.[key], obj);
+  return path5.reduce((acc, key) => acc?.[key], obj);
 }
 function promiseAllObject(promisesObj) {
   const keys = Object.keys(promisesObj);
@@ -599,11 +599,11 @@ function aborted(x, startIndex = 0) {
   }
   return false;
 }
-function prefixIssues(path3, issues) {
+function prefixIssues(path5, issues) {
   return issues.map((iss) => {
     var _a6;
     (_a6 = iss).path ?? (_a6.path = []);
-    iss.path.unshift(path3);
+    iss.path.unshift(path5);
     return iss;
   });
 }
@@ -845,7 +845,7 @@ function formatError(error48, mapper = (issue2) => issue2.message) {
 }
 function treeifyError(error48, mapper = (issue2) => issue2.message) {
   const result = { errors: [] };
-  const processError = (error49, path3 = []) => {
+  const processError = (error49, path5 = []) => {
     var _a6, _b;
     for (const issue2 of error49.issues) {
       if (issue2.code === "invalid_union" && issue2.errors.length) {
@@ -855,7 +855,7 @@ function treeifyError(error48, mapper = (issue2) => issue2.message) {
       } else if (issue2.code === "invalid_element") {
         processError({ issues: issue2.issues }, issue2.path);
       } else {
-        const fullpath = [...path3, ...issue2.path];
+        const fullpath = [...path5, ...issue2.path];
         if (fullpath.length === 0) {
           result.errors.push(mapper(issue2));
           continue;
@@ -887,8 +887,8 @@ function treeifyError(error48, mapper = (issue2) => issue2.message) {
 }
 function toDotPath(_path) {
   const segs = [];
-  const path3 = _path.map((seg) => typeof seg === "object" ? seg.key : seg);
-  for (const seg of path3) {
+  const path5 = _path.map((seg) => typeof seg === "object" ? seg.key : seg);
+  for (const seg of path5) {
     if (typeof seg === "number")
       segs.push(`[${seg}]`);
     else if (typeof seg === "symbol")
@@ -13582,13 +13582,13 @@ function resolveRef(ref, ctx) {
   if (!ref.startsWith("#")) {
     throw new Error("External $ref is not supported, only local refs (#/...) are allowed");
   }
-  const path3 = ref.slice(1).split("/").filter(Boolean);
-  if (path3.length === 0) {
+  const path5 = ref.slice(1).split("/").filter(Boolean);
+  if (path5.length === 0) {
     return ctx.rootSchema;
   }
   const defsKey = ctx.version === "draft-2020-12" ? "$defs" : "definitions";
-  if (path3[0] === defsKey) {
-    const key = path3[1];
+  if (path5[0] === defsKey) {
+    const key = path5[1];
     if (!key || !ctx.defs[key]) {
       throw new Error(`Reference not found: ${ref}`);
     }
@@ -14543,9 +14543,20 @@ var init_ElectronSettingsManager = __esm({
     init_SettingsManager();
     init_Schemas();
     ElectronSettingsManager = class extends SettingsManager {
+      /**
+       * 構造化された設定管理クラスのコンストラクタ
+       * 
+       * 意図: 親クラスの SettingsManager を初期化し、共通の設定管理機能を継承するためです。
+       */
       constructor(config2) {
         super(config2);
       }
+      /**
+       * 保存されているAPIキーを取得します。
+       * 
+       * 意図: ファイルから設定を読み込み、暗号化されている場合は復号して
+       * アプリケーションが直接利用可能な形式の文字列を返すためです。
+       */
       async getApiKey() {
         try {
           const data2 = await import_promises2.default.readFile(this.credentialsPath, "utf8");
@@ -14566,6 +14577,12 @@ var init_ElectronSettingsManager = __esm({
           return process.env.GEMINI_API_KEY || "";
         }
       }
+      /**
+       * APIキーをセキュアに保存します。
+       * 
+       * 意図: 設定ファイルへの書き出し前に、機密情報を暗号化して
+       * セキュリティレベルを高めるためです。
+       */
       async saveApiKey(apiKey) {
         let keyToSave = apiKey;
         if (apiKey && import_electron.safeStorage.isEncryptionAvailable()) {
@@ -36704,14 +36721,14 @@ var require_util = __commonJS({
         }
         const port = url3.port != null ? url3.port : url3.protocol === "https:" ? 443 : 80;
         let origin2 = url3.origin != null ? url3.origin : `${url3.protocol || ""}//${url3.hostname || ""}:${port}`;
-        let path3 = url3.path != null ? url3.path : `${url3.pathname || ""}${url3.search || ""}`;
+        let path5 = url3.path != null ? url3.path : `${url3.pathname || ""}${url3.search || ""}`;
         if (origin2[origin2.length - 1] === "/") {
           origin2 = origin2.slice(0, origin2.length - 1);
         }
-        if (path3 && path3[0] !== "/") {
-          path3 = `/${path3}`;
+        if (path5 && path5[0] !== "/") {
+          path5 = `/${path5}`;
         }
-        return new URL(`${origin2}${path3}`);
+        return new URL(`${origin2}${path5}`);
       }
       if (!isHttpOrHttpsPrefixed(url3.origin || url3.protocol)) {
         throw new InvalidArgumentError("Invalid URL protocol: the URL must start with `http:` or `https:`.");
@@ -37532,9 +37549,9 @@ var require_diagnostics = __commonJS({
         "undici:client:sendHeaders",
         (evt) => {
           const {
-            request: { method, path: path3, origin: origin2 }
+            request: { method, path: path5, origin: origin2 }
           } = evt;
-          debugLog("sending request to %s %s%s", method, origin2, path3);
+          debugLog("sending request to %s %s%s", method, origin2, path5);
         }
       );
     }
@@ -37552,14 +37569,14 @@ var require_diagnostics = __commonJS({
         "undici:request:headers",
         (evt) => {
           const {
-            request: { method, path: path3, origin: origin2 },
+            request: { method, path: path5, origin: origin2 },
             response: { statusCode }
           } = evt;
           debugLog(
             "received response to %s %s%s - HTTP %d",
             method,
             origin2,
-            path3,
+            path5,
             statusCode
           );
         }
@@ -37568,23 +37585,23 @@ var require_diagnostics = __commonJS({
         "undici:request:trailers",
         (evt) => {
           const {
-            request: { method, path: path3, origin: origin2 }
+            request: { method, path: path5, origin: origin2 }
           } = evt;
-          debugLog("trailers received from %s %s%s", method, origin2, path3);
+          debugLog("trailers received from %s %s%s", method, origin2, path5);
         }
       );
       diagnosticsChannel.subscribe(
         "undici:request:error",
         (evt) => {
           const {
-            request: { method, path: path3, origin: origin2 },
+            request: { method, path: path5, origin: origin2 },
             error: error48
           } = evt;
           debugLog(
             "request to %s %s%s errored - %s",
             method,
             origin2,
-            path3,
+            path5,
             error48.message
           );
         }
@@ -37687,7 +37704,7 @@ var require_request = __commonJS({
     var kHandler = /* @__PURE__ */ Symbol("handler");
     var Request = class {
       constructor(origin2, {
-        path: path3,
+        path: path5,
         method,
         body,
         headers,
@@ -37704,11 +37721,11 @@ var require_request = __commonJS({
         maxRedirections,
         typeOfService
       }, handler) {
-        if (typeof path3 !== "string") {
+        if (typeof path5 !== "string") {
           throw new InvalidArgumentError("path must be a string");
-        } else if (path3[0] !== "/" && !(path3.startsWith("http://") || path3.startsWith("https://")) && method !== "CONNECT") {
+        } else if (path5[0] !== "/" && !(path5.startsWith("http://") || path5.startsWith("https://")) && method !== "CONNECT") {
           throw new InvalidArgumentError("path must be an absolute URL or start with a slash");
-        } else if (invalidPathRegex.test(path3)) {
+        } else if (invalidPathRegex.test(path5)) {
           throw new InvalidArgumentError("invalid request path");
         }
         if (typeof method !== "string") {
@@ -37783,7 +37800,7 @@ var require_request = __commonJS({
         this.completed = false;
         this.aborted = false;
         this.upgrade = upgrade || null;
-        this.path = query ? serializePathWithQuery(path3, query) : path3;
+        this.path = query ? serializePathWithQuery(path5, query) : path5;
         this.origin = origin2;
         this.protocol = getProtocolFromUrlString(origin2);
         this.idempotent = idempotent == null ? method === "HEAD" || method === "GET" : idempotent;
@@ -42822,7 +42839,7 @@ var require_client_h1 = __commonJS({
       return method !== "GET" && method !== "HEAD" && method !== "OPTIONS" && method !== "TRACE" && method !== "CONNECT";
     }
     function writeH1(client, request) {
-      const { method, path: path3, host, upgrade, blocking, reset } = request;
+      const { method, path: path5, host, upgrade, blocking, reset } = request;
       let { body, headers, contentLength } = request;
       const expectsPayload = method === "PUT" || method === "POST" || method === "PATCH" || method === "QUERY" || method === "PROPFIND" || method === "PROPPATCH";
       if (util3.isFormDataLike(body)) {
@@ -42891,7 +42908,7 @@ var require_client_h1 = __commonJS({
       if (socket.setTypeOfService) {
         socket.setTypeOfService(request.typeOfService);
       }
-      let header = `${method} ${path3} HTTP/1.1\r
+      let header = `${method} ${path5} HTTP/1.1\r
 `;
       if (typeof host === "string") {
         header += `host: ${host}\r
@@ -43544,7 +43561,7 @@ var require_client_h2 = __commonJS({
     function writeH2(client, request) {
       const requestTimeout = request.bodyTimeout ?? client[kBodyTimeout];
       const session = client[kHTTP2Session];
-      const { method, path: path3, host, upgrade, expectContinue, signal, protocol, headers: reqHeaders } = request;
+      const { method, path: path5, host, upgrade, expectContinue, signal, protocol, headers: reqHeaders } = request;
       let { body } = request;
       if (upgrade != null && upgrade !== "websocket") {
         util3.errorRequest(client, request, new InvalidArgumentError(`Custom upgrade "${upgrade}" not supported over HTTP/2`));
@@ -43612,7 +43629,7 @@ var require_client_h2 = __commonJS({
           }
           headers[HTTP2_HEADER_METHOD] = "CONNECT";
           headers[HTTP2_HEADER_PROTOCOL] = "websocket";
-          headers[HTTP2_HEADER_PATH] = path3;
+          headers[HTTP2_HEADER_PATH] = path5;
           if (protocol === "ws:" || protocol === "wss:") {
             headers[HTTP2_HEADER_SCHEME] = protocol === "ws:" ? "http" : "https";
           } else {
@@ -43653,7 +43670,7 @@ var require_client_h2 = __commonJS({
         stream4.setTimeout(requestTimeout);
         return true;
       }
-      headers[HTTP2_HEADER_PATH] = path3;
+      headers[HTTP2_HEADER_PATH] = path5;
       headers[HTTP2_HEADER_SCHEME] = protocol === "http:" ? "http" : "https";
       const expectsPayload = method === "PUT" || method === "POST" || method === "PATCH";
       if (body && typeof body.read === "function") {
@@ -45955,10 +45972,10 @@ var require_proxy_agent = __commonJS({
         };
         const {
           origin: origin2,
-          path: path3 = "/",
+          path: path5 = "/",
           headers = {}
         } = opts;
-        opts.path = origin2 + path3;
+        opts.path = origin2 + path5;
         if (!("host" in headers) && !("Host" in headers)) {
           const { host } = new URL(origin2);
           headers.host = host;
@@ -48021,20 +48038,20 @@ var require_mock_utils = __commonJS({
       }
       return normalizedQp;
     }
-    function safeUrl(path3) {
-      if (typeof path3 !== "string") {
-        return path3;
+    function safeUrl(path5) {
+      if (typeof path5 !== "string") {
+        return path5;
       }
-      const pathSegments = path3.split("?", 3);
+      const pathSegments = path5.split("?", 3);
       if (pathSegments.length !== 2) {
-        return path3;
+        return path5;
       }
       const qp = new URLSearchParams(pathSegments.pop());
       qp.sort();
       return [...pathSegments, qp.toString()].join("?");
     }
-    function matchKey(mockDispatch2, { path: path3, method, body, headers }) {
-      const pathMatch = matchValue(mockDispatch2.path, path3);
+    function matchKey(mockDispatch2, { path: path5, method, body, headers }) {
+      const pathMatch = matchValue(mockDispatch2.path, path5);
       const methodMatch = matchValue(mockDispatch2.method, method);
       const bodyMatch = typeof mockDispatch2.body !== "undefined" ? matchValue(mockDispatch2.body, body) : true;
       const headersMatch = matchHeaders(mockDispatch2, headers);
@@ -48059,8 +48076,8 @@ var require_mock_utils = __commonJS({
       const basePath = key.query ? serializePathWithQuery(key.path, key.query) : key.path;
       const resolvedPath = typeof basePath === "string" ? safeUrl(basePath) : basePath;
       const resolvedPathWithoutTrailingSlash = removeTrailingSlash(resolvedPath);
-      let matchedMockDispatches = mockDispatches.filter(({ consumed }) => !consumed).filter(({ path: path3, ignoreTrailingSlash }) => {
-        return ignoreTrailingSlash ? matchValue(removeTrailingSlash(safeUrl(path3)), resolvedPathWithoutTrailingSlash) : matchValue(safeUrl(path3), resolvedPath);
+      let matchedMockDispatches = mockDispatches.filter(({ consumed }) => !consumed).filter(({ path: path5, ignoreTrailingSlash }) => {
+        return ignoreTrailingSlash ? matchValue(removeTrailingSlash(safeUrl(path5)), resolvedPathWithoutTrailingSlash) : matchValue(safeUrl(path5), resolvedPath);
       });
       if (matchedMockDispatches.length === 0) {
         throw new MockNotMatchedError(`Mock dispatch not matched for path '${resolvedPath}'`);
@@ -48099,19 +48116,19 @@ var require_mock_utils = __commonJS({
         mockDispatches.splice(index2, 1);
       }
     }
-    function removeTrailingSlash(path3) {
-      while (path3.endsWith("/")) {
-        path3 = path3.slice(0, -1);
+    function removeTrailingSlash(path5) {
+      while (path5.endsWith("/")) {
+        path5 = path5.slice(0, -1);
       }
-      if (path3.length === 0) {
-        path3 = "/";
+      if (path5.length === 0) {
+        path5 = "/";
       }
-      return path3;
+      return path5;
     }
     function buildKey(opts) {
-      const { path: path3, method, body, headers, query } = opts;
+      const { path: path5, method, body, headers, query } = opts;
       return {
-        path: path3,
+        path: path5,
         method,
         body,
         headers,
@@ -48801,10 +48818,10 @@ var require_pending_interceptors_formatter = __commonJS({
       }
       format(pendingInterceptors) {
         const withPrettyHeaders = pendingInterceptors.map(
-          ({ method, path: path3, data: { statusCode }, persist, times, timesInvoked, origin: origin2 }) => ({
+          ({ method, path: path5, data: { statusCode }, persist, times, timesInvoked, origin: origin2 }) => ({
             Method: method,
             Origin: origin2,
-            Path: path3,
+            Path: path5,
             "Status code": statusCode,
             Persistent: persist ? PERSISTENT : NOT_PERSISTENT,
             Invocations: timesInvoked,
@@ -48886,9 +48903,9 @@ var require_mock_agent = __commonJS({
         const acceptNonStandardSearchParameters = this[kMockAgentAcceptsNonStandardSearchParameters];
         const dispatchOpts = { ...opts };
         if (acceptNonStandardSearchParameters && dispatchOpts.path) {
-          const [path3, searchParams] = dispatchOpts.path.split("?");
+          const [path5, searchParams] = dispatchOpts.path.split("?");
           const normalizedSearchParams = normalizeSearchParams(searchParams, acceptNonStandardSearchParameters);
-          dispatchOpts.path = `${path3}?${normalizedSearchParams}`;
+          dispatchOpts.path = `${path5}?${normalizedSearchParams}`;
         }
         return this[kAgent].dispatch(dispatchOpts, handler);
       }
@@ -49289,12 +49306,12 @@ var require_snapshot_recorder = __commonJS({
        * @return {Promise<void>} - Resolves when snapshots are loaded
        */
       async loadSnapshots(filePath) {
-        const path3 = filePath || this.#snapshotPath;
-        if (!path3) {
+        const path5 = filePath || this.#snapshotPath;
+        if (!path5) {
           throw new InvalidArgumentError("Snapshot path is required");
         }
         try {
-          const data2 = await readFile(resolve(path3), "utf8");
+          const data2 = await readFile(resolve(path5), "utf8");
           const parsed = JSON.parse(data2);
           if (Array.isArray(parsed)) {
             this.#snapshots.clear();
@@ -49308,7 +49325,7 @@ var require_snapshot_recorder = __commonJS({
           if (error48.code === "ENOENT") {
             this.#snapshots.clear();
           } else {
-            throw new UndiciError(`Failed to load snapshots from ${path3}`, { cause: error48 });
+            throw new UndiciError(`Failed to load snapshots from ${path5}`, { cause: error48 });
           }
         }
       }
@@ -49319,11 +49336,11 @@ var require_snapshot_recorder = __commonJS({
        * @returns {Promise<void>} - Resolves when snapshots are saved
        */
       async saveSnapshots(filePath) {
-        const path3 = filePath || this.#snapshotPath;
-        if (!path3) {
+        const path5 = filePath || this.#snapshotPath;
+        if (!path5) {
           throw new InvalidArgumentError("Snapshot path is required");
         }
-        const resolvedPath = resolve(path3);
+        const resolvedPath = resolve(path5);
         await mkdir(dirname(resolvedPath), { recursive: true });
         const data2 = Array.from(this.#snapshots.entries()).map(([hash2, snapshot]) => ({
           hash: hash2,
@@ -49948,15 +49965,15 @@ var require_redirect_handler = __commonJS({
           return;
         }
         const { origin: origin2, pathname, search } = util3.parseURL(new URL(this.location, this.opts.origin && new URL(this.opts.path, this.opts.origin)));
-        const path3 = search ? `${pathname}${search}` : pathname;
-        const redirectUrlString = `${origin2}${path3}`;
+        const path5 = search ? `${pathname}${search}` : pathname;
+        const redirectUrlString = `${origin2}${path5}`;
         for (const historyUrl of this.history) {
           if (historyUrl.toString() === redirectUrlString) {
             throw new InvalidArgumentError(`Redirect loop detected. Cannot redirect to ${origin2}. This typically happens when using a Client or Pool with cross-origin redirects. Use an Agent for cross-origin redirects.`);
           }
         }
         this.opts.headers = cleanRequestHeaders(this.opts.headers, statusCode === 303, this.opts.origin !== origin2);
-        this.opts.path = path3;
+        this.opts.path = path5;
         this.opts.origin = origin2;
         this.opts.query = null;
       }
@@ -56163,11 +56180,11 @@ var require_fetch = __commonJS({
       function dispatch({ body }) {
         const url3 = requestCurrentURL(request);
         const agent = fetchParams.controller.dispatcher;
-        const path3 = url3.pathname + url3.search;
+        const path5 = url3.pathname + url3.search;
         const hasTrailingQuestionMark = url3.search.length === 0 && url3.href[url3.href.length - url3.hash.length - 1] === "?";
         return new Promise((resolve, reject) => agent.dispatch(
           {
-            path: hasTrailingQuestionMark ? `${path3}?` : path3,
+            path: hasTrailingQuestionMark ? `${path5}?` : path5,
             origin: url3.origin,
             method: request.method,
             body: agent.isMockActive ? request.body && (request.body.source || request.body.stream) : body,
@@ -57114,9 +57131,9 @@ var require_util4 = __commonJS({
         }
       }
     }
-    function validateCookiePath(path3) {
-      for (let i = 0; i < path3.length; ++i) {
-        const code = path3.charCodeAt(i);
+    function validateCookiePath(path5) {
+      for (let i = 0; i < path5.length; ++i) {
+        const code = path5.charCodeAt(i);
         if (code < 32 || // exclude CTLs (0-31)
         code === 127 || // DEL
         code === 59) {
@@ -60286,11 +60303,11 @@ var require_undici = __commonJS({
           if (typeof opts.path !== "string") {
             throw new InvalidArgumentError("invalid opts.path");
           }
-          let path3 = opts.path;
+          let path5 = opts.path;
           if (!opts.path.startsWith("/")) {
-            path3 = `/${path3}`;
+            path5 = `/${path5}`;
           }
-          url3 = new URL(util3.parseOrigin(url3).origin + path3);
+          url3 = new URL(util3.parseOrigin(url3).origin + path5);
         } else {
           if (!opts) {
             opts = typeof url3 === "object" ? url3 : {};
@@ -70134,11 +70151,11 @@ var require_mime_types = __commonJS({
       }
       return exts[0];
     }
-    function lookup(path3) {
-      if (!path3 || typeof path3 !== "string") {
+    function lookup(path5) {
+      if (!path5 || typeof path5 !== "string") {
         return false;
       }
-      var extension2 = extname("x." + path3).toLowerCase().substr(1);
+      var extension2 = extname("x." + path5).toLowerCase().substr(1);
       if (!extension2) {
         return false;
       }
@@ -71243,11 +71260,11 @@ var require_form_data = __commonJS({
     "use strict";
     var CombinedStream = require_combined_stream();
     var util3 = require("util");
-    var path3 = require("path");
+    var path5 = require("path");
     var http3 = require("http");
     var https2 = require("https");
     var parseUrl2 = require("url").parse;
-    var fs5 = require("fs");
+    var fs6 = require("fs");
     var Stream = require("stream").Stream;
     var crypto2 = require("crypto");
     var mime = require_mime_types();
@@ -71314,7 +71331,7 @@ var require_form_data = __commonJS({
         if (value.end != void 0 && value.end != Infinity && value.start != void 0) {
           callback(null, value.end + 1 - (value.start ? value.start : 0));
         } else {
-          fs5.stat(value.path, function(err, stat) {
+          fs6.stat(value.path, function(err, stat) {
             if (err) {
               callback(err);
               return;
@@ -71371,11 +71388,11 @@ var require_form_data = __commonJS({
     FormData3.prototype._getContentDisposition = function(value, options) {
       var filename;
       if (typeof options.filepath === "string") {
-        filename = path3.normalize(options.filepath).replace(/\\/g, "/");
+        filename = path5.normalize(options.filepath).replace(/\\/g, "/");
       } else if (options.filename || value && (value.name || value.path)) {
-        filename = path3.basename(options.filename || value && (value.name || value.path));
+        filename = path5.basename(options.filename || value && (value.name || value.path));
       } else if (value && value.readable && hasOwn2(value, "httpVersion")) {
-        filename = path3.basename(value.client._httpMessage.path || "");
+        filename = path5.basename(value.client._httpMessage.path || "");
       }
       if (filename) {
         return 'filename="' + filename + '"';
@@ -71572,9 +71589,9 @@ function isVisitable(thing) {
 function removeBrackets(key) {
   return utils_default.endsWith(key, "[]") ? key.slice(0, -2) : key;
 }
-function renderKey(path3, key, dots) {
-  if (!path3) return key;
-  return path3.concat(key).map(function each2(token, i) {
+function renderKey(path5, key, dots) {
+  if (!path5) return key;
+  return path5.concat(key).map(function each2(token, i) {
     token = removeBrackets(token);
     return !dots && i ? "[" + token + "]" : token;
   }).join(dots ? "." : "");
@@ -71625,13 +71642,13 @@ function toFormData(obj, formData, options) {
     }
     return value;
   }
-  function defaultVisitor(value, key, path3) {
+  function defaultVisitor(value, key, path5) {
     let arr = value;
     if (utils_default.isReactNative(formData) && utils_default.isReactNativeBlob(value)) {
-      formData.append(renderKey(path3, key, dots), convertValue(value));
+      formData.append(renderKey(path5, key, dots), convertValue(value));
       return false;
     }
-    if (value && !path3 && typeof value === "object") {
+    if (value && !path5 && typeof value === "object") {
       if (utils_default.endsWith(key, "{}")) {
         key = metaTokens ? key : key.slice(0, -2);
         value = JSON.stringify(value);
@@ -71650,7 +71667,7 @@ function toFormData(obj, formData, options) {
     if (isVisitable(value)) {
       return true;
     }
-    formData.append(renderKey(path3, key, dots), convertValue(value));
+    formData.append(renderKey(path5, key, dots), convertValue(value));
     return false;
   }
   const stack = [];
@@ -71659,7 +71676,7 @@ function toFormData(obj, formData, options) {
     convertValue,
     isVisitable
   });
-  function build(value, path3, depth = 0) {
+  function build(value, path5, depth = 0) {
     if (utils_default.isUndefined(value)) return;
     if (depth > maxDepth) {
       throw new AxiosError_default(
@@ -71668,13 +71685,13 @@ function toFormData(obj, formData, options) {
       );
     }
     if (stack.indexOf(value) !== -1) {
-      throw Error("Circular reference detected in " + path3.join("."));
+      throw Error("Circular reference detected in " + path5.join("."));
     }
     stack.push(value);
     utils_default.forEach(value, function each2(el, key) {
-      const result = !(utils_default.isUndefined(el) || el === null) && visitor.call(formData, el, utils_default.isString(key) ? key.trim() : key, path3, exposedHelpers);
+      const result = !(utils_default.isUndefined(el) || el === null) && visitor.call(formData, el, utils_default.isString(key) ? key.trim() : key, path5, exposedHelpers);
       if (result === true) {
-        build(el, path3 ? path3.concat(key) : [key], depth + 1);
+        build(el, path5 ? path5.concat(key) : [key], depth + 1);
       }
     });
     stack.pop();
@@ -71947,7 +71964,7 @@ var init_platform = __esm({
 // ../server/node_modules/axios/lib/helpers/toURLEncodedForm.js
 function toURLEncodedForm(data2, options) {
   return toFormData_default(data2, new platform_default.classes.URLSearchParams(), {
-    visitor: function(value, key, path3, helpers) {
+    visitor: function(value, key, path5, helpers) {
       if (platform_default.isNode && utils_default.isBuffer(value)) {
         this.append(key, value.toString("base64"));
         return false;
@@ -71985,11 +72002,11 @@ function arrayToObject(arr) {
   return obj;
 }
 function formDataToJSON(formData) {
-  function buildPath(path3, value, target, index2) {
-    let name = path3[index2++];
+  function buildPath(path5, value, target, index2) {
+    let name = path5[index2++];
     if (name === "__proto__") return true;
     const isNumericKey = Number.isFinite(+name);
-    const isLast = index2 >= path3.length;
+    const isLast = index2 >= path5.length;
     name = !name && utils_default.isArray(target) ? target.length : name;
     if (isLast) {
       if (utils_default.hasOwnProp(target, name)) {
@@ -72002,7 +72019,7 @@ function formDataToJSON(formData) {
     if (!target[name] || !utils_default.isObject(target[name])) {
       target[name] = [];
     }
-    const result = buildPath(path3, value, target[name], index2);
+    const result = buildPath(path5, value, target[name], index2);
     if (result && utils_default.isArray(target[name])) {
       target[name] = arrayToObject(target[name]);
     }
@@ -74306,9 +74323,9 @@ var init_http = __esm({
           auth = urlUsername + ":" + urlPassword;
         }
         auth && headers.delete("authorization");
-        let path3;
+        let path5;
         try {
-          path3 = buildURL(
+          path5 = buildURL(
             parsed.pathname + parsed.search,
             config2.params,
             config2.paramsSerializer
@@ -74326,7 +74343,7 @@ var init_http = __esm({
           false
         );
         const options = {
-          path: path3,
+          path: path5,
           method,
           headers: headers.toJSON(),
           agents: { http: config2.httpAgent, https: config2.httpsAgent },
@@ -74652,14 +74669,14 @@ var init_cookies = __esm({
     cookies_default = platform_default.hasStandardBrowserEnv ? (
       // Standard browser envs support document.cookie
       {
-        write(name, value, expires, path3, domain2, secure, sameSite) {
+        write(name, value, expires, path5, domain2, secure, sameSite) {
           if (typeof document === "undefined") return;
           const cookie = [`${name}=${encodeURIComponent(value)}`];
           if (utils_default.isNumber(expires)) {
             cookie.push(`expires=${new Date(expires).toUTCString()}`);
           }
-          if (utils_default.isString(path3)) {
-            cookie.push(`path=${path3}`);
+          if (utils_default.isString(path5)) {
+            cookie.push(`path=${path5}`);
           }
           if (utils_default.isString(domain2)) {
             cookie.push(`domain=${domain2}`);
@@ -76089,22 +76106,276 @@ var init_axios2 = __esm({
   }
 });
 
+// ../server/node_modules/yocto-queue/index.js
+var Node2, Queue;
+var init_yocto_queue = __esm({
+  "../server/node_modules/yocto-queue/index.js"() {
+    Node2 = class {
+      value;
+      next;
+      constructor(value) {
+        this.value = value;
+      }
+    };
+    Queue = class {
+      #head;
+      #tail;
+      #size;
+      constructor() {
+        this.clear();
+      }
+      enqueue(value) {
+        const node = new Node2(value);
+        if (this.#head) {
+          this.#tail.next = node;
+          this.#tail = node;
+        } else {
+          this.#head = node;
+          this.#tail = node;
+        }
+        this.#size++;
+      }
+      dequeue() {
+        const current = this.#head;
+        if (!current) {
+          return;
+        }
+        this.#head = this.#head.next;
+        this.#size--;
+        if (!this.#head) {
+          this.#tail = void 0;
+        }
+        return current.value;
+      }
+      peek() {
+        if (!this.#head) {
+          return;
+        }
+        return this.#head.value;
+      }
+      clear() {
+        this.#head = void 0;
+        this.#tail = void 0;
+        this.#size = 0;
+      }
+      get size() {
+        return this.#size;
+      }
+      *[Symbol.iterator]() {
+        let current = this.#head;
+        while (current) {
+          yield current.value;
+          current = current.next;
+        }
+      }
+      *drain() {
+        while (this.#head) {
+          yield this.dequeue();
+        }
+      }
+    };
+  }
+});
+
+// ../server/node_modules/p-limit/index.js
+function pLimit(concurrency) {
+  let rejectOnClear = false;
+  if (typeof concurrency === "object") {
+    ({ concurrency, rejectOnClear = false } = concurrency);
+  }
+  validateConcurrency(concurrency);
+  if (typeof rejectOnClear !== "boolean") {
+    throw new TypeError("Expected `rejectOnClear` to be a boolean");
+  }
+  const queue = new Queue();
+  let activeCount = 0;
+  const resumeNext = () => {
+    if (activeCount < concurrency && queue.size > 0) {
+      activeCount++;
+      queue.dequeue().run();
+    }
+  };
+  const next2 = () => {
+    activeCount--;
+    resumeNext();
+  };
+  const run = async (function_, resolve, arguments_) => {
+    const result = (async () => function_(...arguments_))();
+    resolve(result);
+    try {
+      await result;
+    } catch {
+    }
+    next2();
+  };
+  const enqueue = (function_, resolve, reject, arguments_) => {
+    const queueItem = { reject };
+    new Promise((internalResolve) => {
+      queueItem.run = internalResolve;
+      queue.enqueue(queueItem);
+    }).then(run.bind(void 0, function_, resolve, arguments_));
+    if (activeCount < concurrency) {
+      resumeNext();
+    }
+  };
+  const generator = (function_, ...arguments_) => new Promise((resolve, reject) => {
+    enqueue(function_, resolve, reject, arguments_);
+  });
+  Object.defineProperties(generator, {
+    activeCount: {
+      get: () => activeCount
+    },
+    pendingCount: {
+      get: () => queue.size
+    },
+    clearQueue: {
+      value() {
+        if (!rejectOnClear) {
+          queue.clear();
+          return;
+        }
+        const abortError = AbortSignal.abort().reason;
+        while (queue.size > 0) {
+          queue.dequeue().reject(abortError);
+        }
+      }
+    },
+    concurrency: {
+      get: () => concurrency,
+      set(newConcurrency) {
+        validateConcurrency(newConcurrency);
+        concurrency = newConcurrency;
+        queueMicrotask(() => {
+          while (activeCount < concurrency && queue.size > 0) {
+            resumeNext();
+          }
+        });
+      }
+    },
+    map: {
+      async value(iterable, function_) {
+        const promises = Array.from(iterable, (value, index2) => this(function_, value, index2));
+        return Promise.all(promises);
+      }
+    }
+  });
+  return generator;
+}
+function validateConcurrency(concurrency) {
+  if (!((Number.isInteger(concurrency) || concurrency === Number.POSITIVE_INFINITY) && concurrency > 0)) {
+    throw new TypeError("Expected `concurrency` to be a number from 1 and up");
+  }
+}
+var init_p_limit = __esm({
+  "../server/node_modules/p-limit/index.js"() {
+    init_yocto_queue();
+  }
+});
+
+// ../server/src/services/ImageCacheManager.ts
+var import_promises4, import_path2, ImageCacheManager;
+var init_ImageCacheManager = __esm({
+  "../server/src/services/ImageCacheManager.ts"() {
+    "use strict";
+    import_promises4 = __toESM(require("fs/promises"), 1);
+    import_path2 = __toESM(require("path"), 1);
+    ImageCacheManager = class {
+      cachePath;
+      cache = /* @__PURE__ */ new Map();
+      TTL = 7 * 24 * 60 * 60 * 1e3;
+      // 7日間
+      constructor(cacheDir) {
+        this.cachePath = import_path2.default.join(cacheDir, "image_cache.json");
+      }
+      /**
+       * キャッシュファイルを読み込み、メモリ上に展開します。
+       */
+      async init() {
+        try {
+          const data2 = await import_promises4.default.readFile(this.cachePath, "utf-8");
+          const parsed = JSON.parse(data2);
+          this.cache = new Map(Object.entries(parsed));
+          this.cleanup();
+        } catch (error48) {
+          this.cache = /* @__PURE__ */ new Map();
+        }
+      }
+      /**
+       * 指定されたURLに対応する画像URLをキャッシュから取得します。
+       * TTLを過ぎている場合はnullを返します。
+       */
+      get(url3) {
+        const entry = this.cache.get(url3);
+        if (!entry) return null;
+        if (Date.now() - entry.timestamp > this.TTL) {
+          this.cache.delete(url3);
+          return null;
+        }
+        return entry.img;
+      }
+      /**
+       * 記事URLと画像URLのペアをキャッシュに保存し、ファイルに書き出します。
+       */
+      async set(url3, img) {
+        this.cache.set(url3, {
+          img,
+          timestamp: Date.now()
+        });
+        await this.save();
+      }
+      /**
+       * 有効期限切れのキャッシュを削除します。
+       */
+      cleanup() {
+        const now = Date.now();
+        for (const [key, entry] of this.cache.entries()) {
+          if (now - entry.timestamp > this.TTL) {
+            this.cache.delete(key);
+          }
+        }
+      }
+      /**
+       * 現在のキャッシュ状態をJSONファイルに保存します。
+       */
+      async save() {
+        try {
+          const obj = Object.fromEntries(this.cache.entries());
+          await import_promises4.default.writeFile(this.cachePath, JSON.stringify(obj, null, 2), "utf-8");
+        } catch (error48) {
+          console.error("[ImageCacheManager] Failed to save cache:", error48);
+        }
+      }
+    };
+  }
+});
+
 // ../server/src/services/EnrichmentService.ts
 var EnrichmentService_exports = {};
 __export(EnrichmentService_exports, {
   EnrichmentService: () => EnrichmentService
 });
-var EnrichmentService;
+var import_path3, import_url2, import_meta, _dirname, EnrichmentService;
 var init_EnrichmentService = __esm({
   "../server/src/services/EnrichmentService.ts"() {
     "use strict";
     init_esm11();
     init_axios2();
+    init_p_limit();
+    import_path3 = __toESM(require("path"), 1);
+    import_url2 = require("url");
+    init_ImageCacheManager();
+    import_meta = {};
+    _dirname = typeof import_meta !== "undefined" && import_meta.url ? import_path3.default.dirname((0, import_url2.fileURLToPath)(import_meta.url)) : typeof __dirname !== "undefined" ? __dirname : "";
     EnrichmentService = class {
       placeholders;
       geminiService = null;
-      constructor(geminiService2) {
+      cacheManager;
+      limit = pLimit(5);
+      // 同時実行数を5に制限
+      constructor(geminiService2, cacheDir) {
         this.geminiService = geminiService2 || null;
+        const finalCacheDir = cacheDir || import_path3.default.resolve(_dirname, "../../data");
+        this.cacheManager = new ImageCacheManager(finalCacheDir);
         this.placeholders = {
           "\u97F3\u697D\u30FB\u30AE\u30BF\u30FC\u30FBDTM": "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400",
           "AI\u30FB\u30BD\u30D5\u30C8\u30A6\u30A7\u30A2": "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=400",
@@ -76114,40 +76385,44 @@ var init_EnrichmentService = __esm({
         };
       }
       /**
+       * キャッシュマネージャーの初期化
+       */
+      async init() {
+        await this.cacheManager.init();
+      }
+      /**
+       * 複数の記事を一括でエンリッチメントします。
+       * 並列実行数を制限し、サーバーや相手サイトへの負荷を抑えます。
+       */
+      async enrichAll(articles) {
+        const tasks = articles.map((article) => this.limit(() => this.enrich(article)));
+        return Promise.all(tasks);
+      }
+      /**
        * 不完全な記事データを検査し、可能な限りのメタデータを補完して情報の質を底上げします。
        * 特に、アイキャッチ画像の確保（視覚的魅力の維持）と、母国語へのローカライズ（可読性の確保）を担います。
        */
       async enrich(article) {
         if (!article.img) {
-          try {
-            const { data: data2 } = await axios_default.get(article.link, { timeout: 5e3, headers: { "User-Agent": "AegisAIHubBot/1.0" } });
-            const $2 = load(data2);
-            let ogImage = $2('meta[property="og:image"]').attr("content") || $2('meta[name="twitter:image"]').attr("content") || $2('link[rel="image_src"]').attr("href");
-            if (!ogImage) {
-              const contentAreas = $2("article, main, .content, .post, .entry");
-              const imgElements = contentAreas.length > 0 ? contentAreas.find("img") : $2("img");
-              imgElements.each((_, el) => {
-                const src = $2(el).attr("src") || $2(el).attr("data-src");
-                if (src && /\.(jpg|jpeg|png|webp)/i.test(src)) {
-                  try {
-                    ogImage = new URL(src, article.link).href;
-                    return false;
-                  } catch (e) {
-                  }
-                }
-              });
-            }
-            if (ogImage && ogImage.startsWith("http")) {
-              article.img = ogImage;
-            } else {
+          const cachedImg = this.cacheManager.get(article.link);
+          if (cachedImg) {
+            article.img = cachedImg;
+          } else {
+            try {
+              const foundImg = await this.scrapeImage(article.link);
+              if (foundImg) {
+                article.img = foundImg;
+                await this.cacheManager.set(article.link, foundImg);
+              } else {
+                article.img = this.getPlaceholder(article.category);
+              }
+            } catch (e) {
+              console.error(`[EnrichmentService] Failed to scrape image for ${article.link}:`, e);
               article.img = this.getPlaceholder(article.category);
             }
-          } catch (e) {
-            article.img = this.getPlaceholder(article.category);
           }
         }
         if (this.geminiService && this.isNotJapanese(article.title)) {
-          console.log(`[EnrichmentService] \u7FFB\u8A33\u3092\u5B9F\u884C\u4E2D: ${article.title}`);
           try {
             const translations = await this.geminiService.translateArticles([{
               title: article.title,
@@ -76164,8 +76439,48 @@ var init_EnrichmentService = __esm({
         return article;
       }
       /**
-       * テキストが翻訳対象（非日本語）であるかを高速に振り分けるための関所。
-       * ここで厳密な言語判定は行わず、あくまで「日本語特有の文字が含まれているか」のみで軽量に判断します。
+       * 記事URLから最適な画像を抽出します。
+       */
+      async scrapeImage(url3) {
+        try {
+          const { data: data2 } = await axios_default.get(url3, {
+            timeout: 8e3,
+            headers: {
+              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            }
+          });
+          const $2 = load(data2);
+          let imgUrl = $2('meta[property="og:image"]').attr("content") || $2('meta[name="twitter:image"]').attr("content") || $2('meta[name="image"]').attr("content") || $2('meta[name="thumbnail"]').attr("content") || $2('link[rel="image_src"]').attr("href") || $2('link[rel="shortcut icon"]').attr("href");
+          if (!imgUrl) {
+            const contentAreas = $2('article, main, [role="main"], .post-content, .entry-content, #content, .article-body');
+            const imgElements = contentAreas.length > 0 ? contentAreas.find("img") : $2("img");
+            imgElements.each((_, el) => {
+              const src = $2(el).attr("src") || $2(el).attr("data-src") || $2(el).attr("data-lazy-src");
+              if (src && /\.(jpg|jpeg|png|webp|gif)/i.test(src)) {
+                const width = $2(el).attr("width");
+                const height = $2(el).attr("height");
+                if (width && parseInt(width) < 100) return true;
+                if (height && parseInt(height) < 100) return true;
+                imgUrl = src;
+                return false;
+              }
+            });
+          }
+          if (imgUrl) {
+            try {
+              const absoluteUrl = new URL(imgUrl, url3).href;
+              if (absoluteUrl.startsWith("http")) {
+                return absoluteUrl;
+              }
+            } catch (e) {
+            }
+          }
+        } catch (e) {
+        }
+        return null;
+      }
+      /**
+       * テキストが翻訳対象（非日本語）であるかを判定します。
        */
       isNotJapanese(text3) {
         const jpRegex = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF]/;
@@ -76173,14 +76488,12 @@ var init_EnrichmentService = __esm({
       }
       /**
        * 画像が一切見つからなかった記事に対して、システムが提供するデフォルトの「顔」。
-       * カテゴリごとの雰囲気に合わせた高品質な写真を提供し、画面全体の美観を損なわないようにします。
        */
       getPlaceholder(category) {
         return this.placeholders[category] || "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400";
       }
       /**
        * RSSフィードの初期取得時に、付帯情報から最も軽量・高速に画像URLを引き出すための第一次フィルター。
-       * 外部へのHTTPリクエストを発生させないため、パフォーマンスへの影響が極めて小さいのが特徴です。
        */
       extractBasicImage(item) {
         const mediaContent = item.mediaContent;
@@ -83009,172 +83322,6 @@ var require_rss_parser = __commonJS({
   }
 });
 
-// ../server/node_modules/yocto-queue/index.js
-var Node2, Queue;
-var init_yocto_queue = __esm({
-  "../server/node_modules/yocto-queue/index.js"() {
-    Node2 = class {
-      value;
-      next;
-      constructor(value) {
-        this.value = value;
-      }
-    };
-    Queue = class {
-      #head;
-      #tail;
-      #size;
-      constructor() {
-        this.clear();
-      }
-      enqueue(value) {
-        const node = new Node2(value);
-        if (this.#head) {
-          this.#tail.next = node;
-          this.#tail = node;
-        } else {
-          this.#head = node;
-          this.#tail = node;
-        }
-        this.#size++;
-      }
-      dequeue() {
-        const current = this.#head;
-        if (!current) {
-          return;
-        }
-        this.#head = this.#head.next;
-        this.#size--;
-        if (!this.#head) {
-          this.#tail = void 0;
-        }
-        return current.value;
-      }
-      peek() {
-        if (!this.#head) {
-          return;
-        }
-        return this.#head.value;
-      }
-      clear() {
-        this.#head = void 0;
-        this.#tail = void 0;
-        this.#size = 0;
-      }
-      get size() {
-        return this.#size;
-      }
-      *[Symbol.iterator]() {
-        let current = this.#head;
-        while (current) {
-          yield current.value;
-          current = current.next;
-        }
-      }
-      *drain() {
-        while (this.#head) {
-          yield this.dequeue();
-        }
-      }
-    };
-  }
-});
-
-// ../server/node_modules/p-limit/index.js
-function pLimit(concurrency) {
-  let rejectOnClear = false;
-  if (typeof concurrency === "object") {
-    ({ concurrency, rejectOnClear = false } = concurrency);
-  }
-  validateConcurrency(concurrency);
-  if (typeof rejectOnClear !== "boolean") {
-    throw new TypeError("Expected `rejectOnClear` to be a boolean");
-  }
-  const queue = new Queue();
-  let activeCount = 0;
-  const resumeNext = () => {
-    if (activeCount < concurrency && queue.size > 0) {
-      activeCount++;
-      queue.dequeue().run();
-    }
-  };
-  const next2 = () => {
-    activeCount--;
-    resumeNext();
-  };
-  const run = async (function_, resolve, arguments_) => {
-    const result = (async () => function_(...arguments_))();
-    resolve(result);
-    try {
-      await result;
-    } catch {
-    }
-    next2();
-  };
-  const enqueue = (function_, resolve, reject, arguments_) => {
-    const queueItem = { reject };
-    new Promise((internalResolve) => {
-      queueItem.run = internalResolve;
-      queue.enqueue(queueItem);
-    }).then(run.bind(void 0, function_, resolve, arguments_));
-    if (activeCount < concurrency) {
-      resumeNext();
-    }
-  };
-  const generator = (function_, ...arguments_) => new Promise((resolve, reject) => {
-    enqueue(function_, resolve, reject, arguments_);
-  });
-  Object.defineProperties(generator, {
-    activeCount: {
-      get: () => activeCount
-    },
-    pendingCount: {
-      get: () => queue.size
-    },
-    clearQueue: {
-      value() {
-        if (!rejectOnClear) {
-          queue.clear();
-          return;
-        }
-        const abortError = AbortSignal.abort().reason;
-        while (queue.size > 0) {
-          queue.dequeue().reject(abortError);
-        }
-      }
-    },
-    concurrency: {
-      get: () => concurrency,
-      set(newConcurrency) {
-        validateConcurrency(newConcurrency);
-        concurrency = newConcurrency;
-        queueMicrotask(() => {
-          while (activeCount < concurrency && queue.size > 0) {
-            resumeNext();
-          }
-        });
-      }
-    },
-    map: {
-      async value(iterable, function_) {
-        const promises = Array.from(iterable, (value, index2) => this(function_, value, index2));
-        return Promise.all(promises);
-      }
-    }
-  });
-  return generator;
-}
-function validateConcurrency(concurrency) {
-  if (!((Number.isInteger(concurrency) || concurrency === Number.POSITIVE_INFINITY) && concurrency > 0)) {
-    throw new TypeError("Expected `concurrency` to be a number from 1 and up");
-  }
-}
-var init_p_limit = __esm({
-  "../server/node_modules/p-limit/index.js"() {
-    init_yocto_queue();
-  }
-});
-
 // ../server/src/services/RSSFetcher.ts
 var RSSFetcher_exports = {};
 __export(RSSFetcher_exports, {
@@ -83344,8 +83491,8 @@ var init_ScoringService = __esm({
 
 // electron/main.cjs
 var { app, BrowserWindow, ipcMain, globalShortcut, Tray, Menu } = require("electron");
-var path2 = require("path");
-var fs4 = require("fs");
+var path4 = require("path");
+var fs5 = require("fs");
 app.setName("Aegis Nexus");
 var { ElectronSettingsManager: ElectronSettingsManager2 } = (init_ElectronSettingsManager(), __toCommonJS(ElectronSettingsManager_exports));
 var { GeminiService: GeminiService2 } = (init_GeminiService(), __toCommonJS(GeminiService_exports));
@@ -83362,7 +83509,7 @@ var rssFetcher;
 var discoveryService;
 var enrichmentService;
 function getDataDir() {
-  return !app.isPackaged ? path2.resolve(app.getAppPath(), "..", "data") : path2.join(app.getPath("userData"), "data");
+  return !app.isPackaged ? path4.resolve(app.getAppPath(), "..", "data") : path4.join(app.getPath("userData"), "data");
 }
 async function initBackend() {
   console.log("[Main] Backend services initializing...");
@@ -83371,12 +83518,12 @@ async function initBackend() {
   await settingsManager.init();
   const apiKey = await settingsManager.getApiKey();
   geminiService = new GeminiService2(apiKey);
-  const feedConfigPath = path2.join(dataDir, "feed_config.json");
+  const feedConfigPath = path4.join(dataDir, "feed_config.json");
   console.log(`[Main] Using FeedManager config: ${feedConfigPath}`);
   feedManager = new FeedManager2(feedConfigPath);
   rssFetcher = new RSSFetcher2();
   discoveryService = new DiscoveryService2(geminiService, rssFetcher, feedManager);
-  enrichmentService = new EnrichmentService2(geminiService);
+  enrichmentService = new EnrichmentService2(geminiService, dataDir);
   console.log("[Main] Backend services ready.");
 }
 function createWindow() {
@@ -83397,11 +83544,11 @@ function createWindow() {
     titleBarStyle: "hidden",
     // Windows 11 の透過素材を Acrylic に設定
     backgroundMaterial: "acrylic",
-    icon: path2.join(__dirname, "../public/app-icon.png"),
+    icon: path4.join(__dirname, "../public/app-icon.png"),
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      preload: path2.join(__dirname, "preload.cjs")
+      preload: path4.join(__dirname, "preload.cjs")
     }
   });
   mainWindow.once("ready-to-show", () => {
@@ -83410,7 +83557,7 @@ function createWindow() {
   if (isDev) {
     mainWindow.loadURL("http://localhost:5173");
   } else {
-    mainWindow.loadFile(path2.join(__dirname, "../dist/index.html"));
+    mainWindow.loadFile(path4.join(__dirname, "../dist/index.html"));
   }
   mainWindow.on("close", (event) => {
     if (!app.isQuitting) {
@@ -83421,7 +83568,7 @@ function createWindow() {
   });
 }
 function createTray() {
-  const iconPath = path2.join(__dirname, "../public/app-icon.png");
+  const iconPath = path4.join(__dirname, "../public/app-icon.png");
   tray = new Tray(iconPath);
   const contextMenu = Menu.buildFromTemplate([
     { label: "Aegis Nexus \u3092\u8868\u793A", click: () => mainWindow.show() },
@@ -83448,7 +83595,7 @@ function registerIpcHandlers() {
       const dataDir = getDataDir();
       const settingsManager = new ElectronSettingsManager2({ dataDir });
       const result = await settingsManager.syncSettings(settings, rssFetcher);
-      const feedConfigPath = path2.join(dataDir, "feed_config.json");
+      const feedConfigPath = path4.join(dataDir, "feed_config.json");
       feedManager = new FeedManager2(feedConfigPath);
       return result;
     } catch (error48) {
@@ -83586,7 +83733,7 @@ app.whenReady().then(async () => {
   app.setLoginItemSettings({
     openAtLogin: true,
     path: isDev ? process.execPath : app.getPath("exe"),
-    args: isDev ? [path2.resolve(process.argv[1]), "--hidden"] : ["--hidden"]
+    args: isDev ? [path4.resolve(process.argv[1]), "--hidden"] : ["--hidden"]
   });
   const ret = globalShortcut.register("CommandOrControl+Q", () => {
     console.log("[Main] Quit shortcut (Ctrl+Q) triggered.");

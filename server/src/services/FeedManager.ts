@@ -1,6 +1,6 @@
 import fs from 'fs';
 import fsPromises from 'fs/promises';
-import { FeedConfigSchema, FeedConfig } from '../models/Schemas.js';
+import { FeedConfigSchema, FeedConfig } from '../models/Schemas';
 
 /**
  * RSSフィード設定の管理、故障検知、自動切り替えを担当するサービス。

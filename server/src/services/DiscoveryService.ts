@@ -1,7 +1,7 @@
-import { GeminiService } from './GeminiService.js';
-import { RSSFetcher } from './RSSFetcher.js';
-import { FeedManager } from './FeedManager.js';
-import { Interests } from '../models/Schemas.js';
+import { GeminiService } from './GeminiService';
+import { RSSFetcher } from './RSSFetcher';
+import { FeedManager } from './FeedManager';
+import { Interests } from '../models/Schemas';
 
 interface SuggestedSite {
   name: string;

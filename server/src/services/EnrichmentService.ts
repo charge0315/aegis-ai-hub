@@ -3,11 +3,14 @@ import axios from 'axios';
 import pLimit from 'p-limit';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { ArticleType } from '../models/Article.js';
-import { GeminiService } from './GeminiService.js';
-import { ImageCacheManager } from './ImageCacheManager.js';
+import { ArticleType } from '../models/Article';
+import { GeminiService } from './GeminiService';
+import { ImageCacheManager } from './ImageCacheManager';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+// ESM/CommonJS 互換の __dirname 取得
+const _dirname = (typeof import.meta !== 'undefined' && import.meta.url)
+    ? path.dirname(fileURLToPath(import.meta.url))
+    : (typeof __dirname !== 'undefined' ? __dirname : '');
 
 /**
  * 外部ソースから取得した生の情報を、ユーザーにとって価値のある「リッチな記事」へと昇華させるためのサービス。
@@ -20,11 +23,11 @@ export class EnrichmentService {
     private cacheManager: ImageCacheManager;
     private limit = pLimit(5); // 同時実行数を5に制限
 
-    constructor(geminiService?: GeminiService) {
+    constructor(geminiService?: GeminiService, cacheDir?: string) {
         this.geminiService = geminiService || null;
-        // プロジェクトルートの data ディレクトリを指定
-        const cacheDir = path.resolve(__dirname, '../../data');
-        this.cacheManager = new ImageCacheManager(cacheDir);
+        // キャッシュディレクトリの決定: 明示的な指定 > 相対パス
+        const finalCacheDir = cacheDir || path.resolve(_dirname, '../../data');
+        this.cacheManager = new ImageCacheManager(finalCacheDir);
         
         this.placeholders = {
             '音楽・ギター・DTM': "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400",

@@ -1,4 +1,4 @@
-import { Interests } from '../models/Schemas.js';
+import { Interests } from '../models/Schemas';
 
 /**
  * ユーザーの興味関心に基づき、記事のスコアリング、カテゴリ判定、ブランド抽出を行うロジックをカプセル化したサービス。

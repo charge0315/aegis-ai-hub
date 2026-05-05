@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI, GenerativeModel, ChatSession, ResponseSchema, SchemaType, Content } from "@google/generative-ai";
-import { Interests } from "../models/Schemas.js";
+import { Interests } from "../models/Schemas";
 
 export interface CuratedArticle {
   id: number;

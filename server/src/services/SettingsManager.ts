@@ -1,6 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { InterestsSchema, FeedConfigSchema, Interests, FeedConfig, WindowStateSchema, CredentialsSchema, Credentials } from '../models/Schemas.js';
+import { InterestsSchema, FeedConfigSchema, Interests, FeedConfig, WindowStateSchema, CredentialsSchema, Credentials } from '../models/Schemas';
 
 export interface SettingsManagerConfig {
   dataDir: string;

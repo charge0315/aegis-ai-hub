@@ -1,9 +1,9 @@
 import { FastifyReply } from 'fastify';
-import { ArchitectAgent, ExecutionPlan } from "../agents/ArchitectAgent.js";
-import { CuratorAgent } from "../agents/CuratorAgent.js";
-import { DiscoveryAgent } from "../agents/DiscoveryAgent.js";
-import { ArchivistAgent } from "../agents/ArchivistAgent.js";
-import { GeminiService } from "../services/GeminiService.js";
+import { ArchitectAgent, ExecutionPlan } from "../agents/ArchitectAgent";
+import { CuratorAgent } from "../agents/CuratorAgent";
+import { DiscoveryAgent } from "../agents/DiscoveryAgent";
+import { ArchivistAgent } from "../agents/ArchivistAgent";
+import { GeminiService } from "../services/GeminiService";
 
 export interface OrchestratorNotification {
   status: string;

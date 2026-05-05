@@ -12,13 +12,13 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import 'dotenv/config';
 
-import { SettingsManager } from './services/SettingsManager.js';
-import { ScraperFacade } from './ScraperFacade.js';
-import { HealthMonitor } from './jobs/HealthMonitor.js';
-import { DiscoveryService } from './services/DiscoveryService.js';
-import { EvolutionJob } from './jobs/EvolutionJob.js';
-import { NexusOrchestrator } from './core/NexusOrchestrator.js';
-import nexusRouter from './api/NexusRouter.js';
+import { SettingsManager } from './services/SettingsManager';
+import { ScraperFacade } from './ScraperFacade';
+import { HealthMonitor } from './jobs/HealthMonitor';
+import { DiscoveryService } from './services/DiscoveryService';
+import { EvolutionJob } from './jobs/EvolutionJob';
+import { NexusOrchestrator } from './core/NexusOrchestrator';
+import nexusRouter from './api/NexusRouter';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = process.cwd();
@@ -33,7 +33,7 @@ const settingsManager = new SettingsManager({ dataDir: DATA_DIR });
 const INTERESTS_PATH = path.join(DATA_DIR, 'interests.json');
 const FEEDS_PATH = path.join(DATA_DIR, 'feed_config.json');
 
-const scraper = new ScraperFacade(INTERESTS_PATH, FEEDS_PATH);
+const scraper = new ScraperFacade(INTERESTS_PATH, FEEDS_PATH, DATA_DIR);
 const discovery = new DiscoveryService(scraper.geminiService, scraper.rssFetcher, scraper.feedManager);
 const evolution = new EvolutionJob(scraper, discovery, INTERESTS_PATH);
 const orchestrator = new NexusOrchestrator(scraper.geminiService);

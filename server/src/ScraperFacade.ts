@@ -5,13 +5,13 @@
  * 複雑なプロセスを隠蔽し、シンプルなインターフェースで上位レイヤーに機能を提供するためです。
  */
 
-import { FeedManager } from './services/FeedManager.js';
-import { RSSFetcher } from './services/RSSFetcher.js';
-import { ScoringService } from './services/ScoringService.js';
-import { EnrichmentService } from './services/EnrichmentService.js';
-import { Article } from './models/Article.js';
-import { GeminiService } from './services/GeminiService.js';
-import { Interests } from './models/Schemas.js';
+import { FeedManager } from './services/FeedManager';
+import { RSSFetcher } from './services/RSSFetcher';
+import { ScoringService } from './services/ScoringService';
+import { EnrichmentService } from './services/EnrichmentService';
+import { Article } from './models/Article';
+import { GeminiService } from './services/GeminiService';
+import { Interests } from './models/Schemas';
 
 /**
  * スクレイピング全体のワークフローを制御するファサードクラス。
@@ -26,12 +26,13 @@ export class ScraperFacade {
     /**
      * @param interestsPath - 興味設定ファイルのパス
      * @param feedsPath - フィード構成ファイルのパス
+     * @param dataDir - データディレクトリ（オプション。EnrichmentServiceのキャッシュ等に使用）
      */
-    constructor(interestsPath: string, feedsPath: string) {
+    constructor(interestsPath: string, feedsPath: string, dataDir?: string) {
         this.feedManager = new FeedManager(feedsPath);
         this.rssFetcher = new RSSFetcher(10);
         this.geminiService = new GeminiService(process.env.GEMINI_API_KEY);
-        this.enrichmentService = new EnrichmentService(this.geminiService);
+        this.enrichmentService = new EnrichmentService(this.geminiService, dataDir);
     }
 
     /**

@@ -1,7 +1,7 @@
 import fs from 'fs';
-import { ScraperFacade } from '../ScraperFacade.js';
-import { DiscoveryService } from '../services/DiscoveryService.js';
-import { Interests } from '../models/Schemas.js';
+import { ScraperFacade } from '../ScraperFacade';
+import { DiscoveryService } from '../services/DiscoveryService';
+import { Interests } from '../models/Schemas';
 
 interface TrendSuggestion {
     value: string;

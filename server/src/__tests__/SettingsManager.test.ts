@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import fs from 'fs/promises';
-import { SettingsManager } from '../services/SettingsManager.js';
+import { SettingsManager } from '../services/SettingsManager';
 import { Interests, FeedConfig } from '../models/Schemas';
 
 vi.mock('fs/promises');

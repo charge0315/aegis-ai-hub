@@ -1,9 +1,9 @@
 import { FastifyPluginAsync, FastifyRequest, FastifyReply } from 'fastify';
-import { SettingsManager } from '../services/SettingsManager.js';
-import { SyncSettingsSchema } from '../models/Schemas.js';
-import { NexusOrchestrator } from '../core/NexusOrchestrator.js';
-import { ScraperFacade } from '../ScraperFacade.js';
-import { DiscoveryService } from '../services/DiscoveryService.js';
+import { SettingsManager } from '../services/SettingsManager';
+import { SyncSettingsSchema } from '../models/Schemas';
+import { NexusOrchestrator } from '../core/NexusOrchestrator';
+import { ScraperFacade } from '../ScraperFacade';
+import { DiscoveryService } from '../services/DiscoveryService';
 
 interface NexusRouterOptions {
   scraper: ScraperFacade;
