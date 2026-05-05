@@ -1,6 +1,6 @@
 # Aegis AI Hub - API & Technical Reference
 
-**Last Updated:** 2026-05-18
+**Last Updated:** 2026-05-20
 **Version:** 5.2 (Production Ready)
 
 本ドキュメントでは、Aegis AI Hub v5.2 が提供する Fastify REST API および Electron IPC (Inter-Process Communication) の仕様について記述します。
@@ -19,6 +19,7 @@ v5.2 より、従来の MCP 構成に代わり Fastify ベースのスタンド�
     - **バリデーション**: 新規フィードが含まれる場合、保存前に `RSSFetcher` による疎通確認が行われます。
 - **`GET /api/dashboard`**: スコアリング済みの全記事を取得（ダッシュボード用）。
     - **フィルタリング**: 記事取得時に、90日以上前の記事は自動的に除外されます。
+    - **画像エンリッチメント**: v5.2.x 以降、上位記事に対して自動スクレイピングとキャッシュによる画像補完が実行されます。
 - **`POST /api/v5/suggest-category`**: 特定のカテゴリ名に基づき、AI によるブランド・キーワード提案を取得。
 - **`GET /api/v5/proposals`**: インストールされた情報源を分析し、新しいサイトやキーワードの進化提案を取得。
 - **`POST /api/v5/orchestrate`**: エージェントによる自律探索/解析サイクルを手動実行。

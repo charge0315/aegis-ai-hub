@@ -1,6 +1,6 @@
 # Backend Architecture Codemap
 
-**Last Updated:** 2026-05-18
+**Last Updated:** 2026-05-20
 **Version:** v5.2 NEXUS
 **Entry Point:** `server/src/index.ts` (Standalone) / `dashboard/electron/main.cjs` (App)
 
@@ -25,6 +25,20 @@ Electron メインプロセス (`dashboard/electron/main.cjs`) では、Windows 
 - **自動故障検知と代替昇格**: 連続失敗したフィードを検知し、プール内の有効なフィードへと自動的に差し替える仕組みを `FeedManager` に実装。昇格前には必ずヘルスチェックが行われます。
 - **バリデーション・ガードレール**: `addFeed` および `syncSettings` 時の強制バリデーションにより、無効なフィードの登録を阻止。
 
+## 画像取得・エンリッチメント・パイプライン
+ダッシュボードの視覚的品質を高めるため、以下の多層的な画像取得戦略を導入しました。
+
+### 1. 段階的な画像抽出
+`EnrichmentService` が以下の順序で画像を特定します：
+1. **RSS メタデータ**: フィード内の `media:content` や `enclosure` タグから抽出。
+2. **ローカルキャッシュ**: `ImageCacheManager` を参照。
+3. **動的スクレイピング**: 記事のリンク先を `axios` で取得し、`cheerio` を用いて OGP タグや本文内のヒューリスティクスから最適な画像を抽出。
+4. **カテゴリ別プレースホルダー**: 上記すべてに失敗した場合、Unsplash の高品質なデフォルト画像を適用。
+
+### 2. 並列制御とキャッシュ
+- **p-limit による負荷制限**: 同時スクレイピング数を制限（デフォルト: 5）し、相手サーバーへの負荷を抑制。
+- **ImageCacheManager**: `image_cache.json` に記事URLと画像URLのペアを永続化。TTL（7日間）管理により、再起動後も高速な表示を可能にします。
+
 ## データ・整合性と同期
 
 ### 1. SettingsManager (整合性確保)
@@ -42,6 +56,9 @@ Electron メインプロセス (`dashboard/electron/main.cjs`) では、Windows 
 | `RSSFetcher` | フィード取得 | **疎通確認 (validateFeed)** 機能の追加。 |
 | `FeedManager` | フィード構成管理 | **自動ヘルスチェック付きフィード昇格**の実装。 |
 | `GeminiService` | AI 推論 | 直接的なフィード URL (RSS/Atom) を取得するためのプロンプト最適化。 |
+| `DiscoveryService` | ソース探索 | AI による新規サイト発見と、進化提案 (Proposals) の生成。 |
+| `EnrichmentService` | 記事加工 | 並列スクレイピングによる画像補完と自動翻訳。 |
+| `ImageCacheManager` | 画像キャッシュ | スクレイピング済み画像URLの永続化とTTL管理。 |
 | `SettingsManager` | 設定の永続化 | アトミック保存、バリデーション、および**環境適応型パス解決**。 |
 
 ## 配布とビルド (electron-builder)

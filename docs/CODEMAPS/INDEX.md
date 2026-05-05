@@ -1,7 +1,7 @@
 # Aegis AI Hub - System Index
 
 **Project Status:** Production Ready (v5.2 NEXUS)
-**Last Updated:** 2026-05-18
+**Last Updated:** 2026-05-20
 
 ## プロジェクト概要
 Aegis AI Hub は、Gemini 3.1 を中枢に据えた「自律学習型知的ダッシュボード」です。  
@@ -11,11 +11,13 @@ v5.2 NEXUS では、Windows 11 との親和性を極限まで高めた **Acrylic
 
 - **Windows 11 Native Integration**: Electron の `acrylic` マテリアルを適用。FancyZones に対応し、デスクトップと調和する高度な透過効果を実現。
 - **RSS Health Check & Auto-Recovery**: `RSSFetcher` によるバリデーションと、`FeedManager` による代替フィードへの自動昇格機能を搭載。故障したフィードを自律的に検知・置換します。
+- **Image Acquisition & Caching**: `ImageCacheManager` による画像URLの永続化、`EnrichmentService` でのスクレイピング強化（Cheerio/Axios）、および `p-limit` による同時実行数制御を導入。
 - **Forced Validation Guardrails**: フィードの追加や同期時にヘルスチェックを強制し、無効なフィードの登録を未然に防ぎます。
 - **Adaptive Data Path Resolution**: 開発環境（プロジェクトルート）とプロダクション環境（AppData）でデータ保存先を自動的に切り替え。
 - **Article Freshness Filtering**: 90日以上前の記事を自動的に除外するロジックを実装。
 - **Standardized Data Set (May 2026)**: 2026年5月のトレンドに基づき、12カテゴリーのキーワードとブランドリストを大幅に充実。
 - **Fastify Standalone Server**: MCP 構成から Fastify ベースの高性能サーバーへ移行。`@modelcontextprotocol/sdk` を排除し、軽量化と汎用性を両立。
+
 
 
 ## 技術ドキュメント (Codemaps)
