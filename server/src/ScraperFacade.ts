@@ -1,3 +1,10 @@
+/**
+ * @fileoverview スクレイピングとAI解析のワークフローを統合するファサード
+ * 
+ * 意図: フィードの取得、カテゴリ判定、スコアリング、AIによる要約・推薦といった
+ * 複雑なプロセスを隠蔽し、シンプルなインターフェースで上位レイヤーに機能を提供するためです。
+ */
+
 import { FeedManager } from './services/FeedManager.js';
 import { RSSFetcher } from './services/RSSFetcher.js';
 import { ScoringService } from './services/ScoringService.js';
@@ -29,6 +36,10 @@ export class ScraperFacade {
 
     /**
      * Gemini APIを活用し、ユーザーの興味に最適化されたおすすめ記事10選を生成します。
+     * 
+     * 意図: 大量の記事の中から、ユーザーの現在の関心事に最も合致し、かつ価値の高い情報を
+     * AIの判断（キュレーション）に基づいて厳選するためです。
+     * 
      * @param interests - ユーザーの興味データ
      * @returns 厳選された記事リスト
      */
@@ -56,6 +67,10 @@ export class ScraperFacade {
 
     /**
      * 最新のパーソナライズ済みダッシュボードデータを構築します。
+     * 
+     * 意図: 全てのカテゴリにおける高品質な最新記事を収集し、
+     * ユーザーが一目で全体像を把握できるパーソナライズされた画面データを提供するためです。
+     * 
      * @param interests - ユーザーの興味データ
      * @returns カテゴリ別に分類された記事データ
      */

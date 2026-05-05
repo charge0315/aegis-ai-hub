@@ -124,12 +124,12 @@ const App: React.FC = () => {
             setDialogContent(<p className="text-center py-10 animate-pulse text-xs text-slate-500 font-bold uppercase tracking-widest">AI Discovery in Progress...</p>);
             try {
               const proposals = await nexusApi.getProposals();
-              const catProposals = (proposals.sites as { url: string; name: string; reason: string; category: string }[] || []).filter(s => s.category === category);
+              const catProposals = (proposals.sites as any[] || []).filter((s: any) => s.category === category);
               
               setDialogTitle(`Discovery: ${category}`);
               setDialogContent(
                 <div className="space-y-4">
-                  {catProposals.length > 0 ? catProposals.map(s => (
+                  {catProposals.length > 0 ? catProposals.map((s: any) => (
                     <div key={s.url} className="p-4 bg-primary/5 border border-primary/20 rounded-2xl">
                       <p className="font-bold text-sm text-white mb-1">{s.name}</p>
                       <p className="text-[10px] opacity-50 mb-3 truncate font-mono">{s.url}</p>
@@ -151,7 +151,7 @@ const App: React.FC = () => {
                   <button onClick={() => setIsDialogOpen(false)} className="w-full py-2 text-[10px] font-bold uppercase tracking-widest text-slate-500">Close</button>
                 </div>
               );
-            } catch {
+            } catch (err) {
               setDialogTitle("Connection Error");
               setDialogContent(<p className="text-xs text-alert text-center py-4">Failed to consult Discovery Agent.</p>);
             }
@@ -385,8 +385,8 @@ const App: React.FC = () => {
                 currentSettings={settings} 
                 onSave={sync} 
                 alert={(t, m) => { setDialogTitle(t); setDialogContent(m); setIsDialogOpen(true); return Promise.resolve(); }} 
-                confirm={async () => { return true; }} 
-                prompt={async () => { return ''; }} 
+                confirm={async (_t, _m) => { return true; }} 
+                prompt={async (_t, _m) => { return ''; }} 
               />
             )}
           </div>

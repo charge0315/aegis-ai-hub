@@ -1,6 +1,8 @@
 /**
- * Aegis AI Hub - Server Entry Point (v5.2 NEXUS)
- * Fastify based standalone server implementation.
+ * @fileoverview Aegis AI Hub サーバーのエントリーポイント (v5.2 NEXUS)
+ * 
+ * 意図: Fastifyベースのスタンドアロンサーバーを起動し、
+ * 各種AIエージェント、スクレイパー、およびAPIエンドポイントを統合・管理するためです。
  */
 
 import Fastify from 'fastify';
@@ -26,6 +28,7 @@ console.log(`[Server] Project Root: ${PROJECT_ROOT}`);
 console.log(`[Server] Data Directory: ${DATA_DIR}`);
 
 // コアサービスの初期化
+// 意図: 設定管理、スクレイピング、AIによる発見・進化・オーケストレーションなどの主要コンポーネントを準備するためです。
 const settingsManager = new SettingsManager({ dataDir: DATA_DIR });
 const INTERESTS_PATH = path.join(DATA_DIR, 'interests.json');
 const FEEDS_PATH = path.join(DATA_DIR, 'feed_config.json');
@@ -36,6 +39,7 @@ const evolution = new EvolutionJob(scraper, discovery, INTERESTS_PATH);
 const orchestrator = new NexusOrchestrator(scraper.geminiService);
 
 // バックグラウンド・ジョブの開始
+// 意図: サーバーのメインロジックとは非同期に、定期的なフィード監視や正常性チェックを自動実行するためです。
 const monitor = new HealthMonitor(scraper.feedManager);
 monitor.start();
 
