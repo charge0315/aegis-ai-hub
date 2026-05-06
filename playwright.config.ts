@@ -19,7 +19,7 @@ export default defineConfig({
   ],
   webServer: [
     {
-      command: 'cd ../server && npm start',
+      command: 'node -r esbuild-register src/api/server/standalone.ts',
       port: 3005,
       reuseExistingServer: !process.env.CI,
     },
