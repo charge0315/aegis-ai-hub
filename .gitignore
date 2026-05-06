@@ -111,21 +111,11 @@ desktop.ini
 *.ntvs*
 *.njsproj
 *.sln
-
-# ============================================================
-# モバイル（Capacitor / Android / iOS）
-# ============================================================
-dashboard/android/
-dashboard/ios/
-*.apk
-*.aab
-*.ipa
-
 # ============================================================
 # プロジェクト固有
 # ============================================================
-dashboard-legacy/
-server/test_scraper.js
 fix_ui*.py
 *.bak
 *.bak2
+dashboard/
+server/

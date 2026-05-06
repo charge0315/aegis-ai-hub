@@ -2,7 +2,7 @@
 
 **Last Updated:** 2026-06-16
 **Version:** 5.2 NEXUS
-**Entry Point:** `dashboard/src/main.tsx`
+**Entry Point:** `src/main.tsx`
 
 ## 概要
 Aegis AI Hub v5.2 NEXUS のフロントエンドは、Windows 11 の **Acrylic Glassmorphism** を採用しています。デスクトップと調和しつつ、実用的な視認性と操作性を両立させた次世代の UI を提供します。

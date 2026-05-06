@@ -58,12 +58,12 @@ graph TD
 
 ## 主要モジュール構成
 
-### Application Core (`dashboard/`)
+### Application Core
 - `electron/main.cjs`: **Acrylic 素材**を有効化したメインウィンドウ管理。Fastify サーバーの起動制御も担当。
 - `src/api/server/NexusRouter.ts`: 内蔵 **Fastify サーバー** のルーティング定義。
 - `src/api/nexusApi.ts`: Electron IPC と HTTP API の両対応ブリッジ。
 
-### Intelligence & Logic (`dashboard/src/`)
+### Intelligence & Logic (`src/`)
 - `services/GeminiService.ts`: Gemini 3.1 による解析・探索ロジック。
 - `core/NexusOrchestrator.ts`: 自律的なインテリジェンス・サイクルの制御。
 - `agents/`: 各種自律エージェント（Architect, Archivist, etc.）。

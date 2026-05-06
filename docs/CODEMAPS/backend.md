@@ -2,22 +2,22 @@
 
 **Last Updated:** 2026-05-20
 **Version:** v5.2 NEXUS
-**Entry Point:** `dashboard/electron/main.cjs` (App/Main Process)
+**Entry Point:** `electron/main.cjs` (App/Main Process)
 
 ## 概要
-バックエンドは、従来の独立した `server/` 構成を廃止し、**`dashboard/src` 配下へ完全に統合**されました。これにより、Electron アプリケーション内で Fastify サーバーが内蔵される形式となり、単一のプロジェクト管理が可能になりました。
+バックエンドは、従来の独立した `server/` 構成を廃止し、**`src` 配下へ完全に統合**されました。これにより、Electron アプリケーション内で Fastify サーバーが内蔵される形式となり、単一のプロジェクト管理が可能になりました。
 
 ## システム・アーキテクチャ
 
 ### 1. 統合された Fastify サーバー
-全てのビジネスロジックは `dashboard/src` に集約され、Fastify によってホストされます。
+全てのビジネスロジックは `src` に集約され、Fastify によってホストされます。
 - **内蔵型**: Electron メインプロセス (`main.cjs`) によってライフサイクルが管理されます。
 - **高性能**: 非同期 I/O に最適化された Fastify を採用。
 - **API エンドポイント**: `/api/v5/` プレフィックス配下で、記事取得、設定同期、エージェント実行等の機能を提供。
-- **単一リポジトリ**: 全ての依存関係が `dashboard/package.json` で管理されます。
+- **単一リポジトリ**: 全ての依存関係が `package.json` で管理されます。
 
 ### 2. Windows 11 Native Glass (Acrylic)
-Electron メインプロセス (`dashboard/electron/main.cjs`) では、Windows 11 の **Acrylic** 効果を有効化しています：
+Electron メインプロセス (`electron/main.cjs`) では、Windows 11 の **Acrylic** 効果を有効化しています：
 - `backgroundMaterial: 'acrylic'`: ウィンドウ背面にシステムレベルの半透明効果を適用。
 - `transparent: false`: **FancyZones (スナップ機能)** への対応のため、不透明ウィンドウとして設定しつつ、Acrylic 素材で透過を表現。
 

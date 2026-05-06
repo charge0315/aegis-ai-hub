@@ -33,7 +33,7 @@
     ],
     "extraResources": [
       {
-        "from": "../data",
+        "from": "data",
         "to": "default-data",
         "filter": [
           "interests.json",

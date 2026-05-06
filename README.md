@@ -22,26 +22,24 @@
 
 ### 3. Integrated Backend Architecture
 信頼性と保守性を向上させた、単一プロジェクトによる統合アーキテクチャ。
-- **Unified Project**: `server` フォルダを廃止し、全てのビジネスロジックを `dashboard/src` 配下に統合。管理が容易な「単一のデスクトップアプリ」プロジェクトとして再構築。
+- **Unified Project**: 全てのビジネスロジックを `src` 配下に統合。管理が容易な「単一のデスクトップアプリ」プロジェクトとして再構築。
 - **Fastify Backend**: Electron メインプロセスから起動される Fastify ベースのバックエンドサーバーを内蔵。
 - **Lightweight**: `@modelcontextprotocol/sdk` への依存を排除し、フットプリントを削減。
 - **Dual-Mode API**: Electron IPC だけでなく、標準的な HTTP/JSON API による操作も可能。
 - **Dev-Sync System**: 開発環境の設定をアプリの実行環境（AppData）へ自動同期する仕組みを確立。
 
-### 3. 進化した UI アーキテクチャ (Robust UI)
+### 4. 進化した UI アーキテクチャ (Robust UI)
 プロダクション品質の安定性と使い勝手を追求。
 - **Flexible Feed Layout**: ヘッダーから記事カードのサイズ（Small/Medium/Large）と画像表示のON/OFF（テキストモード）を即座に切り替え可能。
 - **Native Window Interaction**: アプリケーション上部のヘッダーやサイドバーを掴んで自由に移動・リサイズできるネイティブウィンドウと同等のドラッグ体験。
 - **Inline Dialog System**: `App.tsx` へのインライン化により、透過環境下での安定性が向上。
 - **Precision Positioning**: 右側メインコンテンツ領域の正確な中心にダイアログを配置。サイドバー幅を考慮した動的オフセットを採用。
 - **Global Control**: `Ctrl+Q` による安全なアプリケーション終了や、`Ctrl+K` のコマンドパレット。
-- **Vertical Scrolling**: `overflow-x: hidden` 調整により、レイアウトを崩さずスムーズな縦スクロールを実現。
 
-### 4. 即戦力の知識ベース & AI Discovery
+### 5. 即戦力の知識ベース & AI Discovery
 インストールした瞬間から、最高品質の情報が流れ込みます。
 - **Default Data Sets**: ゲーム、AI、PCハードウェア、オーディオ、XR等の専門的なカテゴリとフィードを内蔵。
 - **AI Discovery 2.0**: カテゴリ名クリックで Gemini API が新しいニュースソースを自律探索。直接的なフィード URL (RSS/Atom) をワンクリックで追加可能。
-- **Smart Prompting**: サイト URL ではなく、直接的なフィードエンドポイントを優先的に取得する高度な AI プロンプトを搭載。
 
 
 ## 🖥️ アプリケーション外部仕様 (External Specifications)
@@ -63,7 +61,6 @@ Aegis AI Hub は、最新の技術トレンド（AI、PCハードウェア、ゲ
 *   **動的スクレイピング**: `axios` と `cheerio` を用い、記事のリンク先から OGP タグや本文内の画像を自律的に抽出します。
 *   **永続化キャッシュ (ImageCacheManager)**: 一度取得した画像 URL はローカルにキャッシュ（有効期限7日間）され、次回以降の表示を高速化するとともに、外部サイトへの重複アクセスを抑制します。
 *   **並列実行制御**: `p-limit` を導入し、多数の記事を同時にエンリッチメントする際のサーバー負荷とネットワークリソースを最適に管理します。
-*   **パス解決**: 相対パスの画像を絶対URLに解決し、表示不能な画像を最小限に抑止します。
 
 #### 2.3 AI Discovery (自律的情報源探索)
 *   **トリガー条件**: ユーザーがサイドバーにある「カテゴリ名」をクリックすることで、バックグラウンドで Gemini API (3.1 シリーズ) による探索プロセスが開始されます。
@@ -78,7 +75,6 @@ Aegis AI Hub は、最新の技術トレンド（AI、PCハードウェア、ゲ
 
 #### 3.1 Fastify ベースの内蔵バックエンド
 *   **非同期I/O最適化**: パフォーマンスを重視した Fastify サーバーが API ホスティングを担い、Electron アプリケーション内に統合されることで、軽量かつ堅牢なシステム構成を実現しています。
-*   **Dual-Mode API**: フロントエンド（ダッシュボード）との通信において、Electron IPC と 標準 HTTP/JSON API の両方を利用可能とし、外部システム連携も視野に入れた拡張性を持たせています。
 
 #### 3.2 統一された設定管理 (Unified Editor)
 *   **設定の同期と整合性**: `interests.json` と `feed_config.json` に存在するカテゴリ構成を常に完全に一致させ、データの不整合を防ぎます。設定変更はアトミックに保存されます。
@@ -88,43 +84,36 @@ Aegis AI Hub は、最新の技術トレンド（AI、PCハードウェア、ゲ
 #### 4.1 ビジュアル・デザイン (Windows 11 Native)
 *   **Acrylic Glassmorphism**: アプリケーション全体に Windows 11 ネイティブのアクリル（Acrylic）透過素材効果を適用し、デスクトップ環境とシームレスに調和します。
 *   **最適化された可読性**: ベース背景は `#101112`（透過率約30%）を基調とし、記事カード自体の透過率を 75% に設定。背景のノイズを抑えつつ高いテキスト視認性を確保します。
-*   **統一されたヘッダー/サイドバー**: ヘッダーとサイドバーの背景色調（`sidebar-glass`）を統一し、一体感のあるUIを提供します。
 
 #### 4.2 ウィンドウ操作とレイアウト制御
 *   **ネイティブ・ドラッグ**: ヘッダーやサイドバーの空白部分を掴んでドラッグすることで、標準的なOSウィンドウと同様に自由にウィンドウを移動できます。
-*   **FancyZones 対応**: スナップ機能（Windows PowerToys FancyZones等）に完全対応（`transparent: false`, `thickFrame: true` 制約下の最適化）しており、画面の任意の領域に正確にスナップ配置が可能です。
-*   **インラインダイアログ**: 全ての設定画面や通知ダイアログは別ウィンドウではなく、メインコンテンツ領域の正確な中央にインライン表示されます。サイドバーの幅を考慮した動的オフセット計算により常に精密な中央配置が維持されます。
+*   **FancyZones 対応**: スナップ機能（Windows PowerToys FancyZones等）に完全対応しており、画面の任意の領域に正確にスナップ配置が可能です。
 
 #### 4.3 キーボード・ショートカット
 *   `Ctrl + K`: コマンドパレットを開き、各種操作や設定へのクイックアクセスを提供します。
-*   `Ctrl + Q`: アプリケーションを安全に終了します（プロセスのクリーンアップを含む）。
+*   `Ctrl + Q`: アプリケーションを安全に終了します。
 
 ### 5. セキュリティとデータ永続化仕様
 
 *   **完全ローカル志向**: ユーザーの購読データ、設定、記事キャッシュはすべてローカルストレージに保存されます。分析のために Gemini API にデータを送信する以外、外部サーバーへのテレメトリ送信やデータ収集は一切行いません。
 *   **APIキーのセキュアストレージ**: ユーザーが入力した Gemini API キーは、Electron の `safeStorage` API によって OS ネイティブの暗号化方式で暗号化され、`credentials.json` に安全に保存されます。
-*   **環境適応型データパス**:
-    *   **プロダクションビルド時**: アプリパッケージ実行時は、ユーザーデータは `%APPDATA%/aegis-nexus/` 配下に保存され、アプリアップデート時にもデータが保持されます。
-    *   **開発モード時**: 開発の利便性を考慮し、プロジェクトルート直下の `data/` ディレクトリに保存・分離されます。
 
-## 📁 ディレクトリ構成
+## 📂 Directory Structure
 
-- **`dashboard/`**: プロジェクトのメインディレクトリ。
-  - **`electron/`**: Electronのエントリーポイント(`main.cjs`)、IPC用の`preload.cjs`、設定管理(`ElectronSettingsManager.ts`)が含まれます。
-  - **`src/`**: 全てのフロントエンドおよびバックエンドロジックが集約されています。
-    - **`agents/`**: 自律型インテリジェンス・エージェント。
-    - **`api/`**: Fastify サーバー（`api/server/NexusRouter.ts`）およびクライアントサイド API ブリッジ。
-    - **`core/`**: `NexusOrchestrator` を含むシステムの核となるロジック。
-    - **`services/`**: Gemini、RSS取得、エンリッチメント等の各種サービス。
-    - **`models/`**: データスキーマと定数。
-    - **`jobs/`**: 定期実行タスク。
-    - **`components/`, `hooks/`**: React フロントエンド部品。
-- **`docs/`**: システム仕様、API設計、開発用コードマップ等のドキュメント群。
-- **`data/`**: 開発時における設定ファイル群（フィード設定、興味関心、資格情報）の保存場所（製品版は `%APPDATA%` 以下に保存）。
-
-## 🛡️ セキュリティとプライバシー
-- **暗号化**: ユーザーが登録したAPIキー(`credentials.json`)は、Electronの `safeStorage` 機構を用いてOSネイティブの暗号化によって保護されます。
-- **ローカルファースト**: 全ての情報ソースや分析データはローカルに保存され、設定データが外部サーバーに送信されることはありません（Google Geminiへのプロンプト送信時を除く）。
+```text
+aegis-ai-hub/
+├── electron/          # Electron Main Process (System bridge)
+├── src/               # Integrated Logic (React Frontend + Internal Services)
+│   ├── agents/        # AI Agents (Architect, Curator, Discovery, etc.)
+│   ├── api/           # API Routing & Bridge
+│   ├── services/      # Business Logic (Gemini, RSS, Scoring, etc.)
+│   ├── components/    # UI Components
+│   └── ...
+├── public/            # Static assets
+├── data/              # Default configuration templates
+├── docs/              # Technical documentation & Codemaps
+└── package.json       # Unified dependency management
+```
 
 ## 🛠 テックスタック
 
@@ -135,29 +124,33 @@ Aegis AI Hub は、最新の技術トレンド（AI、PCハードウェア、ゲ
 - **Installer**: electron-builder
 
 
-## 🚀 インストールとセットアップ
+## 🚀 Setup & Development
 
-### ユーザー向け手順
-1. 配布されたインストーラー (`Aegis-Nexus-Setup.exe`) を実行。
-2. アプリを起動し、右上の設定アイコン（歯車）をクリック。
-3. **「System Settings」** タブを選択。
-4. [Google AI Studio](https://aistudio.google.com/app/apikey) で取得した Gemini API キーを入力して「Apply API Key」をクリック。
+### 1. Prerequisites
+- **Node.js**: v20+
+- **Google Gemini API Key**: [Google AI Studio](https://aistudio.google.com/app/apikey) で取得。
 
-### 開発者向け：ビルドと実行
-
+### 2. Installation
 ```bash
-cd dashboard
-npm install              # 依存関係のインストール
-npm run electron:dev     # 開発モードで起動 (Frontend HMR & Backend 自動起動)
-npm run electron:build   # インストーラーの生成 (release/ に出力)
+# Clone the repository
+git clone https://github.com/charge0315/aegis-ai-hub.git
+cd aegis-ai-hub
+
+# Install all dependencies
+npm install
 ```
 
-### ビルドスクリプトの詳細
-- `dev`: Vite によるフロントエンド開発サーバーの起動。
-- `electron:dev`: フロントエンド開発サーバーの起動を待ち、Electron アプリ（メインプロセス＋バックエンド）を起動。
-- `build:electron`: メインプロセスの esbuild バンドル生成。
-- `dist`: フロントエンドとメインプロセスのビルドを行い、インストーラーを作成。
-- `electron:build`: `dist` のエイリアス。
+### 3. Development Mode
+```bash
+# Launch Electron + Vite with HMR
+npm run electron:dev
+```
+
+### 4. Build & Package
+```bash
+# Generate production installer (EXE)
+npm run electron:build
+```
 
 ## 👨‍💻 技術リファレンス (Codemaps)
 
@@ -169,4 +162,3 @@ npm run electron:build   # インストーラーの生成 (release/ に出力)
 
 ---
 *Aegis AI Hub - Precision Engineering for Intellectual Excellence. 🚀*
-
