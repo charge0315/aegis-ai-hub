@@ -219,6 +219,11 @@ function registerIpcHandlers() {
 
   ipcMain.handle('suggest-category', async (event, categoryName) => {
     try {
+      const dataDir = getDataDir();
+      const settingsManager = new ElectronSettingsManager({ dataDir });
+      const apiKey = await settingsManager.getApiKey();
+      geminiService.updateApiKey(apiKey);
+      
       return await geminiService.suggestCategoryDetails(categoryName);
     } catch (error) {
       console.error('Failed to suggest category:', error);

@@ -511,21 +511,21 @@ URLは必ず「RSSフィード」または「Atomフィード」の直接のURL�
     const schema: ResponseSchema = {
       type: SchemaType.OBJECT,
       properties: {
-        brands: { 
-          type: SchemaType.ARRAY, 
-          items: { type: SchemaType.STRING }, 
-          description: "関連する主要なブランドを必ず正確に5つ",
-          minItems: 5,
-          maxItems: 5
+        brands: {
+          type: SchemaType.ARRAY,
+          items: { type: SchemaType.STRING },
+          description: "関連する主要なブランドを【必ず正確に5つ】",
+          minItems: 1,
+          maxItems: 10
         },
-        keywords: { 
-          type: SchemaType.ARRAY, 
-          items: { type: SchemaType.STRING }, 
-          description: "関連する重要なキーワードを必ず正確に5つ",
-          minItems: 5,
-          maxItems: 5
+        keywords: {
+          type: SchemaType.ARRAY,
+          items: { type: SchemaType.STRING },
+          description: "関連する重要なキーワードを【必ず正確に5つ】",
+          minItems: 1,
+          maxItems: 10
         },
-        emoji: { type: SchemaType.STRING, description: "カテゴリを象徴する絵文字1つ" },
+        emoji: { type: SchemaType.STRING, description: "カテゴリーを象徴する絵文字1つ" },
         reason: { type: SchemaType.STRING, description: "この提案の理由（1文）" }
       },
       required: ["brands", "keywords", "emoji", "reason"]

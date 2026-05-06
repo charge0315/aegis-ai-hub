@@ -63320,18 +63320,18 @@ URL\u306F\u5FC5\u305A\u300CRSS\u30D5\u30A3\u30FC\u30C9\u300D\u307E\u305F\u306F\u
             brands: {
               type: SchemaType.ARRAY,
               items: { type: SchemaType.STRING },
-              description: "\u95A2\u9023\u3059\u308B\u4E3B\u8981\u306A\u30D6\u30E9\u30F3\u30C9\u3092\u5FC5\u305A\u6B63\u78BA\u306B5\u3064",
-              minItems: 5,
-              maxItems: 5
+              description: "\u95A2\u9023\u3059\u308B\u4E3B\u8981\u306A\u30D6\u30E9\u30F3\u30C9\u3092\u3010\u5FC5\u305A\u6B63\u78BA\u306B5\u3064\u3011",
+              minItems: 1,
+              maxItems: 10
             },
             keywords: {
               type: SchemaType.ARRAY,
               items: { type: SchemaType.STRING },
-              description: "\u95A2\u9023\u3059\u308B\u91CD\u8981\u306A\u30AD\u30FC\u30EF\u30FC\u30C9\u3092\u5FC5\u305A\u6B63\u78BA\u306B5\u3064",
-              minItems: 5,
-              maxItems: 5
+              description: "\u95A2\u9023\u3059\u308B\u91CD\u8981\u306A\u30AD\u30FC\u30EF\u30FC\u30C9\u3092\u3010\u5FC5\u305A\u6B63\u78BA\u306B5\u3064\u3011",
+              minItems: 1,
+              maxItems: 10
             },
-            emoji: { type: SchemaType.STRING, description: "\u30AB\u30C6\u30B4\u30EA\u3092\u8C61\u5FB4\u3059\u308B\u7D75\u6587\u5B571\u3064" },
+            emoji: { type: SchemaType.STRING, description: "\u30AB\u30C6\u30B4\u30EA\u30FC\u3092\u8C61\u5FB4\u3059\u308B\u7D75\u6587\u5B571\u3064" },
             reason: { type: SchemaType.STRING, description: "\u3053\u306E\u63D0\u6848\u306E\u7406\u7531\uFF081\u6587\uFF09" }
           },
           required: ["brands", "keywords", "emoji", "reason"]
@@ -132597,6 +132597,10 @@ function registerIpcHandlers() {
   });
   ipcMain.handle("suggest-category", async (event, categoryName) => {
     try {
+      const dataDir = getDataDir();
+      const settingsManager = new ElectronSettingsManager2({ dataDir });
+      const apiKey = await settingsManager.getApiKey();
+      geminiService.updateApiKey(apiKey);
       return await geminiService.suggestCategoryDetails(categoryName);
     } catch (error51) {
       console.error("Failed to suggest category:", error51);
