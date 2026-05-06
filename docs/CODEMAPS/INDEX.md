@@ -1,17 +1,18 @@
 # Aegis AI Hub - System Index
 
 **Project Status:** Production Ready (v5.3 NEXUS)
-**Last Updated:** 2026-06-25
+**Last Updated:** 2026-05-06
 
 ## プロジェクト概要
 Aegis AI Hub は、Gemini 3.1 を中枢に据えた「自律学習型知的ダッシュボード」です。  
-v5.3 NEXUS では、エージェントスキルの動的追加機能、Gemini 3.1 Flash/Pro の最適化された使い分け、および対話型インストーラーを導入しました。
+v5.3 NEXUS では、AI によるプロファイルの完全再構築、進捗表示の改善、および Gemini 3.1 Flash/Pro の最適化された使い分けを導入しました。
 
 ## 主要なアップデート (v5.3 NEXUS)
 
-- **Dynamic Skill Registry**: `SkillRegistry` および `UnifiedEditor` を拡張し、新しいエージェントスキルをUIから動的に追加可能にしました。
-- **Gemini Model Optimization**: デフォルトを `gemini-3.1-flash-preview` (高速) とし、高負荷な再構築処理には `gemini-3.1-pro-preview` (高精度) を使用するように最適化。
-- **Interactive NSIS Installer**: `package.json` のNSIS設定を更新。再インストール時にユーザーデータを保持するか選択可能な、ユーザーフレンドリーなインストーラーに変更。
+- **Advanced AI Restructure**: カテゴリの再編、既存フィードの最適な再割り当て、および高品質な RSS ソースの自動発見を統合した「完全プロファイル再定義」機能を実装。
+- **UX Progress Overlay**: AI による長時間処理中に、Phase 1 (カテゴリ再編) と Phase 2 (ソース最適化) の詳細な進捗を表示するモーダルを追加。
+- **Gemini Model Optimization**: 日常的なタスクには高速な `gemini-3.1-flash-preview` を、高度な再編処理には `gemini-3.1-pro-preview` を使用するように最適化。
+- **Strict 10-Category Limit**: AI 出力のカテゴリ数を正確に10個に固定する制約を強化し、UI の一貫性を向上。
 
 ## 主要なアップデート (v5.2 NEXUS)
 

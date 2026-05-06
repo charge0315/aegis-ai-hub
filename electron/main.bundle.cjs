@@ -63019,9 +63019,10 @@ var init_GeminiService = __esm({
         return await this.generateStructured(prompt, schema);
       }
       /**
-       * 現在の興味設定を分析し、最適な10カテゴリに再構築案を提示します。
+       * 現在の興味設定とフィード構成を分析し、最適な10カテゴリに再構築した完全なプロファイルを提示します。
+       * 既存のフィードの再割り当てと、新しい高品質なソースの発見を含みます。
        */
-      async getRestructureProposal(interests) {
+      async getRestructureProposal(interests, currentFeeds) {
         const schema = {
           type: SchemaType.OBJECT,
           properties: {
@@ -63032,8 +63033,8 @@ var init_GeminiService = __esm({
                 properties: {
                   name: { type: SchemaType.STRING, description: "\u65B0\u3057\u3044\u30AB\u30C6\u30B4\u30EA\u540D" },
                   emoji: { type: SchemaType.STRING, description: "\u30AB\u30C6\u30B4\u30EA\u306B\u3075\u3055\u308F\u3057\u3044\u7D75\u6587\u5B57" },
-                  brands: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: "\u3053\u306E\u30AB\u30C6\u30B4\u30EA\u306B\u5206\u985E\u3055\u308C\u308B\u30D6\u30E9\u30F3\u30C9\uFF08\u65E2\u5B58\u306E\u3082\u306E\u304B\u3089\u62BD\u51FA\u30FB\u6574\u7406\uFF09" },
-                  keywords: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: "\u3053\u306E\u30AB\u30C6\u30B4\u30EA\u306B\u5206\u985E\u3055\u308C\u308B\u30AD\u30FC\u30EF\u30FC\u30C9\uFF08\u65E2\u5B58\u306E\u3082\u306E\u304B\u3089\u62BD\u51FA\u30FB\u6574\u7406\uFF09" },
+                  brands: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: "\u65E2\u5B58\u304B\u3089\u6574\u7406\u3055\u308C\u305F\u4E3B\u8981\u30D6\u30E9\u30F3\u30C9" },
+                  keywords: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: "\u65E2\u5B58\u304B\u3089\u6574\u7406\u3055\u308C\u305F\u91CD\u8981\u30AD\u30FC\u30EF\u30FC\u30C9" },
                   score: { type: SchemaType.NUMBER, description: "\u91CD\u8981\u5EA6\uFF080-10\uFF09" },
                   reason: { type: SchemaType.STRING, description: "\u3053\u306E\u5206\u985E\u306E\u7406\u7531" }
                 },
@@ -63041,33 +63042,79 @@ var init_GeminiService = __esm({
               },
               minItems: 10,
               maxItems: 10
+            },
+            feedMapping: {
+              type: SchemaType.ARRAY,
+              items: {
+                type: SchemaType.OBJECT,
+                properties: {
+                  url: { type: SchemaType.STRING, description: "\u65E2\u5B58\u306E\u30D5\u30A3\u30FC\u30C9URL" },
+                  newCategory: { type: SchemaType.STRING, description: "\u5272\u308A\u5F53\u3066\u5148\u306E\u65B0\u3057\u3044\u30AB\u30C6\u30B4\u30EA\u540D" }
+                },
+                required: ["url", "newCategory"]
+              }
+            },
+            newSuggestedFeeds: {
+              type: SchemaType.ARRAY,
+              items: {
+                type: SchemaType.OBJECT,
+                properties: {
+                  name: { type: SchemaType.STRING, description: "\u30B5\u30A4\u30C8\u540D" },
+                  url: { type: SchemaType.STRING, description: "RSS/Atom\u30D5\u30A3\u30FC\u30C9\u306EURL" },
+                  category: { type: SchemaType.STRING, description: "\u65B0\u3057\u3044\u30AB\u30C6\u30B4\u30EA\u540D" }
+                },
+                required: ["name", "url", "category"]
+              }
             }
           },
-          required: ["categories"]
+          required: ["categories", "feedMapping", "newSuggestedFeeds"]
         };
+        const allExistingUrls = Object.entries(currentFeeds).flatMap(
+          ([cat, data2]) => data2.active.map((url3) => ({ url: url3, oldCategory: cat }))
+        );
         const prompt = `
-\u3042\u306A\u305F\u306F\u30A4\u30F3\u30C6\u30EA\u30B8\u30A7\u30F3\u30B9\u30FB\u30A2\u30CA\u30EA\u30B9\u30C8\u3067\u3059\u3002
-\u4EE5\u4E0B\u306E\u73FE\u5728\u306E\u8208\u5473\u8A2D\u5B9A\uFF08\u30AB\u30C6\u30B4\u30EA\u3001\u30D6\u30E9\u30F3\u30C9\u3001\u30AD\u30FC\u30EF\u30FC\u30C9\uFF09\u3092\u5206\u6790\u3057\u3001\u91CD\u8907\u3092\u6392\u9664\u3057\u305F\u4E0A\u3067\u3001\u5168\u4F53\u3092\u3010\u6B63\u78BA\u306B10\u500B\u306E\u30AB\u30C6\u30B4\u30EA\u3011\u306B\u518D\u7DE8\u6210\u3057\u3066\u304F\u3060\u3055\u3044\u3002
+\u3042\u306A\u305F\u306F\u30A4\u30F3\u30C6\u30EA\u30B8\u30A7\u30F3\u30B9\u30FB\u30A2\u30FC\u30AD\u30C6\u30AF\u30C8\u3067\u3059\u3002
+\u30E6\u30FC\u30B6\u30FC\u306E\u30CB\u30E5\u30FC\u30B9\u53CE\u96C6\u74B0\u5883\u3092\u6839\u672C\u304B\u3089\u518D\u69CB\u7BC9\u3057\u3001\u60C5\u5831\u3092\u3010\u6B63\u78BA\u306B10\u500B\u306E\u6D17\u7DF4\u3055\u308C\u305F\u30AB\u30C6\u30B4\u30EA\u3011\u306B\u6574\u7406\u3057\u3066\u304F\u3060\u3055\u3044\u3002
 
-**\u518D\u69CB\u7BC9\u306E\u30EB\u30FC\u30EB:**
-1. \u65E2\u5B58\u306E\u30D6\u30E9\u30F3\u30C9\u3068\u30AD\u30FC\u30EF\u30FC\u30C9\u3092\u6700\u5927\u9650\u6D3B\u7528\u3057\u3001\u305D\u308C\u3089\u304C\u6F0F\u308C\u306A\u304F\u9069\u5207\u306A\u65B0\u3057\u304410\u30AB\u30C6\u30B4\u30EA\u306E\u3044\u305A\u308C\u304B\u306B\u5206\u985E\u3055\u308C\u308B\u3088\u3046\u306B\u3057\u3066\u304F\u3060\u3055\u3044\u3002
-2. \u91CD\u8907\u3057\u3066\u3044\u308B\u30A2\u30A4\u30C6\u30E0\u306F1\u3064\u306B\u30DE\u30FC\u30B8\u3057\u3066\u304F\u3060\u3055\u3044\u3002
-3. \u30AB\u30C6\u30B4\u30EA\u540D\u306F\u3001\u5305\u62EC\u7684\u304B\u3064\u30E2\u30C0\u30F3\u306A\u540D\u79F0\u306B\u3057\u3066\u304F\u3060\u3055\u3044\u3002
-4. \u5404\u30AB\u30C6\u30B4\u30EA\u306B\u3075\u3055\u308F\u3057\u3044\u7D75\u6587\u5B57\u30921\u3064\u5272\u308A\u5F53\u3066\u3066\u304F\u3060\u3055\u3044\u3002
-5. \u51FA\u529B\u306F\u5FC5\u305A\u6B63\u78BA\u306B10\u500B\u306E\u30AB\u30C6\u30B4\u30EA\u306B\u3057\u3066\u304F\u3060\u3055\u3044\u3002
+**\u30DF\u30C3\u30B7\u30E7\u30F3:**
+1. **\u30AB\u30C6\u30B4\u30EA\u306E\u7D71\u5408\u3068\u6D17\u7DF4**: \u65E2\u5B58\u306E\u30AB\u30C6\u30B4\u30EA\u3001\u30D6\u30E9\u30F3\u30C9\u3001\u30AD\u30FC\u30EF\u30FC\u30C9\u3092\u5206\u6790\u3057\u3001\u91CD\u8907\u3092\u30DE\u30FC\u30B8\u3057\u3066\u3001\u30E2\u30C0\u30F3\u3067\u5305\u62EC\u7684\u306A10\u500B\u306E\u30AB\u30C6\u30B4\u30EA\u306B\u518D\u7DE8\u3057\u3066\u304F\u3060\u3055\u3044\u3002
+2. **\u65E2\u5B58\u30D5\u30A3\u30FC\u30C9\u306E\u79FB\u8A2D**: \u30E6\u30FC\u30B6\u30FC\u304C\u73FE\u5728\u8CFC\u8AAD\u3057\u3066\u3044\u308B\u30D5\u30A3\u30FC\u30C9\uFF08\u4EE5\u4E0B\u306B\u30EA\u30B9\u30C8\uFF09\u3092\u3001\u65B0\u3057\u304410\u30AB\u30C6\u30B4\u30EA\u306E\u3044\u305A\u308C\u304B\u306B\u6700\u9069\u306B\u5272\u308A\u5F53\u3066\u76F4\u3057\u3066\u304F\u3060\u3055\u3044\u3002
+3. **\u65B0\u898F\u30BD\u30FC\u30B9\u306E\u6CE8\u5165**: \u5404\u65B0\u3057\u3044\u30AB\u30C6\u30B4\u30EA\u306B\u5BFE\u3057\u3066\u3001\u60C5\u5831\u306E\u8CEA\u3092\u9AD8\u3081\u308B\u305F\u3081\u306E\u9AD8\u54C1\u8CEA\u306ARSS/Atom\u30D5\u30A3\u30FC\u30C9\uFF08\u65E5\u672C\u8A9E\u512A\u5148\uFF09\u30922\u301C3\u500B\u305A\u3064\u65B0\u3057\u304F\u63D0\u6848\u3057\u3066\u304F\u3060\u3055\u3044\u3002
+
+**\u91CD\u8981\u30EB\u30FC\u30EB:**
+- \u51FA\u529B\u30AB\u30C6\u30B4\u30EA\u6570\u306F\u3010\u5FC5\u305A\u6B63\u78BA\u306B10\u500B\u3011\u3002
+- \u65E2\u5B58\u306E\u30D6\u30E9\u30F3\u30C9\u3068\u30AD\u30FC\u30EF\u30FC\u30C9\u306F\u3001\u65B0\u3057\u3044\u30AB\u30C6\u30B4\u30EA\u306B\u6F0F\u308C\u306A\u304F\u5206\u914D\u3057\u3066\u304F\u3060\u3055\u3044\u3002
+- \u63D0\u6848\u3059\u308B\u65B0\u898FURL\u306F\u3001\u5FC5\u305ARSS/Atom\u30D5\u30A3\u30FC\u30C9\u306E\u76F4\u63A5\u306EURL\u3067\u3042\u308B\u3053\u3068\u3002
 
 **\u73FE\u5728\u306E\u8208\u5473\u8A2D\u5B9A:**
 ${JSON.stringify(interests.categories, null, 2)}
+
+**\u73FE\u5728\u306E\u8CFC\u8AAD\u30D5\u30A3\u30FC\u30C9:**
+${JSON.stringify(allExistingUrls, null, 2)}
 
 \u65E5\u672C\u8A9E\u3067\u56DE\u7B54\u3057\u3066\u304F\u3060\u3055\u3044\u3002
 `;
         const result = await this.generateStructured(prompt, schema, "gemini-3.1-pro-preview");
         const categories = {};
+        const feedConfig = {};
         result.categories.forEach((cat) => {
           const { name, ...details } = cat;
           categories[name] = details;
+          feedConfig[name] = { active: [], pool: [], failures: {} };
         });
-        return categories;
+        result.feedMapping.forEach((m) => {
+          if (feedConfig[m.newCategory]) {
+            feedConfig[m.newCategory].active.push(m.url);
+          }
+        });
+        result.newSuggestedFeeds.forEach((s) => {
+          if (feedConfig[s.category]) {
+            if (!feedConfig[s.category].active.includes(s.url)) {
+              feedConfig[s.category].active.push(s.url);
+            }
+          }
+        });
+        return { categories, feedConfig };
       }
       async discoverSites(interests) {
         const schema = {
@@ -131694,7 +131741,8 @@ var init_NexusRouter = __esm({
           const apiKey = await settingsManager.getApiKey();
           scraper2.updateApiKey(apiKey);
           const currentInterests = await settingsManager.getInterests();
-          const restructured = await scraper2.geminiService.getRestructureProposal(currentInterests);
+          const currentFeeds = await settingsManager.getFeedConfig();
+          const restructured = await scraper2.geminiService.getRestructureProposal(currentInterests, currentFeeds);
           return restructured;
         } catch (error51) {
           const msg = error51 instanceof Error ? error51.message : String(error51);
@@ -132492,7 +132540,8 @@ function registerIpcHandlers() {
       const apiKey = await settingsManager.getApiKey();
       geminiService.updateApiKey(apiKey);
       const interests = await settingsManager.getInterests();
-      return await geminiService.getRestructureProposal(interests);
+      const currentFeeds = await settingsManager.getFeedConfig();
+      return await geminiService.getRestructureProposal(interests, currentFeeds);
     } catch (error51) {
       console.error("Failed to restructure categories:", error51);
       throw error51;

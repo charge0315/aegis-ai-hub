@@ -5,19 +5,22 @@
 
 ## 🌟 Aegis v5.3 NEXUS の主要な進化点
 
-### 1. Dynamic Skill Registry
+### 1. Deep AI Restructure (完全プロファイル再定義)
+ユーザーのニュース収集環境を根本から再構築する、強力な AI 機能を実装。
+- **Autonomous Reorganization**: 既存のカテゴリ、ブランド、キーワードを分析し、統合・洗練された「10個の最適カテゴリ」へ完全に再編します。
+- **Intelligent Feed Mapping**: 現在購読しているフィードを、新しく定義されたカテゴリへ最適に自動再割り当て。
+- **High-Quality Source Injection**: 各カテゴリに対して、情報の質を高めるための厳選された RSS/Atom フィード（日本語優先）を AI が自動的に発見・追加。
+- **Visual Progress Tracking**: Phase 1 (カテゴリ再編) と Phase 2 (ソース最適化) の詳細な進捗をリアルタイムで表示する進捗オーバーレイを導入。
+
+### 2. Gemini 3.1 Model Optimization
+タスクの複雑さに応じて、AI モデルの特性を最大限に引き出す最適化を実施。
+- **Gemini 3.1 Flash**: 日常的な記事解析や提案などの高速性が求められるタスクに使用。
+- **Gemini 3.1 Pro**: 「Deep AI Restructure」などの高度な推論と大規模なコンテキスト処理が必要なタスクに使用し、圧倒的な解析精度を実現。
+
+### 3. Dynamic Skill Registry
 AIエージェントの機能を動的に拡張。
 - **Custom Skill Addition**: 新しいスキルをUIから直接定義・登録可能。
 - **Granular Control**: ツール、アクション、ロジックといったスキル種別ごとに、オーケストレーターの動作を拡張。
-
-### 2. Gemini 3.1 Optimization
-タスクに応じた最適なAIモデルの自動使い分け。
-- **Gemini 3.1 Flash**: デフォルトの思考エンジンとして採用。超高速なレスポンスを実現。
-- **Gemini 3.1 Pro**: カテゴリ再構築などの複雑な推論タスクにおいて、圧倒的な解析精度を発揮。
-
-### 3. Interactive Installer
-ユーザーの利用環境を保護するスマートなインストーラー。
-- **Data Preservation**: 再インストールやアップデート時、既存のユーザー設定（APIキー、購読フィード等）を保持するかどうかを選択可能。
 
 ### 3. Integrated Backend Architecture
 信頼性と保守性を向上させた、単一プロジェクトによる統合アーキテクチャ。
