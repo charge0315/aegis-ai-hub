@@ -2,18 +2,19 @@
 
 **Last Updated:** 2026-05-20
 **Version:** v5.2 NEXUS
-**Entry Point:** `server/src/index.ts` (Standalone) / `dashboard/electron/main.cjs` (App)
+**Entry Point:** `dashboard/electron/main.cjs` (App/Main Process)
 
 ## 概要
-バックエンドは、従来の MCP (Model Context Protocol) 構成から、**Fastify ベースのスタンドアロンサーバー**へと完全移行しました。また、フィードの信頼性向上と開発体験の改善を目的とした高度なデータ管理機能を搭載しています。
+バックエンドは、従来の独立した `server/` 構成を廃止し、**`dashboard/src` 配下へ完全に統合**されました。これにより、Electron アプリケーション内で Fastify サーバーが内蔵される形式となり、単一のプロジェクト管理が可能になりました。
 
 ## システム・アーキテクチャ
 
-### 1. Fastify スタンドアロンサーバー
-`server/` ディレクトリに配置されたコアロジックは、Fastify によってホストされます。
+### 1. 統合された Fastify サーバー
+全てのビジネスロジックは `dashboard/src` に集約され、Fastify によってホストされます。
+- **内蔵型**: Electron メインプロセス (`main.cjs`) によってライフサイクルが管理されます。
 - **高性能**: 非同期 I/O に最適化された Fastify を採用。
-- **軽量**: `@modelcontextprotocol/sdk` を排除し、依存関係を最小化。
 - **API エンドポイント**: `/api/v5/` プレフィックス配下で、記事取得、設定同期、エージェント実行等の機能を提供。
+- **単一リポジトリ**: 全ての依存関係が `dashboard/package.json` で管理されます。
 
 ### 2. Windows 11 Native Glass (Acrylic)
 Electron メインプロセス (`dashboard/electron/main.cjs`) では、Windows 11 の **Acrylic** 効果を有効化しています：
@@ -52,7 +53,7 @@ Electron メインプロセス (`dashboard/electron/main.cjs`) では、Windows 
 
 | サービス名 | 役割 | v5.2 における進化 |
 | :--- | :--- | :--- |
-| `Fastify Server` | API ホスティング | MCP からの移行。スタンドアロン動作を実現。 |
+| `Fastify Server` | API ホスティング | Electron 内蔵型への統合。単一プロジェクトとして動作。 |
 | `RSSFetcher` | フィード取得 | **疎通確認 (validateFeed)** 機能の追加。 |
 | `FeedManager` | フィード構成管理 | **自動ヘルスチェック付きフィード昇格**の実装。 |
 | `GeminiService` | AI 推論 | 直接的なフィード URL (RSS/Atom) を取得するためのプロンプト最適化。 |

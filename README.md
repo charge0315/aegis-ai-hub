@@ -20,9 +20,10 @@
 - **Article Freshness Filter**: 3ヶ月（90日）以上前の古い記事を自動的にフィルタリング。常に最新のトレンドのみを表示。
 - **Environment-Adaptive Paths**: 開発環境ではワークスペースの `data/`、パッケージ後は `%APPDATA%` を自動的に使い分ける適応型パス解決を導入。
 
-### 3. Standalone Server Architecture
-信頼性と柔軟性を向上させた新アーキテクチャ。
-- **Fastify Backend**: MCP (Model Context Protocol) から **Fastify ベースのスタンドアロンサーバー** へ完全移行。
+### 3. Integrated Backend Architecture
+信頼性と保守性を向上させた、単一プロジェクトによる統合アーキテクチャ。
+- **Unified Project**: `server` フォルダを廃止し、全てのビジネスロジックを `dashboard/src` 配下に統合。管理が容易な「単一のデスクトップアプリ」プロジェクトとして再構築。
+- **Fastify Backend**: Electron メインプロセスから起動される Fastify ベースのバックエンドサーバーを内蔵。
 - **Lightweight**: `@modelcontextprotocol/sdk` への依存を排除し、フットプリントを削減。
 - **Dual-Mode API**: Electron IPC だけでなく、標準的な HTTP/JSON API による操作も可能。
 - **Dev-Sync System**: 開発環境の設定をアプリの実行環境（AppData）へ自動同期する仕組みを確立。
@@ -75,8 +76,8 @@ Aegis AI Hub は、最新の技術トレンド（AI、PCハードウェア、ゲ
 
 ### 3. システムアーキテクチャ仕様
 
-#### 3.1 Fastify ベースのスタンドアロンバックエンド
-*   **非同期I/O最適化**: パフォーマンスを重視した Fastify サーバーが API ホスティングを担い、旧来の MCP (Model Context Protocol) 構成を排除して軽量かつ独立したシステム構成を実現しています。
+#### 3.1 Fastify ベースの内蔵バックエンド
+*   **非同期I/O最適化**: パフォーマンスを重視した Fastify サーバーが API ホスティングを担い、Electron アプリケーション内に統合されることで、軽量かつ堅牢なシステム構成を実現しています。
 *   **Dual-Mode API**: フロントエンド（ダッシュボード）との通信において、Electron IPC と 標準 HTTP/JSON API の両方を利用可能とし、外部システム連携も視野に入れた拡張性を持たせています。
 
 #### 3.2 統一された設定管理 (Unified Editor)
@@ -108,8 +109,16 @@ Aegis AI Hub は、最新の技術トレンド（AI、PCハードウェア、ゲ
 
 ## 📁 ディレクトリ構成
 
-- **`dashboard/`**: React/Viteによるフロントエンド。Electronのエントリーポイント(`main.cjs`)とIPC用の`preload.cjs`、暗号化処理用の`ElectronSettingsManager.ts`が含まれます。
-- **`server/`**: コアとなるビジネスロジック。FastifyベースのスタンドアロンAPIサーバーと、インテリジェンス・エージェント（NexusOrchestratorなど）が含まれます。
+- **`dashboard/`**: プロジェクトのメインディレクトリ。
+  - **`electron/`**: Electronのエントリーポイント(`main.cjs`)、IPC用の`preload.cjs`、設定管理(`ElectronSettingsManager.ts`)が含まれます。
+  - **`src/`**: 全てのフロントエンドおよびバックエンドロジックが集約されています。
+    - **`agents/`**: 自律型インテリジェンス・エージェント。
+    - **`api/`**: Fastify サーバー（`api/server/NexusRouter.ts`）およびクライアントサイド API ブリッジ。
+    - **`core/`**: `NexusOrchestrator` を含むシステムの核となるロジック。
+    - **`services/`**: Gemini、RSS取得、エンリッチメント等の各種サービス。
+    - **`models/`**: データスキーマと定数。
+    - **`jobs/`**: 定期実行タスク。
+    - **`components/`, `hooks/`**: React フロントエンド部品。
 - **`docs/`**: システム仕様、API設計、開発用コードマップ等のドキュメント群。
 - **`data/`**: 開発時における設定ファイル群（フィード設定、興味関心、資格情報）の保存場所（製品版は `%APPDATA%` 以下に保存）。
 
@@ -136,23 +145,16 @@ Aegis AI Hub は、最新の技術トレンド（AI、PCハードウェア、ゲ
 
 ### 開発者向け：ビルドと実行
 
-#### ダッシュボード (Electron)
 ```bash
 cd dashboard
 npm install              # 依存関係のインストール
-npm run electron:dev     # 開発モードで起動 (HMR有効)
+npm run electron:dev     # 開発モードで起動 (Frontend HMR & Backend 自動起動)
 npm run electron:build   # インストーラーの生成 (release/ に出力)
 ```
 
-#### スタンドアロンサーバー
-```bash
-cd server
-npm install
-npm run dev              # 開発モードで起動 (http://localhost:3005)
-```
-
 ### ビルドスクリプトの詳細
-- `build`: フロントエンド (Vite) のプロダクションビルド。
+- `dev`: Vite によるフロントエンド開発サーバーの起動。
+- `electron:dev`: フロントエンド開発サーバーの起動を待ち、Electron アプリ（メインプロセス＋バックエンド）を起動。
 - `build:electron`: メインプロセスの esbuild バンドル生成。
 - `dist`: フロントエンドとメインプロセスのビルドを行い、インストーラーを作成。
 - `electron:build`: `dist` のエイリアス。

@@ -5,7 +5,7 @@
 
 ## プロジェクト概要
 Aegis AI Hub は、Gemini 3.1 を中枢に据えた「自律学習型知的ダッシュボード」です。  
-v5.2 NEXUS では、Windows 11 との親和性を極限まで高めた **Acrylic Glassmorphism** デザイン、Fastify によるスタンドアロンサーバー構成、そして柔軟な UI アーキテクチャを統合しました。
+v5.2 NEXUS では、Windows 11 との親和性を極限まで高めた **Acrylic Glassmorphism** デザイン、Electron に完全統合された内蔵 Fastify サーバー、そして柔軟な UI アーキテクチャを統合しました。
 
 ## 主要なアップデート (v5.2 NEXUS)
 
@@ -16,7 +16,7 @@ v5.2 NEXUS では、Windows 11 との親和性を極限まで高めた **Acrylic
 - **Adaptive Data Path Resolution**: 開発環境（プロジェクトルート）とプロダクション環境（AppData）でデータ保存先を自動的に切り替え。
 - **Article Freshness Filtering**: 90日以上前の記事を自動的に除外するロジックを実装。
 - **Standardized Data Set (May 2026)**: 2026年5月のトレンドに基づき、12カテゴリーのキーワードとブランドリストを大幅に充実。
-- **Fastify Standalone Server**: MCP 構成から Fastify ベースの高性能サーバーへ移行。`@modelcontextprotocol/sdk` を排除し、軽量化と汎用性を両立。
+- **Fastify Integrated Server**: MCP 構成から Fastify ベースの高性能サーバーへ移行し、Electron アプリケーション内へ完全統合。軽量化と単一プロジェクトによる保守性の向上を両立。
 
 
 
@@ -32,19 +32,23 @@ v5.2 NEXUS では、Windows 11 との親和性を極限まで高めた **Acrylic
 ```mermaid
 graph TD
     User((User))
-    UI[Frontend: Dashboard/Editor]
-    Main[Electron Main Process]
-    Server[Fastify Standalone Server]
     
-    subgraph "Knowledge Management"
+    subgraph "Aegis Nexus (Integrated App)"
+        UI[Frontend: React/Vite]
+        Main[Electron Main Process]
+        Server[Fastify Internal Server]
+        
+        Main -- Spawns/Controls --> Server
+        UI -- IPC --> Main
+        UI -- HTTP/REST --> Server
+    end
+    
+    subgraph "Knowledge Management (Local)"
         Config[(interests.json / feed_config.json)]
         Creds[(credentials.json)]
     end
 
     User <--> UI
-    UI -- IPC --> Main
-    UI -- HTTP/REST --> Server
-    Main -- Control --> Server
     
     Server -- Evolution/Discovery --> GeminiAPI[Gemini 3.1 API]
     Server -- Scrape --> Feeds[External RSS]
@@ -54,14 +58,16 @@ graph TD
 
 ## 主要モジュール構成
 
-### Desktop Application (`dashboard/`)
-- `electron/main.cjs`: **Acrylic 素材**を有効化したメインウィンドウ管理。
+### Application Core (`dashboard/`)
+- `electron/main.cjs`: **Acrylic 素材**を有効化したメインウィンドウ管理。Fastify サーバーの起動制御も担当。
+- `src/api/server/NexusRouter.ts`: 内蔵 **Fastify サーバー** のルーティング定義。
 - `src/api/nexusApi.ts`: Electron IPC と HTTP API の両対応ブリッジ。
 
-### Backend Services (`server/`)
-- `src/index.ts`: **Fastify サーバー**のエントリーポイント。
-- `src/services/GeminiService`: Gemini 3.1 による解析。
-- `src/core/NexusOrchestrator`: 自律的なインテリジェンス・サイクルの制御。
+### Intelligence & Logic (`dashboard/src/`)
+- `services/GeminiService.ts`: Gemini 3.1 による解析・探索ロジック。
+- `core/NexusOrchestrator.ts`: 自律的なインテリジェンス・サイクルの制御。
+- `agents/`: 各種自律エージェント（Architect, Archivist, etc.）。
+- `jobs/`: 進化サイクルやヘルスチェック等の定期タスク。
 
 ### Data Persistence
 - プロダクション環境では、OS 標準のユーザーデータ領域 (`%APPDATA%` 等) に保存されます。

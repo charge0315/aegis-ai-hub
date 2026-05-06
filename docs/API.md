@@ -5,10 +5,11 @@
 
 本ドキュメントでは、Aegis AI Hub v5.2 が提供する Fastify REST API および Electron IPC (Inter-Process Communication) の仕様について記述します。
 
-## 1. Fastify REST API (Backend Server)
-v5.2 より、従来の MCP 構成に代わり Fastify ベースのスタンドアロンサーバーが導入されました。
+## 1. Fastify REST API (Internal Server)
+v5.2 より、従来の MCP 構成に代わり、Electron アプリケーションに内蔵された Fastify ベースのサーバーが全てのロジックをホストします。
 
 ### 1.1 基本情報
+- **ホスト**: Electron メインプロセス内で起動
 - **ベース URL**: `http://localhost:3005`
 - **API プレフィックス**: `/api/v5`
 

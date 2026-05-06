@@ -6,7 +6,7 @@
     - 本文内（article, main, .post-content 等）から適切な画像を抽出するヒューリスティクスを実装。
     - 相対URLを絶対URLに自動変換する処理を追加。
 - **ImageCacheManager の新設**:
-    - `server/data/image_cache.json` を使用した永続的なキャッシュ機構を導入。
+    - `data/image_cache.json` を使用した永続的なキャッシュ機構を導入。
     - 同一URLに対する重複リクエストを防止し、パフォーマンスを向上。
     - TTL（7日間）による自動クリーンアップ機能を搭載。
 - **並列リクエストの制御**:
