@@ -1,28 +1,23 @@
-# Aegis AI Hub 🛡️🤖 - v5.2 NEXUS
+# Aegis AI Hub 🛡️🤖 - v5.3 NEXUS
 
 ユーザーの興味に特化した、究極の自律学習型知的ニュース・ダッシュボード。  
-最新の **Gemini 3.1 シリーズ** を中枢に、Windows 11 の **Acrylic Glassmorphism** デザインと高度な自律エージェントを融合させたプロダクション・エディション。
+最新の **Gemini 3.1 シリーズ (Flash/Pro)** を中枢に、Windows 11 の **Acrylic Glassmorphism** デザインと高度な自律エージェントを融合させたプロダクション・エディション。
 
-## 🌟 Aegis v5.2 NEXUS の主要な進化点
+## 🌟 Aegis v5.3 NEXUS の主要な進化点
 
-### 1. Windows 11 Native Acrylic
-デスクトップと調和する、次世代のビジュアル体験。
-- **Acrylic Integration**: Windows 11 ネイティブの **Acrylic素材** を Electron で実現。
-- **Refined Transparency**: 背景色 `#101112` と最適化された透過率により、視認性と審美性を両立。
+### 1. Dynamic Skill Registry
+AIエージェントの機能を動的に拡張。
+- **Custom Skill Addition**: 新しいスキルをUIから直接定義・登録可能。
+- **Granular Control**: ツール、アクション、ロジックといったスキル種別ごとに、オーケストレーターの動作を拡張。
 
-### 2. Intelligent AI Guidance & Suggestion
-Gemini 3.1 を最大限に活用するためのインテリジェンス・レイヤー。
-- **AI Suggest Sync**: APIキー設定後、アプリケーションの再起動なしに即座にAI提案機能が有効化される同期メカニズム。
-- **API Key Guard**: APIキー未設定時に警告バナーを表示。設定画面へのダイレクト誘導により、スムーズな導入をサポート。
-- **Strict Suggestion Logic**: ブランドおよびキーワードのAI提案数を「5個固定」に厳格化。ノイズを排除し、高品質な情報源のみを抽出。
-- **Interactive Category Editor**: カテゴリ名の変更（鉛筆アイコン）および絵文字のカスタマイズ（クリック）に対応。
+### 2. Gemini 3.1 Optimization
+タスクに応じた最適なAIモデルの自動使い分け。
+- **Gemini 3.1 Flash**: デフォルトの思考エンジンとして採用。超高速なレスポンスを実現。
+- **Gemini 3.1 Pro**: カテゴリ再構築などの複雑な推論タスクにおいて、圧倒的な解析精度を発揮。
 
-### 3. Robust RSS & Data Management
-情報の信頼性と鮮度を極限まで追求。
-- **Auto Health Check**: フィード取得失敗時に `RSSFetcher` が自動的にバリデーションを実行。3回連続失敗でプール内の代替ソースへ自動昇格。
-- **Validation Guardrail**: フィードの新規追加や設定同期の際、必ず有効性を検証。無効な URL の登録を未然に防止。
-- **Article Freshness Filter**: 3ヶ月（90日）以上前の古い記事を自動的にフィルタリング。常に最新のトレンドのみを表示。
-- **Environment-Adaptive Paths**: 開発環境ではワークスペースの `data/`、パッケージ後は `%APPDATA%` を自動的に使い分ける適応型パス解決を導入。
+### 3. Interactive Installer
+ユーザーの利用環境を保護するスマートなインストーラー。
+- **Data Preservation**: 再インストールやアップデート時、既存のユーザー設定（APIキー、購読フィード等）を保持するかどうかを選択可能。
 
 ### 3. Integrated Backend Architecture
 信頼性と保守性を向上させた、単一プロジェクトによる統合アーキテクチャ。

@@ -16,12 +16,13 @@ import {
   Sparkles,
   Key,
   AlertCircle,
-  Pencil
+  Pencil,
+  LayoutTemplate
 } from 'lucide-react';import { GlassPanel } from './GlassPanel';
 import { KnowledgeGraph } from './KnowledgeGraph';
 import { SkillRegistry } from './SkillRegistry';
 import { nexusApi } from '../api/nexusApi';
-import type { NexusSettings, Skill, InterestCategory } from '../types';
+import type { NexusSettings, Skill, InterestCategory, FeedConfig } from '../types';
 import type { DialogType } from './CustomDialog';
 
 interface UnifiedEditorProps {
@@ -238,6 +239,41 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
     });
   };
 
+  const handleAddSkill = async () => {
+    const name = await customPrompt('New Skill Name', 'Enter a name for the new agent capability:', '', 'e.g. Code Reviewer');
+    if (!name) return;
+
+    const description = await customPrompt('Description', `Enter a description for "${name}":`, '', 'What does this skill do?');
+    if (!description) return;
+
+    const agent = await customPrompt('Target Agent', 'Which agent should possess this skill?', 'Architect', 'Architect, Curator, Discovery, or Archivist');
+    if (!agent) return;
+
+    const typePrompt = await customPrompt('Skill Type', 'Enter skill type (tool, action, or logic):', 'tool');
+    const type = (typePrompt === 'tool' || typePrompt === 'action' || typePrompt === 'logic') ? typePrompt : 'tool';
+
+    const id = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+
+    setDraft(prev => {
+      const currentSkills = prev.interests.skills || DEFAULT_SKILLS;
+      if (currentSkills.find(s => s.id === id)) {
+        customAlert('ID Conflict', 'A skill with a similar name already exists.', 'warning');
+        return prev;
+      }
+
+      const newSkill: Skill = { id, name, description, agent, type, enabled: true };
+      return { 
+        ...prev, 
+        interests: { 
+          ...prev.interests, 
+          skills: [...currentSkills, newSkill] 
+        } 
+      };
+    });
+
+    await customAlert('Skill Registered', `Successfully added "${name}" to the ${agent} cluster.`, 'success');
+  };
+
   const handleRenameCategory = async (oldName: string) => {
     const newName = await customPrompt('Rename Category', `Enter a new name for "${oldName}":`, oldName);
     if (!newName || newName === oldName) return;
@@ -341,7 +377,8 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
     if (field === 'brands') setIsSuggestingBrands(true);
     else setIsSuggestingKeywords(true);
 
-    try {      const suggestions = await nexusApi.suggestCategory(selectedCategory);
+    try {
+      const suggestions = await nexusApi.suggestCategory(selectedCategory);
       const newItems = (suggestions[field] || []).slice(0, 5);
       
       setDraft(prev => {
@@ -365,6 +402,67 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
     } finally {
       if (field === 'brands') setIsSuggestingBrands(false);
       else setIsSuggestingKeywords(false);
+    }
+  };
+
+  const handleRestructure = async () => {
+    if (!apiKey) {
+      await customAlert('API Key Required', 'Please set your Gemini API key in System Settings first.', 'warning');
+      setActiveTab('system');
+      return;
+    }
+
+    const confirmed = await customConfirm(
+      'AI Restructure',
+      'This will completely reorganize your categories into 10 optimal groups. Existing brands and keywords will be merged and redistributed. Your feed URLs will be preserved but may be moved to different categories. Proceed?'
+    );
+    if (!confirmed) return;
+
+    setIsSuggesting(true);
+    try {
+      const newCategories = await nexusApi.restructureCategories();
+      
+      setDraft(prev => {
+        const newFeedUrls: FeedConfig = {};
+        
+        // 既存の全フィードを収集
+        const allFeeds: { url: string; category: string }[] = [];
+        Object.entries(prev.feed_urls).forEach(([cat, data]) => {
+          data.active.forEach(url => allFeeds.push({ url, category: cat }));
+        });
+
+        // 新しいカテゴリごとにフィードを割り当て直す（暫定的に古いカテゴリ名が含まれるものを優先）
+        Object.keys(newCategories).forEach(newCatName => {
+          newFeedUrls[newCatName] = { active: [], pool: [], failures: {} };
+          
+          // シンプルなマッピングロジック: 元のカテゴリ名が新カテゴリ名に含まれる、
+          // または新カテゴリに関連するキーワードが含まれるフィードを移動
+          const relatedFeeds = allFeeds.filter(f => 
+            newCatName.toLowerCase().includes(f.category.toLowerCase()) || 
+            f.category.toLowerCase().includes(newCatName.toLowerCase())
+          );
+          
+          newFeedUrls[newCatName].active = relatedFeeds.map(f => f.url);
+        });
+
+        return {
+          ...prev,
+          interests: {
+            ...prev.interests,
+            categories: newCategories,
+            lastUpdated: Date.now()
+          },
+          feed_urls: newFeedUrls
+        };
+      });
+
+      setSelectedCategory(Object.keys(newCategories)[0] || null);
+      await customAlert('Restructure Complete', 'AI has successfully reorganized your intelligence profile into 10 categories.', 'success');
+    } catch (err) {
+      console.error('Restructure failed:', err);
+      await customAlert('Restructure Failed', 'An error occurred while reorganizing categories.', 'error');
+    } finally {
+      setIsSuggesting(false);
     }
   };
 
@@ -402,6 +500,16 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
         </div>
         
         <div className="flex gap-3">
+          <button
+            onClick={handleRestructure}
+            disabled={isSuggesting || isSaving}
+            className="flex items-center gap-2 px-4 py-2.5 bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 border border-indigo-500/20 rounded-xl transition-all font-bold text-xs uppercase tracking-wider disabled:opacity-50"
+            title="AI-driven total profile reorganization (10 categories)"
+          >
+            <LayoutTemplate size={18} className={isSuggesting ? 'animate-pulse' : ''} />
+            AI Restructure
+          </button>
+
           {isDirty && (
             <motion.button
               initial={{ opacity: 0, x: 20 }}
@@ -742,13 +850,13 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
             >
-              <SkillRegistry 
-                skills={draft.interests.skills} 
-                onToggleSkill={handleToggleSkill} 
+              <SkillRegistry
+                skills={draft.interests.skills}
+                onToggleSkill={handleToggleSkill}
+                onAddSkill={handleAddSkill}
               />
             </motion.div>
           )}
-
           {activeTab === 'system' && (
             <motion.div
               key="system"

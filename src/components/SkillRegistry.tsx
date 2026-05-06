@@ -1,11 +1,12 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Terminal, Shield, Zap, BookOpen, CheckCircle2, Circle } from 'lucide-react';
+import { Terminal, Shield, Zap, BookOpen, CheckCircle2, Circle, Plus } from 'lucide-react';
 import type { Skill } from '../types';
 
 interface SkillRegistryProps {
   skills?: Skill[];
   onToggleSkill?: (skillId: string) => void;
+  onAddSkill?: () => void;
 }
 
 const defaultSkills: Skill[] = [
@@ -19,7 +20,8 @@ const defaultSkills: Skill[] = [
 
 export const SkillRegistry: React.FC<SkillRegistryProps> = ({ 
   skills = defaultSkills,
-  onToggleSkill
+  onToggleSkill,
+  onAddSkill
 }) => {
   return (
     <div className="space-y-6">
@@ -29,7 +31,14 @@ export const SkillRegistry: React.FC<SkillRegistryProps> = ({
           <p className="text-slate-500 text-sm">Capabilities currently deployed in the Aegis cluster.</p>
         </div>
         <div className="flex gap-2">
-          <div className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-xs text-slate-400">
+          <button
+            onClick={onAddSkill}
+            className="flex items-center gap-2 px-4 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-full text-xs font-bold uppercase transition-all"
+          >
+            <Plus size={14} />
+            Add New Skill
+          </button>
+          <div className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-xs text-slate-400 flex items-center">
             {skills.length} Skills Active
           </div>
         </div>

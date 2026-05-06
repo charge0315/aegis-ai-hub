@@ -271,6 +271,21 @@ function registerIpcHandlers() {
     }
   });
 
+  ipcMain.handle('restructure-categories', async () => {
+    try {
+      const dataDir = getDataDir();
+      const settingsManager = new ElectronSettingsManager({ dataDir });
+      const apiKey = await settingsManager.getApiKey();
+      geminiService.updateApiKey(apiKey);
+      
+      const interests = await settingsManager.getInterests();
+      return await geminiService.getRestructureProposal(interests);
+    } catch (error) {
+      console.error('Failed to restructure categories:', error);
+      throw error;
+    }
+  });
+
   ipcMain.handle('get-api-key', async () => {
     const dataDir = getDataDir();
     const settingsManager = new ElectronSettingsManager({ dataDir });

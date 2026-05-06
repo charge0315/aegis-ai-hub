@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { Article, NexusSettings, AgentStatus } from '../types';
+import type { Article, NexusSettings, AgentStatus, InterestCategory } from '../types';
 
 export interface WindowState {
   width: number;
@@ -95,6 +95,16 @@ export const nexusApi = {
       return await window.nexusApi.getProposals();
     }
     const res = await fetch(`${BACKEND_URL}/api/v5/proposals`);
+    return await res.json();
+  },
+
+  async restructureCategories(): Promise<Record<string, InterestCategory>> {
+    if (window.nexusApi) {
+      return await window.nexusApi.restructureCategories();
+    }
+    const res = await fetch(`${BACKEND_URL}/api/v5/restructure-categories`, {
+      method: 'POST'
+    });
     return await res.json();
   }
 };

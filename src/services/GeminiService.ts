@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI, type GenerativeModel, type ChatSession, type ResponseSchema, SchemaType, type Content } from "@google/generative-ai";
-import type { Interests } from "../models/Schemas";
+import type { Interests, InterestCategory } from "../models/Schemas";
 
 export interface CuratedArticle {
   id: number;
@@ -20,7 +20,7 @@ export interface CuratedArticle {
  */
 export class GeminiService {
   private genAI: GoogleGenerativeAI | null;
-  private primaryModelName: string = "gemini-3.1-pro-preview";
+  private primaryModelName: string = "gemini-3.1-flash-preview";
 
   /**
    * @param {string} apiKey - Google Gemini APIキー
@@ -182,7 +182,10 @@ export class GeminiService {
     return await this.generateStructured<Record<string, unknown>>(prompt, schema);
   }
 
-  async getRestructureProposal(interests: Interests): Promise<Record<string, unknown>> {
+  /**
+   * 現在の興味設定を分析し、最適な10カテゴリに再構築案を提示します。
+   */
+  async getRestructureProposal(interests: Interests): Promise<Record<string, InterestCategory>> {
     const schema: ResponseSchema = {
       type: SchemaType.OBJECT,
       properties: {
@@ -191,31 +194,47 @@ export class GeminiService {
           items: {
             type: SchemaType.OBJECT,
             properties: {
-              name: { type: SchemaType.STRING },
-              emoji: { type: SchemaType.STRING },
-              brands: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
-              keywords: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
-              score: { type: SchemaType.NUMBER },
-              reason: { type: SchemaType.STRING }
+              name: { type: SchemaType.STRING, description: "新しいカテゴリ名" },
+              emoji: { type: SchemaType.STRING, description: "カテゴリにふさわしい絵文字" },
+              brands: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: "このカテゴリに分類されるブランド（既存のものから抽出・整理）" },
+              keywords: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: "このカテゴリに分類されるキーワード（既存のものから抽出・整理）" },
+              score: { type: SchemaType.NUMBER, description: "重要度（0-10）" },
+              reason: { type: SchemaType.STRING, description: "この分類の理由" }
             },
             required: ["name", "emoji", "brands", "keywords", "score", "reason"]
-          }
+          },
+          minItems: 10,
+          maxItems: 10
         }
       },
       required: ["categories"]
     };
-    const prompt = `現在の興味設定を分析し、再構築案を提示してください。出力は categories 配列として返してください: ${JSON.stringify(interests)}`;
-    const result = await this.generateStructured<{ categories: Array<Record<string, unknown>> }>(prompt, schema);
 
-    // 互換性のためにオブジェクト形式に変換
-    const categories: Record<string, unknown> = {};
+    const prompt = `
+あなたはインテリジェンス・アナリストです。
+以下の現在の興味設定（カテゴリ、ブランド、キーワード）を分析し、重複を排除した上で、全体を【正確に10個のカテゴリ】に再編成してください。
+
+**再構築のルール:**
+1. 既存のブランドとキーワードを最大限活用し、それらが漏れなく適切な新しい10カテゴリのいずれかに分類されるようにしてください。
+2. 重複しているアイテムは1つにマージしてください。
+3. カテゴリ名は、包括的かつモダンな名称にしてください。
+4. 各カテゴリにふさわしい絵文字を1つ割り当ててください。
+5. 出力は必ず正確に10個のカテゴリにしてください。
+
+**現在の興味設定:**
+${JSON.stringify(interests.categories, null, 2)}
+
+日本語で回答してください。
+`;
+    const result = await this.generateStructured<{ categories: Array<any> }>(prompt, schema, "gemini-3.1-pro-preview");
+
+    const categories: Record<string, InterestCategory> = {};
     result.categories.forEach(cat => {
-      const name = String(cat.name);
-      const { name: _, ...details } = cat;
+      const { name, ...details } = cat;
       categories[name] = details;
     });
 
-    return { categories };
+    return categories;
   }
 
   async discoverSites(interests: Interests): Promise<Record<string, unknown>[]> {
