@@ -29,11 +29,16 @@ test.describe('Aegis Nexus E2E Tests', () => {
     await expect(page.getByTestId('tab-editor')).toBeVisible({ timeout: 10000 });
     await expect(page.getByTestId('tab-graph')).toBeVisible();
     await expect(page.getByTestId('tab-skills')).toBeVisible();
+    await expect(page.getByTestId('tab-insights')).toBeVisible();
     
     // 知識グラフタブに切り替え
     await page.getByTestId('tab-graph').click();
     // D3.jsのSVGが表示されているか
     await expect(page.getByTestId('knowledge-graph-svg')).toBeVisible();
+    
+    // AI Insights タブに切り替え
+    await page.getByTestId('tab-insights').click();
+    await expect(page.getByText('AI-Discovered Trends')).toBeVisible();
     
     // スキルレジストリタブに切り替え
     await page.getByTestId('tab-skills').click();

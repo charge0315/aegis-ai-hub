@@ -51,6 +51,11 @@ export type Skill = z.infer<typeof SkillSchema>;
 export const InterestsSchema = z.object({
   categories: z.record(z.string(), InterestCategorySchema),
   skills: z.array(SkillSchema).optional(),
+  learned_keywords: z.record(z.string(), z.object({
+    category: z.string(),
+    reason: z.string(),
+    detectedAt: z.string()
+  })).optional(),
   lastUpdated: z.number().optional(),
 });
 

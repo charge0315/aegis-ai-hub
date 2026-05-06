@@ -87,6 +87,26 @@ export class DiscoveryService {
     return validFeeds;
   }
 
+  /**
+   * 提案されたフィード群を検証し、有効なもの（記事が取得できるもの）だけを抽出して返します。
+   */
+  async validateSuggestedFeeds(sites: SuggestedSite[]): Promise<SuggestedSite[]> {
+    const validatedSites: SuggestedSite[] = [];
+    
+    await Promise.all(sites.map(async (site) => {
+      try {
+        const items = await this.rssFetcher.fetch(site.url);
+        if (items && items.length > 0) {
+          validatedSites.push(site);
+        }
+      } catch (e) {
+        console.log(`[DiscoveryService] Skip invalid suggested feed: ${site.url}`);
+      }
+    }));
+
+    return validatedSites;
+  }
+
   async getProposals(interests: Interests): Promise<EvolutionProposals> {
     let result = await this.geminiService.getEvolutionProposals(interests) as Record<string, unknown>;
 

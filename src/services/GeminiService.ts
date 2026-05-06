@@ -20,7 +20,8 @@ export interface CuratedArticle {
  */
 export class GeminiService {
   private genAI: GoogleGenerativeAI | null;
-  private primaryModelName: string = "gemini-3.1-flash-preview";
+  private primaryModelName: string = "gemini-3.1-flash"; // More stable name
+  private highReasoningModelName: string = "gemini-3.1-pro"; // For complex tasks
 
   /**
    * @param {string} apiKey - Google Gemini APIキー
@@ -51,15 +52,15 @@ export class GeminiService {
       throw new Error("Gemini APIキーが設定されていません。System Settingsタブで設定してください。");
     }
 
-    const model: GenerativeModel = this.genAI.getGenerativeModel({
-      model: modelName,
-      generationConfig: {
-        responseMimeType: "application/json",
-        responseSchema: schema,
-      },
-    });
-
     try {
+      const model: GenerativeModel = this.genAI.getGenerativeModel({
+        model: modelName,
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: schema,
+        },
+      });
+
       const result = await model.generateContent(prompt);
       const response = await result.response;
       const text = response.text();
@@ -67,6 +68,19 @@ export class GeminiService {
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       console.error(`[GeminiService] Error with model ${modelName}: ${errorMessage}`);
+      
+      // フォールバック: Proで失敗した場合は Flash で再試行（またはその逆）
+      if (modelName === this.highReasoningModelName) {
+        console.warn(`[GeminiService] Retrying with fallback model: ${this.primaryModelName}`);
+        return this.generateStructured<T>(prompt, schema, this.primaryModelName);
+      }
+      
+      // Gemini 1.5 Pro への最終フォールバック (もし 3.1 が利用不可な場合)
+      if (modelName === this.primaryModelName && !errorMessage.includes("1.5-pro")) {
+        console.warn(`[GeminiService] Retrying with ultra-stable model: gemini-1.5-pro`);
+        return this.generateStructured<T>(prompt, schema, "gemini-1.5-pro");
+      }
+
       const detailedError = new Error(`Gemini API Error: ${errorMessage}`);
       (detailedError as Error & { originalError: unknown }).originalError = error;
       throw detailedError;
@@ -301,7 +315,7 @@ ${JSON.stringify(allExistingUrls, null, 2)}
       categories: Array<any>, 
       feedMapping: Array<{ url: string, newCategory: string }>,
       newSuggestedFeeds: Array<{ name: string, url: string, category: string }>
-    }>(prompt, schema, "gemini-3.1-pro-preview");
+    }>(prompt, schema, this.highReasoningModelName);
 
     const categories: Record<string, InterestCategory> = {};
     const feedConfig: FeedConfig = {};
@@ -316,14 +330,17 @@ ${JSON.stringify(allExistingUrls, null, 2)}
     // 2. 既存フィードのマッピング反映
     result.feedMapping.forEach(m => {
       if (feedConfig[m.newCategory]) {
-        feedConfig[m.newCategory].active.push(m.url);
+        // 有効なURLのみ追加 (Zodバリデーション落ちを防ぐ)
+        if (this._isValidUrl(m.url)) {
+          feedConfig[m.newCategory].active.push(m.url);
+        }
       }
     });
 
     // 3. 新規提案フィードの追加
     result.newSuggestedFeeds.forEach(s => {
       if (feedConfig[s.category]) {
-        if (!feedConfig[s.category].active.includes(s.url)) {
+        if (this._isValidUrl(s.url) && !feedConfig[s.category].active.includes(s.url)) {
           feedConfig[s.category].active.push(s.url);
         }
       }
@@ -339,6 +356,18 @@ ${JSON.stringify(allExistingUrls, null, 2)}
     });
 
     return { categories, feedConfig };
+  }
+
+  /**
+   * URLが有効な形式（http/https）かつZodの期待する形式に合致するかチェック
+   */
+  private _isValidUrl(url: string): boolean {
+    try {
+      const parsed = new URL(url);
+      return parsed.protocol === "http:" || parsed.protocol === "https:";
+    } catch {
+      return false;
+    }
   }
 
   async discoverSites(interests: Interests): Promise<Record<string, unknown>[]> {

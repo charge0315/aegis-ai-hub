@@ -30,6 +30,13 @@ export interface Skill {
 export interface Interests {
   categories: { [key: string]: InterestCategory };
   skills?: Skill[];
+  learned_keywords?: {
+    [keyword: string]: {
+      category: string;
+      reason: string;
+      detectedAt: string;
+    };
+  };
   lastUpdated?: number;
 }
 
@@ -88,7 +95,7 @@ export interface NexusApiBridge {
   getApiKey: () => Promise<string>;
   saveApiKey: (apiKey: string) => Promise<{ success: boolean }>;
   getProposals: () => Promise<{ sites: { url: string; name: string; reason: string; category: string }[] }>;
-  restructureCategories: () => Promise<Record<string, InterestCategory>>;
+  restructureCategories: () => Promise<{ categories: Record<string, InterestCategory>; feedConfig: FeedConfig }>;
   resetToDefaults: () => Promise<{ success: boolean }>;
   windowControl: (action: 'minimize' | 'maximize' | 'close') => void;
 }

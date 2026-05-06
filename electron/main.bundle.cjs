@@ -61632,6 +61632,11 @@ var init_Schemas = __esm({
     InterestsSchema = external_exports.object({
       categories: external_exports.record(external_exports.string(), InterestCategorySchema),
       skills: external_exports.array(SkillSchema).optional(),
+      learned_keywords: external_exports.record(external_exports.string(), external_exports.object({
+        category: external_exports.string(),
+        reason: external_exports.string(),
+        detectedAt: external_exports.string()
+      })).optional(),
       lastUpdated: external_exports.number().optional()
     });
     WindowStateSchema = external_exports.object({
@@ -62870,7 +62875,10 @@ var init_GeminiService = __esm({
     init_dist();
     GeminiService = class {
       genAI;
-      primaryModelName = "gemini-3.1-flash-preview";
+      primaryModelName = "gemini-3.1-flash";
+      // More stable name
+      highReasoningModelName = "gemini-3.1-pro";
+      // For complex tasks
       /**
        * @param {string} apiKey - Google Gemini APIキー
        */
@@ -62897,14 +62905,14 @@ var init_GeminiService = __esm({
         if (!this.genAI) {
           throw new Error("Gemini API\u30AD\u30FC\u304C\u8A2D\u5B9A\u3055\u308C\u3066\u3044\u307E\u305B\u3093\u3002System Settings\u30BF\u30D6\u3067\u8A2D\u5B9A\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
         }
-        const model = this.genAI.getGenerativeModel({
-          model: modelName,
-          generationConfig: {
-            responseMimeType: "application/json",
-            responseSchema: schema
-          }
-        });
         try {
+          const model = this.genAI.getGenerativeModel({
+            model: modelName,
+            generationConfig: {
+              responseMimeType: "application/json",
+              responseSchema: schema
+            }
+          });
           const result = await model.generateContent(prompt);
           const response = await result.response;
           const text3 = response.text();
@@ -62912,6 +62920,14 @@ var init_GeminiService = __esm({
         } catch (error51) {
           const errorMessage = error51 instanceof Error ? error51.message : String(error51);
           console.error(`[GeminiService] Error with model ${modelName}: ${errorMessage}`);
+          if (modelName === this.highReasoningModelName) {
+            console.warn(`[GeminiService] Retrying with fallback model: ${this.primaryModelName}`);
+            return this.generateStructured(prompt, schema, this.primaryModelName);
+          }
+          if (modelName === this.primaryModelName && !errorMessage.includes("1.5-pro")) {
+            console.warn(`[GeminiService] Retrying with ultra-stable model: gemini-1.5-pro`);
+            return this.generateStructured(prompt, schema, "gemini-1.5-pro");
+          }
           const detailedError = new Error(`Gemini API Error: ${errorMessage}`);
           detailedError.originalError = error51;
           throw detailedError;
@@ -63129,7 +63145,7 @@ ${JSON.stringify(allExistingUrls, null, 2)}
 
 \u65E5\u672C\u8A9E\u3067\u56DE\u7B54\u3057\u3066\u304F\u3060\u3055\u3044\u3002
 `;
-        const result = await this.generateStructured(prompt, schema, "gemini-3.1-pro-preview");
+        const result = await this.generateStructured(prompt, schema, this.highReasoningModelName);
         const categories = {};
         const feedConfig = {};
         result.categories.forEach((cat) => {
@@ -63139,12 +63155,14 @@ ${JSON.stringify(allExistingUrls, null, 2)}
         });
         result.feedMapping.forEach((m) => {
           if (feedConfig[m.newCategory]) {
-            feedConfig[m.newCategory].active.push(m.url);
+            if (this._isValidUrl(m.url)) {
+              feedConfig[m.newCategory].active.push(m.url);
+            }
           }
         });
         result.newSuggestedFeeds.forEach((s) => {
           if (feedConfig[s.category]) {
-            if (!feedConfig[s.category].active.includes(s.url)) {
+            if (this._isValidUrl(s.url) && !feedConfig[s.category].active.includes(s.url)) {
               feedConfig[s.category].active.push(s.url);
             }
           }
@@ -63157,6 +63175,17 @@ ${JSON.stringify(allExistingUrls, null, 2)}
           }
         });
         return { categories, feedConfig };
+      }
+      /**
+       * URLが有効な形式（http/https）かつZodの期待する形式に合致するかチェック
+       */
+      _isValidUrl(url3) {
+        try {
+          const parsed = new URL(url3);
+          return parsed.protocol === "http:" || parsed.protocol === "https:";
+        } catch {
+          return false;
+        }
       }
       async discoverSites(interests) {
         const schema = {
@@ -63506,6 +63535,23 @@ var init_DiscoveryService = __esm({
           console.log(`[DiscoveryService] \u5B8C\u4E86: ${validFeeds.length} \u4EF6\u306E\u65B0\u3057\u3044\u30D5\u30A3\u30FC\u30C9\u3092\u767B\u9332\u3057\u307E\u3057\u305F\u3002`);
         }
         return validFeeds;
+      }
+      /**
+       * 提案されたフィード群を検証し、有効なもの（記事が取得できるもの）だけを抽出して返します。
+       */
+      async validateSuggestedFeeds(sites) {
+        const validatedSites = [];
+        await Promise.all(sites.map(async (site) => {
+          try {
+            const items = await this.rssFetcher.fetch(site.url);
+            if (items && items.length > 0) {
+              validatedSites.push(site);
+            }
+          } catch (e) {
+            console.log(`[DiscoveryService] Skip invalid suggested feed: ${site.url}`);
+          }
+        }));
+        return validatedSites;
       }
       async getProposals(interests) {
         let result = await this.geminiService.getEvolutionProposals(interests);
@@ -131794,6 +131840,16 @@ var init_NexusRouter = __esm({
           const currentInterests = await settingsManager.getInterests();
           const currentFeeds = await settingsManager.getFeedConfig();
           const restructured = await scraper2.geminiService.getRestructureProposal(currentInterests, currentFeeds);
+          for (const [catName, config2] of Object.entries(restructured.feedConfig)) {
+            const sitesToValidate = config2.active.map((url3) => ({ url: url3, name: "Suggested Feed", category: catName }));
+            const validatedSites = await evolution.validateSuggestedFeeds(sitesToValidate);
+            restructured.feedConfig[catName].active = validatedSites.map((s) => s.url);
+            if (restructured.feedConfig[catName].active.length === 0) {
+              console.log(`[NexusRouter] Category "${catName}" has no valid feeds after validation. Using Google News fallback.`);
+              const fallbackUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(catName)}&hl=ja&gl=JP&ceid=JP:ja`;
+              restructured.feedConfig[catName].active.push(fallbackUrl);
+            }
+          }
           return restructured;
         } catch (error51) {
           const msg = error51 instanceof Error ? error51.message : String(error51);

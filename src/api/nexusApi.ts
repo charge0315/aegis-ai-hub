@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { Article, NexusSettings, AgentStatus, InterestCategory } from '../types';
+import type { Article, NexusSettings, AgentStatus, InterestCategory, FeedConfig } from '../types';
 
 export interface WindowState {
   width: number;
@@ -98,7 +98,7 @@ export const nexusApi = {
     return await res.json();
   },
 
-  async restructureCategories(): Promise<Record<string, InterestCategory>> {
+  async restructureCategories(): Promise<{ categories: Record<string, InterestCategory>, feedConfig: FeedConfig }> {
     if (window.nexusApi) {
       return await window.nexusApi.restructureCategories();
     }

@@ -22,7 +22,7 @@ import {
 import { KnowledgeGraph } from './KnowledgeGraph';
 import { SkillRegistry } from './SkillRegistry';
 import { nexusApi } from '../api/nexusApi';
-import type { NexusSettings, Skill, InterestCategory, FeedConfig } from '../types';
+import type { NexusSettings, Skill, InterestCategory } from '../types';
 import type { DialogType } from './CustomDialog';
 
 interface UnifiedEditorProps {
@@ -33,7 +33,7 @@ interface UnifiedEditorProps {
   prompt: (title: string, message: string, defaultValue?: string, placeholder?: string) => Promise<string | null>;
 }
 
-type Tab = 'editor' | 'graph' | 'skills' | 'system';
+type Tab = 'editor' | 'graph' | 'skills' | 'system' | 'insights';
 
 const DEFAULT_SKILLS: Skill[] = [
   { id: 'rss-fetch', name: 'RSS Fetcher', description: 'Retrieves raw signals from configured sources with deduplication.', agent: 'Discovery', type: 'tool', enabled: true },
@@ -44,8 +44,8 @@ const DEFAULT_SKILLS: Skill[] = [
   { id: 'reasoning-gen', name: 'Reasoning Engine', description: 'Generates user-friendly explanations for curated content.', agent: 'Curator', type: 'logic', enabled: true },
 ];
 
-export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({ 
-  currentSettings, 
+export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
+  currentSettings,
   onSave,
   alert: customAlert,
   confirm: customConfirm,
@@ -72,8 +72,40 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
   const isDirty = JSON.stringify(draft) !== JSON.stringify(currentSettings);
   const categoryKeys = Object.keys(draft.interests.categories);
 
-  const handleReorderCategories = (newOrder: string[]) => {
+  const handlePromoteKeyword = (keyword: string, category: string) => {
     setDraft(prev => {
+      const newInterests = { ...prev.interests };
+
+      // 1. カテゴリに追加
+      if (newInterests.categories[category]) {
+        const cat = { ...newInterests.categories[category] };
+        if (!cat.keywords.includes(keyword)) {
+          cat.keywords = [...cat.keywords, keyword];
+          newInterests.categories[category] = cat;
+        }
+      }
+
+      // 2. 学習済みリストから削除
+      if (newInterests.learned_keywords) {
+        const newLearned = { ...newInterests.learned_keywords };
+        delete newLearned[keyword];
+        newInterests.learned_keywords = newLearned;
+      }
+
+      return { ...prev, interests: newInterests };
+    });
+  };
+
+  const handleDismissKeyword = (keyword: string) => {
+    setDraft(prev => {
+      if (!prev.interests.learned_keywords) return prev;
+      const newLearned = { ...prev.interests.learned_keywords };
+      delete newLearned[keyword];
+      return { ...prev, interests: { ...prev.interests, learned_keywords: newLearned } };
+    });
+  };
+
+  const handleReorderCategories = (newOrder: string[]) => {    setDraft(prev => {
       const newCategories: Record<string, InterestCategory> = {};
       newOrder.forEach(key => {
         newCategories[key] = prev.interests.categories[key];
@@ -423,7 +455,7 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
     setRestructureStep('Phase 1/2: Reorganizing Categories & Mapping Feeds...');
     try {
       // 1. AI によるカテゴリ再編とフィードマッピングの実行
-      const restructured = await nexusApi.restructureCategories() as unknown as { categories: Record<string, InterestCategory>, feedConfig: FeedConfig };
+      const restructured = await nexusApi.restructureCategories();
       
       setRestructureStep('Phase 2/2: Injecting New High-Quality Sources...');
       // 実際にはバックエンドが既に新規ソースを feedConfig にマージして返しているため、
@@ -580,6 +612,13 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
           icon={<Cpu size={18} />} 
           label="Skill Registry" 
           data-testid="tab-skills"
+        />
+        <TabButton 
+          active={activeTab === 'insights'} 
+          onClick={() => setActiveTab('insights')} 
+          icon={<Sparkles size={18} />} 
+          label="AI Insights" 
+          data-testid="tab-insights"
         />
         <TabButton 
           active={activeTab === 'system'} 
@@ -906,6 +945,74 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
               />
             </motion.div>
           )}
+          {activeTab === 'insights' && (
+            <motion.div
+              key="insights"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="space-y-6"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                    <Sparkles size={20} className="text-primary" />
+                    AI-Discovered Trends
+                  </h3>
+                  <p className="text-slate-500 text-sm mt-1">Autonomous learning agents have identified these emerging signals in your node cluster.</p>
+                </div>
+              </div>
+
+              {!draft.interests.learned_keywords || Object.keys(draft.interests.learned_keywords).length === 0 ? (
+                <div className="py-20 flex flex-col items-center justify-center border-2 border-dashed border-white/5 rounded-3xl text-slate-600">
+                  <div className="p-4 bg-white/5 rounded-full mb-4">
+                    <Sparkles size={32} />
+                  </div>
+                  <p className="font-bold">No new trends discovered yet.</p>
+                  <p className="text-sm opacity-60 mt-1 text-center max-w-md">Continue consuming signals and running autonomous loops. The Archivist agent will populate this list as it detects patterns.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {Object.entries(draft.interests.learned_keywords).map(([kw, data]) => (
+                    <GlassPanel key={kw} className="p-6 group hover:border-primary/30 transition-all">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center gap-2 px-2 py-0.5 bg-primary/10 text-primary text-[10px] font-bold uppercase rounded-full">
+                          {data.category}
+                        </div>
+                        <span className="text-[10px] font-mono text-slate-600">Detected: {new Date(data.detectedAt).toLocaleDateString()}</span>
+                      </div>
+                      <h4 className="text-lg font-bold text-white mb-2">{kw}</h4>
+                      <p className="text-xs text-slate-500 italic mb-6 leading-relaxed">"{data.reason}"</p>
+                      
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handlePromoteKeyword(kw, data.category)}
+                          className="flex-grow flex items-center justify-center gap-2 py-2 bg-primary/20 hover:bg-primary text-primary hover:text-white rounded-xl text-xs font-bold transition-all"
+                        >
+                          <Plus size={14} /> Promote to Keyword
+                        </button>
+                        <button
+                          onClick={() => handleDismissKeyword(kw)}
+                          className="px-4 py-2 bg-white/5 hover:bg-alert/10 text-slate-500 hover:text-alert rounded-xl text-xs font-bold transition-all border border-transparent hover:border-alert/20"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    </GlassPanel>
+                  ))}
+                </div>
+              )}
+
+              <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl flex items-center gap-4">
+                <div className="text-primary"><Sparkles size={20} /></div>
+                <div className="text-xs text-slate-400 leading-relaxed">
+                  <b>Continuous Learning:</b> These items were extracted by the <span className="text-primary font-bold">Archivist</span> during recent signal analysis. 
+                  Promoting an item will add it to the corresponding category's permanent keyword list, increasing its weighting in future curation cycles.
+                </div>
+              </div>
+            </motion.div>
+          )}
+
           {activeTab === 'system' && (
             <motion.div
               key="system"

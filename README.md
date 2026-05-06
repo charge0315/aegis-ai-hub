@@ -12,8 +12,14 @@
 - **High-Quality Source Injection**: 各カテゴリに対して、情報の質を高めるための厳選された RSS/Atom フィード（日本語優先）を AI が自動的に発見・追加。
 - **Global Fallback Logic**: 日本語の情報源が不足している場合、BBC, Reuters, Wired などの世界的権威のある英語ソースへ自動的にフォールバックし、**「提案0件」を排除（網羅性の保証）**します。
 - **Visual Progress Tracking**: Phase 1 (カテゴリ再編) と Phase 2 (ソース最適化) の詳細な進捗をリアルタイムで表示する進捗オーバーレイを導入。
+- **Robust Verification Logic**: 再構築プロセスにフィードの有効性事前検証を追加。無効なURLによるエラーを自動回避し、Google Newsへのフォールバックで網羅性を100%保証。
 
-### 2. Gemini 3.1 Model Optimization
+### 2. AI Insights (継続的学習の可視化)
+AIエージェントが収集したトレンドをユーザーが管理できる新機能を実装。
+- **Trend Discovery Management**: `Archivist` エージェントが最新記事から抽出した「学習済みキーワード」を一覧表示。
+- **Manual Promotion**: 発見されたトレンドをワンクリックで正式な興味キーワードへ昇格。AIの自律進化にユーザーの意思を反映可能。
+
+### 3. Gemini 3.1 Model Optimization
 タスクの複雑さに応じて、AI モデルの特性を最大限に引き出す最適化を実施。
 - **Gemini 3.1 Flash**: 日常的な記事解析や提案などの高速性が求められるタスクに使用。
 - **Gemini 3.1 Pro**: 「Deep AI Restructure」などの高度な推論と大規模なコンテキスト処理が必要なタスクに使用し、圧倒的な解析精度を実現。

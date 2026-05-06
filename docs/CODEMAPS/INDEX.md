@@ -9,7 +9,8 @@ v5.3 NEXUS では、AI によるプロファイルの完全再構築、進捗表
 
 ## 主要なアップデート (v5.3 NEXUS)
 
-- **Advanced AI Restructure**: カテゴリの再編、既存フィードの最適な再割り当て、および高品質な RSS ソースの自動発見を統合。日本語ソース不足時の**「英語ソースへの自動フォールバック（網羅性の保証）」**を実装。
+- **Advanced AI Restructure**: カテゴリの再編、既存フィードの最適な再割り当て、および高品質な RSS ソースの自動発見を統合。日本語ソース不足時の**「英語ソースへの自動フォールバック（網羅性の保証）」**を実装。さらに、提案URLの事前検証ロジックによりエラー耐性を大幅に強化。
+- **AI Insights & Continuous Learning**: 自律エージェントが発見したトレンドキーワードを管理・承認するための専用タブを導入。
 - **UX Progress & Non-blocking Loading**: AI による長時間処理中に詳細な進捗を表示するモーダルに加え、AI探索中のフリーズを防ぐ**「非ブロッキング・ローディング画面」**を導入。
 - **High-Performance AI Discovery**: フィードの有効性確認を `Promise.all` による並列処理に移行し、ディスカバリー時間を大幅に短縮。
 - **Gemini Model Optimization**: 日常的なタスクには高速な `gemini-3.1-flash-preview` を、高度な再編処理には `gemini-3.1-pro-preview` を使用するように最適化。
