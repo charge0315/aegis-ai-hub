@@ -56,7 +56,14 @@ const App: React.FC = () => {
   // --- INTERACTIVE DIALOG STATE ---
   // アプリケーション全体を覆うブロッキング・ダイアログの制御。
   // 設定の警告やAIディスカバリーなど、ユーザーの完全な注意が必要な処理で使用します。
-  const { dialog, alert: dialogAlert, confirm: dialogConfirm, prompt: dialogPrompt, hideDialog } = useDialog();
+  const { 
+    dialog, 
+    alert: dialogAlert, 
+    confirm: dialogConfirm, 
+    prompt: dialogPrompt, 
+    loading: dialogLoading,
+    hideDialog 
+  } = useDialog();
 
   // バックエンドの自律エージェントの活動状態を監視。
   // エージェントが新しい情報を発見（同期完了）した際、即座にUIへ反映（refetch）させます。
@@ -118,19 +125,20 @@ const App: React.FC = () => {
         <button
           onClick={async (e) => {
             e.stopPropagation();
-            hideDialog();
-            
-            // Re-open with discovery content
-            await dialogAlert("Searching...", (
+
+            // Show non-blocking loading dialog
+            dialogLoading("Searching...", (
               <p className="text-center py-10 animate-pulse text-xs text-slate-500 font-bold uppercase tracking-widest">AI Discovery in Progress...</p>
             ));
 
             try {
               const proposals = await nexusApi.getProposals();
               const catProposals = (proposals.sites as any[] || []).filter((s: any) => s.category === category);
-              
-              await dialogAlert(`Discovery: ${category}`, (
-                <div className="space-y-4 text-left">
+
+              // Close loading and show results
+              hideDialog();
+
+              await dialogAlert(`Discovery: ${category}`, (                <div className="space-y-4 text-left">
                   {catProposals.length > 0 ? catProposals.map((s: any) => (
                     <div key={s.url} className="p-4 bg-primary/5 border border-primary/20 rounded-2xl">
                       <p className="font-bold text-sm text-white mb-1">{s.name}</p>
@@ -153,6 +161,7 @@ const App: React.FC = () => {
                 </div>
               ));
             } catch (err) {
+              hideDialog();
               await dialogAlert("Connection Error", <p className="text-xs text-alert text-center py-4">Failed to consult Discovery Agent.</p>);
             }
           }}

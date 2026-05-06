@@ -94,7 +94,9 @@ export class DiscoveryService {
     const failedSites: (SuggestedSite & { error: string })[] = [];
 
     const sites = (result.sites || []) as SuggestedSite[];
-    for (const site of sites) {
+    
+    // フィードの検証を並列化して高速化
+    await Promise.all(sites.map(async (site) => {
       try {
         const items = await this.rssFetcher.fetch(site.url);
         if (items && items.length > 0) {
@@ -106,7 +108,7 @@ export class DiscoveryService {
         const msg = e instanceof Error ? e.message : String(e);
         failedSites.push({ ...site, error: msg });
       }
-    }
+    }));
 
     const brands = (result.brands || []) as { value: string; category: string; reason: string }[];
     const keywords = (result.keywords || []) as { value: string; category: string; reason: string }[];

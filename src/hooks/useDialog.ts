@@ -43,6 +43,15 @@ export function useDialog() {
     });
   }, [showDialog, hideDialog]);
 
+  const loading = useCallback((title: string, message: React.ReactNode) => {
+    showDialog({
+      title,
+      message,
+      type: 'loading',
+      onConfirm: () => {}
+    });
+  }, [showDialog]);
+
   const confirm = useCallback((title: string, message: React.ReactNode) => {
     return new Promise<boolean>((resolve) => {
       showDialog({
@@ -81,5 +90,5 @@ export function useDialog() {
     });
   }, [showDialog, hideDialog]);
 
-  return { dialog, alert, confirm, prompt, hideDialog };
+  return { dialog, alert, confirm, prompt, loading, hideDialog };
 }

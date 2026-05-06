@@ -10,6 +10,7 @@
 - **Autonomous Reorganization**: 既存のカテゴリ、ブランド、キーワードを分析し、統合・洗練された「10個の最適カテゴリ」へ完全に再編します。
 - **Intelligent Feed Mapping**: 現在購読しているフィードを、新しく定義されたカテゴリへ最適に自動再割り当て。
 - **High-Quality Source Injection**: 各カテゴリに対して、情報の質を高めるための厳選された RSS/Atom フィード（日本語優先）を AI が自動的に発見・追加。
+- **Global Fallback Logic**: 日本語の情報源が不足している場合、BBC, Reuters, Wired などの世界的権威のある英語ソースへ自動的にフォールバックし、**「提案0件」を排除（網羅性の保証）**します。
 - **Visual Progress Tracking**: Phase 1 (カテゴリ再編) と Phase 2 (ソース最適化) の詳細な進捗をリアルタイムで表示する進捗オーバーレイを導入。
 
 ### 2. Gemini 3.1 Model Optimization
@@ -17,12 +18,18 @@
 - **Gemini 3.1 Flash**: 日常的な記事解析や提案などの高速性が求められるタスクに使用。
 - **Gemini 3.1 Pro**: 「Deep AI Restructure」などの高度な推論と大規模なコンテキスト処理が必要なタスクに使用し、圧倒的な解析精度を実現。
 
-### 3. Dynamic Skill Registry
+### 3. AI Discovery 2.5 & UX Performance
+探索プロセスの高速化と UX の洗練。
+- **Parallel RSS Validation**: フィードの有効性確認を `Promise.all` による並列処理で行うことで、ディスカバリー時間を大幅に短縮。
+- **Non-blocking Loading**: AI探索中のフリーズを防ぐため、ボタンのない専用の「非ブロッキング・ローディング画面」を実装。処理の進行状況を安全に伝えます。
+- **Enhanced Dialog System**: `CustomDialog` に `loading` タイプを追加し、長時間のバックグラウンド処理中も視覚的なフィードバックを維持。
+
+### 4. Dynamic Skill Registry
 AIエージェントの機能を動的に拡張。
 - **Custom Skill Addition**: 新しいスキルをUIから直接定義・登録可能。
 - **Granular Control**: ツール、アクション、ロジックといったスキル種別ごとに、オーケストレーターの動作を拡張。
 
-### 3. Integrated Backend Architecture
+### 5. Integrated Backend Architecture
 信頼性と保守性を向上させた、単一プロジェクトによる統合アーキテクチャ。
 - **Unified Project**: 全てのビジネスロジックを `src` 配下に統合。管理が容易な「単一のデスクトップアプリ」プロジェクトとして再構築。
 - **Fastify Backend**: Electron メインプロセスから起動される Fastify ベースのバックエンドサーバーを内蔵。

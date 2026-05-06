@@ -1,9 +1,9 @@
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertCircle, CheckCircle2, Info, XCircle, Sparkles } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Info, XCircle, Sparkles, Loader2 } from 'lucide-react';
 import { GlassPanel } from './GlassPanel';
 
-export type DialogType = 'alert' | 'confirm' | 'prompt' | 'info' | 'warning' | 'success' | 'error';
+export type DialogType = 'alert' | 'confirm' | 'prompt' | 'info' | 'warning' | 'success' | 'error' | 'loading';
 
 interface CustomDialogProps {
   isOpen: boolean;
@@ -41,6 +41,7 @@ export const CustomDialog: React.FC<CustomDialogProps> = ({
       case 'error': return <XCircle size={32} className="text-rose-400" />;
       case 'warning': return <AlertCircle size={32} className="text-amber-400" />;
       case 'prompt': return <Sparkles size={32} className="text-primary" />;
+      case 'loading': return <Loader2 size={32} className="text-indigo-400 animate-spin" />;
       default: return <Info size={32} className="text-blue-400" />;
     }
   };
@@ -93,22 +94,24 @@ export const CustomDialog: React.FC<CustomDialogProps> = ({
                 </div>
               )}
 
-              <div className="flex gap-3 pt-2">
-                {onCancel && (
+              {type !== 'loading' && (
+                <div className="flex gap-3 pt-2">
+                  {onCancel && (
+                    <button
+                      onClick={() => onCancel()}
+                      className="flex-1 px-6 py-3 rounded-xl text-sm font-bold text-slate-400 hover:text-white hover:bg-white/5 transition-all border border-transparent hover:border-white/10"
+                    >
+                      Cancel
+                    </button>
+                  )}
                   <button
-                    onClick={() => onCancel()}
-                    className="flex-1 px-6 py-3 rounded-xl text-sm font-bold text-slate-400 hover:text-white hover:bg-white/5 transition-all border border-transparent hover:border-white/10"
+                    onClick={() => onConfirm(type === 'prompt' ? inputValue : undefined)}
+                    className="flex-2 px-8 py-3 rounded-xl text-sm font-bold bg-primary text-white shadow-lg shadow-primary/20 hover:shadow-primary/40 active:scale-95 transition-all"
                   >
-                    Cancel
+                    {type === 'confirm' ? 'Confirm' : 'Continue'}
                   </button>
-                )}
-                <button
-                  onClick={() => onConfirm(type === 'prompt' ? inputValue : undefined)}
-                  className="flex-2 px-8 py-3 rounded-xl text-sm font-bold bg-primary text-white shadow-lg shadow-primary/20 hover:shadow-primary/40 active:scale-95 transition-all"
-                >
-                  {type === 'confirm' ? 'Confirm' : 'Continue'}
-                </button>
-              </div>
+                </div>
+              )}
             </GlassPanel>
           </motion.div>
         </div>
