@@ -248,7 +248,27 @@ function registerIpcHandlers() {
       const interests = await settingsManager.getInterests();
       const currentFeeds = await settingsManager.getFeedConfig();
       
-      return await geminiService.getRestructureProposal(interests, currentFeeds);
+      const restructured = await geminiService.getRestructureProposal(interests, currentFeeds);
+
+      // 堅牢化ロジック: 提案されたフィードを並列で検証
+      const validationTasks = Object.entries(restructured.feedConfig).map(async ([catName, config]) => {
+        const sitesToValidate = config.active.map(url => ({ url, name: 'Suggested Feed', category: catName }));
+        const validatedSites = await discoveryService.validateSuggestedFeeds(sitesToValidate);
+        
+        // 有効なものだけに差し替え
+        restructured.feedConfig[catName].active = validatedSites.map(s => s.url);
+
+        // フォールバック: 有効なフィードが0件の場合は Google News RSS を使用
+        if (restructured.feedConfig[catName].active.length === 0) {
+          console.log(`[Main IPC] Category "${catName}" has no valid feeds. Using Google News fallback.`);
+          const fallbackUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(catName)}&hl=ja&gl=JP&ceid=JP:ja`;
+          restructured.feedConfig[catName].active.push(fallbackUrl);
+        }
+      });
+
+      await Promise.all(validationTasks);
+
+      return restructured;
     } catch (error) {
       console.error('Failed to restructure categories:', error);
       throw error;

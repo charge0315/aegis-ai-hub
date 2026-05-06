@@ -106,12 +106,13 @@ export class SettingsManager {
       }
 
       if (newUrls.length > 0) {
-        for (const item of newUrls) {
+        // 並列で検証を実行
+        await Promise.all(newUrls.map(async (item) => {
           const check = await fetcher.validateFeed(item.url);
           if (!check.ok) {
             throw new Error(`VALIDATION_FAILED: ${item.url} is invalid (Status: ${check.status})`);
           }
-        }
+        }));
       }
     }
 

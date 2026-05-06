@@ -493,10 +493,11 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
       
       setRestructureStep(null);
       await customAlert('Restructure Complete', 'AI has successfully transformed your intelligence profile. 10 new categories are ready with optimized feed sources and synced to backend.', 'success');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Restructure failed:', err);
       setRestructureStep(null);
-      await customAlert('Restructure Failed', 'An error occurred during the deep reorganization process.', 'error');
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      await customAlert('Restructure Failed', `An error occurred during the deep reorganization process: ${errorMsg}`, 'error');
     } finally {
       setIsSuggesting(false);
     }

@@ -61741,12 +61741,12 @@ var init_SettingsManager = __esm({
             }
           }
           if (newUrls.length > 0) {
-            for (const item of newUrls) {
+            await Promise.all(newUrls.map(async (item) => {
               const check2 = await fetcher.validateFeed(item.url);
               if (!check2.ok) {
                 throw new Error(`VALIDATION_FAILED: ${item.url} is invalid (Status: ${check2.status})`);
               }
-            }
+            }));
           }
         }
         const now = Date.now();
@@ -62875,10 +62875,8 @@ var init_GeminiService = __esm({
     init_dist();
     GeminiService = class {
       genAI;
-      primaryModelName = "gemini-3.1-flash";
-      // More stable name
-      highReasoningModelName = "gemini-3.1-pro";
-      // For complex tasks
+      primaryModelName = "gemini-3.1-flash-preview";
+      highReasoningModelName = "gemini-3.1-pro-preview";
       /**
        * @param {string} apiKey - Google Gemini APIキー
        */
@@ -63149,9 +63147,14 @@ ${JSON.stringify(allExistingUrls, null, 2)}
         const categories = {};
         const feedConfig = {};
         result.categories.forEach((cat) => {
-          const { name, ...details } = cat;
-          categories[name] = details;
-          feedConfig[name] = { active: [], pool: [], failures: {} };
+          categories[cat.name] = {
+            emoji: cat.emoji || "\u{1F310}",
+            brands: Array.isArray(cat.brands) ? cat.brands.slice(0, 10) : [],
+            keywords: Array.isArray(cat.keywords) ? cat.keywords.slice(0, 15) : [],
+            score: typeof cat.score === "number" ? cat.score : 5,
+            reason: cat.reason || ""
+          };
+          feedConfig[cat.name] = { active: [], pool: [], failures: {} };
         });
         result.feedMapping.forEach((m) => {
           if (feedConfig[m.newCategory]) {
@@ -131840,7 +131843,7 @@ var init_NexusRouter = __esm({
           const currentInterests = await settingsManager.getInterests();
           const currentFeeds = await settingsManager.getFeedConfig();
           const restructured = await scraper2.geminiService.getRestructureProposal(currentInterests, currentFeeds);
-          for (const [catName, config2] of Object.entries(restructured.feedConfig)) {
+          const validationTasks = Object.entries(restructured.feedConfig).map(async ([catName, config2]) => {
             const sitesToValidate = config2.active.map((url3) => ({ url: url3, name: "Suggested Feed", category: catName }));
             const validatedSites = await evolution.validateSuggestedFeeds(sitesToValidate);
             restructured.feedConfig[catName].active = validatedSites.map((s) => s.url);
@@ -131849,7 +131852,8 @@ var init_NexusRouter = __esm({
               const fallbackUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(catName)}&hl=ja&gl=JP&ceid=JP:ja`;
               restructured.feedConfig[catName].active.push(fallbackUrl);
             }
-          }
+          });
+          await Promise.all(validationTasks);
           return restructured;
         } catch (error51) {
           const msg = error51 instanceof Error ? error51.message : String(error51);
@@ -132618,7 +132622,19 @@ function registerIpcHandlers() {
       geminiService.updateApiKey(apiKey);
       const interests = await settingsManager.getInterests();
       const currentFeeds = await settingsManager.getFeedConfig();
-      return await geminiService.getRestructureProposal(interests, currentFeeds);
+      const restructured = await geminiService.getRestructureProposal(interests, currentFeeds);
+      const validationTasks = Object.entries(restructured.feedConfig).map(async ([catName, config2]) => {
+        const sitesToValidate = config2.active.map((url3) => ({ url: url3, name: "Suggested Feed", category: catName }));
+        const validatedSites = await discoveryService.validateSuggestedFeeds(sitesToValidate);
+        restructured.feedConfig[catName].active = validatedSites.map((s) => s.url);
+        if (restructured.feedConfig[catName].active.length === 0) {
+          console.log(`[Main IPC] Category "${catName}" has no valid feeds. Using Google News fallback.`);
+          const fallbackUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(catName)}&hl=ja&gl=JP&ceid=JP:ja`;
+          restructured.feedConfig[catName].active.push(fallbackUrl);
+        }
+      });
+      await Promise.all(validationTasks);
+      return restructured;
     } catch (error51) {
       console.error("Failed to restructure categories:", error51);
       throw error51;

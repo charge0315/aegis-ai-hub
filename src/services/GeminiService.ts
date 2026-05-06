@@ -20,8 +20,8 @@ export interface CuratedArticle {
  */
 export class GeminiService {
   private genAI: GoogleGenerativeAI | null;
-  private primaryModelName: string = "gemini-3.1-flash"; // More stable name
-  private highReasoningModelName: string = "gemini-3.1-pro"; // For complex tasks
+  private primaryModelName: string = "gemini-3.1-flash-preview";
+  private highReasoningModelName: string = "gemini-3.1-pro-preview";
 
   /**
    * @param {string} apiKey - Google Gemini APIキー
@@ -322,9 +322,14 @@ ${JSON.stringify(allExistingUrls, null, 2)}
 
     // 1. カテゴリの初期化
     result.categories.forEach(cat => {
-      const { name, ...details } = cat;
-      categories[name] = details;
-      feedConfig[name] = { active: [], pool: [], failures: {} };
+      categories[cat.name] = {
+        emoji: cat.emoji || '🌐',
+        brands: Array.isArray(cat.brands) ? cat.brands.slice(0, 10) : [],
+        keywords: Array.isArray(cat.keywords) ? cat.keywords.slice(0, 15) : [],
+        score: typeof cat.score === 'number' ? cat.score : 5,
+        reason: cat.reason || ''
+      };
+      feedConfig[cat.name] = { active: [], pool: [], failures: {} };
     });
 
     // 2. 既存フィードのマッピング反映
