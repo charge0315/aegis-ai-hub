@@ -279,7 +279,9 @@ function registerIpcHandlers() {
       geminiService.updateApiKey(apiKey);
       
       const interests = await settingsManager.getInterests();
-      return await geminiService.getRestructureProposal(interests);
+      const currentFeeds = await settingsManager.getFeedConfig();
+      
+      return await geminiService.getRestructureProposal(interests, currentFeeds);
     } catch (error) {
       console.error('Failed to restructure categories:', error);
       throw error;

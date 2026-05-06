@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI, type GenerativeModel, type ChatSession, type ResponseSchema, SchemaType, type Content } from "@google/generative-ai";
-import type { Interests, InterestCategory } from "../models/Schemas";
+import type { Interests, InterestCategory, FeedConfig } from "../models/Schemas";
 
 export interface CuratedArticle {
   id: number;
@@ -183,9 +183,10 @@ export class GeminiService {
   }
 
   /**
-   * 現在の興味設定を分析し、最適な10カテゴリに再構築案を提示します。
+   * 現在の興味設定とフィード構成を分析し、最適な10カテゴリに再構築した完全なプロファイルを提示します。
+   * 既存のフィードの再割り当てと、新しい高品質なソースの発見を含みます。
    */
-  async getRestructureProposal(interests: Interests): Promise<Record<string, InterestCategory>> {
+  async getRestructureProposal(interests: Interests, currentFeeds: FeedConfig): Promise<{ categories: Record<string, InterestCategory>, feedConfig: FeedConfig }> {
     const schema: ResponseSchema = {
       type: SchemaType.OBJECT,
       properties: {
@@ -196,8 +197,8 @@ export class GeminiService {
             properties: {
               name: { type: SchemaType.STRING, description: "新しいカテゴリ名" },
               emoji: { type: SchemaType.STRING, description: "カテゴリにふさわしい絵文字" },
-              brands: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: "このカテゴリに分類されるブランド（既存のものから抽出・整理）" },
-              keywords: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: "このカテゴリに分類されるキーワード（既存のものから抽出・整理）" },
+              brands: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: "既存から整理された主要ブランド" },
+              keywords: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: "既存から整理された重要キーワード" },
               score: { type: SchemaType.NUMBER, description: "重要度（0-10）" },
               reason: { type: SchemaType.STRING, description: "この分類の理由" }
             },
@@ -205,36 +206,93 @@ export class GeminiService {
           },
           minItems: 10,
           maxItems: 10
+        },
+        feedMapping: {
+          type: SchemaType.ARRAY,
+          items: {
+            type: SchemaType.OBJECT,
+            properties: {
+              url: { type: SchemaType.STRING, description: "既存のフィードURL" },
+              newCategory: { type: SchemaType.STRING, description: "割り当て先の新しいカテゴリ名" }
+            },
+            required: ["url", "newCategory"]
+          }
+        },
+        newSuggestedFeeds: {
+          type: SchemaType.ARRAY,
+          items: {
+            type: SchemaType.OBJECT,
+            properties: {
+              name: { type: SchemaType.STRING, description: "サイト名" },
+              url: { type: SchemaType.STRING, description: "RSS/AtomフィードのURL" },
+              category: { type: SchemaType.STRING, description: "新しいカテゴリ名" }
+            },
+            required: ["name", "url", "category"]
+          }
         }
       },
-      required: ["categories"]
+      required: ["categories", "feedMapping", "newSuggestedFeeds"]
     };
 
-    const prompt = `
-あなたはインテリジェンス・アナリストです。
-以下の現在の興味設定（カテゴリ、ブランド、キーワード）を分析し、重複を排除した上で、全体を【正確に10個のカテゴリ】に再編成してください。
+    const allExistingUrls = Object.entries(currentFeeds).flatMap(([cat, data]) => 
+      data.active.map((url: string) => ({ url, oldCategory: cat }))
+    );
 
-**再構築のルール:**
-1. 既存のブランドとキーワードを最大限活用し、それらが漏れなく適切な新しい10カテゴリのいずれかに分類されるようにしてください。
-2. 重複しているアイテムは1つにマージしてください。
-3. カテゴリ名は、包括的かつモダンな名称にしてください。
-4. 各カテゴリにふさわしい絵文字を1つ割り当ててください。
-5. 出力は必ず正確に10個のカテゴリにしてください。
+    const prompt = `
+あなたはインテリジェンス・アーキテクトです。
+ユーザーのニュース収集環境を根本から再構築し、情報を【正確に10個の洗練されたカテゴリ】に整理してください。
+
+**ミッション:**
+1. **カテゴリの統合と洗練**: 既存のカテゴリ、ブランド、キーワードを分析し、重複をマージして、モダンで包括的な10個のカテゴリに再編してください。
+2. **既存フィードの移設**: ユーザーが現在購読しているフィード（以下にリスト）を、新しい10カテゴリのいずれかに最適に割り当て直してください。
+3. **新規ソースの注入**: 各新しいカテゴリに対して、情報の質を高めるための高品質なRSS/Atomフィード（日本語優先）を2〜3個ずつ新しく提案してください。
+
+**重要ルール:**
+- 出力カテゴリ数は【必ず正確に10個】。
+- 既存のブランドとキーワードは、新しいカテゴリに漏れなく分配してください。
+- 提案する新規URLは、必ずRSS/Atomフィードの直接のURLであること。
 
 **現在の興味設定:**
 ${JSON.stringify(interests.categories, null, 2)}
 
+**現在の購読フィード:**
+${JSON.stringify(allExistingUrls, null, 2)}
+
 日本語で回答してください。
 `;
-    const result = await this.generateStructured<{ categories: Array<any> }>(prompt, schema, "gemini-3.1-pro-preview");
+    const result = await this.generateStructured<{ 
+      categories: Array<any>, 
+      feedMapping: Array<{ url: string, newCategory: string }>,
+      newSuggestedFeeds: Array<{ name: string, url: string, category: string }>
+    }>(prompt, schema, "gemini-3.1-pro-preview");
 
     const categories: Record<string, InterestCategory> = {};
+    const feedConfig: FeedConfig = {};
+
+    // 1. カテゴリの初期化
     result.categories.forEach(cat => {
       const { name, ...details } = cat;
       categories[name] = details;
+      feedConfig[name] = { active: [], pool: [], failures: {} };
     });
 
-    return categories;
+    // 2. 既存フィードのマッピング反映
+    result.feedMapping.forEach(m => {
+      if (feedConfig[m.newCategory]) {
+        feedConfig[m.newCategory].active.push(m.url);
+      }
+    });
+
+    // 3. 新規提案フィードの追加
+    result.newSuggestedFeeds.forEach(s => {
+      if (feedConfig[s.category]) {
+        if (!feedConfig[s.category].active.includes(s.url)) {
+          feedConfig[s.category].active.push(s.url);
+        }
+      }
+    });
+
+    return { categories, feedConfig };
   }
 
   async discoverSites(interests: Interests): Promise<Record<string, unknown>[]> {

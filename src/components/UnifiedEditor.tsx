@@ -62,6 +62,7 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<string | null>(
     Object.keys(currentSettings.interests.categories)[0] || null
   );
+  const [restructureStep, setRestructureStep] = useState<string | null>(null);
 
   // 初回ロード時にAPIキーを取得
   React.useEffect(() => {
@@ -413,54 +414,39 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
     }
 
     const confirmed = await customConfirm(
-      'AI Restructure',
-      'This will completely reorganize your categories into 10 optimal groups. Existing brands and keywords will be merged and redistributed. Your feed URLs will be preserved but may be moved to different categories. Proceed?'
+      'Deep AI Restructure',
+      'This will completely transform your intelligence profile. AI will reorganize everything into 10 optimal categories, redistribute your existing feeds, and discover new high-quality sources for each group. This process may take a minute. Proceed?'
     );
     if (!confirmed) return;
 
     setIsSuggesting(true);
+    setRestructureStep('Phase 1/2: Reorganizing Categories & Mapping Feeds...');
     try {
-      const newCategories = await nexusApi.restructureCategories();
+      // 1. AI によるカテゴリ再編とフィードマッピングの実行
+      const restructured = await nexusApi.restructureCategories() as unknown as { categories: Record<string, InterestCategory>, feedConfig: FeedConfig };
       
-      setDraft(prev => {
-        const newFeedUrls: FeedConfig = {};
-        
-        // 既存の全フィードを収集
-        const allFeeds: { url: string; category: string }[] = [];
-        Object.entries(prev.feed_urls).forEach(([cat, data]) => {
-          data.active.forEach(url => allFeeds.push({ url, category: cat }));
-        });
+      setRestructureStep('Phase 2/2: Injecting New High-Quality Sources...');
+      // 実際にはバックエンドが既に新規ソースを feedConfig にマージして返しているため、
+      // ここでは少し待機して「思考中」感を出しつつ状態を反映
+      await new Promise(resolve => setTimeout(resolve, 2000));
 
-        // 新しいカテゴリごとにフィードを割り当て直す（暫定的に古いカテゴリ名が含まれるものを優先）
-        Object.keys(newCategories).forEach(newCatName => {
-          newFeedUrls[newCatName] = { active: [], pool: [], failures: {} };
-          
-          // シンプルなマッピングロジック: 元のカテゴリ名が新カテゴリ名に含まれる、
-          // または新カテゴリに関連するキーワードが含まれるフィードを移動
-          const relatedFeeds = allFeeds.filter(f => 
-            newCatName.toLowerCase().includes(f.category.toLowerCase()) || 
-            f.category.toLowerCase().includes(newCatName.toLowerCase())
-          );
-          
-          newFeedUrls[newCatName].active = relatedFeeds.map(f => f.url);
-        });
+      setDraft(prev => ({
+        ...prev,
+        interests: {
+          ...prev.interests,
+          categories: restructured.categories,
+          lastUpdated: Date.now()
+        },
+        feed_urls: restructured.feedConfig
+      }));
 
-        return {
-          ...prev,
-          interests: {
-            ...prev.interests,
-            categories: newCategories,
-            lastUpdated: Date.now()
-          },
-          feed_urls: newFeedUrls
-        };
-      });
-
-      setSelectedCategory(Object.keys(newCategories)[0] || null);
-      await customAlert('Restructure Complete', 'AI has successfully reorganized your intelligence profile into 10 categories.', 'success');
+      setSelectedCategory(Object.keys(restructured.categories)[0] || null);
+      setRestructureStep(null);
+      await customAlert('Restructure Complete', 'AI has successfully transformed your intelligence profile. 10 new categories are ready with optimized feed sources.', 'success');
     } catch (err) {
       console.error('Restructure failed:', err);
-      await customAlert('Restructure Failed', 'An error occurred while reorganizing categories.', 'error');
+      setRestructureStep(null);
+      await customAlert('Restructure Failed', 'An error occurred during the deep reorganization process.', 'error');
     } finally {
       setIsSuggesting(false);
     }
@@ -567,7 +553,32 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
       </div>
 
       {/* Tab Content */}
-      <div className="min-h-[600px]">
+      <div className="min-h-[600px] relative">
+        <AnimatePresence>
+          {restructureStep && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-slate-900/60 backdrop-blur-md rounded-3xl border border-white/5 shadow-2xl"
+            >
+              <div className="p-10 flex flex-col items-center gap-6 text-center">
+                <div className="relative">
+                  <div className="w-16 h-16 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
+                  <Sparkles size={24} className="absolute inset-0 m-auto text-indigo-400 animate-pulse" />
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-xl font-bold text-white tracking-tight">AI is Thinking...</h3>
+                  <p className="text-indigo-300 font-mono text-xs uppercase tracking-[0.2em]">{restructureStep}</p>
+                </div>
+                <p className="text-slate-400 text-sm max-w-[300px]">
+                  Analyzing your data and discovering the best news sources. This takes a few moments.
+                </p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <AnimatePresence mode="wait">
           {activeTab === 'editor' && (
             <motion.div

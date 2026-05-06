@@ -62870,7 +62870,7 @@ var init_GeminiService = __esm({
     init_dist();
     GeminiService = class {
       genAI;
-      primaryModelName = "gemini-3.1-pro-preview";
+      primaryModelName = "gemini-3.1-flash-preview";
       /**
        * @param {string} apiKey - Google Gemini APIキー
        */
@@ -63018,6 +63018,9 @@ var init_GeminiService = __esm({
 `;
         return await this.generateStructured(prompt, schema);
       }
+      /**
+       * 現在の興味設定を分析し、最適な10カテゴリに再構築案を提示します。
+       */
       async getRestructureProposal(interests) {
         const schema = {
           type: SchemaType.OBJECT,
@@ -63027,28 +63030,44 @@ var init_GeminiService = __esm({
               items: {
                 type: SchemaType.OBJECT,
                 properties: {
-                  name: { type: SchemaType.STRING },
-                  emoji: { type: SchemaType.STRING },
-                  brands: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
-                  keywords: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
-                  score: { type: SchemaType.NUMBER },
-                  reason: { type: SchemaType.STRING }
+                  name: { type: SchemaType.STRING, description: "\u65B0\u3057\u3044\u30AB\u30C6\u30B4\u30EA\u540D" },
+                  emoji: { type: SchemaType.STRING, description: "\u30AB\u30C6\u30B4\u30EA\u306B\u3075\u3055\u308F\u3057\u3044\u7D75\u6587\u5B57" },
+                  brands: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: "\u3053\u306E\u30AB\u30C6\u30B4\u30EA\u306B\u5206\u985E\u3055\u308C\u308B\u30D6\u30E9\u30F3\u30C9\uFF08\u65E2\u5B58\u306E\u3082\u306E\u304B\u3089\u62BD\u51FA\u30FB\u6574\u7406\uFF09" },
+                  keywords: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: "\u3053\u306E\u30AB\u30C6\u30B4\u30EA\u306B\u5206\u985E\u3055\u308C\u308B\u30AD\u30FC\u30EF\u30FC\u30C9\uFF08\u65E2\u5B58\u306E\u3082\u306E\u304B\u3089\u62BD\u51FA\u30FB\u6574\u7406\uFF09" },
+                  score: { type: SchemaType.NUMBER, description: "\u91CD\u8981\u5EA6\uFF080-10\uFF09" },
+                  reason: { type: SchemaType.STRING, description: "\u3053\u306E\u5206\u985E\u306E\u7406\u7531" }
                 },
                 required: ["name", "emoji", "brands", "keywords", "score", "reason"]
-              }
+              },
+              minItems: 10,
+              maxItems: 10
             }
           },
           required: ["categories"]
         };
-        const prompt = `\u73FE\u5728\u306E\u8208\u5473\u8A2D\u5B9A\u3092\u5206\u6790\u3057\u3001\u518D\u69CB\u7BC9\u6848\u3092\u63D0\u793A\u3057\u3066\u304F\u3060\u3055\u3044\u3002\u51FA\u529B\u306F categories \u914D\u5217\u3068\u3057\u3066\u8FD4\u3057\u3066\u304F\u3060\u3055\u3044: ${JSON.stringify(interests)}`;
-        const result = await this.generateStructured(prompt, schema);
+        const prompt = `
+\u3042\u306A\u305F\u306F\u30A4\u30F3\u30C6\u30EA\u30B8\u30A7\u30F3\u30B9\u30FB\u30A2\u30CA\u30EA\u30B9\u30C8\u3067\u3059\u3002
+\u4EE5\u4E0B\u306E\u73FE\u5728\u306E\u8208\u5473\u8A2D\u5B9A\uFF08\u30AB\u30C6\u30B4\u30EA\u3001\u30D6\u30E9\u30F3\u30C9\u3001\u30AD\u30FC\u30EF\u30FC\u30C9\uFF09\u3092\u5206\u6790\u3057\u3001\u91CD\u8907\u3092\u6392\u9664\u3057\u305F\u4E0A\u3067\u3001\u5168\u4F53\u3092\u3010\u6B63\u78BA\u306B10\u500B\u306E\u30AB\u30C6\u30B4\u30EA\u3011\u306B\u518D\u7DE8\u6210\u3057\u3066\u304F\u3060\u3055\u3044\u3002
+
+**\u518D\u69CB\u7BC9\u306E\u30EB\u30FC\u30EB:**
+1. \u65E2\u5B58\u306E\u30D6\u30E9\u30F3\u30C9\u3068\u30AD\u30FC\u30EF\u30FC\u30C9\u3092\u6700\u5927\u9650\u6D3B\u7528\u3057\u3001\u305D\u308C\u3089\u304C\u6F0F\u308C\u306A\u304F\u9069\u5207\u306A\u65B0\u3057\u304410\u30AB\u30C6\u30B4\u30EA\u306E\u3044\u305A\u308C\u304B\u306B\u5206\u985E\u3055\u308C\u308B\u3088\u3046\u306B\u3057\u3066\u304F\u3060\u3055\u3044\u3002
+2. \u91CD\u8907\u3057\u3066\u3044\u308B\u30A2\u30A4\u30C6\u30E0\u306F1\u3064\u306B\u30DE\u30FC\u30B8\u3057\u3066\u304F\u3060\u3055\u3044\u3002
+3. \u30AB\u30C6\u30B4\u30EA\u540D\u306F\u3001\u5305\u62EC\u7684\u304B\u3064\u30E2\u30C0\u30F3\u306A\u540D\u79F0\u306B\u3057\u3066\u304F\u3060\u3055\u3044\u3002
+4. \u5404\u30AB\u30C6\u30B4\u30EA\u306B\u3075\u3055\u308F\u3057\u3044\u7D75\u6587\u5B57\u30921\u3064\u5272\u308A\u5F53\u3066\u3066\u304F\u3060\u3055\u3044\u3002
+5. \u51FA\u529B\u306F\u5FC5\u305A\u6B63\u78BA\u306B10\u500B\u306E\u30AB\u30C6\u30B4\u30EA\u306B\u3057\u3066\u304F\u3060\u3055\u3044\u3002
+
+**\u73FE\u5728\u306E\u8208\u5473\u8A2D\u5B9A:**
+${JSON.stringify(interests.categories, null, 2)}
+
+\u65E5\u672C\u8A9E\u3067\u56DE\u7B54\u3057\u3066\u304F\u3060\u3055\u3044\u3002
+`;
+        const result = await this.generateStructured(prompt, schema, "gemini-3.1-pro-preview");
         const categories = {};
         result.categories.forEach((cat) => {
-          const name = String(cat.name);
-          const { name: _, ...details } = cat;
+          const { name, ...details } = cat;
           categories[name] = details;
         });
-        return { categories };
+        return categories;
       }
       async discoverSites(interests) {
         const schema = {
@@ -131670,6 +131689,18 @@ var init_NexusRouter = __esm({
           reply.status(500).send({ error: msg });
         }
       });
+      fastify2.post("/restructure-categories", async (_request, reply) => {
+        try {
+          const apiKey = await settingsManager.getApiKey();
+          scraper2.updateApiKey(apiKey);
+          const currentInterests = await settingsManager.getInterests();
+          const restructured = await scraper2.geminiService.getRestructureProposal(currentInterests);
+          return restructured;
+        } catch (error51) {
+          const msg = error51 instanceof Error ? error51.message : String(error51);
+          reply.status(500).send({ error: "Failed to restructure categories", details: msg });
+        }
+      });
       fastify2.get("/window-state", async (_request, reply) => {
         try {
           const state = await settingsManager.getWindowState();
@@ -132451,6 +132482,19 @@ function registerIpcHandlers() {
       return await discoveryService.getProposals(interests);
     } catch (error51) {
       console.error("Failed to get proposals:", error51);
+      throw error51;
+    }
+  });
+  ipcMain.handle("restructure-categories", async () => {
+    try {
+      const dataDir = getDataDir();
+      const settingsManager = new ElectronSettingsManager2({ dataDir });
+      const apiKey = await settingsManager.getApiKey();
+      geminiService.updateApiKey(apiKey);
+      const interests = await settingsManager.getInterests();
+      return await geminiService.getRestructureProposal(interests);
+    } catch (error51) {
+      console.error("Failed to restructure categories:", error51);
       throw error51;
     }
   });

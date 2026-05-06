@@ -1,7 +1,7 @@
 # Backend Architecture Codemap
 
-**Last Updated:** 2026-06-18
-**Version:** v5.2 NEXUS
+**Last Updated:** 2026-05-06
+**Version:** v5.3 NEXUS
 **Entry Point:** `electron/main.cjs` (App/Main Process)
 
 ## 概要
@@ -51,12 +51,12 @@ Electron メインプロセス (`electron/main.cjs`) では、Windows 11 の **A
 
 ## コア・サービス構成
 
-| サービス名 | 役割 | v5.2 における進化 |
+| サービス名 | 役割 | v5.3 における進化 |
 | :--- | :--- | :--- |
 | `Fastify Server` | API ホスティング | Electron 内蔵型への統合。単一プロジェクトとして動作。 |
 | `RSSFetcher` | フィード取得 | **疎通確認 (validateFeed)** 機能の追加。 |
 | `FeedManager` | フィード構成管理 | **自動ヘルスチェック付きフィード昇格**の実装。 |
-| `GeminiService` | AI 推論 | **Flash (高速) と Pro (高精度) の使い分け**、APIキーの即時同期、提案個数（5個）の厳格化。 |
+| `GeminiService` | AI 推論 | **AI Restructure の高度化**。10カテゴリへの完全再編、フィードの自動再割り当て、新規ソースの自動注入。`gemini-3.1-pro-preview` を高精度タスクに使用し、`flash` との使い分けを最適化。 |
 | `DiscoveryService` | ソース探索 | AI による新規サイト発見と、進化提案 (Proposals) の生成。 |
 | `EnrichmentService` | 記事加工 | 並列スクレイピングによる画像補完と自動翻訳。 |
 | `ImageCacheManager` | 画像キャッシュ | スクレイピング済み画像URLの永続化とTTL管理。 |
