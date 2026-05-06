@@ -30,8 +30,7 @@ aegis-ai-hub/
 ├── scripts/             # startup.ps1
 ├── fix_ui.py            # レガシー修正スクリプト
 ├── fix_ui_v2.py         # レガシー修正スクリプト v2
-├── docker-compose.yml.bak # 旧Docker構成
-└── startup.log          # ログファイル
+├── startup.log          # ログファイル
 ```
 
 ---
@@ -113,7 +112,6 @@ aegis-ai-hub/
 |---|---|
 | `dashboard-legacy/` | 旧 HTML/JS ベースのUI。完全に React に置き換え済み |
 | `fix_ui.py`, `fix_ui_v2.py` | レガシーUI修正スクリプト。`.gitignore` で除外指定済みだが物理ファイルが残存 |
-| `docker-compose.yml.bak` | Docker構成の残骸。`.gitignore` で除外指定済みだが残存 |
 | `startup.log` | ログファイルが残存 |
 | `server/verify_agents.js` | 手動検証用スクリプト |
 | `dashboard/check_console.js`, `check_dom.js`, `debug_ui.cjs`, `take_screenshot.js` | デバッグ用一時スクリプト |
@@ -254,7 +252,6 @@ Electron版の `FeedManager` は異なるシグネチャを持つ可能性があ
 #### [DELETE] レガシーファイルの削除
 - `dashboard-legacy/` ディレクトリ全体
 - `fix_ui.py`, `fix_ui_v2.py`
-- `docker-compose.yml.bak`
 - `startup.log`
 - `server/verify_agents.js`
 - `dashboard/check_console.js`, `dashboard/check_dom.js`, `dashboard/debug_ui.cjs`, `dashboard/take_screenshot.js`

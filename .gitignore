@@ -129,4 +129,3 @@ server/test_scraper.js
 fix_ui*.py
 *.bak
 *.bak2
-docker-compose.yml.bak

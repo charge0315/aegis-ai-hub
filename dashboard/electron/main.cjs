@@ -7,12 +7,12 @@ app.setName('Aegis Nexus');
 
 // サービスのインポート (TypeScriptファイルの動的読み込み)
 const { ElectronSettingsManager } = require('./ElectronSettingsManager');
-const { GeminiService } = require('../../server/src/services/GeminiService');
-const { FeedManager } = require('../../server/src/services/FeedManager');
-const { DiscoveryService } = require('../../server/src/services/DiscoveryService');
-const { EnrichmentService } = require('../../server/src/services/EnrichmentService');
-const { RSSFetcher } = require('../../server/src/services/RSSFetcher');
-const { ScoringService } = require('../../server/src/services/ScoringService');
+const { GeminiService } = require('../src/services/GeminiService');
+const { FeedManager } = require('../src/services/FeedManager');
+const { DiscoveryService } = require('../src/services/DiscoveryService');
+const { EnrichmentService } = require('../src/services/EnrichmentService');
+const { RSSFetcher } = require('../src/services/RSSFetcher');
+const { ScoringService } = require('../src/services/ScoringService');
 
 let mainWindow;
 let tray;

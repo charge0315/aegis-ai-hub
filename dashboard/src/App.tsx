@@ -14,8 +14,7 @@ import {
   Search, 
   RefreshCcw,
   Sparkles,
-  X,
-  Image as ImageIcon,
+  ImageIcon,
   ImageOff,
   LayoutGrid,
   List as ListIcon
@@ -24,6 +23,8 @@ import { ArticleCard } from './components/ArticleCard';
 import { AgentMonitor } from './components/AgentMonitor';
 import { UnifiedEditor } from './components/UnifiedEditor';
 import { CommandPalette } from './components/CommandPalette';
+import { CustomDialog } from './components/CustomDialog';
+import { useDialog } from './hooks/useDialog';
 import { useNexusSync, useAgentEvents, nexusApi } from './api/nexusApi';
 
 const App: React.FC = () => {
@@ -51,14 +52,11 @@ const App: React.FC = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
   const isCompact = windowWidth < 1024;
-  const sidebarWidth = isCompact ? 80 : 256;
 
-  // --- SIMPLE DIALOG STATE ---
+  // --- INTERACTIVE DIALOG STATE ---
   // アプリケーション全体を覆うブロッキング・ダイアログの制御。
   // 設定の警告やAIディスカバリーなど、ユーザーの完全な注意が必要な処理で使用します。
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [dialogTitle, setDialogTitle] = useState('');
-  const [dialogContent, setDialogContent] = useState<React.ReactNode>(null);
+  const { dialog, alert: dialogAlert, confirm: dialogConfirm, prompt: dialogPrompt, hideDialog } = useDialog();
 
   // バックエンドの自律エージェントの活動状態を監視。
   // エージェントが新しい情報を発見（同期完了）した際、即座にUIへ反映（refetch）させます。
@@ -106,9 +104,8 @@ const App: React.FC = () => {
     
     const feedData = settings.feed_urls[feedKey || ''] || { active: [], pool: [] };
     
-    setDialogTitle(category);
-    setDialogContent(
-      <div className="space-y-6">
+    await dialogAlert(category, (
+      <div className="space-y-6 text-left">
         <div>
           <p className="text-[10px] uppercase font-black tracking-widest text-primary mb-3">Active Signal Sources</p>
           <div className="space-y-2">
@@ -119,16 +116,21 @@ const App: React.FC = () => {
         </div>
 
         <button
-          onClick={async () => {
-            setDialogTitle("Searching...");
-            setDialogContent(<p className="text-center py-10 animate-pulse text-xs text-slate-500 font-bold uppercase tracking-widest">AI Discovery in Progress...</p>);
+          onClick={async (e) => {
+            e.stopPropagation();
+            hideDialog();
+            
+            // Re-open with discovery content
+            await dialogAlert("Searching...", (
+              <p className="text-center py-10 animate-pulse text-xs text-slate-500 font-bold uppercase tracking-widest">AI Discovery in Progress...</p>
+            ));
+
             try {
               const proposals = await nexusApi.getProposals();
               const catProposals = (proposals.sites as any[] || []).filter((s: any) => s.category === category);
               
-              setDialogTitle(`Discovery: ${category}`);
-              setDialogContent(
-                <div className="space-y-4">
+              await dialogAlert(`Discovery: ${category}`, (
+                <div className="space-y-4 text-left">
                   {catProposals.length > 0 ? catProposals.map((s: any) => (
                     <div key={s.url} className="p-4 bg-primary/5 border border-primary/20 rounded-2xl">
                       <p className="font-bold text-sm text-white mb-1">{s.name}</p>
@@ -142,18 +144,16 @@ const App: React.FC = () => {
                             newSettings.feed_urls[category].active.push(s.url);
                             await sync(newSettings);
                           }
-                          setIsDialogOpen(false);
+                          hideDialog();
                         }}
                         className="w-full py-2 bg-primary text-white text-[10px] font-black uppercase rounded-xl shadow-lg shadow-primary/20"
                       >Add to Feed</button>
                     </div>
                   )) : <p className="text-center py-10 opacity-50 text-xs">No new verified sources found.</p>}
-                  <button onClick={() => setIsDialogOpen(false)} className="w-full py-2 text-[10px] font-bold uppercase tracking-widest text-slate-500">Close</button>
                 </div>
-              );
+              ));
             } catch (err) {
-              setDialogTitle("Connection Error");
-              setDialogContent(<p className="text-xs text-alert text-center py-4">Failed to consult Discovery Agent.</p>);
+              await dialogAlert("Connection Error", <p className="text-xs text-alert text-center py-4">Failed to consult Discovery Agent.</p>);
             }
           }}
           className="w-full flex items-center justify-center gap-3 py-4 bg-white/5 hover:bg-white/10 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest border border-white/10 shadow-xl transition-all"
@@ -161,69 +161,22 @@ const App: React.FC = () => {
           <Sparkles size={16} className="text-primary" /> AI DISCOVERY
         </button>
       </div>
-    );
-    setIsDialogOpen(true);
+    ), 'info');
   };
 
   return (
     <React.Fragment>
       {/* --- IRONCLAD CENTERED DIALOG --- */}
-      {/* アプリケーションの状態を一時停止し、ユーザーの決定を促すモーダルレイヤー。
-          背後（サイドバーなど）への誤操作を防ぐための Ironclad（鉄壁）な設計です。 */}
-      {isDialogOpen && (
-        <div style={{ 
-          position: 'fixed', 
-          top: 0,
-          left: 0,
-          width: '100vw',
-          height: '100vh',
-          zIndex: 999999, 
-          display: 'grid', 
-          placeItems: 'center',
-          // SHIFT CENTER: サイドバーが展開されている場合でも、メインコンテンツの
-          // 「視覚的な中心」にダイアログが配置されるようにオフセットを計算します。
-          paddingLeft: `${sidebarWidth}px`,
-          pointerEvents: 'none' // Backdrop側にクリックを透過させるための措置
-        }}>
-          {/* Global Backdrop - 画面全体を暗くし、背後の情報をボカす（認知負荷の低減） */}
-          <div 
-            onClick={() => setIsDialogOpen(false)} 
-            style={{ 
-              position: 'fixed', 
-              inset: 0, 
-              backgroundColor: 'rgba(0,0,0,0.85)', 
-              backdropFilter: 'blur(16px)', 
-              WebkitBackdropFilter: 'blur(16px)', 
-              cursor: 'pointer',
-              zIndex: -1,
-              pointerEvents: 'auto'
-            }}
-          ></div>
-          
-          {/* Dialog Box - 実際の操作領域（イベントを再有効化） */}
-          <div style={{ 
-            width: '100%', 
-            maxWidth: '460px', 
-            backgroundColor: '#0f172a', 
-            border: '1px solid rgba(255,255,255,0.2)', 
-            borderRadius: '32px', 
-            padding: '32px', 
-            boxShadow: '0 50px 100px -20px rgba(0,0,0,0.9)', 
-            overflow: 'hidden',
-            position: 'relative',
-            pointerEvents: 'auto', // ダイアログ内部のクリック操作を許可
-            zIndex: 1
-          }}>
-            <div className="flex justify-between items-center mb-8">
-              <h3 className="text-xl font-black text-white uppercase tracking-tighter">{dialogTitle}</h3>
-              <button onClick={() => setIsDialogOpen(false)} className="p-2 hover:bg-white/10 rounded-full text-slate-400 hover:text-white transition-all"><X size={20} /></button>
-            </div>
-            <div className="custom-scrollbar pr-1" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
-              {dialogContent}
-            </div>
-          </div>
-        </div>
-      )}
+      <CustomDialog
+        isOpen={dialog.isOpen}
+        type={dialog.type}
+        title={dialog.title}
+        message={dialog.message}
+        defaultValue={dialog.defaultValue}
+        placeholder={dialog.placeholder}
+        onConfirm={dialog.onConfirm}
+        onCancel={dialog.onCancel}
+      />
 
       <div className="window-base text-slate-200">
         {/* キーボード駆動のユーザー向け：素早いナビゲーションとシステム制御 */}
@@ -384,9 +337,9 @@ const App: React.FC = () => {
               settings && <UnifiedEditor 
                 currentSettings={settings} 
                 onSave={sync} 
-                alert={(t, m) => { setDialogTitle(t); setDialogContent(m); setIsDialogOpen(true); return Promise.resolve(); }} 
-                confirm={async (_t, _m) => { return true; }} 
-                prompt={async (_t, _m) => { return ''; }} 
+                alert={dialogAlert} 
+                confirm={dialogConfirm} 
+                prompt={dialogPrompt} 
               />
             )}
           </div>
