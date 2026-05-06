@@ -62904,6 +62904,7 @@ var init_GeminiService = __esm({
           throw new Error("Gemini API\u30AD\u30FC\u304C\u8A2D\u5B9A\u3055\u308C\u3066\u3044\u307E\u305B\u3093\u3002System Settings\u30BF\u30D6\u3067\u8A2D\u5B9A\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
         }
         try {
+          console.log(`[GeminiService] Requesting structured output from model: ${modelName}`);
           const model = this.genAI.getGenerativeModel({
             model: modelName,
             generationConfig: {
@@ -62914,21 +62915,22 @@ var init_GeminiService = __esm({
           const result = await model.generateContent(prompt);
           const response = await result.response;
           const text3 = response.text();
+          if (!text3) {
+            throw new Error(`Empty response received from model ${modelName}`);
+          }
           return JSON.parse(text3);
         } catch (error51) {
           const errorMessage = error51 instanceof Error ? error51.message : String(error51);
           console.error(`[GeminiService] Error with model ${modelName}: ${errorMessage}`);
           if (modelName === this.highReasoningModelName) {
-            console.warn(`[GeminiService] Retrying with fallback model: ${this.primaryModelName}`);
+            console.warn(`[GeminiService] ${modelName} failed. Falling back to primary model: ${this.primaryModelName}`);
             return this.generateStructured(prompt, schema, this.primaryModelName);
           }
           if (modelName === this.primaryModelName && !errorMessage.includes("1.5-pro")) {
-            console.warn(`[GeminiService] Retrying with ultra-stable model: gemini-1.5-pro`);
-            return this.generateStructured(prompt, schema, "gemini-1.5-pro");
+            console.warn(`[GeminiService] ${modelName} failed. Falling back to stable model: gemini-1.5-pro-latest`);
+            return this.generateStructured(prompt, schema, "gemini-1.5-pro-latest");
           }
-          const detailedError = new Error(`Gemini API Error: ${errorMessage}`);
-          detailedError.originalError = error51;
-          throw detailedError;
+          throw new Error(`Gemini API execution failed after multiple retries. Last error: ${errorMessage}`);
         }
       }
       /**

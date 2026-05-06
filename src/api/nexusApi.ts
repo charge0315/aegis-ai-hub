@@ -87,6 +87,10 @@ export const nexusApi = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ categoryName })
     });
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.details || errorData.error || 'Failed to generate suggestions');
+    }
     return await res.json();
   },
 

@@ -429,9 +429,10 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
       });
 
       await customAlert('AI Suggestions Added', `Gemini suggested ${newItems.length} new ${field} for "${selectedCategory}".`, 'success');
-    } catch (err) {
+    } catch (err: any) {
       console.error(`Failed to get AI suggestions for ${field}:`, err);
-      await customAlert('AI Suggestion Failed', `Could not reach Gemini to get suggestions for ${field}.`, 'error');
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      await customAlert('AI Suggestion Failed', `Could not get suggestions from Gemini: ${errorMsg}`, 'error');
     } finally {
       if (field === 'brands') setIsSuggestingBrands(false);
       else setIsSuggestingKeywords(false);

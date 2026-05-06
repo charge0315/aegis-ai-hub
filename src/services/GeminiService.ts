@@ -53,6 +53,7 @@ export class GeminiService {
     }
 
     try {
+      console.log(`[GeminiService] Requesting structured output from model: ${modelName}`);
       const model: GenerativeModel = this.genAI.getGenerativeModel({
         model: modelName,
         generationConfig: {
@@ -64,26 +65,28 @@ export class GeminiService {
       const result = await model.generateContent(prompt);
       const response = await result.response;
       const text = response.text();
+      
+      if (!text) {
+        throw new Error(`Empty response received from model ${modelName}`);
+      }
+      
       return JSON.parse(text) as T;
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       console.error(`[GeminiService] Error with model ${modelName}: ${errorMessage}`);
       
-      // フォールバック: Proで失敗した場合は Flash で再試行（またはその逆）
+      // Pro で失敗した場合は Flash へ、Flash で失敗した場合は 1.5 Pro への階層型フォールバック
       if (modelName === this.highReasoningModelName) {
-        console.warn(`[GeminiService] Retrying with fallback model: ${this.primaryModelName}`);
+        console.warn(`[GeminiService] ${modelName} failed. Falling back to primary model: ${this.primaryModelName}`);
         return this.generateStructured<T>(prompt, schema, this.primaryModelName);
       }
       
-      // Gemini 1.5 Pro への最終フォールバック (もし 3.1 が利用不可な場合)
       if (modelName === this.primaryModelName && !errorMessage.includes("1.5-pro")) {
-        console.warn(`[GeminiService] Retrying with ultra-stable model: gemini-1.5-pro`);
-        return this.generateStructured<T>(prompt, schema, "gemini-1.5-pro");
+        console.warn(`[GeminiService] ${modelName} failed. Falling back to stable model: gemini-1.5-pro-latest`);
+        return this.generateStructured<T>(prompt, schema, "gemini-1.5-pro-latest");
       }
 
-      const detailedError = new Error(`Gemini API Error: ${errorMessage}`);
-      (detailedError as Error & { originalError: unknown }).originalError = error;
-      throw detailedError;
+      throw new Error(`Gemini API execution failed after multiple retries. Last error: ${errorMessage}`);
     }
   }
 
