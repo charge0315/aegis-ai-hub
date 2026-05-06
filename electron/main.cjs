@@ -26,10 +26,12 @@ let feedManager;
 let rssFetcher;
 let discoveryService;
 let enrichmentService;
+let scraper;
+let orchestrator;
 
-// ���[�e�B���e�B: �f�[�^�f�B���N�g���̎擾
+// ・・・[ユーティリティ: データディレクトリの取得]
 function getDataDir() {
-  return !app.isPackaged 
+  return !app.isPackaged
     ? path.resolve(app.getAppPath(), '..', 'data')
     : path.join(app.getPath('userData'), 'data');
 }
@@ -39,12 +41,12 @@ async function startInternalServer(settingsManager) {
   await server.register(cors, { origin: '*' });
 
   const dataDir = getDataDir();
-  const scraper = new ScraperFacade(
+  scraper = new ScraperFacade(
     path.join(dataDir, 'interests.json'),
     path.join(dataDir, 'feed_config.json'),
     dataDir
   );
-  const orchestrator = new NexusOrchestrator(geminiService);
+  orchestrator = new NexusOrchestrator(geminiService);
 
   await server.register(nexusRouter, {
     prefix: '/api/v5',
@@ -168,8 +170,17 @@ function registerIpcHandlers() {
       const dataDir = getDataDir();
       const settingsManager = new ElectronSettingsManager({ dataDir });
       const result = await settingsManager.syncSettings(settings, rssFetcher);
-      const feedConfigPath = path.join(dataDir, 'feed_config.json');
-      feedManager = new FeedManager(feedConfigPath);
+      
+      // メモリ上の設定を更新
+      if (feedManager) {
+        feedManager.config = result.validatedFeedConfig;
+      }
+      if (scraper && scraper.feedManager) {
+        scraper.feedManager.config = result.validatedFeedConfig;
+      }
+      // discoveryService は feedManager の参照を保持しているため、
+      // config の差し替えで追従可能
+      
       return result;
     } catch (error) {
       console.error('Failed to sync settings:', error);

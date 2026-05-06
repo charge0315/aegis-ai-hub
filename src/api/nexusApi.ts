@@ -45,14 +45,24 @@ export const nexusApi = {
   },
 
   async syncSettings(settings: NexusSettings): Promise<{ lastUpdated: number }> {
+    const payload = { 
+      interests: settings.interests, 
+      feedConfig: settings.feed_urls,
+      lastUpdated: typeof settings.lastUpdated === 'number' ? settings.lastUpdated : undefined
+    };
+
     if (window.nexusApi) {
-      return await window.nexusApi.syncSettings(settings);
+      return await window.nexusApi.syncSettings(payload as any);
     }
     const res = await fetch(`${BACKEND_URL}/api/v5/sync-settings`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ interests: settings.interests, feedConfig: settings.feed_urls })
+      body: JSON.stringify(payload)
     });
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.details || errorData.error || 'Failed to sync settings');
+    }
     return await res.json();
   },
 
@@ -144,12 +154,13 @@ export function useNexusSync() {
         }
       };
       setSettings(updatedSettings);
-      
+
       // 同期後に記事をリフレッシュ
       const a = await nexusApi.getArticles();
       setArticles(a);
     } catch (err) {
       console.error('Failed to sync settings:', err);
+      throw err; // Re-throw to allow UI to catch it
     }
   }, []);
 

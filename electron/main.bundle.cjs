@@ -61752,7 +61752,13 @@ var init_SettingsManager = __esm({
           const windowStatePath = import_path.default.join(this.dataDir, "window_state.json");
           await this._safeWrite(windowStatePath, validatedWindowState);
         }
-        return { success: true, timestamp: (/* @__PURE__ */ new Date()).toISOString(), lastUpdated: now };
+        return {
+          success: true,
+          timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+          lastUpdated: now,
+          validatedInterests,
+          validatedFeedConfig
+        };
       }
       async getWindowState() {
         const windowStatePath = import_path.default.join(this.dataDir, "window_state.json");
@@ -131584,7 +131590,7 @@ var init_NexusRouter = __esm({
   "src/api/server/NexusRouter.ts"() {
     init_Schemas();
     nexusRouter = async (fastify2, options) => {
-      const { scraper, evolution, orchestrator, settingsManager } = options;
+      const { scraper: scraper2, evolution, orchestrator: orchestrator2, settingsManager } = options;
       fastify2.get("/interests", async (_request, reply) => {
         try {
           return await settingsManager.getInterests();
@@ -131605,8 +131611,8 @@ var init_NexusRouter = __esm({
         try {
           const validated = SyncSettingsSchema.parse(request.body);
           const result = await settingsManager.syncSettings(validated);
-          if (scraper && scraper.feedManager) {
-            scraper.feedManager.config = validated.feedConfig;
+          if (scraper2 && scraper2.feedManager) {
+            scraper2.feedManager.config = result.validatedFeedConfig;
           }
           return result;
         } catch (error51) {
@@ -131628,8 +131634,8 @@ var init_NexusRouter = __esm({
         }
         try {
           const apiKey = await settingsManager.getApiKey();
-          scraper.updateApiKey(apiKey);
-          return await scraper.geminiService.suggestCategoryDetails(categoryName);
+          scraper2.updateApiKey(apiKey);
+          return await scraper2.geminiService.suggestCategoryDetails(categoryName);
         } catch (error51) {
           const msg = error51 instanceof Error ? error51.message : String(error51);
           reply.status(500).send({ error: "Failed to generate suggestions", details: msg });
@@ -131654,8 +131660,8 @@ var init_NexusRouter = __esm({
         }
         try {
           const apiKey = await settingsManager.getApiKey();
-          orchestrator.updateApiKey(apiKey);
-          orchestrator.runAutonomousLoop(requirements).catch((err) => {
+          orchestrator2.updateApiKey(apiKey);
+          orchestrator2.runAutonomousLoop(requirements).catch((err) => {
             console.error("[Orchestrator Loop Error]", err);
           });
           return { status: "accepted", message: "Autonomous loop started" };
@@ -131682,7 +131688,7 @@ var init_NexusRouter = __esm({
         };
         reply.raw.writeHead(200, headers);
         reply.raw.write("\n");
-        orchestrator.subscribe(reply);
+        orchestrator2.subscribe(reply);
         const initialMsg = JSON.stringify({ status: "connected", message: "SSE Connection Established", timestamp: (/* @__PURE__ */ new Date()).toISOString() });
         reply.raw.write(`data: ${initialMsg}
 
@@ -132247,6 +132253,8 @@ var feedManager;
 var rssFetcher;
 var discoveryService;
 var enrichmentService;
+var scraper;
+var orchestrator;
 function getDataDir() {
   return !app.isPackaged ? path4.resolve(app.getAppPath(), "..", "data") : path4.join(app.getPath("userData"), "data");
 }
@@ -132254,12 +132262,12 @@ async function startInternalServer(settingsManager) {
   const server = fastify({ logger: false });
   await server.register(cors, { origin: "*" });
   const dataDir = getDataDir();
-  const scraper = new ScraperFacade2(
+  scraper = new ScraperFacade2(
     path4.join(dataDir, "interests.json"),
     path4.join(dataDir, "feed_config.json"),
     dataDir
   );
-  const orchestrator = new NexusOrchestrator2(geminiService);
+  orchestrator = new NexusOrchestrator2(geminiService);
   await server.register(nexusRouter2, {
     prefix: "/api/v5",
     scraper,
@@ -132360,8 +132368,12 @@ function registerIpcHandlers() {
       const dataDir = getDataDir();
       const settingsManager = new ElectronSettingsManager2({ dataDir });
       const result = await settingsManager.syncSettings(settings, rssFetcher);
-      const feedConfigPath = path4.join(dataDir, "feed_config.json");
-      feedManager = new FeedManager2(feedConfigPath);
+      if (feedManager) {
+        feedManager.config = result.validatedFeedConfig;
+      }
+      if (scraper && scraper.feedManager) {
+        scraper.feedManager.config = result.validatedFeedConfig;
+      }
       return result;
     } catch (error51) {
       console.error("Failed to sync settings:", error51);

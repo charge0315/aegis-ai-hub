@@ -78,7 +78,7 @@ export class SettingsManager {
   async syncSettings(
     { interests, feedConfig, windowState, lastUpdated }: { interests: Interests; feedConfig: FeedConfig; windowState?: unknown; lastUpdated?: number },
     fetcher?: { validateFeed: (url: string) => Promise<{ ok: boolean; status: string | number }> }
-  ): Promise<{ success: boolean; timestamp: string; lastUpdated: number }> {
+  ): Promise<{ success: boolean; timestamp: string; lastUpdated: number; validatedInterests: Interests; validatedFeedConfig: FeedConfig }> {
     const validatedInterests = InterestsSchema.parse(interests);
     const validatedFeedConfig = FeedConfigSchema.parse(feedConfig);
     const validatedWindowState = windowState ? WindowStateSchema.parse(windowState) : undefined;
@@ -126,7 +126,13 @@ export class SettingsManager {
       await this._safeWrite(windowStatePath, validatedWindowState);
     }
 
-    return { success: true, timestamp: new Date().toISOString(), lastUpdated: now };
+    return { 
+      success: true, 
+      timestamp: new Date().toISOString(), 
+      lastUpdated: now,
+      validatedInterests,
+      validatedFeedConfig
+    };
   }
 
   async getWindowState(): Promise<unknown | null> {

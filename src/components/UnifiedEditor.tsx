@@ -249,10 +249,17 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
 
     setDraft(prev => {
       const newCategories: Record<string, InterestCategory> = {};
+      const newFeedUrls: Record<string, any> = { ...prev.feed_urls };
+
       // 順序を維持するために既存のキーをループ
       Object.keys(prev.interests.categories).forEach(key => {
         if (key === oldName) {
           newCategories[newName] = prev.interests.categories[oldName];
+          // フィード設定もリネーム
+          if (newFeedUrls[oldName]) {
+            newFeedUrls[newName] = newFeedUrls[oldName];
+            delete newFeedUrls[oldName];
+          }
         } else {
           newCategories[key] = prev.interests.categories[key];
         }
@@ -263,16 +270,17 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
         interests: {
           ...prev.interests,
           categories: newCategories
-        }
+        },
+        feed_urls: newFeedUrls
       };
     });
 
     if (selectedCategory === oldName) {
       setSelectedCategory(newName);
     }
-  };
+    };
 
-  const handleEditEmoji = async (catName: string) => {
+    const handleEditEmoji = async (catName: string) => {
     const currentEmoji = draft.interests.categories[catName].emoji;
     const newEmoji = await customPrompt('Change Emoji', `Enter a new emoji for "${catName}":`, currentEmoji);
     if (!newEmoji || newEmoji === currentEmoji) return;
@@ -282,22 +290,31 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
       newCategories[catName] = { ...newCategories[catName], emoji: newEmoji };
       return { ...prev, interests: { ...prev.interests, categories: newCategories } };
     });
-  };
+    };
 
-  const handleDeleteCategory = async (catName: string) => {    const confirmed = await customConfirm('Delete Category', `Are you sure you want to permanently delete the category "${catName}"? All associated brands and keywords will be removed.`);
+    const handleDeleteCategory = async (catName: string) => {
+    const confirmed = await customConfirm('Delete Category', `Are you sure you want to permanently delete the category "${catName}"? All associated brands and keywords will be removed.`);
     if (!confirmed) return;
-    
+
     setDraft(prev => {
       const newCategories = { ...prev.interests.categories };
       delete newCategories[catName];
-      return { ...prev, interests: { ...prev.interests, categories: newCategories } };
+
+      const newFeedUrls = { ...prev.feed_urls };
+      delete newFeedUrls[catName];
+
+      return { 
+        ...prev, 
+        interests: { ...prev.interests, categories: newCategories },
+        feed_urls: newFeedUrls
+      };
     });
     if (selectedCategory === catName) {
       const keys = Object.keys(draft.interests.categories);
       const remaining = keys.filter(k => k !== catName);
       setSelectedCategory(remaining[0] || null);
     }
-  };
+    };
 
   const handleUpdateCategory = (name: string, field: 'brands' | 'keywords', values: string[]) => {
     setDraft(prev => {
