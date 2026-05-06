@@ -33,12 +33,13 @@ Windows 11 のネイティブな素材感を実現するためのレイヤー構
 | `App.tsx` | ルートレイアウト | 統一された透過デザイン、インラインダイアログの管理、ビュー切り替え。 |
 | `CustomDialog.tsx` | 汎用ダイアログ | 精密な中央配置と高視認性。**`loading` タイプ**による非ブロッキング表示に対応。 |
 | `ArticleCard.tsx` | 記事カード | 不透明度 75% の最適化。背景のノイズを抑え、可読性を最大化。 |
-| `UnifiedEditor.tsx` | 設定管理 | API キー管理、カテゴリ編集、**AI Restructure (プロファイルの完全再構築)**、および **AI Insights (自律学習トレンドの管理・昇格)**。 |
+| `UnifiedEditor.tsx` | 設定管理 | API キー管理、カテゴリ編集、**AI Restructure v2**。 |
+| `AIInsightsTab.tsx` | トレンド管理 | **Archivist エージェント**が収集した `learned_keywords` を一覧表示。昇格（Promote）と却下（Dismiss）による **Human-in-the-loop** パーソナライズを実現。 |
 | `SkillRegistry.tsx` | スキル一覧 | **「Add New Skill」ボタン**による機能拡張インターフェース。 |
 
 ## インテリジェント機能
-- **Deep AI Restructure**: 既存のカテゴリ・フィードを分析し、10個の最適なカテゴリへの再編と高品質な RSS ソースの自動注入をワンクリックで実行。
-- **API Key Guidance**: APIキー未設定時に上部に警告バナーを表示。設定画面へのダイレクト誘導ボタンにより、スムーズなセットアップを支援。
+- **Deep AI Restructure v2**: 既存のカテゴリ・フィードを分析し、10個の最適なカテゴリへの再編と高品質な RSS ソースの自動注入をワンクリックで実行。**並列検証**と **Google News フォールバック**により安定性が飛躍的に向上。
+- **AI Insights**: ユーザーの閲覧傾向から AI が自動抽出した新しい興味キーワードを提示。ユーザーのフィードバックを介することで、自律進化の精度を担保。
 - **AI Discovery Trigger**: サイドバーのカテゴリ名をクリックすることで、Gemini API による新規フィード探索を即座に開始。
 - **Command Palette**: `Ctrl + K` によるクイックアクセス。
 - **Global Exit**: `Ctrl + Q` による安全なアプリケーション終了。

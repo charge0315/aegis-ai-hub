@@ -42,12 +42,13 @@ Electron メインプロセス (`electron/main.cjs`) では、Windows 11 の **A
 
 ## データ・整合性と同期
 
-### 1. SettingsManager (整合性確保)
-- **カテゴリ統一**: `interests.json` と `feed_config.json` のカテゴリ名を完全に同期。
-- **適応型データパス解決**: `!app.isPackaged` を判定基準とし、開発時はワークスペース内の `data/` を、配布後は `%APPDATA%` を参照するよう自動分岐。
+### 1. Shared SettingsManager (単一の真実)
+- **Fastify & Electron 統合**: Electron メインプロセスが管理する Fastify サーバーと、メインプロセスのバックグラウンドジョブが、同一の `SettingsManager` シングルトンを共有。
+- **アトミック保存**: 設定変更は `settings.json` へアトミックに書き込まれ、全コンポーネントが常に最新の状態を即座に参照可能。
+- **環境適応型パス解決**: `!app.isPackaged` を判定基準とし、開発時はワークスペース内の `data/` を、配布後は `%APPDATA%` を参照するよう自動分岐。
 
-### 2. 記事の鮮度管理
-- **Freshness Filter**: `main.cjs` 内の取得ロジックに、90日以上前の記事を除外するフィルタリングを追加。ダッシュボードの情報の鮮度を高く保ちます。
+### 2. API Key 即時同期戦略
+- **Zero-Latency Update**: APIキーが更新されると、`GeminiService` の全インスタンスが即座にリフレッシュ。IPC ハンドラー（`suggest-category` 等）の実行直前に `getApiKey()` を呼び出すことで、再起動なしの即時利用を保証。
 
 ## コア・サービス構成
 
@@ -56,11 +57,11 @@ Electron メインプロセス (`electron/main.cjs`) では、Windows 11 の **A
 | `Fastify Server` | API ホスティング | Electron 内蔵型への統合。単一プロジェクトとして動作。 |
 | `RSSFetcher` | フィード取得 | **疎通確認 (validateFeed)** 機能の追加。 |
 | `FeedManager` | フィード構成管理 | **自動ヘルスチェック付きフィード昇格**の実装。 |
-| `GeminiService` | AI 推論 | **AI Restructure の高度化**。10カテゴリへの完全再編、フィードの自動再割り当て、新規ソースの自動注入。日本語ソース不足時の**英語ソースへの自動フォールバック（網羅性の保証）**を実装。さらにZodバリデーションエラーを防ぐためのレスポンスデータ正規化と型安全な処理を追加。 |
-| `DiscoveryService` | ソース探索 | AI による新規サイト発見と、進化提案 (Proposals) の生成。**`Promise.all` による全カテゴリーの並列フィード検証**を導入し、探索のタイムアウトを防止。 |
-| `EnrichmentService` | 記事加工 | 並列スクレイピングによる画像補完と自動翻訳。 |
-| `ImageCacheManager` | 画像キャッシュ | スクレイピング済み画像URLの永続化とTTL管理。 |
-| `SettingsManager` | 設定の永続化 | アトミック保存、バリデーション、および**環境適応型パス解決**。 |
+| `GeminiService` | AI 推論 | **AI Restructure v2**。並列検証 (`Promise.all`)、**Google News フォールバック**、および Zod エラーを防ぐ **Data Normalization** を実装。 |
+| `ArchivistAgent` | 自律学習 | 収集記事からトレンドを抽出し、`learned_keywords` としてバッファへ蓄積。**AI Insights** のバックエンドエンジン。 |
+| `DiscoveryService` | ソース探索 | **`Promise.all` による全カテゴリーの並列フィード検証**を導入し、探索のタイムアウトを防止。 |
+| `EnrichmentService` | 記事加工 | 並列スクレイピングによる画像補完。 |
+| `SettingsManager` | 設定の永続化 | **Fastify と Electron 間の共有シングルトン**として、整合性を担保。 |
 
 ## 配布とビルド (electron-builder)
 - **プロダクション・パス**: 全てのデータは `%APPDATA%/aegis-nexus/` 配下に保存。

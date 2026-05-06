@@ -5,32 +5,25 @@
 
 ## 🌟 Aegis v5.3 NEXUS の主要な進化点
 
-### 1. Deep AI Restructure (完全プロファイル再定義)
+### 1. Deep AI Restructure v2 (完全プロファイル再定義)
 ユーザーのニュース収集環境を根本から再構築する、強力な AI 機能を実装。
-- **Autonomous Reorganization**: 既存のカテゴリ、ブランド、キーワードを分析し、統合・洗練された「10個の最適カテゴリ」へ完全に再編します。
-- **Intelligent Feed Mapping**: 現在購読しているフィードを、新しく定義されたカテゴリへ最適に自動再割り当て。
-- **High-Quality Source Injection**: 各カテゴリに対して、情報の質を高めるための厳選された RSS/Atom フィード（日本語優先）を AI が自動的に発見・追加。
-- **Global Fallback Logic**: 日本語の情報源が不足している場合、BBC, Reuters, Wired などの世界的権威のある英語ソースへ自動的にフォールバックし、**「提案0件」を排除（網羅性の保証）**します。
-- **Visual Progress Tracking**: Phase 1 (カテゴリ再編) と Phase 2 (ソース最適化) の詳細な進捗をリアルタイムで表示する進捗オーバーレイを導入。
-- **Robust Verification Logic**: 再構築プロセスにフィードの有効性事前検証を追加。無効なURLによるエラーを自動回避し、Google Newsへのフォールバックで網羅性を100%保証。
+- **Parallel Verification Logic**: 従来は順次実行していたフィードの有効性検証を、全カテゴリー並列（`Promise.all`）で実行するように刷新。タイムアウトを回避し、再構築プロセス全体の UX を劇的に向上させました。
+- **Robust Fallback Strategy**: AIが提案したURLが検証で全滅した場合、または適切なソースが見つからない場合に、最適化されたクエリを用いた **Google News RSS** を自動的に注入。「空のダッシュボード」を物理的に回避し、情報の継続性を保証します。
+- **Data Normalization**: Gemini の自由な出力を `InterestCategory` スキーマへ厳格に変換・クリーンアップする処理を追加。Zod バリデーション落ちを防ぎ、プロセスの完遂率を 100% に近づけました。
 
-### 2. AI Insights (継続的学習の可視化)
+### 2. AI Insights & Continuous Learning (自律学習トレンド管理)
 AIエージェントが収集したトレンドをユーザーが管理できる新機能を実装。
-- **Trend Discovery Management**: `Archivist` エージェントが最新記事から抽出した「学習済みキーワード」を一覧表示。
-- **Manual Promotion**: 発見されたトレンドをワンクリックで正式な興味キーワードへ昇格。AIの自律進化にユーザーの意思を反映可能。
+- **Mechanism (Archivist Agent)**: `Archivist` エージェントが最新記事から抽出した「学習済みキーワード (`learned_keywords`)」を `interests.json` のバッファに蓄積し、UI で一覧表示。
+- **Human-in-the-loop Strategy**: 発見されたトレンドをユーザーが「昇格（Promote）」または「却下（Dismiss）」することで、AI の自律進化にユーザーの意思を介在させます。完全自律ではなく、フィードバックループを介することでパーソナライズの精度を継続的に向上させます。
 
-### 3. Gemini 3.1 Model Optimization
+### 3. Gemini 3.1 Model Optimization & Discovery 2.5
 タスクの複雑さに応じて、AI モデルの特性を最大限に引き出す最適化を実施。
-- **Gemini 3.1 Flash**: 日常的な記事解析や提案などの高速性が求められるタスクに使用。
-- **Gemini 3.1 Pro**: 「Deep AI Restructure」などの高度な推論と大規模なコンテキスト処理が必要なタスクに使用し、圧倒的な解析精度を実現。
-
-### 4. AI Suggest & Discovery 2.5
-探索プロセスの高速化と AI 提案の堅牢化。
-- **Immediate API Key Sync**: `suggest-category` 等のAIリクエスト実行直前に最新のAPIキーを反映。APIキー設定後、アプリの再起動なしで即座にAI機能を利用可能に。
-- **Schema Resilience**: ブランド・キーワード提案のスキーマを緩和し、AIの出力揺れによるバリデーションエラーを防止（高い成功率の維持）。
+- **Immediate API Key Sync**: IPC ハンドラー（`suggest-category` 等）の実行直前に最新の API キーを反映する仕組みを導入。API キー設定後、アプリの再起動なしで即座に AI 機能を利用可能にしました。
+- **Schema Resilience**: ブランド・キーワード提案のスキーマを `minItems: 5` から `1` へと緩和。AI が十分な候補を絞り出せない時のバリデーションエラーを防ぎ、堅牢性を確保しました。
+- **Dynamic Model Switching**: 日常的なタスクには高速な `Gemini 3.1 Flash` を、高度な再編処理（Restructure）には `Gemini 3.1 Pro` を使用するように最適化。
 - **Parallel RSS Validation**: フィードの有効性確認を `Promise.all` による並列処理で行うことで、ディスカバリー時間を大幅に短縮。
 - **Non-blocking Loading**: AI探索中のフリーズを防ぐため、ボタンのない専用の「非ブロッキング・ローディング画面」を実装。処理の進行状況を安全に伝えます。
-- **Enhanced Dialog System**: `CustomDialog` に `loading` タイプを追加し、長時間のバックグラウンド処理中も視覚的なフィードバックを維持。
+
 
 ### 5. Dynamic Skill Registry
 AIエージェントの機能を動的に拡張。
