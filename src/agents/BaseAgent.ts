@@ -18,6 +18,13 @@ export class BaseAgent {
   }
 
   /**
+   * APIキーを更新します。
+   */
+  public updateApiKey(apiKey: string): void {
+    this.geminiService.updateApiKey(apiKey);
+  }
+
+  /**
    * エージェントのアイデンティティを定義するシステムプロンプト
    * @returns {string}
    */

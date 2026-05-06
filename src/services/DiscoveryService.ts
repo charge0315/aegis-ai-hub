@@ -32,6 +32,13 @@ export class DiscoveryService {
     this.feedManager = feedManager;
   }
 
+  /**
+   * APIキーを更新します。
+   */
+  public updateApiKey(apiKey: string): void {
+    this.geminiService.updateApiKey(apiKey);
+  }
+
   async run(interests: Interests): Promise<SuggestedSite[]> {
     console.log("[DiscoveryService] サイト探索プロセスを開始します...");
 

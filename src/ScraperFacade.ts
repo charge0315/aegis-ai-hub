@@ -36,6 +36,13 @@ export class ScraperFacade {
     }
 
     /**
+     * APIキーを更新し、関連サービスに反映させます。
+     */
+    public updateApiKey(apiKey: string): void {
+        this.geminiService.updateApiKey(apiKey);
+    }
+
+    /**
      * Gemini APIを活用し、ユーザーの興味に最適化されたおすすめ記事10選を生成します。
      * 
      * 意図: 大量の記事の中から、ユーザーの現在の関心事に最も合致し、かつ価値の高い情報を

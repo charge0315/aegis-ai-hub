@@ -1,7 +1,7 @@
 # Aegis AI Hub - System Index
 
 **Project Status:** Production Ready (v5.2 NEXUS)
-**Last Updated:** 2026-05-20
+**Last Updated:** 2026-06-18
 
 ## プロジェクト概要
 Aegis AI Hub は、Gemini 3.1 を中枢に据えた「自律学習型知的ダッシュボード」です。  
@@ -9,7 +9,11 @@ v5.2 NEXUS では、Windows 11 との親和性を極限まで高めた **Acrylic
 
 ## 主要なアップデート (v5.2 NEXUS)
 
+- **AI Suggest Sync & Guidance**: Gemini APIキーの同期漏れを修正。APIキー設定後、即座に機能が利用可能になりました。また、未設定時には警告バナーを表示し、設定画面へのスムーズな誘導を実装。
+- **Interactive Category Management**: Nexus Editor でカテゴリ名の変更（鉛筆アイコン）および絵文字の変更（クリック）が可能になり、パーソナライズ性が向上。
+- **Strict AI Suggestion Guards**: ブランドおよびキーワードのAI提案数を「5個固定」に厳格化。情報の密度と品質を最適化しました。
 - **Windows 11 Native Integration**: Electron の `acrylic` マテリアルを適用。FancyZones に対応し、デスクトップと調和する高度な透過効果を実現。
+
 - **RSS Health Check & Auto-Recovery**: `RSSFetcher` によるバリデーションと、`FeedManager` による代替フィードへの自動昇格機能を搭載。故障したフィードを自律的に検知・置換します。
 - **Image Acquisition & Caching**: `ImageCacheManager` による画像URLの永続化、`EnrichmentService` でのスクレイピング強化（Cheerio/Axios）、および `p-limit` による同時実行数制御を導入。
 - **Forced Validation Guardrails**: フィードの追加や同期時にヘルスチェックを強制し、無効なフィードの登録を未然に防ぎます。

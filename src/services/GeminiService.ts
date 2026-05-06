@@ -354,8 +354,20 @@ URLは必ず「RSSフィード」または「Atomフィード」の直接のURL�
     const schema: ResponseSchema = {
       type: SchemaType.OBJECT,
       properties: {
-        brands: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: "関連する主要なブランド5つ" },
-        keywords: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: "関連する重要なキーワード5つ" },
+        brands: { 
+          type: SchemaType.ARRAY, 
+          items: { type: SchemaType.STRING }, 
+          description: "関連する主要なブランドを必ず正確に5つ",
+          minItems: 5,
+          maxItems: 5
+        },
+        keywords: { 
+          type: SchemaType.ARRAY, 
+          items: { type: SchemaType.STRING }, 
+          description: "関連する重要なキーワードを必ず正確に5つ",
+          minItems: 5,
+          maxItems: 5
+        },
         emoji: { type: SchemaType.STRING, description: "カテゴリを象徴する絵文字1つ" },
         reason: { type: SchemaType.STRING, description: "この提案の理由（1文）" }
       },
@@ -363,8 +375,10 @@ URLは必ず「RSSフィード」または「Atomフィード」の直接のURL�
     };
 
     const prompt = `
-以下の新しいインテリジェンス・カテゴリ名に関連する、主要なブランドを5つ、および重要なキーワードを5つ提案してください。
+以下の新しいインテリジェンス・カテゴリ名に関連する、主要なブランドを【必ず5つ】、および重要なキーワードを【必ず5つ】提案してください。
+5つ未満や5つを超える提案は一切認められません。必ず正確に5つずつ生成してください。
 また、そのカテゴリにふさわしい絵文字を1つ選んでください。
+
 カテゴリ名: "${categoryName}"
 日本語で回答してください。
 `;

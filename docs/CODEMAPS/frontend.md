@@ -1,6 +1,6 @@
 # Frontend UI Codemap
 
-**Last Updated:** 2026-06-16
+**Last Updated:** 2026-06-18
 **Version:** 5.2 NEXUS
 **Entry Point:** `src/main.tsx`
 
@@ -32,9 +32,10 @@ Windows 11 のネイティブな素材感を実現するためのレイヤー構
 | `App.tsx` | ルートレイアウト | 統一された透過デザイン、インラインダイアログの管理、ビュー切り替え。 |
 | `CustomDialog.tsx` | 汎用ダイアログ | 精密な中央配置と高視認性。 |
 | `ArticleCard.tsx` | 記事カード | **不透明度 75% の最適化**。背景のノイズを抑え、可読性を最大化。 |
-| `UnifiedEditor.tsx` | 設定管理 | System Settings タブでの API キー管理とカテゴリ編集。 |
+| `UnifiedEditor.tsx` | 設定管理 | API キー管理、**カテゴリ名の変更（鉛筆アイコン）**、**絵文字の変更（クリック）**。 |
 
 ## インテリジェント機能
+- **API Key Guidance**: APIキー未設定時に上部に警告バナーを表示。設定画面へのダイレクト誘導ボタンにより、スムーズなセットアップを支援。
 - **AI Discovery Trigger**: サイドバーのカテゴリ名をクリックすることで、Gemini API による新規フィード探索を即座に開始。
 - **Command Palette**: `Ctrl + K` によるクイックアクセス。
 - **Global Exit**: `Ctrl + Q` による安全なアプリケーション終了。

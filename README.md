@@ -9,11 +9,15 @@
 デスクトップと調和する、次世代のビジュアル体験。
 - **Acrylic Integration**: Windows 11 ネイティブの **Acrylic素材** を Electron で実現。
 - **Refined Transparency**: 背景色 `#101112` と最適化された透過率により、視認性と審美性を両立。
-- **FancyZones Support**: Windows PowerToys の FancyZones (スナップ機能) に完全対応。
-- **Unified Design**: ヘッダーとサイドバーの背景を `sidebar-glass` で統一し、シームレスな一体感を提供。
-- **Optimized Visibility**: 記事カードの透過度を 75% に調整し、透過環境下でのテキスト可読性を最大化。
 
-### 2. Robust RSS & Data Management
+### 2. Intelligent AI Guidance & Suggestion
+Gemini 3.1 を最大限に活用するためのインテリジェンス・レイヤー。
+- **AI Suggest Sync**: APIキー設定後、アプリケーションの再起動なしに即座にAI提案機能が有効化される同期メカニズム。
+- **API Key Guard**: APIキー未設定時に警告バナーを表示。設定画面へのダイレクト誘導により、スムーズな導入をサポート。
+- **Strict Suggestion Logic**: ブランドおよびキーワードのAI提案数を「5個固定」に厳格化。ノイズを排除し、高品質な情報源のみを抽出。
+- **Interactive Category Editor**: カテゴリ名の変更（鉛筆アイコン）および絵文字のカスタマイズ（クリック）に対応。
+
+### 3. Robust RSS & Data Management
 情報の信頼性と鮮度を極限まで追求。
 - **Auto Health Check**: フィード取得失敗時に `RSSFetcher` が自動的にバリデーションを実行。3回連続失敗でプール内の代替ソースへ自動昇格。
 - **Validation Guardrail**: フィードの新規追加や設定同期の際、必ず有効性を検証。無効な URL の登録を未然に防止。

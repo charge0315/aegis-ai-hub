@@ -37,6 +37,16 @@ export class NexusOrchestrator {
   }
 
   /**
+   * APIキーを更新し、各エージェントに反映させます。
+   */
+  public updateApiKey(apiKey: string): void {
+    this.architect.updateApiKey(apiKey);
+    this.discovery.updateApiKey(apiKey);
+    this.archivist.updateApiKey(apiKey);
+    // this.curator.updateApiKey(apiKey);
+  }
+
+  /**
    * フロントエンドへの通知を購読するためのSSEハンドラ登録。
    * FastifyのSSE方式に合わせて調整が必要。
    */

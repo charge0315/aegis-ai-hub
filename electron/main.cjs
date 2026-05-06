@@ -4,10 +4,10 @@ const fs = require('fs');
 const fastify = require('fastify');
 const cors = require('@fastify/cors');
 
-// ƒAƒvƒŠ–¼‚Ì–¾Ž¦“IÝ’èiƒpƒX‚Ì®‡«Šm•Ûj
+// ï¿½Aï¿½vï¿½ï¿½ï¿½ï¿½ï¿½Ì–ï¿½ï¿½ï¿½ï¿½Iï¿½Ý’ï¿½iï¿½pï¿½Xï¿½Ìï¿½ï¿½ï¿½ï¿½ï¿½ï¿½mï¿½Ûj
 app.setName('Aegis Nexus');
 
-// ƒT[ƒrƒX‚ÌƒCƒ“ƒ|[ƒg (TypeScriptƒtƒ@ƒCƒ‹‚Ì“®“I“Ç‚Ýž‚Ý)
+// ï¿½Tï¿½[ï¿½rï¿½Xï¿½ÌƒCï¿½ï¿½ï¿½|ï¿½[ï¿½g (TypeScriptï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½Ì“ï¿½ï¿½Iï¿½Ç‚Ýï¿½ï¿½ï¿½)
 const { ElectronSettingsManager } = require('./ElectronSettingsManager');
 const { GeminiService } = require('../src/services/GeminiService');
 const { FeedManager } = require('../src/services/FeedManager');
@@ -27,7 +27,7 @@ let rssFetcher;
 let discoveryService;
 let enrichmentService;
 
-// ƒ†[ƒeƒBƒŠƒeƒB: ƒf[ƒ^ƒfƒBƒŒƒNƒgƒŠ‚ÌŽæ“¾
+// ï¿½ï¿½ï¿½[ï¿½eï¿½Bï¿½ï¿½ï¿½eï¿½B: ï¿½fï¿½[ï¿½^ï¿½fï¿½Bï¿½ï¿½ï¿½Nï¿½gï¿½ï¿½ï¿½ÌŽæ“¾
 function getDataDir() {
   return !app.isPackaged 
     ? path.resolve(app.getAppPath(), '..', 'data')
@@ -74,24 +74,24 @@ async function initBackend() {
   const dataDir = getDataDir();
   const settingsManager = new ElectronSettingsManager({ dataDir });
   
-  // 1. Ý’èƒ}ƒl[ƒWƒƒ[‚Ì‰Šú‰»iƒfƒBƒŒƒNƒgƒŠì¬‚È‚Çj
+  // 1. ï¿½Ý’ï¿½}ï¿½lï¿½[ï¿½Wï¿½ï¿½ï¿½[ï¿½Ìï¿½ï¿½ï¿½ï¿½ï¿½ï¿½iï¿½fï¿½Bï¿½ï¿½ï¿½Nï¿½gï¿½ï¿½ï¿½ì¬ï¿½È‚Çj
+  // 1. è¨­å®šãƒžãƒãƒ¼ã‚¸ãƒ£ãƒ¼ã®åˆæœŸåŒ–ï¼ˆãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒªä½œæˆãªã©ï¼‰
   await settingsManager.init();
-  
-  // 2. ƒCƒ“ƒXƒ^ƒ“ƒX¶¬
+
+  // 2. ã‚¤ãƒ³ã‚¹ã‚¿ãƒ³ã‚¹ç”Ÿæˆ
   const apiKey = await settingsManager.getApiKey();
   geminiService = new GeminiService(apiKey);
-  
+
   const feedConfigPath = path.join(dataDir, 'feed_config.json');
-  console.log([Main] Using FeedManager config: \);
+  console.log(`[Main] Using FeedManager config: ${feedConfigPath}`);
   feedManager = new FeedManager(feedConfigPath);
   rssFetcher = new RSSFetcher();
-  
+
   discoveryService = new DiscoveryService(geminiService, rssFetcher, feedManager);
   enrichmentService = new EnrichmentService(geminiService, dataDir);
 
-  // “à‘ FastifyƒT[ƒo[‚Ì‹N“®
+  // å†…è”µFastifyã‚µãƒ¼ãƒãƒ¼ã®èµ·å‹•
   await startInternalServer(settingsManager);
-
   console.log('[Main] Backend services ready.');
 }
 
@@ -142,9 +142,9 @@ function createTray() {
   const iconPath = path.join(__dirname, '../public/app-icon.png');
   tray = new Tray(iconPath);
   const contextMenu = Menu.buildFromTemplate([
-    { label: 'Aegis Nexus ‚ð•\Ž¦', click: () => mainWindow.show() },
+    { label: 'Aegis Nexus ï¿½ï¿½\ï¿½ï¿½', click: () => mainWindow.show() },
     { type: 'separator' },
-    { label: 'I—¹', click: () => {
+    { label: 'ï¿½Iï¿½ï¿½', click: () => {
       app.isQuitting = true;
       app.quit();
     }}
@@ -215,7 +215,7 @@ function registerIpcHandlers() {
             });
           }
         } catch (err) {
-          console.error(\Failed to fetch feed \:\, err);
+          console.error(`Failed to fetch feed ${feed.url}:`, err);
           await feedManager.reportFailure(feed.category, feed.url, rssFetcher);
         }
       }
@@ -330,3 +330,4 @@ app.on('window-all-closed', () => {
     app.quit();
   }
 });
+
