@@ -89,6 +89,7 @@ export interface NexusApiBridge {
   saveApiKey: (apiKey: string) => Promise<{ success: boolean }>;
   getProposals: () => Promise<{ sites: { url: string; name: string; reason: string; category: string }[] }>;
   restructureCategories: () => Promise<Record<string, InterestCategory>>;
+  resetToDefaults: () => Promise<{ success: boolean }>;
   windowControl: (action: 'minimize' | 'maximize' | 'close') => void;
 }
 

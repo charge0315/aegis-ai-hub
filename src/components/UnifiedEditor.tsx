@@ -440,15 +440,53 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
         feed_urls: restructured.feedConfig
       }));
 
+      // 新しいプロファイルを構築
+      const newDraft = {
+        ...draft,
+        interests: {
+          ...draft.interests,
+          categories: restructured.categories,
+          lastUpdated: Date.now()
+        },
+        feed_urls: restructured.feedConfig
+      };
+
+      // 状態を更新
+      setDraft(newDraft);
       setSelectedCategory(Object.keys(restructured.categories)[0] || null);
+      
+      setRestructureStep('Final Phase: Synchronizing with Backend...');
+      // 自動保存を実行してバックエンドと同期
+      await onSave(newDraft);
+      
       setRestructureStep(null);
-      await customAlert('Restructure Complete', 'AI has successfully transformed your intelligence profile. 10 new categories are ready with optimized feed sources.', 'success');
+      await customAlert('Restructure Complete', 'AI has successfully transformed your intelligence profile. 10 new categories are ready with optimized feed sources and synced to backend.', 'success');
     } catch (err) {
       console.error('Restructure failed:', err);
       setRestructureStep(null);
       await customAlert('Restructure Failed', 'An error occurred during the deep reorganization process.', 'error');
     } finally {
       setIsSuggesting(false);
+    }
+  };
+
+  const handleResetToDefaults = async () => {
+    const confirmed = await customConfirm(
+      'Restore Default Profile',
+      'This will erase all your custom categories and feed settings and restore the system to its initial factory state. Your API key will be preserved. Proceed?'
+    );
+    if (!confirmed) return;
+
+    setIsSaving(true);
+    try {
+      await window.nexusApi.resetToDefaults();
+      await customAlert('System Reset', 'Your intelligence profile has been restored to defaults. The application will now reload.', 'success');
+      window.location.reload();
+    } catch (err) {
+      console.error('Reset failed:', err);
+      await customAlert('Reset Failed', 'Failed to restore default settings.', 'error');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -917,6 +955,29 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
                     <Save size={18} />
                     {isSavingApiKey ? 'Saving...' : 'Apply API Key'}
                   </button>
+                </div>
+              </GlassPanel>
+
+              {/* Advanced System Actions */}
+              <GlassPanel className="p-8 border-alert/20 bg-alert/5">
+                <div className="flex items-start gap-4">
+                  <div className="p-3 bg-alert/10 text-alert rounded-2xl">
+                    <RotateCcw size={24} />
+                  </div>
+                  <div className="flex-grow">
+                    <h3 className="text-xl font-bold text-white">Factory Reset</h3>
+                    <p className="text-sm text-slate-500 mt-1">Restore the default intelligence profile and feed sources.</p>
+                    <div className="mt-6">
+                      <button
+                        onClick={handleResetToDefaults}
+                        disabled={isSaving}
+                        className="flex items-center gap-2 px-6 py-2.5 bg-alert text-white rounded-xl text-sm font-bold shadow-lg shadow-alert/20 hover:shadow-alert/40 transition-all active:scale-95 disabled:opacity-50"
+                      >
+                        <RotateCcw size={18} />
+                        Restore Default Profile
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </GlassPanel>
 

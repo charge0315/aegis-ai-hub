@@ -36,6 +36,13 @@ Aegis AI Hub v5.3 では、対話型インストーラーの導入により配�
   - カスタムインストールパス、デスクトップショートカット、スタートメニューへの登録に対応。
 - **アセット同梱**: `dist/**/*`, `electron/index.cjs`, `electron/main.bundle.cjs`, `electron/preload.cjs` のみを同梱。
 
+## 4. Signal Integrity Check (Feed Fetching Test)
+システムの根幹である「情報収集（フィード取得）」が正常に機能しているかを、E2Eテストで重点的に検証します。
+
+- **全記事更新の検証**: `Refresh All Articles` ボタンをクリックし、実際に記事が1件以上ロードされることを確認。
+- **データ取得パスの正常性**: Electron IPC ブリッジから `ScraperFacade` を経由し、外部 RSS フィードのパースまでが一気通貫で成功することを保証します。
+- **リグレッション防止**: モデル更新や並列化ロジックの変更時に、取得のフリーズや欠落が起きていないかを自動で検知します。
+
 ## テスト実行コマンド
 ```powershell
 # E2Eテストの実行

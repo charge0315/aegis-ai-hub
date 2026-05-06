@@ -194,49 +194,16 @@ function registerIpcHandlers() {
       const dataDir = getDataDir();
       const settingsManager = new ElectronSettingsManager({ dataDir });
       const interests = await settingsManager.getInterests();
-      const scoringService = new ScoringService(interests);
-      const activeFeeds = feedManager.getAllActiveFeeds();
-      
-      let allArticles = [];
-      const threeMonthsAgo = Date.now() - (90 * 24 * 60 * 60 * 1000);
-      
-      for (const feed of activeFeeds) {
-        try {
-          const items = await rssFetcher.fetch(feed.url);
-          feedManager.reportSuccess(feed.category, feed.url);
-          
-          for (const item of items) {
-            const articleDate = new Date(item.isoDate || item.pubDate || Date.now()).getTime();
-            if (articleDate < threeMonthsAgo) continue;
 
-            const category = scoringService.detectCategory(item.title || '', item.contentSnippet || '', feed.category);
-            const score = scoringService.calculateScore(item.title || '', item.contentSnippet || '', category);
-            const brand = scoringService.extractBrand(item.title || '');
-            const img = enrichmentService.extractBasicImage(item);
+      // ScraperFacade を使用して並列取得と処理を行う
+      const articles = await scraper.fetchAndProcessArticles(interests);
 
-            allArticles.push({
-              title: item.title,
-              link: item.link,
-              desc: item.contentSnippet,
-              date: item.isoDate || item.pubDate,
-              brand,
-              category,
-              score,
-              img
-            });
-          }
-        } catch (err) {
-          console.error(`Failed to fetch feed ${feed.url}:`, err);
-          await feedManager.reportFailure(feed.category, feed.url, rssFetcher);
-        }
-      }
-      return allArticles.sort((a, b) => b.score - a.score).slice(0, 100);
+      return articles.map(a => a.toJSON()).sort((a, b) => b.score - a.score).slice(0, 100);
     } catch (error) {
       console.error('Failed to get articles:', error);
       throw error;
     }
   });
-
   ipcMain.handle('trigger-orchestration', async () => {
     try {
       const dataDir = getDataDir();
@@ -303,6 +270,39 @@ function registerIpcHandlers() {
       return { success: true };
     } catch (error) {
       console.error('Failed to save API key:', error);
+      throw error;
+    }
+  });
+
+  ipcMain.handle('reset-to-defaults', async () => {
+    try {
+      const dataDir = getDataDir();
+      const resourcesPath = app.isPackaged ? process.resourcesPath : path.resolve(__dirname, '..');
+      const defaultDataDir = path.join(resourcesPath, 'default-data');
+      
+      const files = ['interests.json', 'feed_config.json'];
+      for (const file of files) {
+        const src = path.join(defaultDataDir, file);
+        const dest = path.join(dataDir, file);
+        if (fs.existsSync(src)) {
+          await fs.promises.copyFile(src, dest);
+          console.log(`[Main] Reset ${file} to default.`);
+        }
+      }
+
+      // メモリ上の設定を再読み込み
+      const settingsManager = new ElectronSettingsManager({ dataDir });
+      await settingsManager.init();
+      
+      const feedConfig = await settingsManager.getFeedConfig();
+      feedManager.config = feedConfig;
+      if (scraper && scraper.feedManager) {
+        scraper.feedManager.config = feedConfig;
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to reset to defaults:', error);
       throw error;
     }
   });

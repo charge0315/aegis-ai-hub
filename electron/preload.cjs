@@ -63,6 +63,11 @@ contextBridge.exposeInMainWorld('nexusApi', {
   restructureCategories: () => ipcRenderer.invoke('restructure-categories'),
 
   /**
+   * 設定を初期状態に戻します。
+   */
+  resetToDefaults: () => ipcRenderer.invoke('reset-to-defaults'),
+
+  /**
    * ウィンドウコントロール
    */
   windowControl: (action) => ipcRenderer.send('window-control', action)

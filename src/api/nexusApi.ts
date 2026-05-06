@@ -106,6 +106,16 @@ export const nexusApi = {
       method: 'POST'
     });
     return await res.json();
+  },
+
+  async resetToDefaults(): Promise<{ success: boolean }> {
+    if (window.nexusApi) {
+      return await window.nexusApi.resetToDefaults();
+    }
+    const res = await fetch(`${BACKEND_URL}/api/v5/reset-to-defaults`, {
+      method: 'POST'
+    });
+    return await res.json();
   }
 };
 

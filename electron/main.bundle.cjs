@@ -63021,6 +63021,38 @@ var init_GeminiService = __esm({
         return await this.generateStructured(prompt, schema);
       }
       /**
+       * 特定のカテゴリで高品質なソースが見つからない場合のフォールバック提案を取得します。
+       */
+      async getFallbackEvolutionProposals(interests) {
+        const schema = {
+          type: SchemaType.OBJECT,
+          properties: {
+            sites: {
+              type: SchemaType.ARRAY,
+              items: {
+                type: SchemaType.OBJECT,
+                properties: {
+                  name: { type: SchemaType.STRING },
+                  url: { type: SchemaType.STRING },
+                  category: { type: SchemaType.STRING },
+                  reason: { type: SchemaType.STRING }
+                },
+                required: ["name", "url", "category", "reason"]
+              }
+            }
+          },
+          required: ["sites"]
+        };
+        const prompt = `
+\u7279\u5B9A\u306E\u8208\u5473\u30AB\u30C6\u30B4\u30EA\u306B\u5BFE\u3057\u3066\u5C02\u9580\u7684\u306A\u30CB\u30E5\u30FC\u30B9\u30BD\u30FC\u30B9\u304C\u898B\u3064\u304B\u308A\u307E\u305B\u3093\u3067\u3057\u305F\u3002
+\u4EE3\u308F\u308A\u306B\u3001\u5E45\u5E83\u3044\u30C8\u30D4\u30C3\u30AF\u3092\u30AB\u30D0\u30FC\u3059\u308B\u65E5\u672C\u306E\u5927\u624B\u4FE1\u983C\u3067\u304D\u308B\u30CB\u30E5\u30FC\u30B9\u30B5\u30A4\u30C8\uFF08ITmedia, \u30AE\u30BA\u30E2\u30FC\u30C9\u30FB\u30B8\u30E3\u30D1\u30F3, TechCrunch Japan, \u30ED\u30A4\u30BF\u30FC, BBC\u7B49\uFF09\u304B\u3089\u3001\u4EE5\u4E0B\u306E\u8208\u5473\u306B\u95A2\u9023\u3059\u308B\u30BB\u30AF\u30B7\u30E7\u30F3\u306ERSS\u30D5\u30A3\u30FC\u30C9\u3092\u63D0\u6848\u3057\u3066\u304F\u3060\u3055\u3044\u3002
+\u5FC5\u305A\u6709\u52B9\u306ARSS\u30D5\u30A3\u30FC\u30C9\u306EURL\uFF08\u30DB\u30FC\u30E0\u30DA\u30FC\u30B8\u306EURL\u3067\u306F\u306A\u3044\uFF09\u30923\u4EF6\u63D0\u6848\u3057\u3066\u304F\u3060\u3055\u3044\u3002
+
+\u8208\u5473\u8A2D\u5B9A: ${JSON.stringify(interests.categories)}
+`;
+        return await this.generateStructured(prompt, schema);
+      }
+      /**
        * 現在の興味設定とフィード構成を分析し、最適な10カテゴリに再構築した完全なプロファイルを提示します。
        * 既存のフィードの再割り当てと、新しい高品質なソースの発見を含みます。
        */
@@ -63115,6 +63147,13 @@ ${JSON.stringify(allExistingUrls, null, 2)}
             if (!feedConfig[s.category].active.includes(s.url)) {
               feedConfig[s.category].active.push(s.url);
             }
+          }
+        });
+        Object.keys(categories).forEach((catName) => {
+          if (feedConfig[catName].active.length === 0) {
+            console.log(`[GeminiService] \u30AB\u30C6\u30B4\u30EA "${catName}" \u306E\u30D5\u30A3\u30FC\u30C9\u304C\u7A7A\u306E\u305F\u3081\u3001Google News RSS \u3092\u30D5\u30A9\u30FC\u30EB\u30D0\u30C3\u30AF\u3068\u3057\u3066\u8A2D\u5B9A\u3057\u307E\u3059\u3002`);
+            const fallbackUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(catName)}&hl=ja&gl=JP&ceid=JP:ja`;
+            feedConfig[catName].active.push(fallbackUrl);
           }
         });
         return { categories, feedConfig };
@@ -63469,23 +63508,32 @@ var init_DiscoveryService = __esm({
         return validFeeds;
       }
       async getProposals(interests) {
-        const result = await this.geminiService.getEvolutionProposals(interests);
+        let result = await this.geminiService.getEvolutionProposals(interests);
         const validatedSites = [];
         const failedSites = [];
-        const sites = result.sites || [];
-        await Promise.all(sites.map(async (site) => {
-          try {
-            const items = await this.rssFetcher.fetch(site.url);
-            if (items && items.length > 0) {
-              validatedSites.push(site);
-            } else {
-              throw new Error("\u8A18\u4E8B\u304C\u898B\u3064\u304B\u308A\u307E\u305B\u3093\u3067\u3057\u305F\u3002");
+        const validate = async (sitesToValidate) => {
+          await Promise.all(sitesToValidate.map(async (site) => {
+            try {
+              const items = await this.rssFetcher.fetch(site.url);
+              if (items && items.length > 0) {
+                validatedSites.push(site);
+              } else {
+                throw new Error("\u8A18\u4E8B\u304C\u898B\u3064\u304B\u308A\u307E\u305B\u3093\u3067\u3057\u305F\u3002");
+              }
+            } catch (e) {
+              const msg = e instanceof Error ? e.message : String(e);
+              failedSites.push({ ...site, error: msg });
             }
-          } catch (e) {
-            const msg = e instanceof Error ? e.message : String(e);
-            failedSites.push({ ...site, error: msg });
-          }
-        }));
+          }));
+        };
+        let sites = result.sites || [];
+        await validate(sites);
+        if (validatedSites.length === 0) {
+          console.log("[DiscoveryService] \u5C02\u9580\u30BD\u30FC\u30B9\u304C\u898B\u3064\u304B\u3089\u306A\u3044\u305F\u3081\u3001\u5927\u624B\u30CB\u30E5\u30FC\u30B9\u30B5\u30A4\u30C8\u304B\u3089\u306E\u30D5\u30A9\u30FC\u30EB\u30D0\u30C3\u30AF\u3092\u958B\u59CB\u3057\u307E\u3059...");
+          const fallbackResult = await this.geminiService.getFallbackEvolutionProposals(interests);
+          const fallbackSites = fallbackResult.sites || [];
+          await validate(fallbackSites);
+        }
         const brands = result.brands || [];
         const keywords = result.keywords || [];
         return { sites: validatedSites, failedSites, brands, keywords };
@@ -132468,38 +132516,8 @@ function registerIpcHandlers() {
       const dataDir = getDataDir();
       const settingsManager = new ElectronSettingsManager2({ dataDir });
       const interests = await settingsManager.getInterests();
-      const scoringService = new ScoringService2(interests);
-      const activeFeeds = feedManager.getAllActiveFeeds();
-      let allArticles = [];
-      const threeMonthsAgo = Date.now() - 90 * 24 * 60 * 60 * 1e3;
-      for (const feed of activeFeeds) {
-        try {
-          const items = await rssFetcher.fetch(feed.url);
-          feedManager.reportSuccess(feed.category, feed.url);
-          for (const item of items) {
-            const articleDate = new Date(item.isoDate || item.pubDate || Date.now()).getTime();
-            if (articleDate < threeMonthsAgo) continue;
-            const category = scoringService.detectCategory(item.title || "", item.contentSnippet || "", feed.category);
-            const score = scoringService.calculateScore(item.title || "", item.contentSnippet || "", category);
-            const brand = scoringService.extractBrand(item.title || "");
-            const img = enrichmentService.extractBasicImage(item);
-            allArticles.push({
-              title: item.title,
-              link: item.link,
-              desc: item.contentSnippet,
-              date: item.isoDate || item.pubDate,
-              brand,
-              category,
-              score,
-              img
-            });
-          }
-        } catch (err) {
-          console.error(`Failed to fetch feed ${feed.url}:`, err);
-          await feedManager.reportFailure(feed.category, feed.url, rssFetcher);
-        }
-      }
-      return allArticles.sort((a, b) => b.score - a.score).slice(0, 100);
+      const articles = await scraper.fetchAndProcessArticles(interests);
+      return articles.map((a) => a.toJSON()).sort((a, b) => b.score - a.score).slice(0, 100);
     } catch (error51) {
       console.error("Failed to get articles:", error51);
       throw error51;
@@ -132564,6 +132582,33 @@ function registerIpcHandlers() {
       return { success: true };
     } catch (error51) {
       console.error("Failed to save API key:", error51);
+      throw error51;
+    }
+  });
+  ipcMain.handle("reset-to-defaults", async () => {
+    try {
+      const dataDir = getDataDir();
+      const resourcesPath = app.isPackaged ? process.resourcesPath : path4.resolve(__dirname, "..");
+      const defaultDataDir = path4.join(resourcesPath, "default-data");
+      const files = ["interests.json", "feed_config.json"];
+      for (const file2 of files) {
+        const src = path4.join(defaultDataDir, file2);
+        const dest = path4.join(dataDir, file2);
+        if (fs5.existsSync(src)) {
+          await fs5.promises.copyFile(src, dest);
+          console.log(`[Main] Reset ${file2} to default.`);
+        }
+      }
+      const settingsManager = new ElectronSettingsManager2({ dataDir });
+      await settingsManager.init();
+      const feedConfig = await settingsManager.getFeedConfig();
+      feedManager.config = feedConfig;
+      if (scraper && scraper.feedManager) {
+        scraper.feedManager.config = feedConfig;
+      }
+      return { success: true };
+    } catch (error51) {
+      console.error("Failed to reset to defaults:", error51);
       throw error51;
     }
   });

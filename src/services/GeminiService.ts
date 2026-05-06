@@ -185,6 +185,40 @@ export class GeminiService {
   }
 
   /**
+   * 特定のカテゴリで高品質なソースが見つからない場合のフォールバック提案を取得します。
+   */
+  async getFallbackEvolutionProposals(interests: Interests): Promise<Record<string, unknown>> {
+    const schema: ResponseSchema = {
+      type: SchemaType.OBJECT,
+      properties: {
+        sites: {
+          type: SchemaType.ARRAY,
+          items: {
+            type: SchemaType.OBJECT,
+            properties: {
+              name: { type: SchemaType.STRING },
+              url: { type: SchemaType.STRING },
+              category: { type: SchemaType.STRING },
+              reason: { type: SchemaType.STRING }
+            },
+            required: ["name", "url", "category", "reason"]
+          }
+        }
+      },
+      required: ["sites"]
+    };
+
+    const prompt = `
+特定の興味カテゴリに対して専門的なニュースソースが見つかりませんでした。
+代わりに、幅広いトピックをカバーする日本の大手信頼できるニュースサイト（ITmedia, ギズモード・ジャパン, TechCrunch Japan, ロイター, BBC等）から、以下の興味に関連するセクションのRSSフィードを提案してください。
+必ず有効なRSSフィードのURL（ホームページのURLではない）を3件提案してください。
+
+興味設定: ${JSON.stringify(interests.categories)}
+`;
+    return await this.generateStructured<Record<string, unknown>>(prompt, schema);
+  }
+
+  /**
    * 現在の興味設定とフィード構成を分析し、最適な10カテゴリに再構築した完全なプロファイルを提示します。
    * 既存のフィードの再割り当てと、新しい高品質なソースの発見を含みます。
    */
@@ -292,6 +326,15 @@ ${JSON.stringify(allExistingUrls, null, 2)}
         if (!feedConfig[s.category].active.includes(s.url)) {
           feedConfig[s.category].active.push(s.url);
         }
+      }
+    });
+
+    // 4. 【網羅性の最終ガード】各カテゴリに少なくとも1つのフィードを保証
+    Object.keys(categories).forEach(catName => {
+      if (feedConfig[catName].active.length === 0) {
+        console.log(`[GeminiService] カテゴリ "${catName}" のフィードが空のため、Google News RSS をフォールバックとして設定します。`);
+        const fallbackUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(catName)}&hl=ja&gl=JP&ceid=JP:ja`;
+        feedConfig[catName].active.push(fallbackUrl);
       }
     });
 

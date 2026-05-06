@@ -88,27 +88,37 @@ export class DiscoveryService {
   }
 
   async getProposals(interests: Interests): Promise<EvolutionProposals> {
-    const result = await this.geminiService.getEvolutionProposals(interests) as Record<string, unknown>;
+    let result = await this.geminiService.getEvolutionProposals(interests) as Record<string, unknown>;
 
     const validatedSites: SuggestedSite[] = [];
     const failedSites: (SuggestedSite & { error: string })[] = [];
 
-    const sites = (result.sites || []) as SuggestedSite[];
-    
-    // フィードの検証を並列化して高速化
-    await Promise.all(sites.map(async (site) => {
-      try {
-        const items = await this.rssFetcher.fetch(site.url);
-        if (items && items.length > 0) {
-          validatedSites.push(site);
-        } else {
-          throw new Error("記事が見つかりませんでした。");
+    const validate = async (sitesToValidate: SuggestedSite[]) => {
+      await Promise.all(sitesToValidate.map(async (site) => {
+        try {
+          const items = await this.rssFetcher.fetch(site.url);
+          if (items && items.length > 0) {
+            validatedSites.push(site);
+          } else {
+            throw new Error("記事が見つかりませんでした。");
+          }
+        } catch (e: unknown) {
+          const msg = e instanceof Error ? e.message : String(e);
+          failedSites.push({ ...site, error: msg });
         }
-      } catch (e: unknown) {
-        const msg = e instanceof Error ? e.message : String(e);
-        failedSites.push({ ...site, error: msg });
-      }
-    }));
+      }));
+    };
+
+    let sites = (result.sites || []) as SuggestedSite[];
+    await validate(sites);
+
+    // 1件もヒットしなかった場合のフォールバック（広域検索）
+    if (validatedSites.length === 0) {
+      console.log("[DiscoveryService] 専門ソースが見つからないため、大手ニュースサイトからのフォールバックを開始します...");
+      const fallbackResult = await this.geminiService.getFallbackEvolutionProposals(interests) as Record<string, unknown>;
+      const fallbackSites = (fallbackResult.sites || []) as SuggestedSite[];
+      await validate(fallbackSites);
+    }
 
     const brands = (result.brands || []) as { value: string; category: string; reason: string }[];
     const keywords = (result.keywords || []) as { value: string; category: string; reason: string }[];

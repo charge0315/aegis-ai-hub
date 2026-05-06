@@ -71,4 +71,25 @@ test.describe('Aegis Nexus E2E Tests', () => {
       await expect(articleCard.getByTestId('reasoning-overlay')).toBeVisible();
     }
   });
+
+  test('should refresh articles and verify feed fetching', async ({ page }) => {
+    // リフレッシュボタンをクリック
+    const refreshButton = page.getByRole('button').filter({ has: page.locator('svg.lucide-refresh-ccw') });
+    await expect(refreshButton).toBeVisible();
+    await refreshButton.click();
+    
+    // 読み込み中表示（ローディングアニメーション）が出るのを待ち、消えるのを待つ
+    // (App.tsx の記事0件時のローディングとは別に、RefreshCcwボタン自体の回転アニメーションの状態)
+    // ここでは、ボタンがdisabledになるのを待ち、再び有効になるのを待つことで検証
+    await expect(refreshButton).toBeDisabled();
+    await expect(refreshButton).toBeEnabled({ timeout: 60000 }); // フィード数によっては時間がかかるため
+    
+    // 少なくとも1つの記事カードが表示されていることを確認（フィード取得の成功を確認）
+    const articleCards = page.getByTestId('article-card');
+    const count = await articleCards.count();
+    expect(count).toBeGreaterThan(0);
+    
+    // 特定のカテゴリセクションが存在し、シグナル数が表示されているか
+    await expect(page.getByText(/SIGNALS/)).first().toBeVisible();
+  });
 });
