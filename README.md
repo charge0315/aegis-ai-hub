@@ -24,18 +24,20 @@ AIエージェントが収集したトレンドをユーザーが管理できる
 - **Gemini 3.1 Flash**: 日常的な記事解析や提案などの高速性が求められるタスクに使用。
 - **Gemini 3.1 Pro**: 「Deep AI Restructure」などの高度な推論と大規模なコンテキスト処理が必要なタスクに使用し、圧倒的な解析精度を実現。
 
-### 3. AI Discovery 2.5 & UX Performance
-探索プロセスの高速化と UX の洗練。
+### 4. AI Suggest & Discovery 2.5
+探索プロセスの高速化と AI 提案の堅牢化。
+- **Immediate API Key Sync**: `suggest-category` 等のAIリクエスト実行直前に最新のAPIキーを反映。APIキー設定後、アプリの再起動なしで即座にAI機能を利用可能に。
+- **Schema Resilience**: ブランド・キーワード提案のスキーマを緩和し、AIの出力揺れによるバリデーションエラーを防止（高い成功率の維持）。
 - **Parallel RSS Validation**: フィードの有効性確認を `Promise.all` による並列処理で行うことで、ディスカバリー時間を大幅に短縮。
 - **Non-blocking Loading**: AI探索中のフリーズを防ぐため、ボタンのない専用の「非ブロッキング・ローディング画面」を実装。処理の進行状況を安全に伝えます。
 - **Enhanced Dialog System**: `CustomDialog` に `loading` タイプを追加し、長時間のバックグラウンド処理中も視覚的なフィードバックを維持。
 
-### 4. Dynamic Skill Registry
+### 5. Dynamic Skill Registry
 AIエージェントの機能を動的に拡張。
 - **Custom Skill Addition**: 新しいスキルをUIから直接定義・登録可能。
 - **Granular Control**: ツール、アクション、ロジックといったスキル種別ごとに、オーケストレーターの動作を拡張。
 
-### 5. Integrated Backend Architecture
+### 6. Integrated Backend Architecture
 信頼性と保守性を向上させた、単一プロジェクトによる統合アーキテクチャ。
 - **Unified Project**: 全てのビジネスロジックを `src` 配下に統合。管理が容易な「単一のデスクトップアプリ」プロジェクトとして再構築。
 - **Fastify Backend**: Electron メインプロセスから起動される Fastify ベースのバックエンドサーバーを内蔵。
@@ -43,7 +45,7 @@ AIエージェントの機能を動的に拡張。
 - **Dual-Mode API**: Electron IPC だけでなく、標準的な HTTP/JSON API による操作も可能。
 - **Dev-Sync System**: 開発環境の設定をアプリの実行環境（AppData）へ自動同期する仕組みを確立。
 
-### 4. 進化した UI アーキテクチャ (Robust UI)
+### 7. 進化した UI アーキテクチャ (Robust UI)
 プロダクション品質の安定性と使い勝手を追求。
 - **Flexible Feed Layout**: ヘッダーから記事カードのサイズ（Small/Medium/Large）と画像表示のON/OFF（テキストモード）を即座に切り替え可能。
 - **Native Window Interaction**: アプリケーション上部のヘッダーやサイドバーを掴んで自由に移動・リサイズできるネイティブウィンドウと同等のドラッグ体験。
@@ -51,7 +53,7 @@ AIエージェントの機能を動的に拡張。
 - **Precision Positioning**: 右側メインコンテンツ領域の正確な中心にダイアログを配置。サイドバー幅を考慮した動的オフセットを採用。
 - **Global Control**: `Ctrl+Q` による安全なアプリケーション終了や、`Ctrl+K` のコマンドパレット。
 
-### 5. 即戦力の知識ベース & AI Discovery
+### 8. 即戦力の知識ベース & AI Discovery
 インストールした瞬間から、最高品質の情報が流れ込みます。
 - **Default Data Sets**: ゲーム、AI、PCハードウェア、オーディオ、XR等の専門的なカテゴリとフィードを内蔵。
 - **AI Discovery 2.0**: カテゴリ名クリックで Gemini API が新しいニュースソースを自律探索。直接的なフィード URL (RSS/Atom) をワンクリックで追加可能。

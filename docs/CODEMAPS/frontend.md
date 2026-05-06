@@ -33,7 +33,7 @@ Windows 11 のネイティブな素材感を実現するためのレイヤー構
 | `App.tsx` | ルートレイアウト | 統一された透過デザイン、インラインダイアログの管理、ビュー切り替え。 |
 | `CustomDialog.tsx` | 汎用ダイアログ | 精密な中央配置と高視認性。**`loading` タイプ**による非ブロッキング表示に対応。 |
 | `ArticleCard.tsx` | 記事カード | 不透明度 75% の最適化。背景のノイズを抑え、可読性を最大化。 |
-| `UnifiedEditor.tsx` | 設定管理 | API キー管理、カテゴリ編集、**AI Restructure (プロファイルの完全再構築)**。 |
+| `UnifiedEditor.tsx` | 設定管理 | API キー管理、カテゴリ編集、**AI Restructure (プロファイルの完全再構築)**、および **AI Insights (自律学習トレンドの管理・昇格)**。 |
 | `SkillRegistry.tsx` | スキル一覧 | **「Add New Skill」ボタン**による機能拡張インターフェース。 |
 
 ## インテリジェント機能

@@ -56,8 +56,8 @@ Electron メインプロセス (`electron/main.cjs`) では、Windows 11 の **A
 | `Fastify Server` | API ホスティング | Electron 内蔵型への統合。単一プロジェクトとして動作。 |
 | `RSSFetcher` | フィード取得 | **疎通確認 (validateFeed)** 機能の追加。 |
 | `FeedManager` | フィード構成管理 | **自動ヘルスチェック付きフィード昇格**の実装。 |
-| `GeminiService` | AI 推論 | **AI Restructure の高度化**。10カテゴリへの完全再編、フィードの自動再割り当て、新規ソースの自動注入。日本語ソース不足時の**英語ソースへの自動フォールバック（網羅性の保証）**を実装。 |
-| `DiscoveryService` | ソース探索 | AI による新規サイト発見と、進化提案 (Proposals) の生成。**`Promise.all` による並列フィード検証**を導入。 |
+| `GeminiService` | AI 推論 | **AI Restructure の高度化**。10カテゴリへの完全再編、フィードの自動再割り当て、新規ソースの自動注入。日本語ソース不足時の**英語ソースへの自動フォールバック（網羅性の保証）**を実装。さらにZodバリデーションエラーを防ぐためのレスポンスデータ正規化と型安全な処理を追加。 |
+| `DiscoveryService` | ソース探索 | AI による新規サイト発見と、進化提案 (Proposals) の生成。**`Promise.all` による全カテゴリーの並列フィード検証**を導入し、探索のタイムアウトを防止。 |
 | `EnrichmentService` | 記事加工 | 並列スクレイピングによる画像補完と自動翻訳。 |
 | `ImageCacheManager` | 画像キャッシュ | スクレイピング済み画像URLの永続化とTTL管理。 |
 | `SettingsManager` | 設定の永続化 | アトミック保存、バリデーション、および**環境適応型パス解決**。 |

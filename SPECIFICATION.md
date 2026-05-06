@@ -30,8 +30,8 @@ Aegis Nexusは、RSSフィードとGoogle Gemini 3.1 Proを統合し、ユーザ
 
 ### 2.2 AI Suggest サービス (`GeminiService`)
 - **Structured Output**: AIの自由な出力を禁じ、厳格なJSONスキーマ（ResponseSchema）に従わせる。
-- **5個固定ルール**: `brands` および `keywords` の提案は、必ず正確に5個ずつ生成されるよう、プロンプトとスキーマ（minItems/maxItems）の両面で拘束する。
-- **動的APIキー同期**: 設定変更時、再起動なしでシステム全体の `GeminiService` インスタンスに新しいAPIキーが即座に反映される。
+- **柔軟な提案生成**: `brands` および `keywords` の提案スキーマにおいて、最小個数制約を緩和（minItems 1）し、AIの出力変動に対する耐性を向上。一方でプロンプトでは「正確に5つ」を指示することで、質と安定性のバランスを確保。
+- **動的APIキー同期**: 設定変更時、再起動なしでシステム全体の `GeminiService` インスタンスに新しいAPIキーが即座に反映される。各IPCハンドラー（suggest-category等）の実行直前にも最新のキーを反映させることで、設定直後の即時利用を保証。
 
 ---
 
