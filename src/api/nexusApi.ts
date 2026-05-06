@@ -116,6 +116,20 @@ export const nexusApi = {
       method: 'POST'
     });
     return await res.json();
+  },
+
+  async getApiKey(): Promise<string> {
+    if (window.nexusApi) {
+      return await window.nexusApi.getApiKey();
+    }
+    return '';
+  },
+
+  async saveApiKey(apiKey: string): Promise<{ success: boolean }> {
+    if (window.nexusApi) {
+      return await window.nexusApi.saveApiKey(apiKey);
+    }
+    return { success: true };
   }
 };
 

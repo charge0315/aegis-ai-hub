@@ -66,7 +66,7 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
 
   // 初回ロード時にAPIキーを取得
   React.useEffect(() => {
-    window.nexusApi.getApiKey().then(setApiKey);
+    nexusApi.getApiKey().then(setApiKey);
   }, []);
 
   const isDirty = JSON.stringify(draft) !== JSON.stringify(currentSettings);
@@ -192,7 +192,7 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
   const handleSaveApiKey = async () => {
     setIsSavingApiKey(true);
     try {
-      await window.nexusApi.saveApiKey(apiKey);
+      await nexusApi.saveApiKey(apiKey);
       await customAlert('Success', 'Gemini API Key saved and applied.', 'success');
     } catch (err) {
       console.error('Failed to save API key:', err);

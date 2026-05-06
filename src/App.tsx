@@ -53,6 +53,17 @@ const App: React.FC = () => {
   }, []);
   const isCompact = windowWidth < 1024;
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setIsCommandPaletteOpen(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   // --- INTERACTIVE DIALOG STATE ---
   // アプリケーション全体を覆うブロッキング・ダイアログの制御。
   // 設定の警告やAIディスカバリーなど、ユーザーの完全な注意が必要な処理で使用します。
@@ -206,6 +217,7 @@ const App: React.FC = () => {
               <img 
                 src="./app-icon.png" 
                 alt="Nexus" 
+                data-testid="app-logo"
                 className="w-full h-full object-cover"
                 onError={(e) => {
                   // 画像読み込み失敗時のフォールバック
@@ -219,10 +231,10 @@ const App: React.FC = () => {
             </div>
           </div>
           <nav className="space-y-4 flex-grow no-drag">
-            <button onClick={() => setCurrentView('feed')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${currentView === 'feed' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-slate-400 hover:bg-white/5'}`}>
+            <button data-testid="nav-feed" onClick={() => setCurrentView('feed')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${currentView === 'feed' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-slate-400 hover:bg-white/5'}`}>
               <LayoutDashboard size={18} /> {!isCompact && <span className="text-sm font-bold">Intelligence Feed</span>}
             </button>
-            <button onClick={() => setCurrentView('settings')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${currentView === 'settings' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-slate-400 hover:bg-white/5'}`}>
+            <button data-testid="nav-settings" onClick={() => setCurrentView('settings')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${currentView === 'settings' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-slate-400 hover:bg-white/5'}`}>
               <Settings2 size={18} /> {!isCompact && <span className="text-sm font-bold">Nexus Command</span>}
             </button>
           </nav>
