@@ -20,8 +20,8 @@ export interface CuratedArticle {
  */
 export class GeminiService {
   private genAI: GoogleGenerativeAI | null;
-  private primaryModelName: string = "gemini-3.1-flash";
-  private highReasoningModelName: string = "gemini-3.1-pro";
+  private primaryModelName: string = "gemini-3.1-flash-preview";
+  private highReasoningModelName: string = "gemini-3.1-pro-preview";
 
   /**
    * @param {string} apiKey - Google Gemini APIキー
@@ -75,15 +75,15 @@ export class GeminiService {
       const errorMessage = error instanceof Error ? error.message : String(error);
       console.error(`[GeminiService] Error with model ${modelName}: ${errorMessage}`);
       
-      // Pro で失敗した場合は Flash へ、Flash で失敗した場合は 1.5 Pro への階層型フォールバック
+      // Pro で失敗した場合は Flash へ、Flash で失敗した場合は 1.5 Flash への階層型フォールバック
       if (modelName === this.highReasoningModelName) {
         console.warn(`[GeminiService] ${modelName} failed. Falling back to primary model: ${this.primaryModelName}`);
         return this.generateStructured<T>(prompt, schema, this.primaryModelName);
       }
       
-      if (modelName === this.primaryModelName && !errorMessage.includes("1.5-pro")) {
-        console.warn(`[GeminiService] ${modelName} failed. Falling back to stable model: gemini-1.5-pro`);
-        return this.generateStructured<T>(prompt, schema, "gemini-1.5-pro");
+      if (modelName === this.primaryModelName && !errorMessage.includes("1.5-flash")) {
+        console.warn(`[GeminiService] ${modelName} failed. Falling back to ultra-stable model: gemini-1.5-flash`);
+        return this.generateStructured<T>(prompt, schema, "gemini-1.5-flash");
       }
 
       throw new Error(`Gemini API execution failed after multiple retries. Last error: ${errorMessage}`);
