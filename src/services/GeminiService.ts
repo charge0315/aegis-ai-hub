@@ -20,8 +20,8 @@ export interface CuratedArticle {
  */
 export class GeminiService {
   private genAI: GoogleGenerativeAI | null;
-  private primaryModelName: string = "gemini-3.1-flash-preview";
-  private highReasoningModelName: string = "gemini-3.1-pro-preview";
+  private primaryModelName: string = "gemini-3.1-flash";
+  private highReasoningModelName: string = "gemini-3.1-pro";
 
   /**
    * @param {string} apiKey - Google Gemini APIキー
@@ -82,8 +82,8 @@ export class GeminiService {
       }
       
       if (modelName === this.primaryModelName && !errorMessage.includes("1.5-pro")) {
-        console.warn(`[GeminiService] ${modelName} failed. Falling back to stable model: gemini-1.5-pro-latest`);
-        return this.generateStructured<T>(prompt, schema, "gemini-1.5-pro-latest");
+        console.warn(`[GeminiService] ${modelName} failed. Falling back to stable model: gemini-1.5-pro`);
+        return this.generateStructured<T>(prompt, schema, "gemini-1.5-pro");
       }
 
       throw new Error(`Gemini API execution failed after multiple retries. Last error: ${errorMessage}`);
