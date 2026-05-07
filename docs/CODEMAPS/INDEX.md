@@ -1,21 +1,25 @@
 # Aegis AI Hub - System Index
 
-**Project Status:** Production Ready (v5.3 NEXUS)
+**Project Status:** Production Ready (v5.3.0 NEXUS)
 **Last Updated:** 2026-05-06
 
 ## プロジェクト概要
 Aegis AI Hub は、Gemini 3.1 を中枢に据えた「自律学習型知的ダッシュボード」です。  
-v5.3 NEXUS では、AI によるプロファイルの完全再構築、進捗表示の改善、および Gemini 3.1 Flash/Pro の最適化された使い分けを導入しました。
+v5.3.0 NEXUS では、AI によるプロファイルの完全再構築、カテゴリ名の不一致を解消する整合性強制ロジック、およびデータの完全保持リカバリーを導入しました。
 
-## 主要なアップデート (v5.3 NEXUS)
+## 主要なアップデート (v5.3.0 NEXUS)
 
-- **Advanced AI Restructure v2**: カテゴリの再編、既存フィードの最適な再割り当て、および高品質な RSS ソースの自動発見を統合。**並列検証ロジック (`Promise.all`)** による高速化と、AI提案ソース枯渇時の **Google News RSS への自動フォールバック** を実装。さらに、Gemini の出力を厳格にクリーンアップする **Data Normalization** により、バリデーションエラーを徹底排除。
-- **AI Insights & Continuous Learning**: `Archivist` エージェントが発見したトレンドキーワードを管理・承認するための専用タブを導入。**Human-in-the-loop** 戦略に基づき、ユーザーのフィードバックによって AI のパーソナライズ精度を向上。
-- **UX Progress & Non-blocking Loading**: AI による長時間処理中に詳細な進捗を表示するモーダルに加え、AI探索中のフリーズを防ぐ**「非ブロッキング・ローディング画面」**を導入。
-- **Intelligent Multi-language Support**: 正規表現による日本語判定、優先ソート、および「JA Only」フィルタを実装。国内外の情報を効率的に消化可能。
-- **Setup Guard**: `localStorage` を活用した初回起動検知と、既存設定の上書き防止プロセスによるデータ保護。
-- **Gemini Model Optimization**: 実行直前の **API Key 即時同期** と、AIの「絞り出し」パニックを防ぐ **Schema Resilience (`minItems: 1`)** を導入。タスクの複雑さに応じて Flash と Pro を最適に使い分け。
-- **Strict 10-Category Limit**: AI 出力のカテゴリ数を正確に10個に固定する制約を強化し、UI の一貫性を向上。
+- **Advanced AI Restructure v2**: カテゴリの再編、既存フィードの最適な再割り当て、および高品質な RSS ソースの自動発見を統合。
+- **Category Name Normalization**: AI の生成するカテゴリ名の揺れ（記号や空白）を正規化し、購読フィードが消失する問題を物理的に解決。
+- **Data Retention Recovery**: AI が返し忘れたブランドやキーワードを自動検知し、既存データから強制復元する保護機能を実装。
+- **Parallel Verification Logic (`Promise.all`)**: 検証プロセスの高速化。
+- **Google News RSS Fallback**: 提案ソース枯渇時の自動補完。
+- **AI Insights & Continuous Learning**: `Archivist` エージェントが発見したトレンドキーワードを管理・承認するための専用タブを導入。
+- **UX Progress & Non-blocking Loading**: AI による長時間処理中の詳細表示と非ブロッキング・モード。
+- **Intelligent Multi-language Support**: 正規表現による日本語判定、優先ソート、および「JA Only」フィルタを実装。
+- **Setup Guard**: 初回起動検知と、既存設定の上書き防止プロセスによるデータ保護。
+- **Gemini Model Optimization**: 実行直前の API Key 即時同期と Schema Resilience (`minItems: 1`) を導入。
+
 
 ## 主要なアップデート (v5.2 NEXUS)
 

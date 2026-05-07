@@ -1,11 +1,12 @@
 # Backend Architecture Codemap
 
 **Last Updated:** 2026-05-06
-**Version:** v5.3 NEXUS
+**Version:** v5.3.0 NEXUS
 **Entry Point:** `electron/main.cjs` (App/Main Process)
 
 ## 概要
 バックエンドは、従来の独立した `server/` 構成を廃止し、**`src` 配下へ完全に統合**されました。これにより、Electron アプリケーション内で Fastify サーバーが内蔵される形式となり、単一のプロジェクト管理が可能になりました。
+v5.3.0 では、AI 再構築におけるデータの不整合を解消するための堅牢化ロジックが導入されました。
 
 ## システム・アーキテクチャ
 
@@ -16,17 +17,24 @@
 - **API エンドポイント**: `/api/v5/` プレフィックス配下で、記事取得、設定同期、エージェント実行等の機能を提供。
 - **単一リポジトリ**: 全ての依存関係が `package.json` で管理されます。
 
-### 2. Windows 11 Native Glass (Acrylic)
+### 2. AI 再構築の整合性戦略 (Consistency Strategy)
+`GeminiService.getRestructureProposal` において、AI の不確実性を吸収する以下のロジックが実装されています：
+- **normalizeCategoryName**: カテゴリ名の比較時に、`＆`, `&`, `・`, 空白, 大文字小文字を無視する。これにより、AI が微妙に異なる名前でカテゴリを返しても、既存のフィード設定と正しく紐付けられます。
+- **データ完全保持リカバリー**: AI が既存のブランドやキーワードをリストから漏らした場合、実行前のデータを元に自動復元します。
+- **並列検証 (`Promise.all`)**: 発見された各フィードの到達可能性を並列で検証し、タイムアウトを回避します。
+- **Google News フォールバック**: 適切なソースがないカテゴリに対し、最適化されたクエリの Google News RSS を自動設定します。
+
+### 3. Windows 11 Native Glass (Acrylic)
 Electron メインプロセス (`electron/main.cjs`) では、Windows 11 の **Acrylic** 効果を有効化しています：
 - `backgroundMaterial: 'acrylic'`: ウィンドウ背面にシステムレベルの半透明効果を適用。
 - `transparent: false`: **FancyZones (スナップ機能)** への対応のため、不透明ウィンドウとして設定しつつ、Acrylic 素材で透過を表現。
 
-### 3. RSS フィード・ライフサイクル管理
+### 4. RSS フィード・ライフサイクル管理
 - **RSSFetcher.validateFeed**: フィードの有効性をパースレベルで検証する機能。
 - **自動故障検知と代替昇格**: 連続失敗したフィードを検知し、プール内の有効なフィードへと自動的に差し替える仕組みを `FeedManager` に実装。昇格前には必ずヘルスチェックが行われます。
 - **バリデーション・ガードレール**: `addFeed` および `syncSettings` 時の強制バリデーションにより、無効なフィードの登録を阻止。
 
-### 4. 多言語判定ロジック (Multilingual Detection)
+### 5. 多言語判定ロジック (Multilingual Detection)
 `ScraperFacade._detectLanguage` において、以下のロジックに基づき記事の言語を分類：
 - **判定手法**: 正規表現 `/[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/` を使用。
 - **対象**: 記事のタイトルとスニペット（要約）。
@@ -58,13 +66,13 @@ Electron メインプロセス (`electron/main.cjs`) では、Windows 11 の **A
 
 ## コア・サービス構成
 
-| サービス名 | 役割 | v5.3 における進化 |
+| サービス名 | 役割 | v5.3.0 における進化 |
 | :--- | :--- | :--- |
 | `ScraperFacade` | ワークフロー統合 | **正規表現による多言語判定 (`ja`/`en`)**、スコアリング、および AI 推論の統括。 |
-| `Fastify Server` | API ホスティング | Electron 内蔵型への統合。単一プロジェクトとして動作。 |
+| `Fastify Server` | API ホスティング | Electron 内蔵型への統合。単一プロジェクトとして動作. |
 | `RSSFetcher` | フィード取得 | **疎通確認 (validateFeed)** 機能の追加。 |
 | `FeedManager` | フィード構成管理 | **自動ヘルスチェック付きフィード昇格**の実装。 |
-| `GeminiService` | AI 推論 | **AI Restructure v2**。並列検証 (`Promise.all`)、**Google News フォールバック**、および Zod エラーを防ぐ **Data Normalization** を実装。 |
+| `GeminiService` | AI 推論 | **AI Restructure v2**。並列検証 (`Promise.all`)、**Google News フォールバック**、**カテゴリ名正規化 (normalizeCategoryName)**、および Zod エラーを防ぐ **Data Normalization** を実装。 |
 | `ArchivistAgent` | 自律学習 | 収集記事からトレンドを抽出し、`learned_keywords` としてバッファへ蓄積。**AI Insights** のバックエンドエンジン。 |
 | `DiscoveryService` | ソース探索 | **`Promise.all` による全カテゴリーの並列フィード検証**を導入し、探索のタイムアウトを防止。 |
 | `EnrichmentService` | 記事加工 | 並列スクレイピングによる画像補完。 |
@@ -72,4 +80,3 @@ Electron メインプロセス (`electron/main.cjs`) では、Windows 11 の **A
 
 ## 配布とビルド (electron-builder)
 - **プロダクション・パス**: 全てのデータは `%APPDATA%/aegis-nexus/` 配下に保存。
-

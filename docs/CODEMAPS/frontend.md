@@ -1,11 +1,12 @@
 # Frontend UI Codemap
 
 **Last Updated:** 2026-05-06
-**Version:** 5.3 NEXUS
+**Version:** v5.3.0 NEXUS
 **Entry Point:** `src/main.tsx`
 
 ## 概要
-Aegis AI Hub v5.3 NEXUS のフロントエンドは、Windows 11 の **Acrylic Glassmorphism** を採用しています。デスクトップと調和しつつ、実用的な視認性と操作性を両立させた次世代の UI を提供します。
+Aegis AI Hub v5.3.0 NEXUS のフロントエンドは、Windows 11 の **Acrylic Glassmorphism** を採用しています。
+デスクトップと調和しつつ、実用的な視認性と操作性を両立させた次世代の UI を提供します。
 
 ## ビジュアル・アーキテクチャ
 
