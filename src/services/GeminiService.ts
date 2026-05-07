@@ -250,8 +250,8 @@ export class GeminiService {
             properties: {
               name: { type: SchemaType.STRING, description: "新しいカテゴリ名" },
               emoji: { type: SchemaType.STRING, description: "カテゴリにふさわしい絵文字" },
-              brands: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: "既存から整理された主要ブランド" },
-              keywords: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: "既存から整理された重要キーワード" },
+              brands: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: "既存のブランド全て + AIによる新規提案5つ" },
+              keywords: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: "既存のキーワード全て + AIによる新規提案5つ" },
               score: { type: SchemaType.NUMBER, description: "重要度（0-10）" },
               reason: { type: SchemaType.STRING, description: "この分類の理由" }
             },
@@ -291,22 +291,33 @@ export class GeminiService {
       data.active.map((url: string) => ({ url, oldCategory: cat }))
     );
 
+    const allExistingBrands = [...new Set(Object.values(interests.categories).flatMap(c => c.brands))];
+    const allExistingKeywords = [...new Set(Object.values(interests.categories).flatMap(c => c.keywords))];
+
     const prompt = `
 あなたはインテリジェンス・アーキテクトです。
 ユーザーのニュース収集環境を根本から再構築し、情報を【正確に10個の洗練されたカテゴリ】に整理してください。
 
 **ミッション:**
-1. **カテゴリの統合と洗練**: 既存のカテゴリ、ブランド、キーワードを分析し、重複をマージして、モダンで包括的な10個のカテゴリに再編してください。
-2. **既存フィードの移設**: ユーザーが現在購読しているフィード（以下にリスト）を、新しい10カテゴリのいずれかに最適に割り当て直してください。
-3. **新規ソースの注入**: 各新しいカテゴリに対して、情報の質を高めるための高品質なRSS/Atomフィードを2〜3個ずつ新しく提案してください。
+1. **カテゴリーの再生成**: 既存の興味関心を分析し、モダンで包括的な10個の新しいカテゴリーを生成してください。
+2. **既存データの完全保持と自動割り当て**: 以下の【既存データ】にある全てのブランドとキーワードを、重複を除いて、新しい10カテゴリーのいずれかに最適に割り当ててください。**一つも削除してはいけません。**
+3. **AIによる拡張（SUGGEST機能）**: 割り当て後、各カテゴリーの専門性を高めるために、新しいブランドとキーワードをそれぞれ5個ずつ新規に提案して追加してください。
+4. **既存フィードの移設**: ユーザーが現在購読しているフィードを、新しい10カテゴリーのいずれかに最適に割り当て直してください。
+5. **新規ソースの注入**: 各カテゴリーに対して、情報の質を高めるための高品質なRSS/Atomフィードを2〜3個ずつ新しく提案してください。
 
 **重要ルール:**
-- 出力カテゴリ数は【必ず正確に10個】。
-- 既存のブランドとキーワードは、新しいカテゴリに漏れなく分配してください。
-- **【網羅性の保証】: 各カテゴリに対して必ず新規ソースを提案してください。適切な日本語ソースがない場合は、TechCrunch, wired.com, BBC, Reuters などの世界的権威の英語ソースや、ITmedia, ギズモード等の大手総合メディアの関連カテゴリフィードを必ず割り当ててください。0件の提案は認められません。**
-- 提案する新規URLは、必ずRSS/Atomフィードの直接のURLであること。
+- 出力カテゴリー数は【必ず正確に10個】。
+- **既存のブランドとキーワードは絶対に変更・削除せず、必ず新カテゴリーのいずれかに含めてください。**
+- 新規提案のブランド/キーワードは、既存のものとは別に新しく「絞り出して」追加してください。
+- **【網羅性の保証】: 各カテゴリーに対して必ず新規ソースを提案してください。適切な日本語ソースがない場合は、世界的権威の英語ソースや、国内大手メディアの関連フィードを必ず割り当ててください。0件の提案は認められません。**
 
-**現在の興味設定:**
+**【既存データ: ブランド】**
+${allExistingBrands.join(', ')}
+
+**【既存データ: キーワード】**
+${allExistingKeywords.join(', ')}
+
+**現在のカテゴリー構成:**
 ${JSON.stringify(interests.categories, null, 2)}
 
 **現在の購読フィード:**
@@ -323,19 +334,41 @@ ${JSON.stringify(allExistingUrls, null, 2)}
     const categories: Record<string, InterestCategory> = {};
     const feedConfig: FeedConfig = {};
 
-    // 1. カテゴリの初期化
+    // 1. カテゴリの初期化とAI結果の反映
     result.categories.forEach(cat => {
       categories[cat.name] = {
         emoji: cat.emoji || '🌐',
-        brands: Array.isArray(cat.brands) ? cat.brands.slice(0, 10) : [],
-        keywords: Array.isArray(cat.keywords) ? cat.keywords.slice(0, 15) : [],
+        brands: Array.isArray(cat.brands) ? [...new Set((cat.brands as any[]).map(String))] : [],
+        keywords: Array.isArray(cat.keywords) ? [...new Set((cat.keywords as any[]).map(String))] : [],
         score: typeof cat.score === 'number' ? cat.score : 5,
         reason: cat.reason || ''
       };
       feedConfig[cat.name] = { active: [], pool: [], failures: {} };
     });
 
-    // 2. 既存フィードのマッピング反映
+    // 2. データ完全保持リカバリーロジック (AIの取りこぼし防止)
+    const categoryNames = Object.keys(categories);
+    const firstCategory = categoryNames[0];
+
+    if (categoryNames.length > 0) {
+      const returnedBrands = new Set(Object.values(categories).flatMap(c => c.brands));
+      allExistingBrands.forEach(b => {
+        if (!returnedBrands.has(b)) {
+          // AIが返し忘れたブランドを先頭のカテゴリー（または適切な場所）に強制復元
+          categories[firstCategory].brands.push(b);
+        }
+      });
+
+      const returnedKeywords = new Set(Object.values(categories).flatMap(c => c.keywords));
+      allExistingKeywords.forEach(k => {
+        if (!returnedKeywords.has(k)) {
+          // AIが返し忘れたキーワードを先頭のカテゴリーに強制復元
+          categories[firstCategory].keywords.push(k);
+        }
+      });
+    }
+
+    // 3. 既存フィードのマッピング反映
     result.feedMapping.forEach(m => {
       if (feedConfig[m.newCategory]) {
         // 有効なURLのみ追加 (Zodバリデーション落ちを防ぐ)
