@@ -61722,8 +61722,21 @@ var init_SettingsManager = __esm({
       }
       async syncSettings({ interests, feedConfig, windowState, lastUpdated }, fetcher) {
         const validatedInterests = InterestsSchema.parse(interests);
-        const validatedFeedConfig = FeedConfigSchema.parse(feedConfig);
+        let validatedFeedConfig = FeedConfigSchema.parse(feedConfig);
         const validatedWindowState = windowState ? WindowStateSchema.parse(windowState) : void 0;
+        const normalizedFeedConfig = {};
+        const interestCats = Object.keys(validatedInterests.categories);
+        const clean = (s) => s.replace(/[＆&＆\s・]/g, "").toLowerCase();
+        for (const [feedCatName, data2] of Object.entries(validatedFeedConfig)) {
+          let finalName = interestCats.find((c) => c === feedCatName);
+          if (!finalName) {
+            const targetClean = clean(feedCatName);
+            finalName = interestCats.find((c) => clean(c) === targetClean);
+          }
+          const keyToUse = finalName || feedCatName;
+          normalizedFeedConfig[keyToUse] = data2;
+        }
+        validatedFeedConfig = normalizedFeedConfig;
         const currentInterests = await this.getInterests();
         const serverLastUpdated = currentInterests.lastUpdated || 0;
         if (lastUpdated && lastUpdated < serverLastUpdated) {
@@ -131731,6 +131744,13 @@ var init_ScoringService = __esm({
         ];
       }
       /**
+       * カテゴリ名の表記揺れ（全角・半角、記号、空白）を吸収するための正規化。
+       * @private
+       */
+      _normalizeName(name) {
+        return name.replace(/[＆&＆\s・]/g, "").toLowerCase();
+      }
+      /**
        * 記事のタイトルと要約から、最も関連性の高い内部カテゴリを推論します。
        * @param title - 記事タイトル
        * @param desc - 記事要約
@@ -131741,6 +131761,10 @@ var init_ScoringService = __esm({
         const text3 = `${title} ${desc}`.toLowerCase();
         for (const [catName, keywords] of Object.entries(this.categoryKeywords)) {
           if (keywords.some((k) => text3.includes(k))) return catName;
+        }
+        const normalizedOriginal = this._normalizeName(originalCategory);
+        for (const catName of Object.keys(this.interests.categories)) {
+          if (this._normalizeName(catName) === normalizedOriginal) return catName;
         }
         return originalCategory;
       }
@@ -132079,6 +132103,7 @@ var init_ScraperFacade = __esm({
        * 
        * 意図: 全てのカテゴリにおける高品質な最新記事を収集し、
        * ユーザーが一目で全体像を把握できるパーソナライズされた画面データを提供するためです。
+       * 記事が0件になるのを防ぐため、多段階のフォールバックロジックを搭載しています。
        * 
        * @param interests - ユーザーの興味データ
        * @returns カテゴリ別に分類された記事データ
@@ -132086,23 +132111,28 @@ var init_ScraperFacade = __esm({
       async getDashboard(interests) {
         console.log(`[ScraperFacade] \u30D1\u30FC\u30BD\u30CA\u30E9\u30A4\u30BA\u30C9\u30FB\u30C0\u30C3\u30B7\u30E5\u30DC\u30FC\u30C9\u3092\u69CB\u7BC9\u4E2D...`);
         await this.enrichmentService.init();
-        const allArticles = await this.fetchAndProcessArticles(interests);
-        const topArticles = this._sortAndSlice(allArticles, 50);
-        await this.enrichmentService.enrichAll(topArticles);
+        const articlesNormal = await this.fetchAndProcessArticles(interests, false);
+        let articlesExtended = null;
         const dashboard = {};
-        for (const catName in interests.categories) {
+        const categories = Object.keys(interests.categories);
+        for (const catName of categories) {
+          let filtered = articlesNormal.filter((a) => a.category === catName && a.language === "ja");
+          if (filtered.length === 0) {
+            filtered = articlesNormal.filter((a) => a.category === catName);
+          }
+          if (filtered.length === 0) {
+            if (!articlesExtended) {
+              console.log(`[ScraperFacade] \u30AB\u30C6\u30B4\u30EA "${catName}" \u306E\u6700\u65B0\u8A18\u4E8B\u304C0\u4EF6\u306E\u305F\u3081\u3001\u671F\u9593\u5236\u9650\u3092\u89E3\u9664\u3057\u3066\u518D\u63A2\u7D22\u3057\u307E\u3059...`);
+              articlesExtended = await this.fetchAndProcessArticles(interests, true);
+            }
+            filtered = articlesExtended.filter((a) => a.category === catName);
+          }
+          const topArticles = this._sortAndSlice(filtered, 50);
+          await this.enrichmentService.enrichAll(topArticles);
           dashboard[catName] = {
             emoji: interests.categories[catName].emoji || null,
-            articles: []
+            articles: topArticles.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 15).map((a) => a.toJSON())
           };
-        }
-        topArticles.forEach((a) => {
-          if (dashboard[a.category]) {
-            dashboard[a.category].articles.push(a.toJSON());
-          }
-        });
-        for (const catName in dashboard) {
-          dashboard[catName].articles = dashboard[catName].articles.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 15);
         }
         return dashboard;
       }
@@ -132116,9 +132146,10 @@ var init_ScraperFacade = __esm({
       /**
        * 各フィードから記事を並列取得し、パース・カテゴリ判定・スコアリングを行うコアロジック。
        * @param interests - ユーザーの興味データ
-       * @returns 正規化された記事オブジェクトの配列
+       * @param ignoreDateLimit - 90日の期間制限を無視するかどうか
+       * @returns 正規化された記事オブジェクト의配列
        */
-      async fetchAndProcessArticles(interests) {
+      async fetchAndProcessArticles(interests, ignoreDateLimit = false) {
         const scorer = new ScoringService(interests);
         const feeds = this.feedManager.getAllActiveFeeds();
         const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1e3);
@@ -132134,7 +132165,7 @@ var init_ScraperFacade = __esm({
             for (const item of res.items) {
               const record2 = item;
               const pubDate = new Date(String(record2.isoDate || record2.pubDate || ""));
-              if (pubDate < ninetyDaysAgo) continue;
+              if (!ignoreDateLimit && pubDate < ninetyDaysAgo) continue;
               const title = String(record2.title || "");
               const snippet = String(record2.contentSnippet || record2.description || "");
               const detectedCat = scorer.detectCategory(title, snippet, res.category);

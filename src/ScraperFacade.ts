@@ -79,6 +79,7 @@ export class ScraperFacade {
      * 
      * 意図: 全てのカテゴリにおける高品質な最新記事を収集し、
      * ユーザーが一目で全体像を把握できるパーソナライズされた画面データを提供するためです。
+     * 記事が0件になるのを防ぐため、多段階のフォールバックロジックを搭載しています。
      * 
      * @param interests - ユーザーの興味データ
      * @returns カテゴリ別に分類された記事データ
@@ -86,31 +87,48 @@ export class ScraperFacade {
     async getDashboard(interests: Interests): Promise<Record<string, any>> {
         console.log(`[ScraperFacade] パーソナライズド・ダッシュボードを構築中...`);
         await this.enrichmentService.init(); // キャッシュの初期化
-        const allArticles = await this.fetchAndProcessArticles(interests);
-
-        // スコアと鮮度のバランスが良い上位50件を詳細エンリッチメントの対象とする
-        const topArticles = this._sortAndSlice(allArticles, 50);
-        await this.enrichmentService.enrichAll(topArticles as any[]);
+        
+        // 1. 通常取得 (90日制限あり)
+        const articlesNormal = await this.fetchAndProcessArticles(interests, false);
+        
+        // 2. 期間制限なし取得 (フォールバック用。全カテゴリが空の場合のみ使用するのではなく、カテゴリごとに判断)
+        // パフォーマンスのため、一旦 normal で全カテゴリ埋まるか確認し、空がある場合のみ再取得する
+        let articlesExtended: Article[] | null = null;
 
         const dashboard: Record<string, any> = {};
-        for (const catName in interests.categories) {
+        const categories = Object.keys(interests.categories);
+
+        for (const catName of categories) {
+            // --- 多段階フォールバックロジック (カテゴリ単位) ---
+            
+            // Phase 1: 日本語 かつ 90日以内
+            let filtered = articlesNormal.filter(a => a.category === catName && a.language === 'ja');
+            
+            // Phase 2: 全言語 かつ 90日以内
+            if (filtered.length === 0) {
+                filtered = articlesNormal.filter(a => a.category === catName);
+            }
+
+            // Phase 3: 全言語 かつ 期間制限なし
+            if (filtered.length === 0) {
+                if (!articlesExtended) {
+                    console.log(`[ScraperFacade] カテゴリ "${catName}" の最新記事が0件のため、期間制限を解除して再探索します...`);
+                    articlesExtended = await this.fetchAndProcessArticles(interests, true);
+                }
+                filtered = articlesExtended.filter(a => a.category === catName);
+            }
+            
+            // スコアと鮮度のバランスが良い上位50件を詳細エンリッチメントの対象とする
+            const topArticles = this._sortAndSlice(filtered, 50);
+            await this.enrichmentService.enrichAll(topArticles);
+
             dashboard[catName] = {
                 emoji: interests.categories[catName].emoji || null,
-                articles: []
+                articles: topArticles
+                    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                    .slice(0, 15)
+                    .map(a => a.toJSON())
             };
-        }
-
-        topArticles.forEach(a => {
-            if (dashboard[a.category]) {
-                dashboard[a.category].articles.push(a.toJSON());
-            }
-        });
-
-        // 各カテゴリ内を最終的に新着順で整列し、表示枠（15件）に最適化
-        for (const catName in dashboard) {
-            dashboard[catName].articles = (dashboard[catName].articles as any[])
-                .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                .slice(0, 15);
         }
 
         return dashboard;
@@ -129,9 +147,10 @@ export class ScraperFacade {
     /**
      * 各フィードから記事を並列取得し、パース・カテゴリ判定・スコアリングを行うコアロジック。
      * @param interests - ユーザーの興味データ
-     * @returns 正規化された記事オブジェクトの配列
+     * @param ignoreDateLimit - 90日の期間制限を無視するかどうか
+     * @returns 正規化された記事オブジェクト의配列
      */
-    async fetchAndProcessArticles(interests: Interests): Promise<Article[]> {
+    async fetchAndProcessArticles(interests: Interests, ignoreDateLimit: boolean = false): Promise<Article[]> {
         const scorer = new ScoringService(interests);
         const feeds = this.feedManager.getAllActiveFeeds();
         const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
@@ -148,10 +167,11 @@ export class ScraperFacade {
 
             if (res.items) {
                 for (const item of res.items) {
-                    // 90日以上前の古い記事はノイズとして除外
                     const record = item as Record<string, unknown>;
                     const pubDate = new Date(String(record.isoDate || record.pubDate || ''));
-                    if (pubDate < ninetyDaysAgo) continue;
+                    
+                    // 90日以上前の古い記事は原則として除外（フォールバック時以外）
+                    if (!ignoreDateLimit && pubDate < ninetyDaysAgo) continue;
 
                     const title = String(record.title || '');
                     const snippet = String(record.contentSnippet || record.description || '');

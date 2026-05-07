@@ -80,8 +80,31 @@ export class SettingsManager {
     fetcher?: { validateFeed: (url: string) => Promise<{ ok: boolean; status: string | number }> }
   ): Promise<{ success: boolean; timestamp: string; lastUpdated: number; validatedInterests: Interests; validatedFeedConfig: FeedConfig }> {
     const validatedInterests = InterestsSchema.parse(interests);
-    const validatedFeedConfig = FeedConfigSchema.parse(feedConfig);
+    let validatedFeedConfig = FeedConfigSchema.parse(feedConfig);
     const validatedWindowState = windowState ? WindowStateSchema.parse(windowState) : undefined;
+
+    // --- カテゴリ名整合性強制ロジック (表記揺れの自動修復) ---
+    // 意図: AIや手動編集で生じた「＆ vs &」などの微細な差異による、記事消失（紐付け失敗）を物理的に排除します。
+    const normalizedFeedConfig: FeedConfig = {};
+    const interestCats = Object.keys(validatedInterests.categories);
+    
+    const clean = (s: string) => s.replace(/[＆&＆\s・]/g, '').toLowerCase();
+
+    for (const [feedCatName, data] of Object.entries(validatedFeedConfig)) {
+      // 1. interests 側で完全一致するカテゴリを探す
+      let finalName = interestCats.find(c => c === feedCatName);
+      
+      // 2. 見つからない場合、正規化して探す
+      if (!finalName) {
+        const targetClean = clean(feedCatName);
+        finalName = interestCats.find(c => clean(c) === targetClean);
+      }
+
+      // 3. どちらにせよ、interests に存在する名称を優先（存在しない場合はそのまま保持）
+      const keyToUse = finalName || feedCatName;
+      normalizedFeedConfig[keyToUse] = data;
+    }
+    validatedFeedConfig = normalizedFeedConfig;
 
     // Conflict Resolution
     const currentInterests = await this.getInterests();
