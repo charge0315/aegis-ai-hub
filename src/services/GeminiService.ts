@@ -368,26 +368,45 @@ ${JSON.stringify(allExistingUrls, null, 2)}
       });
     }
 
-    // 3. 既存フィードのマッピング反映
+    // 3. カテゴリ名整合性チェック・正規化ロジック (AIの名称揺れ対策)
+    const normalizeCategoryName = (name: string): string => {
+      if (categories[name]) return name;
+      
+      // 完全一致しない場合、記号や空白を無視して再検索
+      const clean = (s: string) => s.replace(/[＆&＆\s・]/g, '').toLowerCase();
+      const targetClean = clean(name);
+      
+      for (const catName of Object.keys(categories)) {
+        if (clean(catName) === targetClean) return catName;
+      }
+
+      // それでも見つからない場合は、最も名前が似ているもの、あるいは先頭のカテゴリを返す
+      console.warn(`[GeminiService] AI returned unknown category "${name}". Mapping to "${Object.keys(categories)[0]}"`);
+      return Object.keys(categories)[0];
+    };
+
+    // 4. 既存フィードのマッピング反映
     result.feedMapping.forEach(m => {
-      if (feedConfig[m.newCategory]) {
+      const normalizedCat = normalizeCategoryName(m.newCategory);
+      if (feedConfig[normalizedCat]) {
         // 有効なURLのみ追加 (Zodバリデーション落ちを防ぐ)
         if (this._isValidUrl(m.url)) {
-          feedConfig[m.newCategory].active.push(m.url);
+          feedConfig[normalizedCat].active.push(m.url);
         }
       }
     });
 
-    // 3. 新規提案フィードの追加
+    // 5. 新規提案フィードの追加
     result.newSuggestedFeeds.forEach(s => {
-      if (feedConfig[s.category]) {
-        if (this._isValidUrl(s.url) && !feedConfig[s.category].active.includes(s.url)) {
-          feedConfig[s.category].active.push(s.url);
+      const normalizedCat = normalizeCategoryName(s.category);
+      if (feedConfig[normalizedCat]) {
+        if (this._isValidUrl(s.url) && !feedConfig[normalizedCat].active.includes(s.url)) {
+          feedConfig[normalizedCat].active.push(s.url);
         }
       }
     });
 
-    // 4. 【網羅性の最終ガード】各カテゴリに少なくとも1つのフィードを保証
+    // 6. 【網羅性の最終ガード】各カテゴリに少なくとも1つのフィードを保証
     Object.keys(categories).forEach(catName => {
       if (feedConfig[catName].active.length === 0) {
         console.log(`[GeminiService] カテゴリ "${catName}" のフィードが空のため、Google News RSS をフォールバックとして設定します。`);

@@ -63184,17 +63184,29 @@ ${JSON.stringify(allExistingUrls, null, 2)}
             }
           });
         }
+        const normalizeCategoryName = (name) => {
+          if (categories[name]) return name;
+          const clean = (s) => s.replace(/[＆&＆\s・]/g, "").toLowerCase();
+          const targetClean = clean(name);
+          for (const catName of Object.keys(categories)) {
+            if (clean(catName) === targetClean) return catName;
+          }
+          console.warn(`[GeminiService] AI returned unknown category "${name}". Mapping to "${Object.keys(categories)[0]}"`);
+          return Object.keys(categories)[0];
+        };
         result.feedMapping.forEach((m) => {
-          if (feedConfig[m.newCategory]) {
+          const normalizedCat = normalizeCategoryName(m.newCategory);
+          if (feedConfig[normalizedCat]) {
             if (this._isValidUrl(m.url)) {
-              feedConfig[m.newCategory].active.push(m.url);
+              feedConfig[normalizedCat].active.push(m.url);
             }
           }
         });
         result.newSuggestedFeeds.forEach((s) => {
-          if (feedConfig[s.category]) {
-            if (this._isValidUrl(s.url) && !feedConfig[s.category].active.includes(s.url)) {
-              feedConfig[s.category].active.push(s.url);
+          const normalizedCat = normalizeCategoryName(s.category);
+          if (feedConfig[normalizedCat]) {
+            if (this._isValidUrl(s.url) && !feedConfig[normalizedCat].active.includes(s.url)) {
+              feedConfig[normalizedCat].active.push(s.url);
             }
           }
         });
