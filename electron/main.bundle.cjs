@@ -62875,8 +62875,8 @@ var init_GeminiService = __esm({
     init_dist();
     GeminiService = class {
       genAI;
-      primaryModelName = "gemini-3.1-flash-preview";
-      highReasoningModelName = "gemini-3.1-pro-preview";
+      primaryModelName = "gemini-3.1-flash";
+      highReasoningModelName = "gemini-3.1-pro";
       /**
        * @param {string} apiKey - Google Gemini APIキー
        */
@@ -62926,9 +62926,9 @@ var init_GeminiService = __esm({
             console.warn(`[GeminiService] ${modelName} failed. Falling back to primary model: ${this.primaryModelName}`);
             return this.generateStructured(prompt, schema, this.primaryModelName);
           }
-          if (modelName === this.primaryModelName && !errorMessage.includes("1.5-flash")) {
-            console.warn(`[GeminiService] ${modelName} failed. Falling back to ultra-stable model: gemini-1.5-flash`);
-            return this.generateStructured(prompt, schema, "gemini-1.5-flash");
+          if (modelName === this.primaryModelName && !errorMessage.includes("2.5-flash")) {
+            console.warn(`[GeminiService] ${modelName} failed. Falling back to GA stable model: gemini-2.5-flash`);
+            return this.generateStructured(prompt, schema, "gemini-2.5-flash");
           }
           throw new Error(`Gemini API execution failed after multiple retries. Last error: ${errorMessage}`);
         }
