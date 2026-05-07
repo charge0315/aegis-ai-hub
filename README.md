@@ -24,8 +24,19 @@ AIエージェントが収集したトレンドをユーザーが管理できる
 - **Parallel RSS Validation**: フィードの有効性確認を `Promise.all` による並列処理で行うことで、ディスカバリー時間を大幅に短縮。
 - **Non-blocking Loading**: AI探索中のフリーズを防ぐため、ボタンのない専用の「非ブロッキング・ローディング画面」を実装。処理の進行状況を安全に伝えます。
 
+### 4. 多言語サポート & インテリジェント・フィルタリング
+グローバルな情報収集と国内情報の視認性を両立。
+- **Language Detection**: `ScraperFacade` 内で記事のタイトルと要約を解析。正規表現 `/[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/` を用いて、ひらがな・カタカナ・漢字が含まれている場合に日本語 (`ja`) と自動判定します。
+- **Japanese Priority**: 日本語の記事を最優先でリストの前方に配置するソートアルゴリズムを `App.tsx` の `filteredArticles` に実装。重要な国内ニュースの読み飛ばしを物理的に防止します。
+- **JA Only Mode**: ヘッダーの「JA Only」トグルボタン（`isJapaneseOnly` ステート）により、日本語の記事のみに絞り込んだクリーンなフィードに瞬時に切り替え可能です。
 
-### 5. Dynamic Skill Registry
+### 5. 初回起動時の安全なセットアップ (Setup Guard)
+ユーザーの既存データを保護しつつ、スムーズな導入を支援。
+- **Setup Detection**: `localStorage` の `nexus_initialized` フラグを使用して初回起動を検知します。
+- **Overwrite Protection**: 初回起動かつ既に `interests.json` にブランドやキーワードの設定が存在する場合、上書き確認ダイアログ（`dialogConfirm`）を表示。不用意なリセットによるユーザー資産の消失を防ぐデータ保護レイヤーとして機能します。
+- **Flexible Choice**: デフォルトプロファイルを適用してクイックに開始するか、苦労して構築した既存のカスタマイズを保持するかをユーザーが選択可能です。
+
+### 6. Dynamic Skill Registry
 AIエージェントの機能を動的に拡張。
 - **Custom Skill Addition**: 新しいスキルをUIから直接定義・登録可能。
 - **Granular Control**: ツール、アクション、ロジックといったスキル種別ごとに、オーケストレーターの動作を拡張。

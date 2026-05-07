@@ -108,7 +108,7 @@ export const CustomDialog: React.FC<CustomDialogProps> = ({
                     onClick={() => onConfirm(type === 'prompt' ? inputValue : undefined)}
                     className="flex-2 px-8 py-3 rounded-xl text-sm font-bold bg-primary text-white shadow-lg shadow-primary/20 hover:shadow-primary/40 active:scale-95 transition-all"
                   >
-                    {type === 'confirm' ? 'Confirm' : 'Continue'}
+                    {(type === 'confirm' || type === 'warning') ? 'Confirm' : 'Continue'}
                   </button>
                 </div>
               )}
@@ -119,4 +119,5 @@ export const CustomDialog: React.FC<CustomDialogProps> = ({
     </AnimatePresence>
   );
 };
+
 

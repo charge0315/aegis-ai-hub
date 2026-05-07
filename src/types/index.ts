@@ -8,6 +8,7 @@ export interface Article {
   date: string;
   category: string;
   geminiReason?: string;
+  language: string;
 }
 
 export interface InterestCategory {

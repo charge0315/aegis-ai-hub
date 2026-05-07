@@ -158,6 +158,7 @@ export class ScraperFacade {
                     const detectedCat = scorer.detectCategory(title, snippet, res.category);
                     const score = scorer.calculateScore(title, snippet, detectedCat);
                     const brand = scorer.extractBrand(title);
+                    const language = this._detectLanguage(title, snippet);
 
                     allArticles.push(new Article({
                         title: record.title,
@@ -167,11 +168,23 @@ export class ScraperFacade {
                         score: score,
                         category: detectedCat,
                         date: record.isoDate || record.pubDate,
-                        img: this.enrichmentService.extractBasicImage(record)
+                        img: this.enrichmentService.extractBasicImage(record),
+                        language: language
                     }));
                 }
             }
         }
         return allArticles;
+    }
+
+    /**
+     * テキスト内容から言語を簡易的に判定します。
+     * @private
+     */
+    private _detectLanguage(title: string, snippet: string): 'ja' | 'en' | 'other' {
+        const text = title + snippet;
+        // ひらがな、カタカナ、または漢字が含まれているかチェック
+        const containsJapanese = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/.test(text);
+        return containsJapanese ? 'ja' : 'en';
     }
 }

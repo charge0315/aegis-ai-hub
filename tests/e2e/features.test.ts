@@ -1,16 +1,16 @@
-import { test, expect } from '@playwright/test';
+﻿import { test, expect } from '@playwright/test';
 
-test.describe('Nexus Dashboard E2E Tests', () => {
+test.describe('New Features E2E Tests', () => {
   test('Japanese priority display and filtering', async ({ page }) => {
     // 模擬設定データを設定
     await page.route('**/api/v5/interests', async (route) => {
       await route.fulfill({
         json: {
           categories: {
-            'Test Category': {
+            "Test Category": {
               brands: [],
               keywords: [],
-              emoji: '🧪'
+              emoji: "🧪"
             }
           }
         }
@@ -20,44 +20,44 @@ test.describe('Nexus Dashboard E2E Tests', () => {
       await route.fulfill({ json: {} });
     });
 
-    // 模擬記事データを設定 (Article インターフェースに準拠)
+    // 模擬記事データを設定
     await page.route('**/api/dashboard', async (route) => {
       const mockArticles = {
-        'Test Category': {
-          emoji: '🧪',
+        "Test Category": {
+          emoji: "🧪",
           articles: [
             {
-              title: 'English Article (High Score)',
-              link: 'http://example.com/1',
-              desc: 'This is an english article with a high score',
-              brand: 'TestBrand',
-              score: 95,
-              img: null,
-              date: new Date().toISOString(),
-              category: 'Test Category',
-              language: 'en'
-            },
-            {
-              title: '日本語の記事 (優先表示対象)',
-              link: 'http://example.com/2',
-              desc: 'これは日本語の記事です。スコアが低くても優先されるはずです。',
-              brand: 'テストブランド',
-              score: 70,
-              img: null,
-              date: new Date().toISOString(),
-              category: 'Test Category',
-              language: 'ja'
-            },
-            {
-              title: 'Another English Article',
-              link: 'http://example.com/3',
-              desc: 'Another english article',
-              brand: 'TestBrand',
+              id: '1',
+              title: 'English Article 1',
+              snippet: 'This is an english article',
+              url: 'http://example.com/1',
               score: 80,
-              img: null,
-              date: new Date().toISOString(),
+              language: 'en',
               category: 'Test Category',
-              language: 'en'
+              reasoning: 'reason 1',
+              timestamp: new Date().toISOString()
+            },
+            {
+              id: '2',
+              title: '日本語の記事 1',
+              snippet: 'これは日本語の記事です',
+              url: 'http://example.com/2',
+              score: 70,
+              language: 'ja',
+              category: 'Test Category',
+              reasoning: '理由 1',
+              timestamp: new Date().toISOString()
+            },
+            {
+              id: '3',
+              title: 'English Article 2',
+              snippet: 'This is another english article',
+              url: 'http://example.com/3',
+              score: 90,
+              language: 'en',
+              category: 'Test Category',
+              reasoning: 'reason 2',
+              timestamp: new Date().toISOString()
             }
           ]
         }
@@ -71,7 +71,6 @@ test.describe('Nexus Dashboard E2E Tests', () => {
     });
 
     await page.goto('/');
-    
     // ローディング待機
     await expect(page.getByText('Intercepting Signals')).not.toBeVisible({ timeout: 30000 });
 
@@ -79,9 +78,9 @@ test.describe('Nexus Dashboard E2E Tests', () => {
     const articleCard = page.getByTestId('article-card').first();
     await expect(articleCard).toBeVisible({ timeout: 10000 });
 
-    // 日本語の記事が最初に表示されていることを確認 (言語優先ソートの検証)
+    // 日本語の記事が最初に表示されていることを確認 (App.tsx のソートロジックにより ja が優先される)
     const firstArticleTitle = articleCard.getByRole('heading');
-    await expect(firstArticleTitle).toHaveText('日本語の記事 (優先表示対象)');
+    await expect(firstArticleTitle).toHaveText('日本語の記事 1');
 
     // 「JA Only」トグルをオンにする
     const jaOnlyToggle = page.getByRole('button', { name: 'JA Only' });
@@ -89,31 +88,33 @@ test.describe('Nexus Dashboard E2E Tests', () => {
     await jaOnlyToggle.click();
 
     // 日本語以外の記事が非表示になっていることを確認
-    await expect(page.getByText('English Article (High Score)')).not.toBeVisible();
-    await expect(page.getByText('Another English Article')).not.toBeVisible();
-    await expect(page.getByText('日本語の記事 (優先表示対象)')).toBeVisible();
+    await expect(page.getByText('English Article 1')).not.toBeVisible();
+    await expect(page.getByText('English Article 2')).not.toBeVisible();
+    await expect(page.getByText('日本語の記事 1')).toBeVisible();
 
     // トグルをオフに戻すと表示されることを確認
     await jaOnlyToggle.click();
-    await expect(page.getByText('English Article (High Score)')).toBeVisible();
+    await expect(page.getByText('English Article 1')).toBeVisible();
+    await expect(page.getByText('English Article 2')).toBeVisible();
   });
 
-  test('Initial startup setup guard dialog', async ({ page }) => {
+  test('Initial startup setting overwrite confirmation', async ({ page }) => {
     // 既存の設定がある状態を模擬
     await page.route('**/api/v5/interests', async (route) => {
       await route.fulfill({
         json: {
           categories: {
-            'Existing Category': {
-              brands: ['TestBrand'],
-              keywords: ['TestKeyword'],
-              emoji: '🚀'
+            "Existing": {
+              brands: ["TestBrand"],
+              keywords: ["TestKeyword"],
+              emoji: "🚀"
             }
           }
         }
       });
     });
     
+    // 他のAPIもモック
     await page.route('**/api/v5/feeds', async (route) => {
       await route.fulfill({ json: {} });
     });

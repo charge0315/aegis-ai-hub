@@ -17,7 +17,8 @@ import {
   ImageIcon,
   ImageOff,
   LayoutGrid,
-  List as ListIcon
+  List as ListIcon,
+  Languages
 } from 'lucide-react';
 import { ArticleCard } from './components/ArticleCard';
 import { AgentMonitor } from './components/AgentMonitor';
@@ -41,6 +42,7 @@ const App: React.FC = () => {
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [feedSize, setFeedSize] = useState<'small' | 'medium' | 'large'>('medium');
   const [showImages, setShowImages] = useState(true);
+  const [isJapaneseOnly, setIsJapaneseOnly] = useState(false);
 
   // --- RESPONSIVE STATE ---
   // WindowsのFancyZonesなどで画面が分割された際、自動的にナビゲーションを
@@ -76,6 +78,32 @@ const App: React.FC = () => {
     hideDialog 
   } = useDialog();
 
+  // --- INITIAL SETUP CHECK ---
+  // インストール後、初回起動時に既存の設定（ブランド、キーワード等）がある場合に上書きするかを確認します。
+  useEffect(() => {
+    if (settings && !loading) {
+      const hasCategories = Object.keys(settings.interests.categories).length > 0;
+      const isInitialized = localStorage.getItem('nexus_initialized');
+      
+      if (!isInitialized && hasCategories) {
+        void (async () => {
+          const shouldOverwrite = await dialogConfirm(
+            '既存の設定を検出',
+            '既にブランドやキーワードの設定が存在します。これらをデフォルトのプロファイルで上書きしますか？（「いいえ」を選択すると既存の設定を保持します）',
+            'warning'
+          );
+          if (shouldOverwrite) {
+            await nexusApi.resetToDefaults();
+            void refetch();
+          }
+          localStorage.setItem('nexus_initialized', 'true');
+        })();
+      } else if (!isInitialized) {
+        localStorage.setItem('nexus_initialized', 'true');
+      }
+    }
+  }, [settings, loading, dialogConfirm, refetch]);
+
   // バックエンドの自律エージェントの活動状態を監視。
   // エージェントが新しい情報を発見（同期完了）した際、即座にUIへ反映（refetch）させます。
   const agentEvents = useAgentEvents(useCallback(() => {
@@ -83,16 +111,29 @@ const App: React.FC = () => {
   }, [refetch]));
 
   /**
-   * 検索クエリに基づくシグナル（記事）の絞り込み。
-   * 大量の記事データが流れてきても、再レンダリングコストを抑えるためにメモ化しています。
+   * 検索クエリおよび言語フィルタに基づくシグナル（記事）の絞り込みとソート。
+   * 日本語記事を優先的に前に表示し、トグルが有効な場合は日本語のみを表示します。
    */
   const filteredArticles = useMemo(() => {
     const query = searchQuery.toLowerCase();
-    return articles.filter(article => 
-      article.title.toLowerCase().includes(query) ||
-      article.category.toLowerCase().includes(query)
-    );
-  }, [articles, searchQuery]);
+    return articles
+      .filter(article => {
+        // 検索クエリによる絞り込み
+        const matchQuery = article.title.toLowerCase().includes(query) ||
+                           article.category.toLowerCase().includes(query);
+        
+        // 言語フィルタによる絞り込み
+        const matchLang = isJapaneseOnly ? article.language === 'ja' : true;
+        
+        return matchQuery && matchLang;
+      })
+      .sort((a, b) => {
+        // 日本語記事を優先表示 (aがjaでbがjaでないならaを前に)
+        if (a.language === 'ja' && b.language !== 'ja') return -1;
+        if (a.language !== 'ja' && b.language === 'ja') return 1;
+        return 0; // スコアソート等は ScraperFacade 側で既に行われている
+      });
+  }, [articles, searchQuery, isJapaneseOnly]);
 
   /**
    * ユーザーの「興味（Interests）」カテゴリに基づいて記事をグループ化。
@@ -266,6 +307,16 @@ const App: React.FC = () => {
                       <LayoutDashboard size={14} />
                     </button>
                   </div>
+
+                  <button 
+                    onClick={() => setIsJapaneseOnly(prev => !prev)} 
+                    className={`p-1.5 rounded-lg border transition-all flex items-center gap-1.5 px-2.5 ${isJapaneseOnly ? 'bg-primary/20 border-primary/30 text-primary' : 'bg-white/5 border-white/10 text-slate-400 hover:text-slate-200'}`}
+                    title={isJapaneseOnly ? "Showing Japanese Only" : "Showing All Languages"}
+                  >
+                    <Languages size={16} />
+                    <span className="text-[10px] font-bold uppercase tracking-tighter">JA Only</span>
+                  </button>
+
                   <button 
                     onClick={() => setShowImages(!showImages)} 
                     className={`p-1.5 rounded-lg border transition-all ${showImages ? 'bg-primary/20 border-primary/30 text-primary' : 'bg-white/5 border-white/10 text-slate-400'}`}

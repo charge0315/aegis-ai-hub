@@ -131937,7 +131937,8 @@ var init_Article = __esm({
       img: external_exports.string().nullable().default(null),
       date: external_exports.string().datetime({ offset: true }).or(external_exports.string()).default(() => (/* @__PURE__ */ new Date()).toISOString()),
       category: external_exports.string().default("\u672A\u5206\u985E"),
-      geminiReason: external_exports.string().optional()
+      geminiReason: external_exports.string().optional(),
+      language: external_exports.enum(["ja", "en", "other"]).default("en")
     });
     Article = class {
       title;
@@ -131949,6 +131950,7 @@ var init_Article = __esm({
       date;
       category;
       geminiReason;
+      language;
       /**
        * @param data - バリデーション前の生記事データ
        */
@@ -131963,6 +131965,7 @@ var init_Article = __esm({
         this.date = validated.date;
         this.category = validated.category;
         this.geminiReason = validated.geminiReason;
+        this.language = validated.language;
         this.desc = this._sanitizeDescription(this.desc);
       }
       /**
@@ -131989,7 +131992,8 @@ var init_Article = __esm({
           img: this.img,
           date: this.date,
           category: this.category,
-          geminiReason: this.geminiReason
+          geminiReason: this.geminiReason,
+          language: this.language
         };
       }
     };
@@ -132124,6 +132128,7 @@ var init_ScraperFacade = __esm({
               const detectedCat = scorer.detectCategory(title, snippet, res.category);
               const score = scorer.calculateScore(title, snippet, detectedCat);
               const brand = scorer.extractBrand(title);
+              const language = this._detectLanguage(title, snippet);
               allArticles.push(new Article({
                 title: record2.title,
                 link: record2.link,
@@ -132132,12 +132137,22 @@ var init_ScraperFacade = __esm({
                 score,
                 category: detectedCat,
                 date: record2.isoDate || record2.pubDate,
-                img: this.enrichmentService.extractBasicImage(record2)
+                img: this.enrichmentService.extractBasicImage(record2),
+                language
               }));
             }
           }
         }
         return allArticles;
+      }
+      /**
+       * テキスト内容から言語を簡易的に判定します。
+       * @private
+       */
+      _detectLanguage(title, snippet) {
+        const text3 = title + snippet;
+        const containsJapanese = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/.test(text3);
+        return containsJapanese ? "ja" : "en";
       }
     };
   }

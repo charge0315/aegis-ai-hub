@@ -13,7 +13,8 @@ export const ArticleSchema = z.object({
     img: z.string().nullable().default(null),
     date: z.string().datetime({ offset: true }).or(z.string()).default(() => new Date().toISOString()),
     category: z.string().default("未分類"),
-    geminiReason: z.string().optional()
+    geminiReason: z.string().optional(),
+    language: z.enum(['ja', 'en', 'other']).default('en')
 });
 
 export type ArticleType = z.infer<typeof ArticleSchema>;
@@ -31,6 +32,7 @@ export class Article implements ArticleType {
     date: string;
     category: string;
     geminiReason?: string;
+    language: 'ja' | 'en' | 'other';
 
     /**
      * @param data - バリデーション前の生記事データ
@@ -47,6 +49,7 @@ export class Article implements ArticleType {
         this.date = validated.date;
         this.category = validated.category;
         this.geminiReason = validated.geminiReason;
+        this.language = validated.language;
         
         // 読みやすさ向上のためのサニタイズ
         this.desc = this._sanitizeDescription(this.desc);
@@ -80,7 +83,8 @@ export class Article implements ArticleType {
             img: this.img,
             date: this.date,
             category: this.category,
-            geminiReason: this.geminiReason
+            geminiReason: this.geminiReason,
+            language: this.language
         };
     }
 }

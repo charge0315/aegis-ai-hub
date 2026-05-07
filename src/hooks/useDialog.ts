@@ -52,12 +52,12 @@ export function useDialog() {
     });
   }, [showDialog]);
 
-  const confirm = useCallback((title: string, message: React.ReactNode) => {
+  const confirm = useCallback((title: string, message: React.ReactNode, type: DialogType = 'confirm') => {
     return new Promise<boolean>((resolve) => {
       showDialog({
         title,
         message,
-        type: 'confirm',
+        type,
         onConfirm: () => {
           hideDialog();
           resolve(true);
