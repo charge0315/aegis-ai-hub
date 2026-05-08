@@ -1,6 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { InterestsSchema, FeedConfigSchema, WindowStateSchema, CredentialsSchema, type Interests, type FeedConfig, type Credentials } from '../models/Schemas';
+import { InterestsSchema, FeedConfigSchema, WindowStateSchema, CredentialsSchema, UiSettingsSchema, type Interests, type FeedConfig, type Credentials, type UiSettings } from '../models/Schemas';
 
 export interface SettingsManagerConfig {
   dataDir: string;
@@ -39,6 +39,28 @@ export class SettingsManager {
     }
   }
 
+  /**
+   * UI表示設定を取得します。
+   */
+  async getUiSettings(): Promise<UiSettings> {
+    const filePath = path.join(this.dataDir, 'ui_settings.json');
+    try {
+      const data = await this._safeRead(filePath);
+      return UiSettingsSchema.parse(data);
+    } catch {
+      return UiSettingsSchema.parse({}); // デフォルト値を返す
+    }
+  }
+
+  /**
+   * UI表示設定を保存します。
+   */
+  async saveUiSettings(settings: UiSettings): Promise<void> {
+    const filePath = path.join(this.dataDir, 'ui_settings.json');
+    const validated = UiSettingsSchema.parse(settings);
+    await this._safeWrite(filePath, validated);
+  }
+
   async getApiKey(): Promise<string> {
     try {
       const data = await fs.readFile(this.credentialsPath, 'utf8');
@@ -56,47 +78,40 @@ export class SettingsManager {
   }
 
   async getInterests(): Promise<Interests> {
-    try {
-      const data = await fs.readFile(this.interestsPath, 'utf8');
-      const json = JSON.parse(data);
-      return InterestsSchema.parse(json);
-    } catch {
-      return { categories: {}, lastUpdated: Date.now() };
-    }
+    const data = await fs.readFile(this.interestsPath, 'utf8');
+    return InterestsSchema.parse(JSON.parse(data));
   }
 
   async getFeedConfig(): Promise<FeedConfig> {
-    try {
-      const data = await fs.readFile(this.feedConfigPath, 'utf8');
-      const json = JSON.parse(data);
-      return FeedConfigSchema.parse(json);
-    } catch {
-      return {};
-    }
+    const data = await fs.readFile(this.feedConfigPath, 'utf8');
+    return FeedConfigSchema.parse(JSON.parse(data));
   }
 
-  async syncSettings(
-    { interests, feedConfig, windowState, lastUpdated }: { interests: Interests; feedConfig: FeedConfig; windowState?: unknown; lastUpdated?: number },
-    fetcher?: { validateFeed: (url: string) => Promise<{ ok: boolean; status: string | number }> }
-  ): Promise<{ success: boolean; timestamp: string; lastUpdated: number; validatedInterests: Interests; validatedFeedConfig: FeedConfig }> {
-    const validatedInterests = InterestsSchema.parse(interests);
-    let validatedFeedConfig = FeedConfigSchema.parse(feedConfig);
-    const validatedWindowState = windowState ? WindowStateSchema.parse(windowState) : undefined;
+  /**
+   * クラウド（またはインポート）からの設定を同期します。
+   */
+  async syncSettings(settings: any, fetcher?: { validateFeed: (url: string) => Promise<{ ok: boolean; status: number | string }> }): Promise<any> {
+    const { interests, feed_urls, windowState, lastUpdated } = settings;
 
-    // --- カテゴリ名整合性強制ロジック (表記揺れの自動修復) ---
-    // 意図: AIや手動編集で生じた「＆ vs &」などの微細な差異による、記事消失（紐付け失敗）を物理的に排除します。
+    // 型バリデーション
+    const validatedInterests = InterestsSchema.parse(interests);
+    const validatedWindowState = windowState ? WindowStateSchema.parse(windowState) : null;
+    
+    let validatedFeedConfig: FeedConfig = {};
+    
+    // カテゴリ名の正規化（Mojibakeや表記揺れの吸収）
     const normalizedFeedConfig: FeedConfig = {};
     const interestCats = Object.keys(validatedInterests.categories);
-    
     const clean = (s: string) => s.replace(/[＆&＆\s・]/g, '').toLowerCase();
 
-    for (const [feedCatName, data] of Object.entries(validatedFeedConfig)) {
-      // 1. interests 側で完全一致するカテゴリを探す
+    for (const [feedCatName, data] of Object.entries(feed_urls as FeedConfig)) {
+      const targetClean = clean(feedCatName);
+      
+      // 1. 完全一致
       let finalName = interestCats.find(c => c === feedCatName);
       
-      // 2. 見つからない場合、正規化して探す
+      // 2. 正規化一致
       if (!finalName) {
-        const targetClean = clean(feedCatName);
         finalName = interestCats.find(c => clean(c) === targetClean);
       }
 
@@ -166,6 +181,15 @@ export class SettingsManager {
       return JSON.parse(content);
     } catch {
       return null;
+    }
+  }
+
+  protected async _safeRead(filePath: string): Promise<unknown> {
+    try {
+      const content = await fs.readFile(filePath, 'utf8');
+      return JSON.parse(content);
+    } catch {
+      throw new Error(`Read failed: ${filePath}`);
     }
   }
 

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { Article, NexusSettings, AgentStatus, InterestCategory, FeedConfig } from '../types';
+import type { Article, NexusSettings, AgentStatus, InterestCategory, FeedConfig, UiSettings } from '../types';
 
 export interface WindowState {
   width: number;
@@ -132,6 +132,20 @@ export const nexusApi = {
   async saveApiKey(apiKey: string): Promise<{ success: boolean }> {
     if (window.nexusApi) {
       return await window.nexusApi.saveApiKey(apiKey);
+    }
+    return { success: true };
+  },
+
+  async getUiSettings(): Promise<UiSettings> {
+    if (window.nexusApi) {
+      return await window.nexusApi.getUiSettings();
+    }
+    return { jaOnly: false, viewMode: 'grid', hideImages: false };
+  },
+
+  async saveUiSettings(settings: UiSettings): Promise<{ success: boolean }> {
+    if (window.nexusApi) {
+      return await window.nexusApi.saveUiSettings(settings);
     }
     return { success: true };
   }

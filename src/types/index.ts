@@ -57,6 +57,12 @@ export interface NexusSettings {
   lastUpdated?: string | number;
 }
 
+export interface UiSettings {
+  jaOnly: boolean;
+  viewMode: 'grid' | 'list' | 'compact';
+  hideImages: boolean;
+}
+
 export interface AgentStatus {
   id: string;
   name: string;
@@ -99,6 +105,8 @@ export interface NexusApiBridge {
   restructureCategories: () => Promise<{ categories: Record<string, InterestCategory>; feedConfig: FeedConfig }>;
   resetToDefaults: () => Promise<{ success: boolean }>;
   windowControl: (action: 'minimize' | 'maximize' | 'close') => void;
+  getUiSettings: () => Promise<UiSettings>;
+  saveUiSettings: (settings: UiSettings) => Promise<{ success: boolean }>;
 }
 
 declare global {

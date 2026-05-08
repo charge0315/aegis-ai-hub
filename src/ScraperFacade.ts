@@ -30,7 +30,8 @@ export class ScraperFacade {
      */
     constructor(_interestsPath: string, feedsPath: string, dataDir?: string) {
         this.feedManager = new FeedManager(feedsPath);
-        this.rssFetcher = new RSSFetcher(10);
+        // 大量取得を考慮し並列数を20に設定
+        this.rssFetcher = new RSSFetcher(20);
         this.geminiService = new GeminiService(process.env.GEMINI_API_KEY);
         this.enrichmentService = new EnrichmentService(this.geminiService, dataDir);
     }
@@ -44,16 +45,10 @@ export class ScraperFacade {
 
     /**
      * Gemini APIを活用し、ユーザーの興味に最適化されたおすすめ記事10選を生成します。
-     * 
-     * 意図: 大量の記事の中から、ユーザーの現在の関心事に最も合致し、かつ価値の高い情報を
-     * AIの判断（キュレーション）に基づいて厳選するためです。
-     * 
-     * @param interests - ユーザーの興味データ
-     * @returns 厳選された記事リスト
      */
     async getRecommendations(interests: Interests): Promise<any[]> {
         try {
-            await this.enrichmentService.init(); // キャッシュの初期化
+            await this.enrichmentService.init();
             const allArticles = await this.fetchAndProcessArticles(interests);
             const candidates = this._sortAndSlice(allArticles, 30);
 
@@ -64,9 +59,7 @@ export class ScraperFacade {
             console.log(`[ScraperFacade] Geminiによるキュレーションを開始 (${candidates.length}件を評価中)...`);
             const recommendations = await this.geminiService.curate(candidates as unknown as Record<string, unknown>[], interests);
             
-            // 推薦された10件に対して優先的に画像補完を実行し、視覚的な品質を向上させる
             await this.enrichmentService.enrichAll(recommendations as any[]);
-
             return recommendations;
         } catch (e: any) {
             console.error(`[ScraperFacade] Recommendations Error: ${e.message}`);
@@ -76,40 +69,24 @@ export class ScraperFacade {
 
     /**
      * 最新のパーソナライズ済みダッシュボードデータを構築します。
-     * 
-     * 意図: 全てのカテゴリにおける高品質な最新記事を収集し、
-     * ユーザーが一目で全体像を把握できるパーソナライズされた画面データを提供するためです。
-     * 記事が0件になるのを防ぐため、多段階のフォールバックロジックを搭載しています。
-     * 
-     * @param interests - ユーザーの興味データ
-     * @returns カテゴリ別に分類された記事データ
      */
     async getDashboard(interests: Interests): Promise<Record<string, any>> {
         console.log(`[ScraperFacade] パーソナライズド・ダッシュボードを構築中...`);
-        await this.enrichmentService.init(); // キャッシュの初期化
+        await this.enrichmentService.init();
         
-        // 1. 通常取得 (90日制限あり)
         const articlesNormal = await this.fetchAndProcessArticles(interests, false);
-        
-        // 2. 期間制限なし取得 (フォールバック用。全カテゴリが空の場合のみ使用するのではなく、カテゴリごとに判断)
-        // パフォーマンスのため、一旦 normal で全カテゴリ埋まるか確認し、空がある場合のみ再取得する
         let articlesExtended: Article[] | null = null;
 
         const dashboard: Record<string, any> = {};
         const categories = Object.keys(interests.categories);
 
         for (const catName of categories) {
-            // --- 多段階フォールバックロジック (カテゴリ単位) ---
-            
-            // Phase 1: 日本語 かつ 90日以内
             let filtered = articlesNormal.filter(a => a.category === catName && a.language === 'ja');
             
-            // Phase 2: 全言語 かつ 90日以内
             if (filtered.length === 0) {
                 filtered = articlesNormal.filter(a => a.category === catName);
             }
 
-            // Phase 3: 全言語 かつ 期間制限なし
             if (filtered.length === 0) {
                 if (!articlesExtended) {
                     console.log(`[ScraperFacade] カテゴリ "${catName}" の最新記事が0件のため、期間制限を解除して再探索します...`);
@@ -118,7 +95,6 @@ export class ScraperFacade {
                 filtered = articlesExtended.filter(a => a.category === catName);
             }
             
-            // スコアと鮮度のバランスが良い上位50件を詳細エンリッチメントの対象とする
             const topArticles = this._sortAndSlice(filtered, 50);
             await this.enrichmentService.enrichAll(topArticles);
 
@@ -134,10 +110,6 @@ export class ScraperFacade {
         return dashboard;
     }
 
-    /**
-     * 記事をスコア順および日付順でソートし、指定件数を抽出する内部ヘルパー。
-     * @private
-     */
     private _sortAndSlice(articles: Article[], count: number): Article[] {
         return articles
             .sort((a, b) => b.score - a.score || new Date(b.date).getTime() - new Date(a.date).getTime())
@@ -145,55 +117,84 @@ export class ScraperFacade {
     }
 
     /**
+     * 記事が0件の場合に期間制限を解除するフォールバック機能付きの取得メソッド。
+     */
+    async fetchAndProcessArticlesWithFallback(interests: Interests): Promise<Article[]> {
+        console.log(`[ScraperFacade] Starting fetchAndProcessArticlesWithFallback...`);
+        // 1. 通常取得 (90日制限あり)
+        let articles = await this.fetchAndProcessArticles(interests, false);
+        
+        // 2. 0件の場合、期間制限なしで再取得
+        if (articles.length === 0) {
+            console.warn(`[ScraperFacade] No articles found within 90 days. Retrying without date limit...`);
+            articles = await this.fetchAndProcessArticles(interests, true);
+        }
+        
+        return articles;
+    }
+
+    /**
      * 各フィードから記事を並列取得し、パース・カテゴリ判定・スコアリングを行うコアロジック。
-     * @param interests - ユーザーの興味データ
-     * @param ignoreDateLimit - 90日の期間制限を無視するかどうか
-     * @returns 正規化された記事オブジェクト의配列
      */
     async fetchAndProcessArticles(interests: Interests, ignoreDateLimit: boolean = false): Promise<Article[]> {
         const scorer = new ScoringService(interests);
         const feeds = this.feedManager.getAllActiveFeeds();
         const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
 
+        console.log(`[ScraperFacade] Fetching ${feeds.length} feeds (ignoreDateLimit: ${ignoreDateLimit})...`);
+
         const results = await this.rssFetcher.fetchAll(feeds);
         const allArticles: Article[] = [];
+        let successCount = 0;
+        let failCount = 0;
 
         for (const res of results) {
             if (!res.success) {
+                failCount++;
+                if (failCount <= 10) console.warn(`[ScraperFacade] Feed failed: ${res.url} - ${res.error}`);
                 await this.feedManager.reportFailure(res.category, res.url);
                 continue;
             }
+            successCount++;
             this.feedManager.reportSuccess(res.category, res.url);
 
             if (res.items) {
                 for (const item of res.items) {
-                    const record = item as Record<string, unknown>;
-                    const pubDate = new Date(String(record.isoDate || record.pubDate || ''));
-                    
-                    // 90日以上前の古い記事は原則として除外（フォールバック時以外）
-                    if (!ignoreDateLimit && pubDate < ninetyDaysAgo) continue;
+                    try {
+                        const record = item as Record<string, unknown>;
+                        const pubDateStr = String(record.isoDate || record.pubDate || '');
+                        const pubDate = new Date(pubDateStr);
+                        
+                        const isDateValid = !isNaN(pubDate.getTime());
+                        if (!ignoreDateLimit && isDateValid && pubDate.getTime() < ninetyDaysAgo.getTime()) continue;
 
-                    const title = String(record.title || '');
-                    const snippet = String(record.contentSnippet || record.description || '');
-                    const detectedCat = scorer.detectCategory(title, snippet, res.category);
-                    const score = scorer.calculateScore(title, snippet, detectedCat);
-                    const brand = scorer.extractBrand(title);
-                    const language = this._detectLanguage(title, snippet);
+                        const title = String(record.title || '');
+                        const snippet = String(record.contentSnippet || record.description || '');
+                        const detectedCat = scorer.detectCategory(title, snippet, res.category);
+                        const score = scorer.calculateScore(title, snippet, detectedCat);
+                        const brand = scorer.extractBrand(title);
+                        const language = this._detectLanguage(title, snippet);
 
-                    allArticles.push(new Article({
-                        title: record.title,
-                        link: record.link,
-                        desc: record.contentSnippet || record.description,
-                        brand: brand,
-                        score: score,
-                        category: detectedCat,
-                        date: record.isoDate || record.pubDate,
-                        img: this.enrichmentService.extractBasicImage(record),
-                        language: language
-                    }));
+                        allArticles.push(new Article({
+                            title: record.title,
+                            link: record.link,
+                            desc: record.contentSnippet || record.description,
+                            brand: brand,
+                            score: score,
+                            category: detectedCat,
+                            date: isDateValid ? pubDate.toISOString() : new Date().toISOString(),
+                            img: this.enrichmentService.extractBasicImage(record),
+                            language: language
+                        }));
+                    } catch (err) {
+                        // 個別の記事パースエラーは無視
+                        continue;
+                    }
                 }
             }
         }
+        
+        console.log(`[ScraperFacade] Fetch completed. Success: ${successCount}, Failed: ${failCount}, Articles: ${allArticles.length}`);
         return allArticles;
     }
 

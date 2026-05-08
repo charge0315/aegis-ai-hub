@@ -87,6 +87,17 @@ export const SyncSettingsSchema = z.object({
 export type SyncSettings = z.infer<typeof SyncSettingsSchema>;
 
 /**
+ * v5.3 UI Settings Schema
+ */
+export const UiSettingsSchema = z.object({
+  jaOnly: z.boolean().default(false),
+  viewMode: z.enum(['grid', 'list', 'compact']).default('grid'),
+  hideImages: z.boolean().default(false),
+});
+
+export type UiSettings = z.infer<typeof UiSettingsSchema>;
+
+/**
  * v5.2 Credentials Schema
  */
 export const CredentialsSchema = z.object({

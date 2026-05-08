@@ -30,14 +30,10 @@ import { useNexusSync, useAgentEvents, nexusApi } from './api/nexusApi';
 
 const App: React.FC = () => {
   // --- PRIMARY CONTEXT STATE ---
-  // ユーザーが現在「情報の消費（feed）」をしているか、「システムの調整（settings）」をしているかの状態
   const [currentView, setCurrentView] = useState<'feed' | 'settings'>('feed');
-  
-  // バックエンド（NexusOrchestrator）との同期とデータ取得を司るコアフック
   const { settings, articles, loading, sync, refetch } = useNexusSync();
   
   // --- COGNITIVE FILTER STATE ---
-  // ユーザーの認知的負荷を調整するための表示制御ステート群
   const [searchQuery, setSearchQuery] = useState('');
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [feedSize, setFeedSize] = useState<'small' | 'medium' | 'large'>('medium');
@@ -45,8 +41,6 @@ const App: React.FC = () => {
   const [isJapaneseOnly, setIsJapaneseOnly] = useState(false);
 
   // --- RESPONSIVE STATE ---
-  // WindowsのFancyZonesなどで画面が分割された際、自動的にナビゲーションを
-  // 最小化（Compact）してコンテンツ領域を確保するためのレイアウト適応ロジック
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
@@ -66,20 +60,52 @@ const App: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  // --- UI表示設定の永続化 ---
+  useEffect(() => {
+    const loadUiSettings = async () => {
+      try {
+        if (nexusApi?.getUiSettings) {
+          const saved = await nexusApi.getUiSettings();
+          setIsJapaneseOnly(saved.jaOnly);
+          setFeedSize(saved.viewMode === 'compact' ? 'small' : saved.viewMode === 'list' ? 'large' : 'medium');
+          setShowImages(!saved.hideImages);
+        }
+      } catch (err) {
+        console.error("Failed to load UI settings:", err);
+      }
+    };
+    void loadUiSettings();
+  }, []);
+
+  useEffect(() => {
+    const save = async () => {
+      try {
+        if (nexusApi?.saveUiSettings) {
+          const viewMode = feedSize === 'small' ? 'compact' : feedSize === 'large' ? 'list' : 'grid';
+          await nexusApi.saveUiSettings({ 
+            jaOnly: isJapaneseOnly, 
+            viewMode: viewMode as any, 
+            hideImages: !showImages 
+          });
+        }
+      } catch (err) {
+        console.error("Failed to save UI settings:", err);
+      }
+    };
+    const timeout = setTimeout(() => { void save(); }, 500);
+    return () => clearTimeout(timeout);
+  }, [isJapaneseOnly, feedSize, showImages]);
+
   // --- INTERACTIVE DIALOG STATE ---
-  // アプリケーション全体を覆うブロッキング・ダイアログの制御。
-  // 設定の警告やAIディスカバリーなど、ユーザーの完全な注意が必要な処理で使用します。
   const { 
     dialog, 
     alert: dialogAlert, 
     confirm: dialogConfirm, 
     prompt: dialogPrompt, 
-    loading: dialogLoading,
     hideDialog 
   } = useDialog();
 
   // --- INITIAL SETUP CHECK ---
-  // インストール後、初回起動時に既存の設定（ブランド、キーワード等）がある場合に上書きするかを確認します。
   useEffect(() => {
     if (settings && !loading) {
       const hasCategories = Object.keys(settings.interests.categories).length > 0;
@@ -104,41 +130,26 @@ const App: React.FC = () => {
     }
   }, [settings, loading, dialogConfirm, refetch]);
 
-  // バックエンドの自律エージェントの活動状態を監視。
-  // エージェントが新しい情報を発見（同期完了）した際、即座にUIへ反映（refetch）させます。
   const agentEvents = useAgentEvents(useCallback(() => {
     void refetch(false);
   }, [refetch]));
 
-  /**
-   * 検索クエリおよび言語フィルタに基づくシグナル（記事）の絞り込みとソート。
-   * 日本語記事を優先的に前に表示し、トグルが有効な場合は日本語のみを表示します。
-   */
   const filteredArticles = useMemo(() => {
     const query = searchQuery.toLowerCase();
     return articles
       .filter(article => {
-        // 検索クエリによる絞り込み
         const matchQuery = article.title.toLowerCase().includes(query) ||
                            article.category.toLowerCase().includes(query);
-        
-        // 言語フィルタによる絞り込み
         const matchLang = isJapaneseOnly ? article.language === 'ja' : true;
-        
         return matchQuery && matchLang;
       })
       .sort((a, b) => {
-        // 日本語記事を優先表示 (aがjaでbがjaでないならaを前に)
         if (a.language === 'ja' && b.language !== 'ja') return -1;
         if (a.language !== 'ja' && b.language === 'ja') return 1;
-        return 0; // スコアソート等は ScraperFacade 側で既に行われている
+        return 0;
       });
   }, [articles, searchQuery, isJapaneseOnly]);
 
-  /**
-   * ユーザーの「興味（Interests）」カテゴリに基づいて記事をグループ化。
-   * これにより、ユーザーは自分の関心領域ごとに整理された形で情報を消化できます。
-   */
   const groupedArticles = useMemo(() => {
     const groups: Record<string, typeof articles> = {};
     if (settings) {
@@ -149,211 +160,162 @@ const App: React.FC = () => {
     return groups;
   }, [filteredArticles, settings]);
 
-  /**
-   * 特定のカテゴリに関する情報源（フィード）の管理と、AIによる新規開拓（Discovery）を司る。
-   * ユーザーが未知の優良情報源を安全に探せるよう、AIエージェントにプロンプトを投げます。
-   */
   const handleShowFeeds = async (category: string) => {
     if (!settings) return;
-
-    // カテゴリ名と設定キーの不整合（ドットや記号の揺れ）を吸収するための正規化処理
-    const feedKey = Object.keys(settings.feed_urls).find(k => 
-      k === category || k.replace(/・/g, '') === category.replace(/・/g, '')
+    const group = settings.feed_urls[category];
+    if (!group) return;
+    
+    await dialogAlert(
+      `${category} - Active Nodes`,
+      group.active.length > 0 ? group.active.join('\n') : 'No active nodes connected.',
+      'info'
     );
-    
-    const feedData = settings.feed_urls[feedKey || ''] || { active: [], pool: [] };
-    
-    await dialogAlert(category, (
-      <div className="space-y-6 text-left">
-        <div>
-          <p className="text-[10px] uppercase font-black tracking-widest text-primary mb-3">Active Signal Sources</p>
-          <div className="space-y-2">
-            {feedData.active.length > 0 ? feedData.active.map((url: string) => (
-              <div key={url} className="bg-white/5 p-2 rounded-xl text-[10px] truncate border border-white/5 font-mono text-slate-300">{url}</div>
-            )) : <p className="text-[10px] opacity-40 italic">No active feeds.</p>}
-          </div>
-        </div>
-
-        <button
-          onClick={async (e) => {
-            e.stopPropagation();
-
-            // Show non-blocking loading dialog
-            dialogLoading("Searching...", (
-              <p className="text-center py-10 animate-pulse text-xs text-slate-500 font-bold uppercase tracking-widest">AI Discovery in Progress...</p>
-            ));
-
-            try {
-              const proposals = await nexusApi.getProposals();
-              const catProposals = (proposals.sites as any[] || []).filter((s: any) => s.category === category);
-
-              // Close loading and show results
-              hideDialog();
-
-              await dialogAlert(`Discovery: ${category}`, (                <div className="space-y-4 text-left">
-                  {catProposals.length > 0 ? catProposals.map((s: any) => (
-                    <div key={s.url} className="p-4 bg-primary/5 border border-primary/20 rounded-2xl">
-                      <p className="font-bold text-sm text-white mb-1">{s.name}</p>
-                      <p className="text-[10px] opacity-50 mb-3 truncate font-mono">{s.url}</p>
-                      <p className="text-[11px] text-slate-300 italic mb-4">"{s.reason}"</p>
-                      <button 
-                        onClick={async () => {
-                          const newSettings = { ...settings };
-                          if (!newSettings.feed_urls[category]) newSettings.feed_urls[category] = { active: [], pool: [], failures: {} };
-                          if (!newSettings.feed_urls[category].active.includes(s.url)) {
-                            newSettings.feed_urls[category].active.push(s.url);
-                            await sync(newSettings);
-                          }
-                          hideDialog();
-                        }}
-                        className="w-full py-2 bg-primary text-white text-[10px] font-black uppercase rounded-xl shadow-lg shadow-primary/20"
-                      >Add to Feed</button>
-                    </div>
-                  )) : <p className="text-center py-10 opacity-50 text-xs">No new verified sources found.</p>}
-                </div>
-              ));
-            } catch (err) {
-              hideDialog();
-              await dialogAlert("Connection Error", <p className="text-xs text-alert text-center py-4">Failed to consult Discovery Agent.</p>);
-            }
-          }}
-          className="w-full flex items-center justify-center gap-3 py-4 bg-white/5 hover:bg-white/10 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest border border-white/10 shadow-xl transition-all"
-        >
-          <Sparkles size={16} className="text-primary" /> AI DISCOVERY
-        </button>
-      </div>
-    ), 'info');
   };
+
+  const handleNavigate = useCallback((view: 'feed' | 'settings', category?: string) => {
+    setCurrentView(view);
+    if (category) {
+      setSearchQuery(category);
+    }
+  }, []);
 
   return (
     <React.Fragment>
-      {/* --- IRONCLAD CENTERED DIALOG --- */}
-      <CustomDialog
-        isOpen={dialog.isOpen}
-        type={dialog.type}
-        title={dialog.title}
-        message={dialog.message}
-        defaultValue={dialog.defaultValue}
-        placeholder={dialog.placeholder}
-        onConfirm={dialog.onConfirm}
-        onCancel={dialog.onCancel}
+      <CommandPalette 
+        isOpen={isCommandPaletteOpen} 
+        onClose={() => setIsCommandPaletteOpen(false)} 
+        settings={settings}
+        onNavigate={handleNavigate}
+        onSync={async () => { if (settings) await sync(settings); }}
+        onTriggerOrchestration={async (req) => { await nexusApi.triggerOrchestration(req); }}
       />
-
-      <div className="window-base text-slate-200">
-        {/* キーボード駆動のユーザー向け：素早いナビゲーションとシステム制御 */}
-        <CommandPalette 
-          isOpen={isCommandPaletteOpen} 
-          onClose={() => setIsCommandPaletteOpen(false)} 
-          settings={settings} 
-          onNavigate={(v) => setCurrentView(v)} 
-          onSync={async () => { if (settings) await sync(settings); }} 
-          onTriggerOrchestration={async (req) => { await nexusApi.triggerOrchestration(req); }}
+      
+      {dialog && (
+        <CustomDialog 
+          {...dialog} 
+          onConfirm={dialog.onConfirm}
+          onCancel={hideDialog}
         />
+      )}
 
-        {/* 左側ナビゲーション（サイドバー）。
-            dragクラスによって、ウィンドウ全体を移動させるための「つかみしろ」として機能します。 */}
-        <aside className={`${isCompact ? 'w-20 px-3' : 'w-64 p-6'} sidebar-glass flex flex-col sticky top-0 h-screen z-30 transition-all duration-300 drag`}>
-          <div className={`mb-10 mt-6 flex ${isCompact ? 'justify-center' : 'px-2'}`}>
-            <div className="w-10 h-10 rounded-xl overflow-hidden shadow-2xl bg-primary/20 flex items-center justify-center">
-              <img 
-                src="./app-icon.png" 
-                alt="Nexus" 
-                data-testid="app-logo"
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  // 画像読み込み失敗時のフォールバック
-                  e.currentTarget.style.display = 'none';
-                  const parent = e.currentTarget.parentElement;
-                  if (parent) {
-                    parent.innerHTML = '<span class="text-xs font-black text-primary">NEXUS</span>';
-                  }
-                }}
-              />
+      <div className="flex h-screen overflow-hidden bg-[#0a0a0c] text-slate-100 font-sans selection:bg-primary/30">
+        <aside className={`${isCompact ? 'w-20' : 'w-72'} flex flex-col border-r border-white/5 bg-white/[0.02] backdrop-blur-3xl transition-all duration-500 ease-out z-40`}>
+          <div className="p-8">
+            <div className="flex items-center gap-4 mb-12">
+              <div className="w-10 h-10 bg-gradient-to-br from-primary to-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20 ring-1 ring-white/20">
+                <LayoutDashboard size={22} className="text-white" />
+              </div>
+              {!isCompact && (
+                <div className="flex flex-col">
+                  <span className="text-lg font-black tracking-tighter text-white uppercase italic">Aegis Nexus</span>
+                  <span className="text-[10px] font-mono text-primary/70 tracking-widest leading-none">INTELLIGENCE V5</span>
+                </div>
+              )}
             </div>
+
+            <nav className="space-y-3">
+              {[
+                { id: 'feed', icon: LayoutDashboard, label: 'Neural Feed' },
+                { id: 'settings', icon: Settings2, label: 'System Nexus' }
+              ].map(item => (
+                <button
+                  key={item.id}
+                  onClick={() => setCurrentView(item.id as any)}
+                  className={`w-full flex items-center ${isCompact ? 'justify-center' : 'gap-4 px-5'} py-4 rounded-2xl transition-all duration-300 group relative ${
+                    currentView === item.id 
+                      ? 'bg-primary text-white shadow-xl shadow-primary/20 translate-x-1' 
+                      : 'text-slate-500 hover:text-slate-100 hover:bg-white/5'
+                  }`}
+                >
+                  <item.icon size={20} className={currentView === item.id ? 'animate-pulse' : 'group-hover:scale-110 transition-transform'} />
+                  {!isCompact && <span className="font-bold text-sm tracking-tight">{item.label}</span>}
+                  {currentView === item.id && (
+                    <motion.div 
+                      layoutId="nav-glow"
+                      className="absolute inset-0 bg-primary/20 blur-xl rounded-full -z-10"
+                    />
+                  )}
+                </button>
+              ))}
+            </nav>
           </div>
-          <nav className="space-y-4 flex-grow no-drag">
-            <button data-testid="nav-feed" onClick={() => setCurrentView('feed')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${currentView === 'feed' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-slate-400 hover:bg-white/5'}`}>
-              <LayoutDashboard size={18} /> {!isCompact && <span className="text-sm font-bold">Intelligence Feed</span>}
-            </button>
-            <button data-testid="nav-settings" onClick={() => setCurrentView('settings')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${currentView === 'settings' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-slate-400 hover:bg-white/5'}`}>
-              <Settings2 size={18} /> {!isCompact && <span className="text-sm font-bold">Nexus Command</span>}
-            </button>
-          </nav>
-          <div className={`mt-auto py-6 border-t border-white/5 ${isCompact ? 'flex justify-center' : ''}`}>
+
+          <div className="mt-auto p-6">
             <AgentMonitor agents={agentEvents} compact={isCompact} />
           </div>
         </aside>
 
-        <main className="flex-grow flex flex-col min-h-screen">
-          {/* メインヘッダー。
-              検索ボックスと表示オプション（UIカスタマイズ）を提供し、
-              ここもウィンドウ移動のドラッグ領域（drag）として機能します。 */}
-          <header className={`h-16 border-b border-white/5 sidebar-glass flex items-center justify-between ${isCompact ? 'px-4' : 'px-8'} sticky top-0 z-20 drag`}>
-            <div className="flex items-center gap-6 flex-grow no-drag">
-              <Search size={16} className="text-slate-500" />
-              <input type="text" placeholder="Search signals..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="bg-transparent outline-none text-sm w-full text-white placeholder-slate-600" />
-            </div>
-            <div className="flex items-center gap-4 no-drag">
-              {currentView === 'feed' && (
-                <div className="flex items-center gap-2 mr-4 border-r border-white/10 pr-6">
-                  <div className="flex bg-black/20 rounded-lg p-1 mr-2">
-                    <button onClick={() => setFeedSize('small')} className={`p-1.5 rounded-md transition-all ${feedSize === 'small' ? 'bg-white/10 text-white' : 'text-slate-500 hover:text-white'}`} title="Small Grid">
-                      <ListIcon size={14} />
-                    </button>
-                    <button onClick={() => setFeedSize('medium')} className={`p-1.5 rounded-md transition-all ${feedSize === 'medium' ? 'bg-white/10 text-white' : 'text-slate-500 hover:text-white'}`} title="Medium Grid">
-                      <LayoutGrid size={14} />
-                    </button>
-                    <button onClick={() => setFeedSize('large')} className={`p-1.5 rounded-md transition-all ${feedSize === 'large' ? 'bg-white/10 text-white' : 'text-slate-500 hover:text-white'}`} title="Large Grid">
-                      <LayoutDashboard size={14} />
-                    </button>
-                  </div>
-
-                  <button 
-                    onClick={() => setIsJapaneseOnly(prev => !prev)} 
-                    className={`p-1.5 rounded-lg border transition-all flex items-center gap-1.5 px-2.5 ${isJapaneseOnly ? 'bg-primary/20 border-primary/30 text-primary' : 'bg-white/5 border-white/10 text-slate-400 hover:text-slate-200'}`}
-                    title={isJapaneseOnly ? "Showing Japanese Only" : "Showing All Languages"}
-                  >
-                    <Languages size={16} />
-                    <span className="text-[10px] font-bold uppercase tracking-tighter">JA Only</span>
-                  </button>
-
-                  <button 
-                    onClick={() => setShowImages(!showImages)} 
-                    className={`p-1.5 rounded-lg border transition-all ${showImages ? 'bg-primary/20 border-primary/30 text-primary' : 'bg-white/5 border-white/10 text-slate-400'}`}
-                    title={showImages ? "Hide Images" : "Show Images"}
-                  >
-                    {showImages ? <ImageIcon size={16} /> : <ImageOff size={16} />}
-                  </button>
+        <main className="flex-1 flex flex-col relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-blue-900/5 pointer-events-none" />
+          
+          <header className="h-24 flex items-center justify-between px-10 border-b border-white/5 bg-black/20 backdrop-blur-md z-30">
+            <div className="flex items-center gap-6 flex-1 max-w-2xl">
+              <div className="relative w-full group">
+                <div className="absolute inset-y-0 left-5 flex items-center pointer-events-none text-slate-500 group-focus-within:text-primary transition-colors">
+                  <Search size={18} />
                 </div>
-              )}
-              <motion.button 
-                onClick={() => refetch()} 
-                disabled={loading}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                className="p-2 text-slate-400 hover:text-white transition-colors disabled:opacity-50"
-              >
-                <motion.div
-                  animate={loading ? { rotate: 360 } : { rotate: 0 }}
-                  transition={loading ? { duration: 1, repeat: Infinity, ease: "linear" } : { duration: 0.5 }}
-                  className="flex items-center justify-center"
+                <input
+                  type="text"
+                  placeholder="Intercept signals by keyword or origin..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-white/5 border border-white/5 rounded-2xl py-3.5 pl-14 pr-5 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:bg-white/10 transition-all font-medium text-sm placeholder:text-slate-600 text-slate-200"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4 ml-8">
+              <div className="flex bg-white/5 p-1.5 rounded-2xl border border-white/5">
+                {[
+                  { id: 'small', icon: LayoutGrid },
+                  { id: 'medium', icon: LayoutGrid },
+                  { id: 'large', icon: ListIcon }
+                ].map((mode) => (
+                  <button
+                    key={mode.id}
+                    onClick={() => setFeedSize(mode.id as any)}
+                    className={`p-2.5 rounded-xl transition-all ${feedSize === mode.id ? 'bg-primary text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
+                  >
+                    <mode.icon size={18} className={mode.id === 'medium' ? 'scale-75' : ''} />
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex bg-white/5 p-1.5 rounded-2xl border border-white/5">
+                <button
+                  onClick={() => setIsJapaneseOnly(!isJapaneseOnly)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${isJapaneseOnly ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
                 >
-                  <RefreshCcw size={18} />
-                </motion.div>
-              </motion.button>
+                  <Languages size={16} />
+                  <span className="text-[10px] font-black uppercase tracking-widest">JA ONLY</span>
+                </button>
+              </div>
+
+              <button
+                onClick={() => setShowImages(!showImages)}
+                className={`p-3.5 rounded-2xl transition-all border ${showImages ? 'bg-white/5 border-white/5 text-slate-400' : 'bg-orange-500/10 border-orange-500/30 text-orange-400'}`}
+              >
+                {showImages ? <ImageIcon size={20} /> : <ImageOff size={20} />}
+              </button>
+
+              <button
+                onClick={() => void refetch()}
+                disabled={loading}
+                className="p-3.5 bg-white/5 border border-white/5 rounded-2xl text-slate-400 hover:text-primary hover:bg-primary/10 transition-all disabled:opacity-50"
+              >
+                <RefreshCcw size={20} className={loading ? 'animate-spin' : ''} />
+              </button>
             </div>
           </header>
 
-          <div className={`flex-grow ${isCompact ? 'p-4' : 'p-8'}`}>
+          <div className="flex-1 overflow-y-auto custom-scrollbar custom-scrollbar-v2">
             {currentView === 'feed' ? (
-              <div>
+              <div className="p-10 max-w-[1920px] mx-auto min-h-full">
                 <div className="mb-10">
                   <h2 className="text-4xl font-black text-white tracking-tight mb-2">Intelligence Feed</h2>
                   <p className="text-slate-500 text-sm font-medium">Synthesizing signals from your designated node cluster.</p>
                 </div>
 
-                {/* 起動直後、まだエージェントがデータを構築している間のローディングステート。
-                    ユーザーに「バックグラウンドで高度な処理が走っている」ことを視覚的に伝えます。 */}
                 {loading && articles.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-20 space-y-6">
                     <div className="relative">
@@ -377,13 +339,21 @@ const App: React.FC = () => {
                     </div>
                   </div>
                 ) : articles.length === 0 && !loading ? (
-                  <div className="flex flex-col items-center justify-center py-20 text-slate-600">
-                    <p>No active signals detected. Check your feed configuration.</p>
+                  <div className="flex flex-col items-center justify-center py-20 text-slate-500 space-y-6">
+                    <div className="p-6 bg-white/5 rounded-3xl border border-white/5 text-center max-w-md">
+                      <LayoutGrid size={48} className="mx-auto mb-4 opacity-20" />
+                      <h3 className="text-white font-bold mb-2">No active signals detected</h3>
+                      <p className="text-xs mb-6 leading-relaxed">指定されたノードクラスターからの信号を受信できませんでした。フィード設定を確認するか、ネットワーク接続を確かめてください。</p>
+                      <button 
+                        onClick={() => void refetch()}
+                        className="px-8 py-3 bg-primary text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
+                      >
+                        Reconnect Node
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <div className="space-y-16">
-                    {/* 関心カテゴリごとに記事をマッピングして表示。
-                        各セクションは論理的な情報の塊としてユーザーに提示されます。 */}
                     {Object.entries(groupedArticles).map(([category, catArticles]) => (
                       <section key={category}>
                         <button 

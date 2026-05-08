@@ -22,12 +22,13 @@ export class RSSFetcher {
   private limit: <T>(fn: () => Promise<T>) => Promise<T>;
   private parser: Parser;
 
-  constructor(concurrency = 5) {
+  constructor(concurrency = 20) { // 大量取得のため並列数を20に増加
     this.limit = pLimit(concurrency);
     this.parser = new Parser({
-      timeout: 15000,
+      timeout: 20000, // 20秒に延長
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        // モダンなブラウザの User-Agent を設定してブロックを回避
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
         'Accept': 'application/rss+xml, application/xml, text/xml, */*'
       },
       customFields: {
@@ -43,18 +44,46 @@ export class RSSFetcher {
     });
   }
 
-  async fetch(url: string): Promise<unknown[]> {
+  /**
+   * 単一のフィードを取得します。リトライロジック付き。
+   */
+  async fetch(url: string, retries = 2): Promise<unknown[]> {
     return this.limit(async () => {
-      try {
-        const feed = await this.parser.parseURL(url);
-        return feed.items;
-      } catch (e: unknown) {
-        const msg = e instanceof Error ? e.message : String(e);
-        throw new Error(`Fetch failed: ${url} (${msg})`);
+      let lastError: any;
+      for (let i = 0; i <= retries; i++) {
+        try {
+          const feed = await this.parser.parseURL(url);
+          return feed.items || [];
+        } catch (e: unknown) {
+          lastError = e;
+          const msg = e instanceof Error ? e.message : String(e);
+          
+          // ネットワーク一時不通やタイムアウトの場合はリトライ
+          const isRetryable = 
+            msg.includes('ENOTFOUND') || 
+            msg.includes('ECONNREFUSED') || 
+            msg.includes('ETIMEDOUT') || 
+            msg.includes('timeout') ||
+            msg.includes('Status code 429') || 
+            msg.includes('Status code 503');
+          
+          if (isRetryable && i < retries) {
+            const delay = 3000 * (i + 1);
+            console.warn(`[RSSFetcher] Fetch failed, retrying in ${delay}ms... (${i + 1}/${retries}): ${url}`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+            continue;
+          }
+          break;
+        }
       }
+      const msg = lastError instanceof Error ? lastError.message : String(lastError);
+      throw new Error(`Fetch failed: ${url} (${msg})`);
     });
   }
 
+  /**
+   * フィードの有効性を検証します。
+   */
   async validateFeed(url: string): Promise<{ ok: boolean; status: number | string; error?: string }> {
     return this.limit(async () => {
       try {
@@ -70,11 +99,24 @@ export class RSSFetcher {
     });
   }
 
+  /**
+   * 複数のフィードを並列で取得します。
+   */
   async fetchAll(feedConfigs: FeedConfigItem[]): Promise<FetchResult[]> {
     const tasks = feedConfigs.map(config =>
       this.fetch(config.url)
-        .then(items => ({ category: config.category, url: config.url, items, success: true }))
-        .catch((error: Error) => ({ category: config.category, url: config.url, error: error.message, success: false }))
+        .then(items => ({ 
+            category: config.category, 
+            url: config.url, 
+            items, 
+            success: true 
+        }))
+        .catch((error: Error) => ({ 
+            category: config.category, 
+            url: config.url, 
+            error: error.message, 
+            success: false 
+        }))
     );
     return Promise.all(tasks);
   }

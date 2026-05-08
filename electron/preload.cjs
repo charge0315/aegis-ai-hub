@@ -68,6 +68,12 @@ contextBridge.exposeInMainWorld('nexusApi', {
   resetToDefaults: () => ipcRenderer.invoke('reset-to-defaults'),
 
   /**
+   * UI表示設定を取得・保存します。
+   */
+  getUiSettings: () => ipcRenderer.invoke('get-ui-settings'),
+  saveUiSettings: (settings) => ipcRenderer.invoke('save-ui-settings', settings),
+
+  /**
    * ウィンドウコントロール
    */
   windowControl: (action) => ipcRenderer.send('window-control', action)

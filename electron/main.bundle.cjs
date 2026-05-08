@@ -61602,7 +61602,7 @@ var init_zod = __esm({
 });
 
 // src/models/Schemas.ts
-var FeedConfigSchema, InterestCategorySchema, SkillSchema, InterestsSchema, WindowStateSchema, SyncSettingsSchema, CredentialsSchema;
+var FeedConfigSchema, InterestCategorySchema, SkillSchema, InterestsSchema, WindowStateSchema, SyncSettingsSchema, UiSettingsSchema, CredentialsSchema;
 var init_Schemas = __esm({
   "src/models/Schemas.ts"() {
     init_zod();
@@ -61651,6 +61651,11 @@ var init_Schemas = __esm({
       windowState: WindowStateSchema.optional(),
       lastUpdated: external_exports.number().optional()
     });
+    UiSettingsSchema = external_exports.object({
+      jaOnly: external_exports.boolean().default(false),
+      viewMode: external_exports.enum(["grid", "list", "compact"]).default("grid"),
+      hideImages: external_exports.boolean().default(false)
+    });
     CredentialsSchema = external_exports.object({
       geminiApiKey: external_exports.string().optional()
     });
@@ -61688,6 +61693,26 @@ var init_SettingsManager = __esm({
           await import_promises.default.writeFile(filePath, JSON.stringify(defaultContent, null, 2), "utf8");
         }
       }
+      /**
+       * UI表示設定を取得します。
+       */
+      async getUiSettings() {
+        const filePath = import_path.default.join(this.dataDir, "ui_settings.json");
+        try {
+          const data2 = await this._safeRead(filePath);
+          return UiSettingsSchema.parse(data2);
+        } catch {
+          return UiSettingsSchema.parse({});
+        }
+      }
+      /**
+       * UI表示設定を保存します。
+       */
+      async saveUiSettings(settings) {
+        const filePath = import_path.default.join(this.dataDir, "ui_settings.json");
+        const validated = UiSettingsSchema.parse(settings);
+        await this._safeWrite(filePath, validated);
+      }
       async getApiKey() {
         try {
           const data2 = await import_promises.default.readFile(this.credentialsPath, "utf8");
@@ -61703,34 +61728,28 @@ var init_SettingsManager = __esm({
         await this._safeWrite(this.credentialsPath, creds);
       }
       async getInterests() {
-        try {
-          const data2 = await import_promises.default.readFile(this.interestsPath, "utf8");
-          const json2 = JSON.parse(data2);
-          return InterestsSchema.parse(json2);
-        } catch {
-          return { categories: {}, lastUpdated: Date.now() };
-        }
+        const data2 = await import_promises.default.readFile(this.interestsPath, "utf8");
+        return InterestsSchema.parse(JSON.parse(data2));
       }
       async getFeedConfig() {
-        try {
-          const data2 = await import_promises.default.readFile(this.feedConfigPath, "utf8");
-          const json2 = JSON.parse(data2);
-          return FeedConfigSchema.parse(json2);
-        } catch {
-          return {};
-        }
+        const data2 = await import_promises.default.readFile(this.feedConfigPath, "utf8");
+        return FeedConfigSchema.parse(JSON.parse(data2));
       }
-      async syncSettings({ interests, feedConfig, windowState, lastUpdated }, fetcher) {
+      /**
+       * クラウド（またはインポート）からの設定を同期します。
+       */
+      async syncSettings(settings, fetcher) {
+        const { interests, feed_urls, windowState, lastUpdated } = settings;
         const validatedInterests = InterestsSchema.parse(interests);
-        let validatedFeedConfig = FeedConfigSchema.parse(feedConfig);
-        const validatedWindowState = windowState ? WindowStateSchema.parse(windowState) : void 0;
+        const validatedWindowState = windowState ? WindowStateSchema.parse(windowState) : null;
+        let validatedFeedConfig = {};
         const normalizedFeedConfig = {};
         const interestCats = Object.keys(validatedInterests.categories);
         const clean = (s) => s.replace(/[＆&＆\s・]/g, "").toLowerCase();
-        for (const [feedCatName, data2] of Object.entries(validatedFeedConfig)) {
+        for (const [feedCatName, data2] of Object.entries(feed_urls)) {
+          const targetClean = clean(feedCatName);
           let finalName = interestCats.find((c) => c === feedCatName);
           if (!finalName) {
-            const targetClean = clean(feedCatName);
             finalName = interestCats.find((c) => clean(c) === targetClean);
           }
           const keyToUse = finalName || feedCatName;
@@ -61785,6 +61804,14 @@ var init_SettingsManager = __esm({
           return JSON.parse(content);
         } catch {
           return null;
+        }
+      }
+      async _safeRead(filePath) {
+        try {
+          const content = await import_promises.default.readFile(filePath, "utf8");
+          return JSON.parse(content);
+        } catch {
+          throw new Error(`Read failed: ${filePath}`);
         }
       }
       async _safeWrite(filePath, data2) {
@@ -131646,12 +131673,14 @@ var init_RSSFetcher = __esm({
     RSSFetcher = class {
       limit;
       parser;
-      constructor(concurrency = 5) {
+      constructor(concurrency = 20) {
         this.limit = pLimit(concurrency);
         this.parser = new import_rss_parser.default({
-          timeout: 15e3,
+          timeout: 2e4,
+          // 20秒に延長
           headers: {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            // モダンなブラウザの User-Agent を設定してブロックを回避
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
             "Accept": "application/rss+xml, application/xml, text/xml, */*"
           },
           customFields: {
@@ -131666,17 +131695,36 @@ var init_RSSFetcher = __esm({
           }
         });
       }
-      async fetch(url3) {
+      /**
+       * 単一のフィードを取得します。リトライロジック付き。
+       */
+      async fetch(url3, retries = 2) {
         return this.limit(async () => {
-          try {
-            const feed = await this.parser.parseURL(url3);
-            return feed.items;
-          } catch (e) {
-            const msg = e instanceof Error ? e.message : String(e);
-            throw new Error(`Fetch failed: ${url3} (${msg})`);
+          let lastError;
+          for (let i = 0; i <= retries; i++) {
+            try {
+              const feed = await this.parser.parseURL(url3);
+              return feed.items || [];
+            } catch (e) {
+              lastError = e;
+              const msg2 = e instanceof Error ? e.message : String(e);
+              const isRetryable = msg2.includes("ENOTFOUND") || msg2.includes("ECONNREFUSED") || msg2.includes("ETIMEDOUT") || msg2.includes("timeout") || msg2.includes("Status code 429") || msg2.includes("Status code 503");
+              if (isRetryable && i < retries) {
+                const delay = 3e3 * (i + 1);
+                console.warn(`[RSSFetcher] Fetch failed, retrying in ${delay}ms... (${i + 1}/${retries}): ${url3}`);
+                await new Promise((resolve) => setTimeout(resolve, delay));
+                continue;
+              }
+              break;
+            }
           }
+          const msg = lastError instanceof Error ? lastError.message : String(lastError);
+          throw new Error(`Fetch failed: ${url3} (${msg})`);
         });
       }
+      /**
+       * フィードの有効性を検証します。
+       */
       async validateFeed(url3) {
         return this.limit(async () => {
           try {
@@ -131691,9 +131739,22 @@ var init_RSSFetcher = __esm({
           }
         });
       }
+      /**
+       * 複数のフィードを並列で取得します。
+       */
       async fetchAll(feedConfigs) {
         const tasks = feedConfigs.map(
-          (config2) => this.fetch(config2.url).then((items) => ({ category: config2.category, url: config2.url, items, success: true })).catch((error51) => ({ category: config2.category, url: config2.url, error: error51.message, success: false }))
+          (config2) => this.fetch(config2.url).then((items) => ({
+            category: config2.category,
+            url: config2.url,
+            items,
+            success: true
+          })).catch((error51) => ({
+            category: config2.category,
+            url: config2.url,
+            error: error51.message,
+            success: false
+          }))
         );
         return Promise.all(tasks);
       }
@@ -132062,7 +132123,7 @@ var init_ScraperFacade = __esm({
        */
       constructor(_interestsPath, feedsPath, dataDir) {
         this.feedManager = new FeedManager(feedsPath);
-        this.rssFetcher = new RSSFetcher(10);
+        this.rssFetcher = new RSSFetcher(20);
         this.geminiService = new GeminiService(process.env.GEMINI_API_KEY);
         this.enrichmentService = new EnrichmentService(this.geminiService, dataDir);
       }
@@ -132074,12 +132135,6 @@ var init_ScraperFacade = __esm({
       }
       /**
        * Gemini APIを活用し、ユーザーの興味に最適化されたおすすめ記事10選を生成します。
-       * 
-       * 意図: 大量の記事の中から、ユーザーの現在の関心事に最も合致し、かつ価値の高い情報を
-       * AIの判断（キュレーション）に基づいて厳選するためです。
-       * 
-       * @param interests - ユーザーの興味データ
-       * @returns 厳選された記事リスト
        */
       async getRecommendations(interests) {
         try {
@@ -132100,13 +132155,6 @@ var init_ScraperFacade = __esm({
       }
       /**
        * 最新のパーソナライズ済みダッシュボードデータを構築します。
-       * 
-       * 意図: 全てのカテゴリにおける高品質な最新記事を収集し、
-       * ユーザーが一目で全体像を把握できるパーソナライズされた画面データを提供するためです。
-       * 記事が0件になるのを防ぐため、多段階のフォールバックロジックを搭載しています。
-       * 
-       * @param interests - ユーザーの興味データ
-       * @returns カテゴリ別に分類された記事データ
        */
       async getDashboard(interests) {
         console.log(`[ScraperFacade] \u30D1\u30FC\u30BD\u30CA\u30E9\u30A4\u30BA\u30C9\u30FB\u30C0\u30C3\u30B7\u30E5\u30DC\u30FC\u30C9\u3092\u69CB\u7BC9\u4E2D...`);
@@ -132136,56 +132184,74 @@ var init_ScraperFacade = __esm({
         }
         return dashboard;
       }
-      /**
-       * 記事をスコア順および日付順でソートし、指定件数を抽出する内部ヘルパー。
-       * @private
-       */
       _sortAndSlice(articles, count) {
         return articles.sort((a, b) => b.score - a.score || new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, count);
       }
       /**
+       * 記事が0件の場合に期間制限を解除するフォールバック機能付きの取得メソッド。
+       */
+      async fetchAndProcessArticlesWithFallback(interests) {
+        console.log(`[ScraperFacade] Starting fetchAndProcessArticlesWithFallback...`);
+        let articles = await this.fetchAndProcessArticles(interests, false);
+        if (articles.length === 0) {
+          console.warn(`[ScraperFacade] No articles found within 90 days. Retrying without date limit...`);
+          articles = await this.fetchAndProcessArticles(interests, true);
+        }
+        return articles;
+      }
+      /**
        * 各フィードから記事を並列取得し、パース・カテゴリ判定・スコアリングを行うコアロジック。
-       * @param interests - ユーザーの興味データ
-       * @param ignoreDateLimit - 90日の期間制限を無視するかどうか
-       * @returns 正規化された記事オブジェクト의配列
        */
       async fetchAndProcessArticles(interests, ignoreDateLimit = false) {
         const scorer = new ScoringService(interests);
         const feeds = this.feedManager.getAllActiveFeeds();
         const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1e3);
+        console.log(`[ScraperFacade] Fetching ${feeds.length} feeds (ignoreDateLimit: ${ignoreDateLimit})...`);
         const results = await this.rssFetcher.fetchAll(feeds);
         const allArticles = [];
+        let successCount = 0;
+        let failCount = 0;
         for (const res of results) {
           if (!res.success) {
+            failCount++;
+            if (failCount <= 10) console.warn(`[ScraperFacade] Feed failed: ${res.url} - ${res.error}`);
             await this.feedManager.reportFailure(res.category, res.url);
             continue;
           }
+          successCount++;
           this.feedManager.reportSuccess(res.category, res.url);
           if (res.items) {
             for (const item of res.items) {
-              const record2 = item;
-              const pubDate = new Date(String(record2.isoDate || record2.pubDate || ""));
-              if (!ignoreDateLimit && pubDate < ninetyDaysAgo) continue;
-              const title = String(record2.title || "");
-              const snippet = String(record2.contentSnippet || record2.description || "");
-              const detectedCat = scorer.detectCategory(title, snippet, res.category);
-              const score = scorer.calculateScore(title, snippet, detectedCat);
-              const brand = scorer.extractBrand(title);
-              const language = this._detectLanguage(title, snippet);
-              allArticles.push(new Article({
-                title: record2.title,
-                link: record2.link,
-                desc: record2.contentSnippet || record2.description,
-                brand,
-                score,
-                category: detectedCat,
-                date: record2.isoDate || record2.pubDate,
-                img: this.enrichmentService.extractBasicImage(record2),
-                language
-              }));
+              try {
+                const record2 = item;
+                const pubDateStr = String(record2.isoDate || record2.pubDate || "");
+                const pubDate = new Date(pubDateStr);
+                const isDateValid = !isNaN(pubDate.getTime());
+                if (!ignoreDateLimit && isDateValid && pubDate.getTime() < ninetyDaysAgo.getTime()) continue;
+                const title = String(record2.title || "");
+                const snippet = String(record2.contentSnippet || record2.description || "");
+                const detectedCat = scorer.detectCategory(title, snippet, res.category);
+                const score = scorer.calculateScore(title, snippet, detectedCat);
+                const brand = scorer.extractBrand(title);
+                const language = this._detectLanguage(title, snippet);
+                allArticles.push(new Article({
+                  title: record2.title,
+                  link: record2.link,
+                  desc: record2.contentSnippet || record2.description,
+                  brand,
+                  score,
+                  category: detectedCat,
+                  date: isDateValid ? pubDate.toISOString() : (/* @__PURE__ */ new Date()).toISOString(),
+                  img: this.enrichmentService.extractBasicImage(record2),
+                  language
+                }));
+              } catch (err) {
+                continue;
+              }
             }
           }
         }
+        console.log(`[ScraperFacade] Fetch completed. Success: ${successCount}, Failed: ${failCount}, Articles: ${allArticles.length}`);
         return allArticles;
       }
       /**
@@ -132532,7 +132598,11 @@ var enrichmentService;
 var scraper;
 var orchestrator;
 function getDataDir() {
-  return !app.isPackaged ? path4.resolve(app.getAppPath(), "..", "data") : path4.join(app.getPath("userData"), "data");
+  if (!app.isPackaged) {
+    return path4.join(__dirname, "..", "data");
+  } else {
+    return path4.join(app.getPath("userData"), "data");
+  }
 }
 async function startInternalServer(settingsManager) {
   const server = fastify({ logger: false });
@@ -132543,6 +132613,10 @@ async function startInternalServer(settingsManager) {
     path4.join(dataDir, "feed_config.json"),
     dataDir
   );
+  const apiKey = await settingsManager.getApiKey();
+  if (apiKey) {
+    scraper.updateApiKey(apiKey);
+  }
   orchestrator = new NexusOrchestrator2(geminiService);
   await server.register(nexusRouter2, {
     prefix: "/api/v5",
@@ -132556,21 +132630,47 @@ async function startInternalServer(settingsManager) {
     return await scraper.getDashboard(interests);
   });
   try {
-    await server.listen({ port: 3005, host: "0.0.0.0" });
-    console.log("[Main] Internal Fastify server listening on port 3005");
+    await server.listen({ port: 3005, host: "127.0.0.1" });
+    console.log("[Main] Internal Fastify server listening on http://127.0.0.1:3005");
   } catch (err) {
     console.error("[Main] Failed to start internal Fastify server:", err);
+  }
+}
+async function ensureDefaultData(dataDir) {
+  const interestsPath = path4.join(dataDir, "interests.json");
+  const feedConfigPath = path4.join(dataDir, "feed_config.json");
+  const needsInit = !fs5.existsSync(interestsPath) || !fs5.existsSync(feedConfigPath) || fs5.existsSync(interestsPath) && fs5.statSync(interestsPath).size === 0 || fs5.existsSync(feedConfigPath) && fs5.statSync(feedConfigPath).size === 0;
+  if (needsInit) {
+    console.log("[Main] Initializing data with defaults...");
+    const resourcesPath = app.isPackaged ? process.resourcesPath : path4.resolve(__dirname, "..");
+    const defaultDataDir = path4.join(resourcesPath, "default-data");
+    if (!fs5.existsSync(dataDir)) {
+      fs5.mkdirSync(dataDir, { recursive: true });
+    }
+    const files = ["interests.json", "feed_config.json"];
+    for (const file2 of files) {
+      const src = path4.join(defaultDataDir, file2);
+      const dest = path4.join(dataDir, file2);
+      if (fs5.existsSync(src)) {
+        try {
+          fs5.copyFileSync(src, dest);
+          console.log(`[Main] Copied default ${file2}`);
+        } catch (e) {
+          console.error(`[Main] Failed to copy default ${file2}:`, e);
+        }
+      }
+    }
   }
 }
 async function initBackend() {
   console.log("[Main] Backend services initializing...");
   const dataDir = getDataDir();
+  await ensureDefaultData(dataDir);
   const settingsManager = new ElectronSettingsManager2({ dataDir });
   await settingsManager.init();
   const apiKey = await settingsManager.getApiKey();
   geminiService = new GeminiService2(apiKey);
   const feedConfigPath = path4.join(dataDir, "feed_config.json");
-  console.log(`[Main] Using FeedManager config: ${feedConfigPath}`);
   feedManager = new FeedManager2(feedConfigPath);
   rssFetcher = new RSSFetcher2();
   discoveryService = new DiscoveryService2(geminiService, rssFetcher, feedManager);
@@ -132579,7 +132679,6 @@ async function initBackend() {
   console.log("[Main] Backend services ready.");
 }
 function createWindow() {
-  const isDev = process.env.NODE_ENV === "development" || !app.isPackaged;
   mainWindow = new BrowserWindow({
     width: 1440,
     height: 900,
@@ -132603,6 +132702,7 @@ function createWindow() {
   mainWindow.once("ready-to-show", () => {
     mainWindow.show();
   });
+  const isDev = process.env.NODE_ENV === "development" || !app.isPackaged;
   if (isDev) {
     mainWindow.loadURL("http://localhost:5173");
   } else {
@@ -132618,11 +132718,12 @@ function createWindow() {
 }
 function createTray() {
   const iconPath = path4.join(__dirname, "../public/app-icon.png");
+  if (!fs5.existsSync(iconPath)) return;
   tray = new Tray(iconPath);
   const contextMenu = Menu.buildFromTemplate([
-    { label: "Aegis Nexus \uFFFD\uFFFD\uFFFD\uFFFD", click: () => mainWindow.show() },
+    { label: "Aegis Nexus \u8868\u793A", click: () => mainWindow.show() },
     { type: "separator" },
-    { label: "\uFFFDI\uFFFD\uFFFD", click: () => {
+    { label: "\u7D42\u4E86", click: () => {
       app.isQuitting = true;
       app.quit();
     } }
@@ -132644,12 +132745,8 @@ function registerIpcHandlers() {
       const dataDir = getDataDir();
       const settingsManager = new ElectronSettingsManager2({ dataDir });
       const result = await settingsManager.syncSettings(settings, rssFetcher);
-      if (feedManager) {
-        feedManager.config = result.validatedFeedConfig;
-      }
-      if (scraper && scraper.feedManager) {
-        scraper.feedManager.config = result.validatedFeedConfig;
-      }
+      if (feedManager) feedManager.config = result.validatedFeedConfig;
+      if (scraper && scraper.feedManager) scraper.feedManager.config = result.validatedFeedConfig;
       return result;
     } catch (error51) {
       console.error("Failed to sync settings:", error51);
@@ -132657,16 +132754,17 @@ function registerIpcHandlers() {
     }
   });
   ipcMain.handle("get-articles", async (event, options) => {
-    console.log("[Main] Fetching articles with options:", options);
+    console.log("[Main] IPC: get-articles invoked.");
     try {
       const dataDir = getDataDir();
       const settingsManager = new ElectronSettingsManager2({ dataDir });
       const interests = await settingsManager.getInterests();
-      const articles = await scraper.fetchAndProcessArticles(interests);
-      return articles.map((a) => a.toJSON()).sort((a, b) => b.score - a.score).slice(0, 100);
+      const articles = await scraper.fetchAndProcessArticlesWithFallback(interests);
+      console.log(`[Main] IPC: Returning top 500 articles.`);
+      return articles.map((a) => a.toJSON()).sort((a, b) => b.score - a.score).slice(0, 500);
     } catch (error51) {
-      console.error("Failed to get articles:", error51);
-      throw error51;
+      console.error("[Main] IPC Error: get-articles failed:", error51);
+      return [];
     }
   });
   ipcMain.handle("trigger-orchestration", async () => {
@@ -132718,7 +132816,6 @@ function registerIpcHandlers() {
         const validatedSites = await discoveryService.validateSuggestedFeeds(sitesToValidate);
         restructured.feedConfig[catName].active = validatedSites.map((s) => s.url);
         if (restructured.feedConfig[catName].active.length === 0) {
-          console.log(`[Main IPC] Category "${catName}" has no valid feeds. Using Google News fallback.`);
           const fallbackUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(catName)}&hl=ja&gl=JP&ceid=JP:ja`;
           restructured.feedConfig[catName].active.push(fallbackUrl);
         }
@@ -132756,21 +132853,32 @@ function registerIpcHandlers() {
       for (const file2 of files) {
         const src = path4.join(defaultDataDir, file2);
         const dest = path4.join(dataDir, file2);
-        if (fs5.existsSync(src)) {
-          await fs5.promises.copyFile(src, dest);
-          console.log(`[Main] Reset ${file2} to default.`);
-        }
+        if (fs5.existsSync(src)) await fs5.promises.copyFile(src, dest);
       }
       const settingsManager = new ElectronSettingsManager2({ dataDir });
       await settingsManager.init();
       const feedConfig = await settingsManager.getFeedConfig();
-      feedManager.config = feedConfig;
-      if (scraper && scraper.feedManager) {
-        scraper.feedManager.config = feedConfig;
-      }
+      if (feedManager) feedManager.config = feedConfig;
+      if (scraper && scraper.feedManager) scraper.feedManager.config = feedConfig;
       return { success: true };
     } catch (error51) {
       console.error("Failed to reset to defaults:", error51);
+      throw error51;
+    }
+  });
+  ipcMain.handle("get-ui-settings", async () => {
+    const dataDir = getDataDir();
+    const settingsManager = new ElectronSettingsManager2({ dataDir });
+    return await settingsManager.getUiSettings();
+  });
+  ipcMain.handle("save-ui-settings", async (event, settings) => {
+    try {
+      const dataDir = getDataDir();
+      const settingsManager = new ElectronSettingsManager2({ dataDir });
+      await settingsManager.saveUiSettings(settings);
+      return { success: true };
+    } catch (error51) {
+      console.error("Failed to save UI settings:", error51);
       throw error51;
     }
   });
@@ -132791,38 +132899,28 @@ function registerIpcHandlers() {
   });
 }
 app.whenReady().then(async () => {
-  await initBackend();
-  registerIpcHandlers();
-  createWindow();
-  createTray();
-  const isDev = process.env.NODE_ENV === "development" || !app.isPackaged;
-  if (!isDev) {
-    app.setLoginItemSettings({
-      openAtLogin: true,
-      path: app.getPath("exe"),
-      args: ["--hidden"]
-    });
-  } else {
-    app.setLoginItemSettings({
-      openAtLogin: false,
-      path: process.execPath,
-      args: [path4.resolve(process.argv[1] || "."), "--hidden"]
-    });
-  }
-  globalShortcut.register("CommandOrControl+Q", () => {
-    app.isQuitting = true;
-    app.quit();
-  });
-  app.on("activate", () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
+  try {
+    await initBackend();
+    registerIpcHandlers();
+    createWindow();
+    createTray();
+    const isDev = process.env.NODE_ENV === "development" || !app.isPackaged;
+    if (!isDev) {
+      app.setLoginItemSettings({ openAtLogin: true, path: app.getPath("exe"), args: ["--hidden"] });
     }
-  });
+    globalShortcut.register("CommandOrControl+Q", () => {
+      app.isQuitting = true;
+      app.quit();
+    });
+  } catch (err) {
+    console.error("[Main] CRITICAL ERROR during startup:", err);
+  }
+});
+app.on("activate", () => {
+  if (BrowserWindow.getAllWindows().length === 0) createWindow();
 });
 app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") {
-    app.quit();
-  }
+  if (process.platform !== "darwin") app.quit();
 });
 /*! Bundled license information:
 
