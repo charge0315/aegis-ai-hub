@@ -8,10 +8,10 @@
  */
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  LayoutDashboard, 
-  Settings2, 
-  Search, 
+import {
+  LayoutDashboard,
+  Settings2,
+  Search,
   RefreshCcw,
   Sparkles,
   ImageIcon,
@@ -32,7 +32,7 @@ const App: React.FC = () => {
   // --- PRIMARY CONTEXT STATE ---
   const [currentView, setCurrentView] = useState<'feed' | 'settings'>('feed');
   const { settings, articles, loading, sync, refetch } = useNexusSync();
-  
+
   // --- COGNITIVE FILTER STATE ---
   const [searchQuery, setSearchQuery] = useState('');
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
@@ -97,12 +97,12 @@ const App: React.FC = () => {
   }, [isJapaneseOnly, feedSize, showImages]);
 
   // --- INTERACTIVE DIALOG STATE ---
-  const { 
-    dialog, 
-    alert: dialogAlert, 
-    confirm: dialogConfirm, 
-    prompt: dialogPrompt, 
-    hideDialog 
+  const {
+    dialog,
+    alert: dialogAlert,
+    confirm: dialogConfirm,
+    prompt: dialogPrompt,
+    hideDialog
   } = useDialog();
 
   // --- INITIAL SETUP CHECK ---
@@ -110,7 +110,7 @@ const App: React.FC = () => {
     if (settings && !loading) {
       const hasCategories = Object.keys(settings.interests.categories).length > 0;
       const isInitialized = localStorage.getItem('nexus_initialized');
-      
+
       if (!isInitialized && hasCategories) {
         void (async () => {
           const shouldOverwrite = await dialogConfirm(
@@ -164,7 +164,7 @@ const App: React.FC = () => {
     if (!settings) return;
     const group = settings.feed_urls[category];
     if (!group) return;
-    
+
     await dialogAlert(
       `${category} - Active Nodes`,
       group.active.length > 0 ? group.active.join('\n') : 'No active nodes connected.',
@@ -172,24 +172,8 @@ const App: React.FC = () => {
     );
   };
 
-  const handleNavigate = useCallback((view: 'feed' | 'settings', category?: string) => {
-    setCurrentView(view);
-    if (category) {
-      setSearchQuery(category);
-    }
-  }, []);
-
   return (
     <React.Fragment>
-      <CommandPalette 
-        isOpen={isCommandPaletteOpen} 
-        onClose={() => setIsCommandPaletteOpen(false)} 
-        settings={settings}
-        onNavigate={handleNavigate}
-        onSync={async () => { if (settings) await sync(settings); }}
-        onTriggerOrchestration={async (req) => { await nexusApi.triggerOrchestration(req); }}
-      />
-      
       {dialog && (
         <CustomDialog 
           {...dialog} 
@@ -198,119 +182,106 @@ const App: React.FC = () => {
         />
       )}
 
-      <div className="flex h-screen overflow-hidden bg-[#0a0a0c] text-slate-100 font-sans selection:bg-primary/30">
-        <aside className={`${isCompact ? 'w-20' : 'w-72'} flex flex-col border-r border-white/5 bg-white/[0.02] backdrop-blur-3xl transition-all duration-500 ease-out z-40`}>
-          <div className="p-8">
-            <div className="flex items-center gap-4 mb-12">
-              <div className="w-10 h-10 bg-gradient-to-br from-primary to-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20 ring-1 ring-white/20">
-                <LayoutDashboard size={22} className="text-white" />
-              </div>
-              {!isCompact && (
-                <div className="flex flex-col">
-                  <span className="text-lg font-black tracking-tighter text-white uppercase italic">Aegis Nexus</span>
-                  <span className="text-[10px] font-mono text-primary/70 tracking-widest leading-none">INTELLIGENCE V5</span>
-                </div>
-              )}
+      <div className="window-base text-slate-200">
+        <CommandPalette
+          isOpen={isCommandPaletteOpen}
+          onClose={() => setIsCommandPaletteOpen(false)}
+          settings={settings}
+          onNavigate={(v) => setCurrentView(v)}
+          onSync={async () => { if (settings) await sync(settings); }}
+          onTriggerOrchestration={async (req) => { await nexusApi.triggerOrchestration(req); }}
+        />
+
+        <aside className={`${isCompact ? 'w-20 px-3' : 'w-64 p-6'} sidebar-glass flex flex-col sticky top-0 h-screen z-30 transition-all duration-300 drag`}>
+          <div className={`mb-10 mt-6 flex ${isCompact ? 'justify-center' : 'px-2'}`}>
+            <div className="w-10 h-10 rounded-xl overflow-hidden shadow-2xl bg-primary/20 flex items-center justify-center">
+              <img
+                src="./app-icon.png"
+                alt="Nexus"
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  const parent = e.currentTarget.parentElement;
+                  if (parent) {
+                    parent.innerHTML = '<span class="text-xs font-black text-primary">NEXUS</span>';
+                  }
+                }}
+              />
             </div>
-
-            <nav className="space-y-3">
-              {[
-                { id: 'feed', icon: LayoutDashboard, label: 'Neural Feed' },
-                { id: 'settings', icon: Settings2, label: 'System Nexus' }
-              ].map(item => (
-                <button
-                  key={item.id}
-                  onClick={() => setCurrentView(item.id as any)}
-                  className={`w-full flex items-center ${isCompact ? 'justify-center' : 'gap-4 px-5'} py-4 rounded-2xl transition-all duration-300 group relative ${
-                    currentView === item.id 
-                      ? 'bg-primary text-white shadow-xl shadow-primary/20 translate-x-1' 
-                      : 'text-slate-500 hover:text-slate-100 hover:bg-white/5'
-                  }`}
-                >
-                  <item.icon size={20} className={currentView === item.id ? 'animate-pulse' : 'group-hover:scale-110 transition-transform'} />
-                  {!isCompact && <span className="font-bold text-sm tracking-tight">{item.label}</span>}
-                  {currentView === item.id && (
-                    <motion.div 
-                      layoutId="nav-glow"
-                      className="absolute inset-0 bg-primary/20 blur-xl rounded-full -z-10"
-                    />
-                  )}
-                </button>
-              ))}
-            </nav>
           </div>
-
-          <div className="mt-auto p-6">
+          <nav className="space-y-4 flex-grow no-drag">
+            <button data-testid="nav-feed" onClick={() => setCurrentView('feed')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${currentView === 'feed' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-slate-400 hover:bg-white/5'}`}>
+              <LayoutDashboard size={18} /> {!isCompact && <span className="text-sm font-bold">Intelligence Feed</span>}
+            </button>
+            <button data-testid="nav-settings" onClick={() => setCurrentView('settings')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${currentView === 'settings' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-slate-400 hover:bg-white/5'}`}>
+              <Settings2 size={18} /> {!isCompact && <span className="text-sm font-bold">Nexus Command</span>}
+            </button>
+          </nav>
+          <div className={`mt-auto py-6 border-t border-white/5 ${isCompact ? 'flex justify-center' : ''}`}>
             <AgentMonitor agents={agentEvents} compact={isCompact} />
           </div>
         </aside>
 
-        <main className="flex-1 flex flex-col relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-blue-900/5 pointer-events-none" />
-          
-          <header className="h-24 flex items-center justify-between px-10 border-b border-white/5 bg-black/20 backdrop-blur-md z-30">
-            <div className="flex items-center gap-6 flex-1 max-w-2xl">
-              <div className="relative w-full group">
-                <div className="absolute inset-y-0 left-5 flex items-center pointer-events-none text-slate-500 group-focus-within:text-primary transition-colors">
-                  <Search size={18} />
-                </div>
-                <input
-                  type="text"
-                  placeholder="Intercept signals by keyword or origin..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-white/5 border border-white/5 rounded-2xl py-3.5 pl-14 pr-5 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:bg-white/10 transition-all font-medium text-sm placeholder:text-slate-600 text-slate-200"
-                />
-              </div>
+        <main className="flex-grow flex flex-col min-h-screen">
+          <header className={`h-16 border-b border-white/5 sidebar-glass flex items-center justify-between ${isCompact ? 'px-4' : 'px-8'} sticky top-0 z-20 drag`}>
+            <div className="flex items-center gap-6 flex-grow no-drag">
+              <Search size={16} className="text-slate-500" />
+              <input type="text" placeholder="Search signals..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="bg-transparent outline-none text-sm w-full text-white placeholder-slate-600" />
             </div>
+            <div className="flex items-center gap-4 no-drag">
+              {currentView === 'feed' && (
+                <div className="flex items-center gap-2 mr-4 border-r border-white/10 pr-6">
+                  <div className="flex bg-black/20 rounded-lg p-1 mr-2">
+                    <button onClick={() => setFeedSize('small')} className={`p-1.5 rounded-md transition-all ${feedSize === 'small' ? 'bg-white/10 text-white' : 'text-slate-500 hover:text-white'}`} title="Small Grid">
+                      <ListIcon size={14} />
+                    </button>
+                    <button onClick={() => setFeedSize('medium')} className={`p-1.5 rounded-md transition-all ${feedSize === 'medium' ? 'bg-white/10 text-white' : 'text-slate-500 hover:text-white'}`} title="Medium Grid">
+                      <LayoutGrid size={14} />
+                    </button>
+                    <button onClick={() => setFeedSize('large')} className={`p-1.5 rounded-md transition-all ${feedSize === 'large' ? 'bg-white/10 text-white' : 'text-slate-500 hover:text-white'}`} title="Large Grid">
+                      <LayoutDashboard size={14} />
+                    </button>
+                  </div>
 
-            <div className="flex items-center gap-4 ml-8">
-              <div className="flex bg-white/5 p-1.5 rounded-2xl border border-white/5">
-                {[
-                  { id: 'small', icon: LayoutGrid },
-                  { id: 'medium', icon: LayoutGrid },
-                  { id: 'large', icon: ListIcon }
-                ].map((mode) => (
                   <button
-                    key={mode.id}
-                    onClick={() => setFeedSize(mode.id as any)}
-                    className={`p-2.5 rounded-xl transition-all ${feedSize === mode.id ? 'bg-primary text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
+                    onClick={() => setIsJapaneseOnly(prev => !prev)}
+                    className={`p-1.5 rounded-lg border transition-all flex items-center gap-1.5 px-2.5 ${isJapaneseOnly ? 'bg-primary/20 border-primary/30 text-primary' : 'bg-white/5 border-white/10 text-slate-400 hover:text-slate-200'}`}
+                    title={isJapaneseOnly ? "Showing Japanese Only" : "Showing All Languages"}
                   >
-                    <mode.icon size={18} className={mode.id === 'medium' ? 'scale-75' : ''} />
+                    <Languages size={16} />
+                    <span className="text-[10px] font-bold uppercase tracking-tighter">JA Only</span>
                   </button>
-                ))}
-              </div>
 
-              <div className="flex bg-white/5 p-1.5 rounded-2xl border border-white/5">
-                <button
-                  onClick={() => setIsJapaneseOnly(!isJapaneseOnly)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${isJapaneseOnly ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
-                >
-                  <Languages size={16} />
-                  <span className="text-[10px] font-black uppercase tracking-widest">JA ONLY</span>
-                </button>
-              </div>
-
-              <button
-                onClick={() => setShowImages(!showImages)}
-                className={`p-3.5 rounded-2xl transition-all border ${showImages ? 'bg-white/5 border-white/5 text-slate-400' : 'bg-orange-500/10 border-orange-500/30 text-orange-400'}`}
-              >
-                {showImages ? <ImageIcon size={20} /> : <ImageOff size={20} />}
-              </button>
-
-              <button
-                onClick={() => void refetch()}
+                  <button
+                    onClick={() => setShowImages(!showImages)}
+                    className={`p-1.5 rounded-lg border transition-all ${showImages ? 'bg-primary/20 border-primary/30 text-primary' : 'bg-white/5 border-white/10 text-slate-400'}`}
+                    title={showImages ? "Hide Images" : "Show Images"}
+                  >
+                    {showImages ? <ImageIcon size={16} /> : <ImageOff size={16} />}
+                  </button>
+                </div>
+              )}
+              <motion.button
+                onClick={() => refetch()}
                 disabled={loading}
-                className="p-3.5 bg-white/5 border border-white/5 rounded-2xl text-slate-400 hover:text-primary hover:bg-primary/10 transition-all disabled:opacity-50"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                className="p-2 text-slate-400 hover:text-white transition-colors disabled:opacity-50"
               >
-                <RefreshCcw size={20} className={loading ? 'animate-spin' : ''} />
-              </button>
+                <motion.div
+                  animate={loading ? { rotate: 360 } : { rotate: 0 }}
+                  transition={loading ? { duration: 1, repeat: Infinity, ease: "linear" } : { duration: 0.5 }}
+                  className="flex items-center justify-center"
+                >
+                  <RefreshCcw size={18} />
+                </motion.div>
+              </motion.button>
             </div>
           </header>
 
-          <div className="flex-1 overflow-y-auto custom-scrollbar custom-scrollbar-v2">
+          <div className={`flex-grow ${isCompact ? 'p-4' : 'p-8'}`}>
             {currentView === 'feed' ? (
-              <div className="p-10 max-w-[1920px] mx-auto min-h-full">
+              <div>
                 <div className="mb-10">
                   <h2 className="text-4xl font-black text-white tracking-tight mb-2">Intelligence Feed</h2>
                   <p className="text-slate-500 text-sm font-medium">Synthesizing signals from your designated node cluster.</p>
@@ -332,31 +303,16 @@ const App: React.FC = () => {
                       <h3 className="text-lg font-bold text-white uppercase tracking-widest">Intercepting Signals</h3>
                       <p className="text-slate-500 text-xs font-mono">Initializing node handshake & decrypting packet streams...</p>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6 w-full opacity-20 pointer-events-none">
-                      {[1, 2, 3, 4].map((i) => (
-                        <div key={i} className="h-64 rounded-3xl bg-white/5 animate-pulse" />
-                      ))}
-                    </div>
                   </div>
                 ) : articles.length === 0 && !loading ? (
-                  <div className="flex flex-col items-center justify-center py-20 text-slate-500 space-y-6">
-                    <div className="p-6 bg-white/5 rounded-3xl border border-white/5 text-center max-w-md">
-                      <LayoutGrid size={48} className="mx-auto mb-4 opacity-20" />
-                      <h3 className="text-white font-bold mb-2">No active signals detected</h3>
-                      <p className="text-xs mb-6 leading-relaxed">指定されたノードクラスターからの信号を受信できませんでした。フィード設定を確認するか、ネットワーク接続を確かめてください。</p>
-                      <button 
-                        onClick={() => void refetch()}
-                        className="px-8 py-3 bg-primary text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
-                      >
-                        Reconnect Node
-                      </button>
-                    </div>
+                  <div className="flex flex-col items-center justify-center py-20 text-slate-600">
+                    <p>No active signals detected. Check your feed configuration.</p>
                   </div>
                 ) : (
                   <div className="space-y-16">
                     {Object.entries(groupedArticles).map(([category, catArticles]) => (
                       <section key={category}>
-                        <button 
+                        <button
                           onClick={(e) => { e.stopPropagation(); void handleShowFeeds(category); }}
                           className="group text-xl font-black mb-8 hover:text-primary transition-all flex items-center gap-4 uppercase tracking-tighter"
                         >
@@ -376,12 +332,12 @@ const App: React.FC = () => {
                 )}
               </div>
             ) : (
-              settings && <UnifiedEditor 
-                currentSettings={settings} 
-                onSave={sync} 
-                alert={dialogAlert} 
-                confirm={dialogConfirm} 
-                prompt={dialogPrompt} 
+              settings && <UnifiedEditor
+                currentSettings={settings}
+                onSave={sync}
+                alert={dialogAlert}
+                confirm={dialogConfirm}
+                prompt={dialogPrompt}
               />
             )}
           </div>
