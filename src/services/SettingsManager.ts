@@ -91,7 +91,11 @@ export class SettingsManager {
    * クラウド（またはインポート）からの設定を同期します。
    */
   async syncSettings(settings: any, fetcher?: { validateFeed: (url: string) => Promise<{ ok: boolean; status: number | string }> }): Promise<any> {
-    const { interests, feed_urls, windowState, lastUpdated } = settings;
+    const { interests, feed_urls, windowState, lastUpdated } = settings || {};
+
+    if (!interests) {
+      throw new Error('INVALID_ARGUMENT: "interests" is required for sync.');
+    }
 
     // 型バリデーション
     const validatedInterests = InterestsSchema.parse(interests);
@@ -104,7 +108,8 @@ export class SettingsManager {
     const interestCats = Object.keys(validatedInterests.categories);
     const clean = (s: string) => s.replace(/[＆&＆\s・]/g, '').toLowerCase();
 
-    for (const [feedCatName, data] of Object.entries(feed_urls as FeedConfig)) {
+    const incomingFeeds = feed_urls || {};
+    for (const [feedCatName, data] of Object.entries(incomingFeeds as FeedConfig)) {
       const targetClean = clean(feedCatName);
       
       // 1. 完全一致

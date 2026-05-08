@@ -61739,14 +61739,18 @@ var init_SettingsManager = __esm({
        * クラウド（またはインポート）からの設定を同期します。
        */
       async syncSettings(settings, fetcher) {
-        const { interests, feed_urls, windowState, lastUpdated } = settings;
+        const { interests, feed_urls, windowState, lastUpdated } = settings || {};
+        if (!interests) {
+          throw new Error('INVALID_ARGUMENT: "interests" is required for sync.');
+        }
         const validatedInterests = InterestsSchema.parse(interests);
         const validatedWindowState = windowState ? WindowStateSchema.parse(windowState) : null;
         let validatedFeedConfig = {};
         const normalizedFeedConfig = {};
         const interestCats = Object.keys(validatedInterests.categories);
         const clean = (s) => s.replace(/[＆&＆\s・]/g, "").toLowerCase();
-        for (const [feedCatName, data2] of Object.entries(feed_urls)) {
+        const incomingFeeds = feed_urls || {};
+        for (const [feedCatName, data2] of Object.entries(incomingFeeds)) {
           const targetClean = clean(feedCatName);
           let finalName = interestCats.find((c) => c === feedCatName);
           if (!finalName) {
