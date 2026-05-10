@@ -1,12 +1,12 @@
 # Backend Architecture Codemap
 
-**Last Updated:** 2026-05-06
+**Last Updated:** 2026-05-20
 **Version:** v5.3.0 NEXUS
 **Entry Point:** `electron/main.cjs` (App/Main Process)
 
 ## 概要
 バックエンドは、従来の独立した `server/` 構成を廃止し、**`src` 配下へ完全に統合**されました。これにより、Electron アプリケーション内で Fastify サーバーが内蔵される形式となり、単一のプロジェクト管理が可能になりました。
-v5.3.0 では、AI 再構築におけるデータの不整合を解消するための堅牢化ロジックが導入されました。
+v5.3.0 では、AI 再構築におけるデータの不整合を解消するための堅牢化ロジック、および **Gemini 3.1 Pro を活用した高度なトレンド分析エンジン**が導入されました。
 
 ## システム・アーキテクチャ
 
@@ -14,7 +14,9 @@ v5.3.0 では、AI 再構築におけるデータの不整合を解消するた�
 全てのビジネスロジックは `src` に集約され、Fastify によってホストされます。
 - **内蔵型**: Electron メインプロセス (`main.cjs`) によってライフサイクルが管理されます。
 - **高性能**: 非同期 I/O に最適化された Fastify を採用。
-- **API エンドポイント**: `/api/v5/` プレフィックス配下で、記事取得、設定同期、エージェント実行等の機能を提供。
+- **API エンドポイント**: 
+    - `/api/v5/`: 記事取得、設定同期、エージェント実行等の機能。
+    - **`/api/v5/discover-trends`**: 最新の記事群から Gemini 3.1 Pro を用いて潜在的なトレンド、コンテキスト、信頼度を抽出する新エンドポイント。
 - **単一リポジトリ**: 全ての依存関係が `package.json` で管理されます。
 
 ### 2. AI 再構築の整合性戦略 (Consistency Strategy)
@@ -24,7 +26,16 @@ v5.3.0 では、AI 再構築におけるデータの不整合を解消するた�
 - **並列検証 (`Promise.all`)**: 発見された各フィードの到達可能性を並列で検証し、タイムアウトを回避します。
 - **Google News フォールバック**: 適切なソースがないカテゴリに対し、最適化されたクエリの Google News RSS を自動設定します。
 
-### 3. Windows 11 Native Glass (Acrylic)
+### 3. 能動的インテリジェンス探索 (Active Intelligence Discovery)
+`ScraperFacade.discoverTrends` メソッドを中心に、従来の受動的な学習から能動的な探索へと進化しました：
+- **Gemini 3.1 Pro 活用**: 高度な推論能力を持つ Pro モデルを使用し、単なるキーワード抽出を超えた「文脈（Context）」の理解を実現。
+- **拡張データ構造**: 抽出されるトレンドデータには、以下のメタデータが含まれます：
+    - `type`: トレンドの種類（技術、市場、製品、人物等）。
+    - `confidence`: AI による確信度（0.0 - 1.0）。
+    - `context`: なぜそのトレンドが重要なのか、既存の興味とどう関連するかの説明。
+- **検証パイプライン**: 抽出されたトレンドは即座に既存の `learned_keywords` と照合され、重複排除と優先順位付けが行われます。
+
+### 4. Windows 11 Native Glass (Acrylic)
 Electron メインプロセス (`electron/main.cjs`) では、Windows 11 の **Acrylic** 効果を有効化しています：
 - `backgroundMaterial: 'acrylic'`: ウィンドウ背面にシステムレベルの半透明効果を適用。
 - `transparent: false`: **FancyZones (スナップ機能)** への対応のため、不透明ウィンドウとして設定しつつ、Acrylic 素材で透過を表現。
@@ -68,12 +79,12 @@ Electron メインプロセス (`electron/main.cjs`) では、Windows 11 の **A
 
 | サービス名 | 役割 | v5.3.0 における進化 |
 | :--- | :--- | :--- |
-| `ScraperFacade` | ワークフロー統合 | **正規表現による多言語判定 (`ja`/`en`)**、スコアリング、および AI 推論の統括。 |
-| `Fastify Server` | API ホスティング | Electron 内蔵型への統合。単一プロジェクトとして動作. |
+| `ScraperFacade` | ワークフロー統合 | **`discoverTrends` (Gemini 3.1 Pro)** による能動的インテリジェンス探索の実装。 |
+| `Fastify Server` | API ホスティング | Electron 内蔵型への統合。新エンドポイント `/api/v5/discover-trends` の追加。 |
 | `RSSFetcher` | フィード取得 | **疎通確認 (validateFeed)** 機能の追加。 |
 | `FeedManager` | フィード構成管理 | **自動ヘルスチェック付きフィード昇格**の実装。 |
-| `GeminiService` | AI 推論 | **AI Restructure v2**。並列検証 (`Promise.all`)、**Google News フォールバック**、**カテゴリ名正規化 (normalizeCategoryName)**、および Zod エラーを防ぐ **Data Normalization** を実装。 |
-| `ArchivistAgent` | 自律学習 | 収集記事からトレンドを抽出し、`learned_keywords` としてバッファへ蓄積。**AI Insights** のバックエンドエンジン。 |
+| `GeminiService` | AI 推論 | **Gemini 3.1 Pro/Flash 対応**。高度なトレンド分析、並列検証、Google News フォールバックを実装。 |
+| `ArchivistAgent` | 自律学習 | 収集記事からトレンドを抽出し、拡張メタデータ（Confidence, Context）を付与して蓄積。 |
 | `DiscoveryService` | ソース探索 | **`Promise.all` による全カテゴリーの並列フィード検証**を導入し、探索のタイムアウトを防止。 |
 | `EnrichmentService` | 記事加工 | 並列スクレイピングによる画像補完。 |
 | `SettingsManager` | 設定の永続化 | **Fastify と Electron 間の共有シングルトン**として、整合性を担保。 |

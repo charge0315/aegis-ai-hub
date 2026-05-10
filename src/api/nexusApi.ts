@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { Article, NexusSettings, AgentStatus, InterestCategory, FeedConfig, UiSettings } from '../types';
+import type { Article, NexusSettings, AgentStatus, InterestCategory, FeedConfig, UiSettings, TrendSuggestion } from '../types';
 
 export interface WindowState {
   width: number;
@@ -112,6 +112,16 @@ export const nexusApi = {
     return await res.json();
   },
 
+  async discoverTrends(): Promise<{ suggestions: TrendSuggestion[] }> {
+    if (window.nexusApi) {
+      return await window.nexusApi.discoverTrends();
+    }
+    const res = await fetch(`${BACKEND_URL}/api/v5/discover-trends`, {
+      method: 'POST'
+    });
+    return await res.json();
+  },
+
   async resetToDefaults(): Promise<{ success: boolean }> {
     if (window.nexusApi) {
       return await window.nexusApi.resetToDefaults();
@@ -140,7 +150,7 @@ export const nexusApi = {
     if (window.nexusApi) {
       return await window.nexusApi.getUiSettings();
     }
-    return { jaOnly: false, viewMode: 'grid', hideImages: false };
+    return { jaOnly: false, viewMode: 'grid', hideImages: false, isInitialized: false };
   },
 
   async saveUiSettings(settings: UiSettings): Promise<{ success: boolean }> {

@@ -1,6 +1,6 @@
 # Automation & Quality Codemap
 
-**Last Updated:** 2026-06-25
+**Last Updated:** 2026-05-20
 **Version:** v5.3 (Production Ready)
 **Key Tools:** Playwright, esbuild, electron-builder
 
@@ -29,6 +29,10 @@ Aegis AI Hub v5.3 では、対話型インストーラーの導入により配�
 
 - **`data-testid` による安定性**: 主要コンポーネントに付与されたテストIDにより、UI変更の影響を受けにくいテストを実現。
 - **タイムアウト戦略**: AI 推論や重いスクレイピング処理を考慮し、動的待機を実装。
+- **AI Insights 検証 (`ai_insights.test.ts`)**: 
+  - トレンド探索からキーワード昇格までの一連のインテリジェンス・ワークフローを検証。
+  - AI が生成したメタデータ（Confidence, Context, Type）の整合性と UI への反映をチェック。
+  - プロモート（昇格）後の `interests.json` への反映を確認。
 
 ## 3. パッケージング (electron-builder)
 `package.json` の `build` セクションで設定されています。

@@ -91,7 +91,9 @@ export class SettingsManager {
    * クラウド（またはインポート）からの設定を同期します。
    */
   async syncSettings(settings: any, fetcher?: { validateFeed: (url: string) => Promise<{ ok: boolean; status: number | string }> }): Promise<any> {
-    const { interests, feed_urls, windowState, lastUpdated } = settings || {};
+    // v5.2 Schema 整合性対応: payload は feedConfig を使用している
+    const { interests, feedConfig, feed_urls, windowState, lastUpdated } = settings || {};
+    const actualFeeds = feedConfig || feed_urls;
 
     if (!interests) {
       throw new Error('INVALID_ARGUMENT: "interests" is required for sync.');
@@ -105,11 +107,13 @@ export class SettingsManager {
     
     // カテゴリ名の正規化（Mojibakeや表記揺れの吸収）
     const normalizedFeedConfig: FeedConfig = {};
-    const interestCats = Object.keys(validatedInterests.categories);
+    const categoriesObj = validatedInterests.categories || {};
+    const interestCats = Object.keys(categoriesObj);
     const clean = (s: string) => s.replace(/[＆&＆\s・]/g, '').toLowerCase();
 
-    const incomingFeeds = feed_urls || {};
-    for (const [feedCatName, data] of Object.entries(incomingFeeds as FeedConfig)) {
+    const incomingFeeds = actualFeeds || {};
+    for (const [feedCatName, data] of Object.entries(incomingFeeds)) {
+      if (!data) continue;
       const targetClean = clean(feedCatName);
       
       // 1. 完全一致
@@ -122,7 +126,7 @@ export class SettingsManager {
 
       // 3. どちらにせよ、interests に存在する名称を優先（存在しない場合はそのまま保持）
       const keyToUse = finalName || feedCatName;
-      normalizedFeedConfig[keyToUse] = data;
+      normalizedFeedConfig[keyToUse] = data as any;
     }
     validatedFeedConfig = normalizedFeedConfig;
 
@@ -136,12 +140,19 @@ export class SettingsManager {
 
     // New Feed Health Check
     if (fetcher) {
-      const currentFeedConfig = await this.getFeedConfig();
-      const currentUrls = new Set(Object.values(currentFeedConfig).flatMap(c => [...c.active, ...c.pool]));
+      const currentFeedConfig = (await this.getFeedConfig()) || {};
+      const currentUrls = new Set(
+        Object.values(currentFeedConfig)
+          .filter(c => c && typeof c === 'object')
+          .flatMap(c => [...(c.active || []), ...(c.pool || [])])
+      );
+      
       const newUrls: { url: string; category: string }[] = [];
 
       for (const [category, data] of Object.entries(validatedFeedConfig)) {
-        for (const url of [...data.active, ...data.pool]) {
+        if (!data || typeof data !== 'object') continue;
+        const urlsToCheck = [...(data.active || []), ...(data.pool || [])];
+        for (const url of urlsToCheck) {
           if (!currentUrls.has(url)) {
             newUrls.push({ url, category });
           }
@@ -151,9 +162,14 @@ export class SettingsManager {
       if (newUrls.length > 0) {
         // 並列で検証を実行
         await Promise.all(newUrls.map(async (item) => {
-          const check = await fetcher.validateFeed(item.url);
-          if (!check.ok) {
-            throw new Error(`VALIDATION_FAILED: ${item.url} is invalid (Status: ${check.status})`);
+          try {
+            const check = await fetcher.validateFeed(item.url);
+            if (!check.ok) {
+              throw new Error(`VALIDATION_FAILED: ${item.url} is invalid (Status: ${check.status})`);
+            }
+          } catch (e: any) {
+            console.warn(`[SettingsManager] Feed validation failed for ${item.url}:`, e.message);
+            throw e;
           }
         }));
       }

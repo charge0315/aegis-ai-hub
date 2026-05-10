@@ -81,12 +81,22 @@ async function ensureDefaultData(dataDir) {
   const interestsPath = path.join(dataDir, 'interests.json');
   const feedConfigPath = path.join(dataDir, 'feed_config.json');
 
-  const needsInit = !fs.existsSync(interestsPath) || !fs.existsSync(feedConfigPath) || 
-                   (fs.existsSync(interestsPath) && fs.statSync(interestsPath).size === 0) ||
-                   (fs.existsSync(feedConfigPath) && fs.statSync(feedConfigPath).size === 0);
+  const isFileEmpty = (filePath) => {
+    if (!fs.existsSync(filePath)) return true;
+    try {
+      const stats = fs.statSync(filePath);
+      if (stats.size === 0) return true;
+      const content = fs.readFileSync(filePath, 'utf8').trim();
+      return content === '{}' || content === '';
+    } catch {
+      return true;
+    }
+  };
+
+  const needsInit = isFileEmpty(interestsPath) || isFileEmpty(feedConfigPath);
 
   if (needsInit) {
-    console.log('[Main] Initializing data with defaults...');
+    console.log('[Main] Initializing data with defaults (missing or empty configuration detected)...');
     const resourcesPath = app.isPackaged ? process.resourcesPath : path.resolve(__dirname, '..');
     const defaultDataDir = path.join(resourcesPath, 'default-data');
     
@@ -98,6 +108,13 @@ async function ensureDefaultData(dataDir) {
     for (const file of files) {
       const src = path.join(defaultDataDir, file);
       const dest = path.join(dataDir, file);
+      
+      // 既存のファイルが空でない場合は上書きしない（片方だけ空の場合の保護）
+      if (fs.existsSync(dest) && !isFileEmpty(dest)) {
+        console.log(`[Main] Skipping default copy for ${file} (already has content).`);
+        continue;
+      }
+
       if (fs.existsSync(src)) {
         try {
           fs.copyFileSync(src, dest);
@@ -153,17 +170,6 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.cjs'),
     },
   });
-
-  mainWindow.once('ready-to-show', () => {
-    mainWindow.show();
-  });
-
-  const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
-  if (isDev) {
-    mainWindow.loadURL('http://localhost:5173');
-  } else {
-    mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
-  }
 
   mainWindow.on('close', (event) => {
     if (!app.isQuitting) {
@@ -300,6 +306,22 @@ function registerIpcHandlers() {
     }
   });
 
+  ipcMain.handle('discover-trends', async () => {
+    try {
+      const dataDir = getDataDir();
+      const settingsManager = new ElectronSettingsManager({ dataDir });
+      const apiKey = await settingsManager.getApiKey();
+      scraper.updateApiKey(apiKey);
+      
+      const interests = await settingsManager.getInterests();
+      const suggestions = await scraper.discoverTrends(interests);
+      return { suggestions };
+    } catch (error) {
+      console.error('Failed to discover trends:', error);
+      throw error;
+    }
+  });
+
   ipcMain.handle('get-api-key', async () => {
     const dataDir = getDataDir();
     const settingsManager = new ElectronSettingsManager({ dataDir });
@@ -377,12 +399,49 @@ app.whenReady().then(async () => {
   try {
     await initBackend();
     registerIpcHandlers();
+    
+    const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
+    const isHidden = process.argv.includes('--hidden');
+
     createWindow();
     createTray();
 
-    const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
+    // ウィンドウの状態に関わらず常にコンテンツをロード
+    if (isDev) {
+      mainWindow.loadURL('http://localhost:5173');
+    } else {
+      mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
+    }
+
+    // 起動時にバックグラウンドでフィード取得を開始
+    if (scraper) {
+      console.log('[Main] Starting background initial fetch...');
+      const dataDir = getDataDir();
+      const settingsManager = new ElectronSettingsManager({ dataDir });
+      settingsManager.getInterests().then(interests => {
+        scraper.fetchAndProcessArticlesWithFallback(interests).then(articles => {
+          console.log(`[Main] Initial fetch completed. ${articles.length} articles found.`);
+        }).catch(err => {
+          console.error('[Main] Initial background fetch failed:', err);
+        });
+      });
+    }
+
     if (!isDev) {
-      app.setLoginItemSettings({ openAtLogin: true, path: app.getPath('exe'), args: ['--hidden'] });
+      app.setLoginItemSettings({ 
+        openAtLogin: true, 
+        path: app.getPath('exe'), 
+        args: ['--hidden'] 
+      });
+    }
+
+    // 表示制御
+    if (isHidden && mainWindow) {
+      console.log('[Main] App started with --hidden. Keeping window hidden.');
+    } else if (mainWindow) {
+      mainWindow.once('ready-to-show', () => {
+        mainWindow.show();
+      });
     }
 
     globalShortcut.register('CommandOrControl+Q', () => {

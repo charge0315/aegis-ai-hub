@@ -54,7 +54,10 @@ export const InterestsSchema = z.object({
   learned_keywords: z.record(z.string(), z.object({
     category: z.string(),
     reason: z.string(),
-    detectedAt: z.string()
+    detectedAt: z.string(),
+    type: z.enum(['emerging', 'breakthrough', 'niche', 'mainstream']).optional(),
+    confidence: z.number().min(0).max(100).optional(),
+    context: z.string().optional()
   })).optional(),
   lastUpdated: z.number().optional(),
 });
@@ -93,6 +96,7 @@ export const UiSettingsSchema = z.object({
   jaOnly: z.boolean().default(false),
   viewMode: z.enum(['grid', 'list', 'compact']).default('grid'),
   hideImages: z.boolean().default(false),
+  isInitialized: z.boolean().default(false),
 });
 
 export type UiSettings = z.infer<typeof UiSettingsSchema>;

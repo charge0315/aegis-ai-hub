@@ -61635,7 +61635,10 @@ var init_Schemas = __esm({
       learned_keywords: external_exports.record(external_exports.string(), external_exports.object({
         category: external_exports.string(),
         reason: external_exports.string(),
-        detectedAt: external_exports.string()
+        detectedAt: external_exports.string(),
+        type: external_exports.enum(["emerging", "breakthrough", "niche", "mainstream"]).optional(),
+        confidence: external_exports.number().min(0).max(100).optional(),
+        context: external_exports.string().optional()
       })).optional(),
       lastUpdated: external_exports.number().optional()
     });
@@ -61654,7 +61657,8 @@ var init_Schemas = __esm({
     UiSettingsSchema = external_exports.object({
       jaOnly: external_exports.boolean().default(false),
       viewMode: external_exports.enum(["grid", "list", "compact"]).default("grid"),
-      hideImages: external_exports.boolean().default(false)
+      hideImages: external_exports.boolean().default(false),
+      isInitialized: external_exports.boolean().default(false)
     });
     CredentialsSchema = external_exports.object({
       geminiApiKey: external_exports.string().optional()
@@ -61739,7 +61743,8 @@ var init_SettingsManager = __esm({
        * クラウド（またはインポート）からの設定を同期します。
        */
       async syncSettings(settings, fetcher) {
-        const { interests, feed_urls, windowState, lastUpdated } = settings || {};
+        const { interests, feedConfig, feed_urls, windowState, lastUpdated } = settings || {};
+        const actualFeeds = feedConfig || feed_urls;
         if (!interests) {
           throw new Error('INVALID_ARGUMENT: "interests" is required for sync.');
         }
@@ -61747,10 +61752,12 @@ var init_SettingsManager = __esm({
         const validatedWindowState = windowState ? WindowStateSchema.parse(windowState) : null;
         let validatedFeedConfig = {};
         const normalizedFeedConfig = {};
-        const interestCats = Object.keys(validatedInterests.categories);
+        const categoriesObj = validatedInterests.categories || {};
+        const interestCats = Object.keys(categoriesObj);
         const clean = (s) => s.replace(/[＆&＆\s・]/g, "").toLowerCase();
-        const incomingFeeds = feed_urls || {};
+        const incomingFeeds = actualFeeds || {};
         for (const [feedCatName, data2] of Object.entries(incomingFeeds)) {
+          if (!data2) continue;
           const targetClean = clean(feedCatName);
           let finalName = interestCats.find((c) => c === feedCatName);
           if (!finalName) {
@@ -61766,11 +61773,15 @@ var init_SettingsManager = __esm({
           throw new Error("CONFLICT: Settings on device are newer.");
         }
         if (fetcher) {
-          const currentFeedConfig = await this.getFeedConfig();
-          const currentUrls = new Set(Object.values(currentFeedConfig).flatMap((c) => [...c.active, ...c.pool]));
+          const currentFeedConfig = await this.getFeedConfig() || {};
+          const currentUrls = new Set(
+            Object.values(currentFeedConfig).filter((c) => c && typeof c === "object").flatMap((c) => [...c.active || [], ...c.pool || []])
+          );
           const newUrls = [];
           for (const [category, data2] of Object.entries(validatedFeedConfig)) {
-            for (const url3 of [...data2.active, ...data2.pool]) {
+            if (!data2 || typeof data2 !== "object") continue;
+            const urlsToCheck = [...data2.active || [], ...data2.pool || []];
+            for (const url3 of urlsToCheck) {
               if (!currentUrls.has(url3)) {
                 newUrls.push({ url: url3, category });
               }
@@ -61778,9 +61789,14 @@ var init_SettingsManager = __esm({
           }
           if (newUrls.length > 0) {
             await Promise.all(newUrls.map(async (item) => {
-              const check2 = await fetcher.validateFeed(item.url);
-              if (!check2.ok) {
-                throw new Error(`VALIDATION_FAILED: ${item.url} is invalid (Status: ${check2.status})`);
+              try {
+                const check2 = await fetcher.validateFeed(item.url);
+                if (!check2.ok) {
+                  throw new Error(`VALIDATION_FAILED: ${item.url} is invalid (Status: ${check2.status})`);
+                }
+              } catch (e) {
+                console.warn(`[SettingsManager] Feed validation failed for ${item.url}:`, e.message);
+                throw e;
               }
             }));
           }
@@ -63376,22 +63392,41 @@ URL\u306F\u5FC5\u305A\u300CRSS\u30D5\u30A3\u30FC\u30C9\u300D\u307E\u305F\u306F\u
               items: {
                 type: SchemaType.OBJECT,
                 properties: {
-                  value: { type: SchemaType.STRING },
-                  category: { type: SchemaType.STRING },
-                  reason: { type: SchemaType.STRING }
+                  value: { type: SchemaType.STRING, description: "\u30C8\u30EC\u30F3\u30C9\u30AD\u30FC\u30EF\u30FC\u30C9\u307E\u305F\u306F\u30D6\u30E9\u30F3\u30C9\u540D" },
+                  category: { type: SchemaType.STRING, description: "\u5272\u308A\u5F53\u3066\u308B\u3079\u304D\u65E2\u5B58\u306E\u30AB\u30C6\u30B4\u30EA\u540D" },
+                  reason: { type: SchemaType.STRING, description: "\u306A\u305C\u3053\u308C\u304C\u91CD\u8981\u306A\u306E\u304B\uFF08\u30E6\u30FC\u30B6\u30FC\u3078\u306E\u8AAC\u660E\uFF09" },
+                  type: {
+                    type: SchemaType.STRING,
+                    enum: ["emerging", "breakthrough", "niche", "mainstream"],
+                    format: "enum",
+                    description: "\u30C8\u30EC\u30F3\u30C9\u306E\u7A2E\u985E: emerging(\u65B0\u8208), breakthrough(\u8E8D\u9032), niche(\u5C02\u9580\u7684), mainstream(\u4E3B\u6D41)"
+                  },
+                  confidence: { type: SchemaType.NUMBER, description: "\u78BA\u4FE1\u5EA6 (0-100)" },
+                  context: { type: SchemaType.STRING, description: "\u62BD\u51FA\u306E\u6839\u62E0\u3068\u306A\u3063\u305F\u8A18\u4E8B\u306E\u65AD\u7247\u3084\u8981\u7D04" }
                 },
-                required: ["value", "category", "reason"]
+                required: ["value", "category", "reason", "type", "confidence", "context"]
               }
             }
           },
           required: ["suggestions"]
         };
         const prompt = `
-\u4EE5\u4E0B\u306E\u6700\u65B0\u8A18\u4E8B\u30EA\u30B9\u30C8\u3068\u73FE\u5728\u306E\u8208\u5473\u8A2D\u5B9A\u3092\u5206\u6790\u3057\u3001\u30E6\u30FC\u30B6\u30FC\u304C\u8208\u5473\u3092\u6301\u3061\u305D\u3046\u306A\u65B0\u3057\u3044\u30AD\u30FC\u30EF\u30FC\u30C9\u3084\u30D6\u30E9\u30F3\u30C9\u3092\u63D0\u6848\u3057\u3066\u304F\u3060\u3055\u3044\u3002
-\u8208\u5473\u8A2D\u5B9A: ${JSON.stringify(interests.categories)}
-\u6700\u65B0\u8A18\u4E8B: ${JSON.stringify(articles)}
+\u3042\u306A\u305F\u306F Aegis Nexus \u306E 'Archivist' \u30A8\u30FC\u30B8\u30A7\u30F3\u30C8\u3067\u3059\u3002\u6700\u65B0\u306E\u30A4\u30F3\u30C6\u30EA\u30B8\u30A7\u30F3\u30B9\u30FB\u30D5\u30A3\u30FC\u30C9\u3092\u5206\u6790\u3057\u3001\u30E6\u30FC\u30B6\u30FC\u304C\u307E\u3060\u8A2D\u5B9A\u3057\u3066\u3044\u306A\u3044\u304C\u3001\u6CE8\u76EE\u3059\u3079\u304D\u3010\u65B0\u3057\u3044\u30B7\u30B0\u30CA\u30EB\uFF08\u30C8\u30EC\u30F3\u30C9\u3001\u30D6\u30E9\u30F3\u30C9\u3001\u30C6\u30AF\u30CE\u30ED\u30B8\u30FC\uFF09\u3011\u3092\u62BD\u51FA\u3057\u3066\u304F\u3060\u3055\u3044\u3002
+
+**\u30DF\u30C3\u30B7\u30E7\u30F3:**
+1. **\u65B0\u5947\u6027\u306E\u767A\u898B**: \u73FE\u5728\u306E\u8208\u5473\u8A2D\u5B9A\uFF08\u30AD\u30FC\u30EF\u30FC\u30C9/\u30D6\u30E9\u30F3\u30C9\uFF09\u306B\u306F\u542B\u307E\u308C\u3066\u3044\u306A\u3044\u304C\u3001\u6700\u65B0\u8A18\u4E8B\u306E\u4E2D\u3067\u7E70\u308A\u8FD4\u3057\u767B\u5834\u3059\u308B\u3001\u307E\u305F\u306F\u5F37\u3044\u30A4\u30F3\u30D1\u30AF\u30C8\u3092\u6301\u3064\u65B0\u3057\u3044\u6982\u5FF5\u3092\u898B\u3064\u3051\u51FA\u3057\u3066\u304F\u3060\u3055\u3044\u3002
+2. **\u30D1\u30FC\u30BD\u30CA\u30E9\u30A4\u30BA**: \u30E6\u30FC\u30B6\u30FC\u306E\u65E2\u5B58\u306E\u95A2\u5FC3\u9818\u57DF\uFF08\u30AB\u30C6\u30B4\u30EA\uFF09\u306B\u95A2\u9023\u3059\u308B\u304C\u3001\u4E00\u6B69\u5148\u3092\u884C\u304F\u30C8\u30D4\u30C3\u30AF\u3092\u512A\u5148\u3057\u3066\u304F\u3060\u3055\u3044\u3002
+3. **\u8A73\u7D30\u306A\u5206\u6790**: \u5404\u30C8\u30EC\u30F3\u30C9\u306B\u5BFE\u3057\u3001\u305D\u306E\u6027\u8CEA\uFF08\u30BF\u30A4\u30D7\uFF09\u3001AI\u3068\u3057\u3066\u306E\u78BA\u4FE1\u5EA6\u3001\u304A\u3088\u3073\u62BD\u51FA\u306E\u6839\u62E0\uFF08\u30B3\u30F3\u30C6\u30AD\u30B9\u30C8\uFF09\u3092\u4ED8\u4E0E\u3057\u3066\u304F\u3060\u3055\u3044\u3002
+
+**\u73FE\u5728\u306E\u8208\u5473\u8A2D\u5B9A:**
+${JSON.stringify(interests.categories, null, 2)}
+
+**\u6700\u65B0\u8A18\u4E8B\u30EA\u30B9\u30C8 (\u4E0A\u4F4D50\u4EF6):**
+${JSON.stringify(articles.slice(0, 50).map((a) => ({ title: a.title, desc: a.desc })))}
+
+\u65E5\u672C\u8A9E\u3067\u56DE\u7B54\u3057\u3066\u304F\u3060\u3055\u3044\u3002
 `;
-        const result = await this.generateStructured(prompt, schema);
+        const result = await this.generateStructured(prompt, schema, this.highReasoningModelName);
         return result.suggestions;
       }
       /**
@@ -131989,6 +132024,18 @@ var init_NexusRouter = __esm({
           reply.status(500).send({ error: "Failed to restructure categories", details: msg });
         }
       });
+      fastify2.post("/discover-trends", async (_request, reply) => {
+        try {
+          const apiKey = await settingsManager.getApiKey();
+          scraper2.updateApiKey(apiKey);
+          const interests = await settingsManager.getInterests();
+          const suggestions = await scraper2.discoverTrends(interests);
+          return { suggestions };
+        } catch (error51) {
+          const msg = error51 instanceof Error ? error51.message : String(error51);
+          reply.status(500).send({ error: "Failed to discover trends", details: msg });
+        }
+      });
       fastify2.get("/window-state", async (_request, reply) => {
         try {
           const state = await settingsManager.getWindowState();
@@ -132167,17 +132214,21 @@ var init_ScraperFacade = __esm({
         let articlesExtended = null;
         const dashboard = {};
         const categories = Object.keys(interests.categories);
+        const clean = (s) => s.replace(/[＆&＆\s・]/g, "").toLowerCase();
         for (const catName of categories) {
-          let filtered = articlesNormal.filter((a) => a.category === catName && a.language === "ja");
+          const targetClean = clean(catName);
+          let filtered = articlesNormal.filter((a) => {
+            return clean(a.category) === targetClean && a.language === "ja";
+          });
           if (filtered.length === 0) {
-            filtered = articlesNormal.filter((a) => a.category === catName);
+            filtered = articlesNormal.filter((a) => clean(a.category) === targetClean);
           }
           if (filtered.length === 0) {
             if (!articlesExtended) {
               console.log(`[ScraperFacade] \u30AB\u30C6\u30B4\u30EA "${catName}" \u306E\u6700\u65B0\u8A18\u4E8B\u304C0\u4EF6\u306E\u305F\u3081\u3001\u671F\u9593\u5236\u9650\u3092\u89E3\u9664\u3057\u3066\u518D\u63A2\u7D22\u3057\u307E\u3059...`);
               articlesExtended = await this.fetchAndProcessArticles(interests, true);
             }
-            filtered = articlesExtended.filter((a) => a.category === catName);
+            filtered = articlesExtended.filter((a) => clean(a.category) === targetClean);
           }
           const topArticles = this._sortAndSlice(filtered, 50);
           await this.enrichmentService.enrichAll(topArticles);
@@ -132187,6 +132238,15 @@ var init_ScraperFacade = __esm({
           };
         }
         return dashboard;
+      }
+      /**
+       * 最新の記事群から新しいトレンドキーワードやブランドを抽出します。
+       */
+      async discoverTrends(interests) {
+        console.log(`[ScraperFacade] \u30C8\u30EC\u30F3\u30C9\u63A2\u7D22\u3092\u958B\u59CB\u3057\u307E\u3059...`);
+        const articles = await this.fetchAndProcessArticles(interests);
+        const topArticles = articles.slice(0, 50).map((a) => ({ title: a.title, desc: a.desc, brand: a.brand }));
+        return await this.geminiService.analyzeTrends(topArticles, interests);
       }
       _sortAndSlice(articles, count) {
         return articles.sort((a, b) => b.score - a.score || new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, count);
@@ -132643,9 +132703,20 @@ async function startInternalServer(settingsManager) {
 async function ensureDefaultData(dataDir) {
   const interestsPath = path4.join(dataDir, "interests.json");
   const feedConfigPath = path4.join(dataDir, "feed_config.json");
-  const needsInit = !fs5.existsSync(interestsPath) || !fs5.existsSync(feedConfigPath) || fs5.existsSync(interestsPath) && fs5.statSync(interestsPath).size === 0 || fs5.existsSync(feedConfigPath) && fs5.statSync(feedConfigPath).size === 0;
+  const isFileEmpty = (filePath) => {
+    if (!fs5.existsSync(filePath)) return true;
+    try {
+      const stats = fs5.statSync(filePath);
+      if (stats.size === 0) return true;
+      const content = fs5.readFileSync(filePath, "utf8").trim();
+      return content === "{}" || content === "";
+    } catch {
+      return true;
+    }
+  };
+  const needsInit = isFileEmpty(interestsPath) || isFileEmpty(feedConfigPath);
   if (needsInit) {
-    console.log("[Main] Initializing data with defaults...");
+    console.log("[Main] Initializing data with defaults (missing or empty configuration detected)...");
     const resourcesPath = app.isPackaged ? process.resourcesPath : path4.resolve(__dirname, "..");
     const defaultDataDir = path4.join(resourcesPath, "default-data");
     if (!fs5.existsSync(dataDir)) {
@@ -132655,6 +132726,10 @@ async function ensureDefaultData(dataDir) {
     for (const file2 of files) {
       const src = path4.join(defaultDataDir, file2);
       const dest = path4.join(dataDir, file2);
+      if (fs5.existsSync(dest) && !isFileEmpty(dest)) {
+        console.log(`[Main] Skipping default copy for ${file2} (already has content).`);
+        continue;
+      }
       if (fs5.existsSync(src)) {
         try {
           fs5.copyFileSync(src, dest);
@@ -132703,15 +132778,6 @@ function createWindow() {
       preload: path4.join(__dirname, "preload.cjs")
     }
   });
-  mainWindow.once("ready-to-show", () => {
-    mainWindow.show();
-  });
-  const isDev = process.env.NODE_ENV === "development" || !app.isPackaged;
-  if (isDev) {
-    mainWindow.loadURL("http://localhost:5173");
-  } else {
-    mainWindow.loadFile(path4.join(__dirname, "../dist/index.html"));
-  }
   mainWindow.on("close", (event) => {
     if (!app.isQuitting) {
       event.preventDefault();
@@ -132831,6 +132897,20 @@ function registerIpcHandlers() {
       throw error51;
     }
   });
+  ipcMain.handle("discover-trends", async () => {
+    try {
+      const dataDir = getDataDir();
+      const settingsManager = new ElectronSettingsManager2({ dataDir });
+      const apiKey = await settingsManager.getApiKey();
+      scraper.updateApiKey(apiKey);
+      const interests = await settingsManager.getInterests();
+      const suggestions = await scraper.discoverTrends(interests);
+      return { suggestions };
+    } catch (error51) {
+      console.error("Failed to discover trends:", error51);
+      throw error51;
+    }
+  });
   ipcMain.handle("get-api-key", async () => {
     const dataDir = getDataDir();
     const settingsManager = new ElectronSettingsManager2({ dataDir });
@@ -132906,11 +132986,40 @@ app.whenReady().then(async () => {
   try {
     await initBackend();
     registerIpcHandlers();
+    const isDev = process.env.NODE_ENV === "development" || !app.isPackaged;
+    const isHidden = process.argv.includes("--hidden");
     createWindow();
     createTray();
-    const isDev = process.env.NODE_ENV === "development" || !app.isPackaged;
+    if (isDev) {
+      mainWindow.loadURL("http://localhost:5173");
+    } else {
+      mainWindow.loadFile(path4.join(__dirname, "../dist/index.html"));
+    }
+    if (scraper) {
+      console.log("[Main] Starting background initial fetch...");
+      const dataDir = getDataDir();
+      const settingsManager = new ElectronSettingsManager2({ dataDir });
+      settingsManager.getInterests().then((interests) => {
+        scraper.fetchAndProcessArticlesWithFallback(interests).then((articles) => {
+          console.log(`[Main] Initial fetch completed. ${articles.length} articles found.`);
+        }).catch((err) => {
+          console.error("[Main] Initial background fetch failed:", err);
+        });
+      });
+    }
     if (!isDev) {
-      app.setLoginItemSettings({ openAtLogin: true, path: app.getPath("exe"), args: ["--hidden"] });
+      app.setLoginItemSettings({
+        openAtLogin: true,
+        path: app.getPath("exe"),
+        args: ["--hidden"]
+      });
+    }
+    if (isHidden && mainWindow) {
+      console.log("[Main] App started with --hidden. Keeping window hidden.");
+    } else if (mainWindow) {
+      mainWindow.once("ready-to-show", () => {
+        mainWindow.show();
+      });
     }
     globalShortcut.register("CommandOrControl+Q", () => {
       app.isQuitting = true;

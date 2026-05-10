@@ -12,6 +12,7 @@ import { EnrichmentService } from './services/EnrichmentService';
 import { Article } from './models/Article';
 import { GeminiService } from './services/GeminiService';
 import type { Interests } from './models/Schemas';
+import type { TrendSuggestion } from './types';
 
 /**
  * スクレイピング全体のワークフローを制御するファサードクラス。
@@ -79,20 +80,28 @@ export class ScraperFacade {
 
         const dashboard: Record<string, any> = {};
         const categories = Object.keys(interests.categories);
+        const clean = (s: string) => s.replace(/[＆&＆\s・]/g, '').toLowerCase();
 
         for (const catName of categories) {
-            let filtered = articlesNormal.filter(a => a.category === catName && a.language === 'ja');
+            const targetClean = clean(catName);
             
+            // 言語優先（日本語）かつカテゴリ一致
+            let filtered = articlesNormal.filter(a => {
+                return clean(a.category) === targetClean && a.language === 'ja';
+            });
+            
+            // 日本語がない場合は全言語からカテゴリ一致で検索
             if (filtered.length === 0) {
-                filtered = articlesNormal.filter(a => a.category === catName);
+                filtered = articlesNormal.filter(a => clean(a.category) === targetClean);
             }
 
+            // それでも0件の場合は期間制限を解除
             if (filtered.length === 0) {
                 if (!articlesExtended) {
                     console.log(`[ScraperFacade] カテゴリ "${catName}" の最新記事が0件のため、期間制限を解除して再探索します...`);
                     articlesExtended = await this.fetchAndProcessArticles(interests, true);
                 }
-                filtered = articlesExtended.filter(a => a.category === catName);
+                filtered = articlesExtended.filter(a => clean(a.category) === targetClean);
             }
             
             const topArticles = this._sortAndSlice(filtered, 50);
@@ -108,6 +117,17 @@ export class ScraperFacade {
         }
 
         return dashboard;
+    }
+
+    /**
+     * 最新の記事群から新しいトレンドキーワードやブランドを抽出します。
+     */
+    async discoverTrends(interests: Interests): Promise<TrendSuggestion[]> {
+        console.log(`[ScraperFacade] トレンド探索を開始します...`);
+        const articles = await this.fetchAndProcessArticles(interests);
+        const topArticles = articles.slice(0, 50).map((a: any) => ({ title: a.title, desc: a.desc, brand: a.brand }));
+        
+        return await this.geminiService.analyzeTrends(topArticles, interests) as unknown as TrendSuggestion[];
     }
 
     private _sortAndSlice(articles: Article[], count: number): Article[] {

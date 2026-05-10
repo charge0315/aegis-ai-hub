@@ -65,9 +65,13 @@ test.describe('New Features E2E Tests', () => {
       await route.fulfill({ json: mockArticles });
     });
 
-    // 初回起動ダイアログが出ないように localStorage を設定
+    // 初回起動ダイアログが出ないように UI 設定をモック
     await page.addInitScript(() => {
-      window.localStorage.setItem('nexus_initialized', 'true');
+      (window as any).nexusApi = {
+        ...(window as any).nexusApi,
+        getUiSettings: () => Promise.resolve({ jaOnly: false, viewMode: 'grid', hideImages: false, isInitialized: true }),
+        saveUiSettings: () => Promise.resolve({ success: true })
+      };
     });
 
     await page.goto('/');
@@ -125,9 +129,16 @@ test.describe('New Features E2E Tests', () => {
       await route.fulfill({ json: { success: true } });
     });
 
-    // localStorage をクリアして初期起動状態にする
+    // UI 設定を「未初期化」状態でモック
     await page.addInitScript(() => {
-      window.localStorage.removeItem('nexus_initialized');
+      (window as any).nexusApi = {
+        ...(window as any).nexusApi,
+        getUiSettings: () => Promise.resolve({ jaOnly: false, viewMode: 'grid', hideImages: false, isInitialized: false }),
+        saveUiSettings: (settings: any) => {
+          (window as any)._savedSettings = settings;
+          return Promise.resolve({ success: true });
+        }
+      };
     });
 
     await page.goto('/');
@@ -142,8 +153,8 @@ test.describe('New Features E2E Tests', () => {
     // ダイアログが閉じることを確認
     await expect(page.getByText('既存の設定を検出')).not.toBeVisible();
 
-    // nexus_initialized が true になっていることを確認
-    const isInitialized = await page.evaluate(() => window.localStorage.getItem('nexus_initialized'));
-    expect(isInitialized).toBe('true');
+    // isInitialized が true として保存されたことを確認
+    const savedSettings = await page.evaluate(() => (window as any)._savedSettings);
+    expect(savedSettings.isInitialized).toBe(true);
   });
 });

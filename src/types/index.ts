@@ -36,6 +36,9 @@ export interface Interests {
       category: string;
       reason: string;
       detectedAt: string;
+      type?: 'emerging' | 'breakthrough' | 'niche' | 'mainstream';
+      confidence?: number;
+      context?: string;
     };
   };
   lastUpdated?: number;
@@ -61,6 +64,7 @@ export interface UiSettings {
   jaOnly: boolean;
   viewMode: 'grid' | 'list' | 'compact';
   hideImages: boolean;
+  isInitialized: boolean;
 }
 
 export interface AgentStatus {
@@ -86,6 +90,15 @@ export interface AgentEventData {
   timestamp?: string;
 }
 
+export interface TrendSuggestion {
+  value: string;
+  category: string;
+  reason: string;
+  type?: 'emerging' | 'breakthrough' | 'niche' | 'mainstream';
+  confidence?: number;
+  context?: string;
+}
+
 export interface NexusApiBridge {
   getArticles: (options?: Record<string, unknown>) => Promise<Article[]>;
   getSettings: () => Promise<NexusSettings>;
@@ -103,6 +116,7 @@ export interface NexusApiBridge {
   saveApiKey: (apiKey: string) => Promise<{ success: boolean }>;
   getProposals: () => Promise<{ sites: { url: string; name: string; reason: string; category: string }[] }>;
   restructureCategories: () => Promise<{ categories: Record<string, InterestCategory>; feedConfig: FeedConfig }>;
+  discoverTrends: () => Promise<{ suggestions: TrendSuggestion[] }>;
   resetToDefaults: () => Promise<{ success: boolean }>;
   windowControl: (action: 'minimize' | 'maximize' | 'close') => void;
   getUiSettings: () => Promise<UiSettings>;

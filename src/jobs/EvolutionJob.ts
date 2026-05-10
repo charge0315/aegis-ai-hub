@@ -7,6 +7,9 @@ interface TrendSuggestion {
     value: string;
     category: string;
     reason: string;
+    type?: 'emerging' | 'breakthrough' | 'niche' | 'mainstream';
+    confidence?: number;
+    context?: string;
 }
 
 /**
@@ -94,9 +97,12 @@ export class EvolutionJob {
                 interests.learned_keywords![s.value] = {
                     category: s.category,
                     reason: s.reason,
+                    type: s.type,
+                    confidence: s.confidence,
+                    context: s.context,
                     detectedAt: new Date().toISOString()
                 };
-                console.log(`[EvolutionJob] 新しい興味を発見: ${s.value} (${s.category})`);
+                console.log(`[EvolutionJob] 新しい興味を発見: ${s.value} (${s.category}) [Confidence: ${s.confidence}%]`);
             }
         });
     }

@@ -13,10 +13,11 @@
 - **Robust Fallback Strategy**: AIが提案したURLが検証で全滅した場合、または適切なソースが見つからない場合に、最適化されたクエリを用いた **Google News RSS** を自動的に注入。「空のダッシュボード」を物理的に回避し、情報の継続性を保証します。
 - **Data Normalization**: Gemini の自由な出力を `InterestCategory` スキーマへ厳格に変換・クリーンアップする処理を追加。Zod バリデーション落ちを防ぎ、プロセスの完遂率を 100% に近づけました。
 
-### 2. AI Insights & Continuous Learning (自律学習トレンド管理)
-AIエージェントが収集したトレンドをユーザーが管理できる新機能を実装。
-- **Mechanism (Archivist Agent)**: `Archivist` エージェントが最新記事から抽出した「学習済みキーワード (`learned_keywords`)」を `interests.json` のバッファに蓄積し、UI で一覧表示。
-- **Human-in-the-loop Strategy**: 発見されたトレンドをユーザーが「昇格（Promote）」または「却下（Dismiss）」することで、AI の自律進化にユーザーの意思を介在させます。完全自律ではなく、フィードバックループを介することでパーソナライズの精度を継続的に向上させます。
+### 2. AI Insights v2 & Active Intelligence Discovery (能動的インテリジェンス探索)
+AIエージェントが収集したトレンドをユーザーが管理できる機能を大幅に強化。
+- **Mechanism (Gemini 3.1 Pro)**: `Archivist` エージェントが最新記事群から Gemini 3.1 Pro を用いて潜在的なトレンドを抽出。単なるキーワード抽出を超え、トレンドの「種類（Type）」、AIによる「確信度（Confidence）」、既存の興味との「関連文脈（Context）」を分析します。
+- **Human-in-the-loop Strategy**: 発見された高度なトレンド情報を UI で確認し、ユーザーが「昇格（Promote）」または「却下（Dismiss）」することで、AI の自律進化を精密に制御します。
+- **Intelligent Discovery**: 受動的な学習から、文脈を理解した能動的な探索へと進化。ユーザーの潜在的な興味を先回りして提示します。
 
 ### 3. Gemini 3.1 Model Optimization & Discovery 2.5
 タスクの複雑さに応じて、AI モデルの特性を最大限に引き出す最適化を実施。

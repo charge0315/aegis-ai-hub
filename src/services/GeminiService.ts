@@ -539,11 +539,19 @@ URLは必ず「RSSフィード」または「Atomフィード」の直接のURL�
           items: {
             type: SchemaType.OBJECT,
             properties: {
-              value: { type: SchemaType.STRING },
-              category: { type: SchemaType.STRING },
-              reason: { type: SchemaType.STRING }
+              value: { type: SchemaType.STRING, description: "トレンドキーワードまたはブランド名" },
+              category: { type: SchemaType.STRING, description: "割り当てるべき既存のカテゴリ名" },
+              reason: { type: SchemaType.STRING, description: "なぜこれが重要なのか（ユーザーへの説明）" },
+              type: { 
+                type: SchemaType.STRING, 
+                enum: ["emerging", "breakthrough", "niche", "mainstream"],
+                format: "enum",
+                description: "トレンドの種類: emerging(新興), breakthrough(躍進), niche(専門的), mainstream(主流)"
+              },
+              confidence: { type: SchemaType.NUMBER, description: "確信度 (0-100)" },
+              context: { type: SchemaType.STRING, description: "抽出の根拠となった記事の断片や要約" }
             },
-            required: ["value", "category", "reason"]
+            required: ["value", "category", "reason", "type", "confidence", "context"]
           }
         }
       },
@@ -551,11 +559,22 @@ URLは必ず「RSSフィード」または「Atomフィード」の直接のURL�
     };
 
     const prompt = `
-以下の最新記事リストと現在の興味設定を分析し、ユーザーが興味を持ちそうな新しいキーワードやブランドを提案してください。
-興味設定: ${JSON.stringify(interests.categories)}
-最新記事: ${JSON.stringify(articles)}
+あなたは Aegis Nexus の 'Archivist' エージェントです。最新のインテリジェンス・フィードを分析し、ユーザーがまだ設定していないが、注目すべき【新しいシグナル（トレンド、ブランド、テクノロジー）】を抽出してください。
+
+**ミッション:**
+1. **新奇性の発見**: 現在の興味設定（キーワード/ブランド）には含まれていないが、最新記事の中で繰り返し登場する、または強いインパクトを持つ新しい概念を見つけ出してください。
+2. **パーソナライズ**: ユーザーの既存の関心領域（カテゴリ）に関連するが、一歩先を行くトピックを優先してください。
+3. **詳細な分析**: 各トレンドに対し、その性質（タイプ）、AIとしての確信度、および抽出の根拠（コンテキスト）を付与してください。
+
+**現在の興味設定:**
+${JSON.stringify(interests.categories, null, 2)}
+
+**最新記事リスト (上位50件):**
+${JSON.stringify(articles.slice(0, 50).map(a => ({ title: a.title, desc: a.desc })))}
+
+日本語で回答してください。
 `;
-    const result = await this.generateStructured<{ suggestions: Record<string, unknown>[] }>(prompt, schema);
+    const result = await this.generateStructured<{ suggestions: Record<string, unknown>[] }>(prompt, schema, this.highReasoningModelName);
     return result.suggestions;
   }
 

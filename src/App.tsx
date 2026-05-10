@@ -39,6 +39,7 @@ const App: React.FC = () => {
   const [feedSize, setFeedSize] = useState<'small' | 'medium' | 'large'>('medium');
   const [showImages, setShowImages] = useState(true);
   const [isJapaneseOnly, setIsJapaneseOnly] = useState(false);
+  const [isInitialized, setIsInitialized] = useState<boolean | null>(null);
 
   // --- RESPONSIVE STATE ---
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
@@ -69,6 +70,7 @@ const App: React.FC = () => {
           setIsJapaneseOnly(saved.jaOnly);
           setFeedSize(saved.viewMode === 'compact' ? 'small' : saved.viewMode === 'list' ? 'large' : 'medium');
           setShowImages(!saved.hideImages);
+          setIsInitialized(saved.isInitialized);
         }
       } catch (err) {
         console.error("Failed to load UI settings:", err);
@@ -80,12 +82,13 @@ const App: React.FC = () => {
   useEffect(() => {
     const save = async () => {
       try {
-        if (nexusApi?.saveUiSettings) {
+        if (nexusApi?.saveUiSettings && isInitialized !== null) {
           const viewMode = feedSize === 'small' ? 'compact' : feedSize === 'large' ? 'list' : 'grid';
           await nexusApi.saveUiSettings({ 
             jaOnly: isJapaneseOnly, 
             viewMode: viewMode as any, 
-            hideImages: !showImages 
+            hideImages: !showImages,
+            isInitialized
           });
         }
       } catch (err) {
@@ -94,41 +97,40 @@ const App: React.FC = () => {
     };
     const timeout = setTimeout(() => { void save(); }, 500);
     return () => clearTimeout(timeout);
-  }, [isJapaneseOnly, feedSize, showImages]);
+  }, [isJapaneseOnly, feedSize, showImages, isInitialized]);
 
   // --- INTERACTIVE DIALOG STATE ---
   const {
     dialog,
     alert: dialogAlert,
     confirm: dialogConfirm,
-    prompt: dialogPrompt,
-    hideDialog
+    prompt: dialogPrompt
   } = useDialog();
 
   // --- INITIAL SETUP CHECK ---
   useEffect(() => {
-    if (settings && !loading) {
+    if (settings && !loading && isInitialized === false) {
       const hasCategories = Object.keys(settings.interests.categories).length > 0;
-      const isInitialized = localStorage.getItem('nexus_initialized');
 
-      if (!isInitialized && hasCategories) {
+      if (hasCategories) {
         void (async () => {
           const shouldOverwrite = await dialogConfirm(
             '既存の設定を検出',
-            '既にブランドやキーワードの設定が存在します。これらをデフォルトのプロファイルで上書きしますか？（「いいえ」を選択すると既存の設定を保持します）',
+            '既にブランドやキーワードの設定が存在します。これらをデフォルトのプロファイルで上書きしますか？（「キャンセル」を選択すると既存の設定を保持します）',
             'warning'
           );
           if (shouldOverwrite) {
             await nexusApi.resetToDefaults();
             void refetch();
           }
-          localStorage.setItem('nexus_initialized', 'true');
+          // 上書きするかどうかにかかわらず、チェック自体は完了したので true に設定する
+          setIsInitialized(true);
         })();
-      } else if (!isInitialized) {
-        localStorage.setItem('nexus_initialized', 'true');
+      } else {
+        setIsInitialized(true);
       }
     }
-  }, [settings, loading, dialogConfirm, refetch]);
+  }, [settings, loading, isInitialized, dialogConfirm, refetch]);
 
   const agentEvents = useAgentEvents(useCallback(() => {
     void refetch(false);
@@ -178,7 +180,7 @@ const App: React.FC = () => {
         <CustomDialog 
           {...dialog} 
           onConfirm={dialog.onConfirm}
-          onCancel={hideDialog}
+          onCancel={dialog.onCancel}
         />
       )}
 
