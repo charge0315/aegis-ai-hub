@@ -78,7 +78,9 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
   const categoryKeys = Object.keys(draft.interests.categories);
 
   const handleDiscoverTrends = async () => {
-    if (!apiKey) {
+    // APIキーの有無を再確認
+    const currentApiKey = await nexusApi.getApiKey();
+    if (!currentApiKey) {
       const shouldGoToSettings = await customConfirm(
         'API Key Required',
         'Trend discovery requires a Gemini API Key. Would you like to go to System Settings to configure it?'
@@ -91,8 +93,11 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
 
     setIsDiscovering(true);
     try {
+      console.log('[UnifiedEditor] Starting trend discovery...');
       const result = await nexusApi.discoverTrends();
+      
       if (result.suggestions && result.suggestions.length > 0) {
+        console.log(`[UnifiedEditor] Discovered ${result.suggestions.length} trends.`);
         setDraft(prev => {
           const newLearned = { ...(prev.interests.learned_keywords || {}) };
           result.suggestions.forEach((s: TrendSuggestion) => {
@@ -115,12 +120,25 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
             }
           };
         });
+        // ユーザーへの通知をあえて出さず、UIが更新されることで成功を伝える（体験の向上）
       } else {
-        await customAlert('No New Trends', 'AI analyzed current feeds but did not find any new significant signals.', 'info');
+        await customAlert('No New Trends', 'AI analyzed current feeds but did not find any new significant signals at this time.', 'info');
       }
     } catch (err) {
       console.error('Failed to discover trends:', err);
-      await customAlert('Discovery Failed', 'An error occurred during trend analysis.', 'error');
+      const detail = err instanceof Error ? err.message : String(err);
+      
+      // ユーザーフレンドリーなエラーメッセージ
+      let userMessage = 'An error occurred during trend analysis.';
+      if (detail.includes('API key')) {
+        userMessage = 'Invalid API key. Please check your settings.';
+      } else if (detail.includes('quota') || detail.includes('429')) {
+        userMessage = 'API rate limit exceeded. Please try again later.';
+      } else if (detail.includes('safety')) {
+        userMessage = 'Discovery stopped due to content safety filters. Try with different feeds.';
+      }
+      
+      await customAlert('Discovery Failed', `${userMessage}\n\nTechnical Detail: ${detail.substring(0, 100)}...`, 'error');
     } finally {
       setIsDiscovering(false);
     }

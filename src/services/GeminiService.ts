@@ -53,7 +53,7 @@ export class GeminiService {
     }
 
     try {
-      console.log(`[GeminiService] Requesting structured output from model: ${modelName}`);
+      console.log(`[GeminiService] Requesting structured output from model: ${modelName}. Prompt size: ${prompt.length} chars.`);
       const model: GenerativeModel = this.genAI.getGenerativeModel({
         model: modelName,
         generationConfig: {
@@ -66,11 +66,18 @@ export class GeminiService {
       const response = await result.response;
       const text = response.text();
       
+      console.log(`[GeminiService] Received response from ${modelName}. Size: ${text?.length || 0} chars.`);
+      
       if (!text) {
         throw new Error(`Empty response received from model ${modelName}`);
       }
       
-      return JSON.parse(text) as T;
+      try {
+        return JSON.parse(text) as T;
+      } catch (parseError: any) {
+        console.error(`[GeminiService] JSON Parse Error: ${parseError.message}. Raw text: ${text.substring(0, 500)}...`);
+        throw new Error(`Failed to parse AI response as JSON: ${parseError.message}`);
+      }
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       console.error(`[GeminiService] Error with model ${modelName}: ${errorMessage}`);
@@ -81,9 +88,9 @@ export class GeminiService {
         return this.generateStructured<T>(prompt, schema, this.primaryModelName);
       }
       
-      if (modelName === this.primaryModelName && !errorMessage.includes("2.5-flash")) {
-        console.warn(`[GeminiService] ${modelName} failed. Falling back to GA stable model: gemini-2.5-flash`);
-        return this.generateStructured<T>(prompt, schema, "gemini-2.5-flash");
+      if (modelName === this.primaryModelName && !errorMessage.includes("1.5-flash")) {
+        console.warn(`[GeminiService] ${modelName} failed. Falling back to GA stable model: gemini-1.5-flash`);
+        return this.generateStructured<T>(prompt, schema, "gemini-1.5-flash");
       }
 
       throw new Error(`Gemini API execution failed after multiple retries. Last error: ${errorMessage}`);
@@ -549,7 +556,7 @@ URLは必ず「RSSフィード」または「Atomフィード」の直接のURL�
                 description: "トレンドの種類: emerging(新興), breakthrough(躍進), niche(専門的), mainstream(主流)"
               },
               confidence: { type: SchemaType.NUMBER, description: "確信度 (0-100)" },
-              context: { type: SchemaType.STRING, description: "抽出の根拠となった記事の断片や要約" }
+              context: { type: SchemaType.STRING, description: "抽出の根拠となった記事のタイトル等" }
             },
             required: ["value", "category", "reason", "type", "confidence", "context"]
           }
@@ -562,19 +569,20 @@ URLは必ず「RSSフィード」または「Atomフィード」の直接のURL�
 あなたは Aegis Nexus の 'Archivist' エージェントです。最新のインテリジェンス・フィードを分析し、ユーザーがまだ設定していないが、注目すべき【新しいシグナル（トレンド、ブランド、テクノロジー）】を抽出してください。
 
 **ミッション:**
-1. **新奇性の発見**: 現在の興味設定（キーワード/ブランド）には含まれていないが、最新記事の中で繰り返し登場する、または強いインパクトを持つ新しい概念を見つけ出してください。
+1. **新奇性の発見**: 既存の興味設定には含まれていないが、最新記事の中で繰り返し登場する、または強いインパクトを持つ新しい概念を見つけ出してください。
 2. **パーソナライズ**: ユーザーの既存の関心領域（カテゴリ）に関連するが、一歩先を行くトピックを優先してください。
 3. **詳細な分析**: 各トレンドに対し、その性質（タイプ）、AIとしての確信度、および抽出の根拠（コンテキスト）を付与してください。
 
-**現在の興味設定:**
-${JSON.stringify(interests.categories, null, 2)}
+**現在の興味カテゴリ:**
+${Object.keys(interests.categories).join(', ')}
 
-**最新記事リスト (上位50件):**
-${JSON.stringify(articles.slice(0, 50).map(a => ({ title: a.title, desc: a.desc })))}
+**最新記事リスト (上位30件):**
+${JSON.stringify(articles.slice(0, 30).map(a => ({ title: a.title, desc: a.desc })))}
 
 日本語で回答してください。
 `;
-    const result = await this.generateStructured<{ suggestions: Record<string, unknown>[] }>(prompt, schema, this.highReasoningModelName);
+    // ペイロード過大による失敗を防ぐため上位30件に絞り、モデルも Flash から試行する
+    const result = await this.generateStructured<{ suggestions: Record<string, unknown>[] }>(prompt, schema, this.primaryModelName);
     return result.suggestions;
   }
 

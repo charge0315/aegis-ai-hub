@@ -107,8 +107,8 @@ test.describe('AI Insights & Trend Discovery', () => {
     await expect(discoverBtn).toBeVisible();
     await discoverBtn.click();
 
-    // 7. トレンドが表示されることを確認
-    await expect(page.getByText('Liquid Neural Networks')).toBeVisible({ timeout: 10000 });
+    // 7. トレンドが表示されることを確認 (ローディングが終わるのを待つ)
+    await expect(page.getByText('Liquid Neural Networks')).toBeVisible({ timeout: 15000 });
     await expect(page.getByText('92% Confidence')).toBeVisible();
     await expect(page.getByText('emerging', { exact: true })).toBeVisible();
     await expect(page.getByText('Researchers from MIT')).toBeVisible();

@@ -124,10 +124,26 @@ export class ScraperFacade {
      */
     async discoverTrends(interests: Interests): Promise<TrendSuggestion[]> {
         console.log(`[ScraperFacade] トレンド探索を開始します...`);
-        const articles = await this.fetchAndProcessArticles(interests);
-        const topArticles = articles.slice(0, 50).map((a: any) => ({ title: a.title, desc: a.desc, brand: a.brand }));
-        
-        return await this.geminiService.analyzeTrends(topArticles, interests) as unknown as TrendSuggestion[];
+        try {
+            const articles = await this.fetchAndProcessArticles(interests);
+            console.log(`[ScraperFacade] 解析対象の記事数: ${articles.length}`);
+            
+            if (articles.length === 0) {
+                console.warn(`[ScraperFacade] 解析対象の記事が0件です。トレンド探索をスキップします。`);
+                return [];
+            }
+
+            const topArticles = articles.slice(0, 50).map((a: Article) => ({ title: a.title, desc: a.desc, brand: a.brand }));
+            console.log(`[ScraperFacade] Gemini API にリクエストを送信中 (上位50件)...`);
+            
+            const suggestions = await this.geminiService.analyzeTrends(topArticles, interests);
+            console.log(`[ScraperFacade] AI から ${suggestions.length} 件の提案を受信しました。`);
+            
+            return suggestions as unknown as TrendSuggestion[];
+        } catch (e: any) {
+            console.error(`[ScraperFacade] discoverTrends でエラーが発生しました: ${e.message}`);
+            throw e;
+        }
     }
 
     private _sortAndSlice(articles: Article[], count: number): Article[] {

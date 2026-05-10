@@ -62964,7 +62964,7 @@ var init_GeminiService = __esm({
           throw new Error("Gemini API\u30AD\u30FC\u304C\u8A2D\u5B9A\u3055\u308C\u3066\u3044\u307E\u305B\u3093\u3002System Settings\u30BF\u30D6\u3067\u8A2D\u5B9A\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
         }
         try {
-          console.log(`[GeminiService] Requesting structured output from model: ${modelName}`);
+          console.log(`[GeminiService] Requesting structured output from model: ${modelName}. Prompt size: ${prompt.length} chars.`);
           const model = this.genAI.getGenerativeModel({
             model: modelName,
             generationConfig: {
@@ -62975,10 +62975,16 @@ var init_GeminiService = __esm({
           const result = await model.generateContent(prompt);
           const response = await result.response;
           const text3 = response.text();
+          console.log(`[GeminiService] Received response from ${modelName}. Size: ${text3?.length || 0} chars.`);
           if (!text3) {
             throw new Error(`Empty response received from model ${modelName}`);
           }
-          return JSON.parse(text3);
+          try {
+            return JSON.parse(text3);
+          } catch (parseError) {
+            console.error(`[GeminiService] JSON Parse Error: ${parseError.message}. Raw text: ${text3.substring(0, 500)}...`);
+            throw new Error(`Failed to parse AI response as JSON: ${parseError.message}`);
+          }
         } catch (error51) {
           const errorMessage = error51 instanceof Error ? error51.message : String(error51);
           console.error(`[GeminiService] Error with model ${modelName}: ${errorMessage}`);
@@ -62986,9 +62992,9 @@ var init_GeminiService = __esm({
             console.warn(`[GeminiService] ${modelName} failed. Falling back to primary model: ${this.primaryModelName}`);
             return this.generateStructured(prompt, schema, this.primaryModelName);
           }
-          if (modelName === this.primaryModelName && !errorMessage.includes("2.5-flash")) {
-            console.warn(`[GeminiService] ${modelName} failed. Falling back to GA stable model: gemini-2.5-flash`);
-            return this.generateStructured(prompt, schema, "gemini-2.5-flash");
+          if (modelName === this.primaryModelName && !errorMessage.includes("1.5-flash")) {
+            console.warn(`[GeminiService] ${modelName} failed. Falling back to GA stable model: gemini-1.5-flash`);
+            return this.generateStructured(prompt, schema, "gemini-1.5-flash");
           }
           throw new Error(`Gemini API execution failed after multiple retries. Last error: ${errorMessage}`);
         }
@@ -63402,7 +63408,7 @@ URL\u306F\u5FC5\u305A\u300CRSS\u30D5\u30A3\u30FC\u30C9\u300D\u307E\u305F\u306F\u
                     description: "\u30C8\u30EC\u30F3\u30C9\u306E\u7A2E\u985E: emerging(\u65B0\u8208), breakthrough(\u8E8D\u9032), niche(\u5C02\u9580\u7684), mainstream(\u4E3B\u6D41)"
                   },
                   confidence: { type: SchemaType.NUMBER, description: "\u78BA\u4FE1\u5EA6 (0-100)" },
-                  context: { type: SchemaType.STRING, description: "\u62BD\u51FA\u306E\u6839\u62E0\u3068\u306A\u3063\u305F\u8A18\u4E8B\u306E\u65AD\u7247\u3084\u8981\u7D04" }
+                  context: { type: SchemaType.STRING, description: "\u62BD\u51FA\u306E\u6839\u62E0\u3068\u306A\u3063\u305F\u8A18\u4E8B\u306E\u30BF\u30A4\u30C8\u30EB\u7B49" }
                 },
                 required: ["value", "category", "reason", "type", "confidence", "context"]
               }
@@ -63414,19 +63420,19 @@ URL\u306F\u5FC5\u305A\u300CRSS\u30D5\u30A3\u30FC\u30C9\u300D\u307E\u305F\u306F\u
 \u3042\u306A\u305F\u306F Aegis Nexus \u306E 'Archivist' \u30A8\u30FC\u30B8\u30A7\u30F3\u30C8\u3067\u3059\u3002\u6700\u65B0\u306E\u30A4\u30F3\u30C6\u30EA\u30B8\u30A7\u30F3\u30B9\u30FB\u30D5\u30A3\u30FC\u30C9\u3092\u5206\u6790\u3057\u3001\u30E6\u30FC\u30B6\u30FC\u304C\u307E\u3060\u8A2D\u5B9A\u3057\u3066\u3044\u306A\u3044\u304C\u3001\u6CE8\u76EE\u3059\u3079\u304D\u3010\u65B0\u3057\u3044\u30B7\u30B0\u30CA\u30EB\uFF08\u30C8\u30EC\u30F3\u30C9\u3001\u30D6\u30E9\u30F3\u30C9\u3001\u30C6\u30AF\u30CE\u30ED\u30B8\u30FC\uFF09\u3011\u3092\u62BD\u51FA\u3057\u3066\u304F\u3060\u3055\u3044\u3002
 
 **\u30DF\u30C3\u30B7\u30E7\u30F3:**
-1. **\u65B0\u5947\u6027\u306E\u767A\u898B**: \u73FE\u5728\u306E\u8208\u5473\u8A2D\u5B9A\uFF08\u30AD\u30FC\u30EF\u30FC\u30C9/\u30D6\u30E9\u30F3\u30C9\uFF09\u306B\u306F\u542B\u307E\u308C\u3066\u3044\u306A\u3044\u304C\u3001\u6700\u65B0\u8A18\u4E8B\u306E\u4E2D\u3067\u7E70\u308A\u8FD4\u3057\u767B\u5834\u3059\u308B\u3001\u307E\u305F\u306F\u5F37\u3044\u30A4\u30F3\u30D1\u30AF\u30C8\u3092\u6301\u3064\u65B0\u3057\u3044\u6982\u5FF5\u3092\u898B\u3064\u3051\u51FA\u3057\u3066\u304F\u3060\u3055\u3044\u3002
+1. **\u65B0\u5947\u6027\u306E\u767A\u898B**: \u65E2\u5B58\u306E\u8208\u5473\u8A2D\u5B9A\u306B\u306F\u542B\u307E\u308C\u3066\u3044\u306A\u3044\u304C\u3001\u6700\u65B0\u8A18\u4E8B\u306E\u4E2D\u3067\u7E70\u308A\u8FD4\u3057\u767B\u5834\u3059\u308B\u3001\u307E\u305F\u306F\u5F37\u3044\u30A4\u30F3\u30D1\u30AF\u30C8\u3092\u6301\u3064\u65B0\u3057\u3044\u6982\u5FF5\u3092\u898B\u3064\u3051\u51FA\u3057\u3066\u304F\u3060\u3055\u3044\u3002
 2. **\u30D1\u30FC\u30BD\u30CA\u30E9\u30A4\u30BA**: \u30E6\u30FC\u30B6\u30FC\u306E\u65E2\u5B58\u306E\u95A2\u5FC3\u9818\u57DF\uFF08\u30AB\u30C6\u30B4\u30EA\uFF09\u306B\u95A2\u9023\u3059\u308B\u304C\u3001\u4E00\u6B69\u5148\u3092\u884C\u304F\u30C8\u30D4\u30C3\u30AF\u3092\u512A\u5148\u3057\u3066\u304F\u3060\u3055\u3044\u3002
 3. **\u8A73\u7D30\u306A\u5206\u6790**: \u5404\u30C8\u30EC\u30F3\u30C9\u306B\u5BFE\u3057\u3001\u305D\u306E\u6027\u8CEA\uFF08\u30BF\u30A4\u30D7\uFF09\u3001AI\u3068\u3057\u3066\u306E\u78BA\u4FE1\u5EA6\u3001\u304A\u3088\u3073\u62BD\u51FA\u306E\u6839\u62E0\uFF08\u30B3\u30F3\u30C6\u30AD\u30B9\u30C8\uFF09\u3092\u4ED8\u4E0E\u3057\u3066\u304F\u3060\u3055\u3044\u3002
 
-**\u73FE\u5728\u306E\u8208\u5473\u8A2D\u5B9A:**
-${JSON.stringify(interests.categories, null, 2)}
+**\u73FE\u5728\u306E\u8208\u5473\u30AB\u30C6\u30B4\u30EA:**
+${Object.keys(interests.categories).join(", ")}
 
-**\u6700\u65B0\u8A18\u4E8B\u30EA\u30B9\u30C8 (\u4E0A\u4F4D50\u4EF6):**
-${JSON.stringify(articles.slice(0, 50).map((a) => ({ title: a.title, desc: a.desc })))}
+**\u6700\u65B0\u8A18\u4E8B\u30EA\u30B9\u30C8 (\u4E0A\u4F4D30\u4EF6):**
+${JSON.stringify(articles.slice(0, 30).map((a) => ({ title: a.title, desc: a.desc })))}
 
 \u65E5\u672C\u8A9E\u3067\u56DE\u7B54\u3057\u3066\u304F\u3060\u3055\u3044\u3002
 `;
-        const result = await this.generateStructured(prompt, schema, this.highReasoningModelName);
+        const result = await this.generateStructured(prompt, schema, this.primaryModelName);
         return result.suggestions;
       }
       /**
@@ -132244,9 +132250,22 @@ var init_ScraperFacade = __esm({
        */
       async discoverTrends(interests) {
         console.log(`[ScraperFacade] \u30C8\u30EC\u30F3\u30C9\u63A2\u7D22\u3092\u958B\u59CB\u3057\u307E\u3059...`);
-        const articles = await this.fetchAndProcessArticles(interests);
-        const topArticles = articles.slice(0, 50).map((a) => ({ title: a.title, desc: a.desc, brand: a.brand }));
-        return await this.geminiService.analyzeTrends(topArticles, interests);
+        try {
+          const articles = await this.fetchAndProcessArticles(interests);
+          console.log(`[ScraperFacade] \u89E3\u6790\u5BFE\u8C61\u306E\u8A18\u4E8B\u6570: ${articles.length}`);
+          if (articles.length === 0) {
+            console.warn(`[ScraperFacade] \u89E3\u6790\u5BFE\u8C61\u306E\u8A18\u4E8B\u304C0\u4EF6\u3067\u3059\u3002\u30C8\u30EC\u30F3\u30C9\u63A2\u7D22\u3092\u30B9\u30AD\u30C3\u30D7\u3057\u307E\u3059\u3002`);
+            return [];
+          }
+          const topArticles = articles.slice(0, 50).map((a) => ({ title: a.title, desc: a.desc, brand: a.brand }));
+          console.log(`[ScraperFacade] Gemini API \u306B\u30EA\u30AF\u30A8\u30B9\u30C8\u3092\u9001\u4FE1\u4E2D (\u4E0A\u4F4D50\u4EF6)...`);
+          const suggestions = await this.geminiService.analyzeTrends(topArticles, interests);
+          console.log(`[ScraperFacade] AI \u304B\u3089 ${suggestions.length} \u4EF6\u306E\u63D0\u6848\u3092\u53D7\u4FE1\u3057\u307E\u3057\u305F\u3002`);
+          return suggestions;
+        } catch (e) {
+          console.error(`[ScraperFacade] discoverTrends \u3067\u30A8\u30E9\u30FC\u304C\u767A\u751F\u3057\u307E\u3057\u305F: ${e.message}`);
+          throw e;
+        }
       }
       _sortAndSlice(articles, count) {
         return articles.sort((a, b) => b.score - a.score || new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, count);
