@@ -58,9 +58,10 @@ contextBridge.exposeInMainWorld('nexusApi', {
   saveApiKey: (apiKey) => ipcRenderer.invoke('save-api-key', apiKey),
 
   /**
-   * AIによってカテゴリ全体を10個に整理・再構築します。
+   * AIによってカテゴリ全体を整理・再構築します。
+   * @param {number} [count] - カテゴリ数
    */
-  restructureCategories: () => ipcRenderer.invoke('restructure-categories'),
+  restructureCategories: (count) => ipcRenderer.invoke('restructure-categories', count),
 
   /**
    * 最新記事から新しいトレンドを探索します。

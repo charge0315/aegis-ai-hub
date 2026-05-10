@@ -526,17 +526,32 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
       return;
     }
 
+    const countInput = await customPrompt(
+      'AI Restructure', 
+      'How many categories would you like to reorganize everything into?', 
+      '10', 
+      'Enter a number between 5 and 15'
+    );
+    
+    if (!countInput) return;
+    const targetCount = parseInt(countInput, 10);
+    
+    if (isNaN(targetCount) || targetCount < 5 || targetCount > 15) {
+      await customAlert('Invalid Number', 'Please enter a valid number between 5 and 15.', 'error');
+      return;
+    }
+
     const confirmed = await customConfirm(
       'Deep AI Restructure',
-      'This will completely transform your intelligence profile. AI will reorganize everything into 10 optimal categories, redistribute your existing feeds, and discover new high-quality sources for each group. This process may take a minute. Proceed?'
+      `This will completely transform your intelligence profile. AI will reorganize everything into ${targetCount} optimal categories, redistribute your existing feeds, and discover new high-quality sources for each group. Proceed?`
     );
     if (!confirmed) return;
 
     setIsSuggesting(true);
-    setRestructureStep('Phase 1/2: Reorganizing Categories & Mapping Feeds...');
+    setRestructureStep(`Phase 1/2: Reorganizing into ${targetCount} Categories...`);
     try {
       // 1. AI によるカテゴリ再編とフィードマッピングの実行
-      const restructured = await nexusApi.restructureCategories();
+      const restructured = await nexusApi.restructureCategories(targetCount);
       
       setRestructureStep('Phase 2/2: Injecting New High-Quality Sources...');
       // 実際にはバックエンドが既に新規ソースを feedConfig にマージして返しているため、

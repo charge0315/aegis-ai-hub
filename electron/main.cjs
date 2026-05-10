@@ -277,7 +277,7 @@ function registerIpcHandlers() {
     }
   });
 
-  ipcMain.handle('restructure-categories', async () => {
+  ipcMain.handle('restructure-categories', async (event, count) => {
     try {
       const dataDir = getDataDir();
       const settingsManager = new ElectronSettingsManager({ dataDir });
@@ -287,7 +287,8 @@ function registerIpcHandlers() {
       
       const interests = await settingsManager.getInterests();
       const currentFeeds = await settingsManager.getFeedConfig();
-      const restructured = await geminiService.getRestructureProposal(interests, currentFeeds);
+      const targetCount = typeof count === 'number' ? count : 10;
+      const restructured = await geminiService.getRestructureProposal(interests, currentFeeds, targetCount);
 
       const validationTasks = Object.entries(restructured.feedConfig).map(async ([catName, config]) => {
         const sitesToValidate = config.active.map(url => ({ url, name: 'Suggested Feed', category: catName }));

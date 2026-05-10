@@ -102,12 +102,14 @@ export const nexusApi = {
     return await res.json();
   },
 
-  async restructureCategories(): Promise<{ categories: Record<string, InterestCategory>, feedConfig: FeedConfig }> {
+  async restructureCategories(count?: number): Promise<{ categories: Record<string, InterestCategory>, feedConfig: FeedConfig }> {
     if (window.nexusApi) {
-      return await window.nexusApi.restructureCategories();
+      return await window.nexusApi.restructureCategories(count);
     }
     const res = await fetch(`${BACKEND_URL}/api/v5/restructure-categories`, {
-      method: 'POST'
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ count })
     });
     return await res.json();
   },

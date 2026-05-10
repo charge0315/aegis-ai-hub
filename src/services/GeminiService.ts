@@ -252,7 +252,7 @@ export class GeminiService {
    * 現在の興味設定とフィード構成を分析し、最適な10カテゴリに再構築した完全なプロファイルを提示します。
    * 既存のフィードの再割り当てと、新しい高品質なソースの発見を含みます。
    */
-  async getRestructureProposal(interests: Interests, currentFeeds: FeedConfig): Promise<{ categories: Record<string, InterestCategory>, feedConfig: FeedConfig }> {
+  async getRestructureProposal(interests: Interests, currentFeeds: FeedConfig, targetCount: number = 10): Promise<{ categories: Record<string, InterestCategory>, feedConfig: FeedConfig }> {
     const schema: ResponseSchema = {
       type: SchemaType.OBJECT,
       properties: {
@@ -270,8 +270,8 @@ export class GeminiService {
             },
             required: ["name", "emoji", "brands", "keywords", "score", "reason"]
           },
-          minItems: 10,
-          maxItems: 10
+          minItems: targetCount,
+          maxItems: targetCount
         },
         feedMapping: {
           type: SchemaType.ARRAY,
@@ -309,17 +309,17 @@ export class GeminiService {
 
     const prompt = `
 あなたはインテリジェンス・アーキテクトです。
-ユーザーのニュース収集環境を根本から再構築し、情報を【正確に10個の洗練されたカテゴリ】に整理してください。
+ユーザーのニュース収集環境を根本から再構築し、情報を【正確に${targetCount}個の洗練されたカテゴリ】に整理してください。
 
 **ミッション:**
-1. **カテゴリーの再生成**: 既存の興味関心を分析し、モダンで包括的な10個の新しいカテゴリーを生成してください。
-2. **既存データの完全保持と自動割り当て**: 以下の【既存データ】にある全てのブランドとキーワードを、重複を除いて、新しい10カテゴリーのいずれかに最適に割り当ててください。**一つも削除してはいけません。**
+1. **カテゴリーの再生成**: 既存の興味関心を分析し、モダンで包括的な${targetCount}個の新しいカテゴリーを生成してください。
+2. **既存データの完全保持と自動割り当て**: 以下の【既存データ】にある全てのブランドとキーワードを、重複を除いて、新しい${targetCount}カテゴリーのいずれかに最適に割り当ててください。**一つも削除してはいけません。**
 3. **AIによる拡張（SUGGEST機能）**: 割り当て後、各カテゴリーの専門性を高めるために、新しいブランドとキーワードをそれぞれ5個ずつ新規に提案して追加してください。
-4. **既存フィードの移設**: ユーザーが現在購読しているフィードを、新しい10カテゴリーのいずれかに最適に割り当て直してください。
+4. **既存フィードの移設**: ユーザーが現在購読しているフィードを、新しい${targetCount}カテゴリーのいずれかに最適に割り当て直してください。
 5. **新規ソースの注入**: 各カテゴリーに対して、情報の質を高めるための高品質なRSS/Atomフィードを2〜3個ずつ新しく提案してください。
 
 **重要ルール:**
-- 出力カテゴリー数は【必ず正確に10個】。
+- 出力カテゴリー数は【必ず正確に${targetCount}個】。
 - **既存のブランドとキーワードは絶対に変更・削除せず、必ず新カテゴリーのいずれかに含めてください。**
 - 新規提案のブランド/キーワードは、既存のものとは別に新しく「絞り出して」追加してください。
 - **【網羅性の保証】: 各カテゴリーに対して必ず新規ソースを提案してください。適切な日本語ソースがない場合は、世界的権威の英語ソースや、国内大手メディアの関連フィードを必ず割り当ててください。0件の提案は認められません。**
