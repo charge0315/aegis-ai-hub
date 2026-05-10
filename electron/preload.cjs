@@ -63,6 +63,11 @@ contextBridge.exposeInMainWorld('nexusApi', {
   restructureCategories: () => ipcRenderer.invoke('restructure-categories'),
 
   /**
+   * 最新記事から新しいトレンドを探索します。
+   */
+  discoverTrends: () => ipcRenderer.invoke('discover-trends'),
+
+  /**
    * 設定を初期状態に戻します。
    */
   resetToDefaults: () => ipcRenderer.invoke('reset-to-defaults'),
