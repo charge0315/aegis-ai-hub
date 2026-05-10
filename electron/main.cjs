@@ -255,6 +255,7 @@ function registerIpcHandlers() {
     try {
       const dataDir = getDataDir();
       const settingsManager = new ElectronSettingsManager({ dataDir });
+      await settingsManager.init();
       const apiKey = await settingsManager.getApiKey();
       geminiService.updateApiKey(apiKey);
       return await geminiService.suggestCategoryDetails(categoryName);
@@ -280,6 +281,7 @@ function registerIpcHandlers() {
     try {
       const dataDir = getDataDir();
       const settingsManager = new ElectronSettingsManager({ dataDir });
+      await settingsManager.init();
       const apiKey = await settingsManager.getApiKey();
       geminiService.updateApiKey(apiKey);
       
@@ -310,6 +312,7 @@ function registerIpcHandlers() {
     try {
       const dataDir = getDataDir();
       const settingsManager = new ElectronSettingsManager({ dataDir });
+      await settingsManager.init();
       const apiKey = await settingsManager.getApiKey();
       scraper.updateApiKey(apiKey);
       

@@ -22,6 +22,7 @@ export class GeminiService {
   private genAI: GoogleGenerativeAI | null;
   private primaryModelName: string = "gemini-3.1-flash";
   private highReasoningModelName: string = "gemini-3.1-pro";
+  private stableFallbackModelName: string = "gemini-2.5-flash";
 
   /**
    * @param {string} apiKey - Google Gemini APIキー
@@ -82,18 +83,23 @@ export class GeminiService {
       const errorMessage = error instanceof Error ? error.message : String(error);
       console.error(`[GeminiService] Error with model ${modelName}: ${errorMessage}`);
       
-      // Pro で失敗した場合は Flash へ、Flash で失敗した場合は GA 安定版への階層型フォールバック
+      // 階層型フォールバック: Pro -> Flash -> GA 安定版(2.5) -> 旧安定版(1.5)
       if (modelName === this.highReasoningModelName) {
         console.warn(`[GeminiService] ${modelName} failed. Falling back to primary model: ${this.primaryModelName}`);
         return this.generateStructured<T>(prompt, schema, this.primaryModelName);
       }
       
-      if (modelName === this.primaryModelName && !errorMessage.includes("1.5-flash")) {
-        console.warn(`[GeminiService] ${modelName} failed. Falling back to GA stable model: gemini-1.5-flash`);
+      if (modelName === this.primaryModelName) {
+        console.warn(`[GeminiService] ${modelName} failed. Falling back to GA stable model: ${this.stableFallbackModelName}`);
+        return this.generateStructured<T>(prompt, schema, this.stableFallbackModelName);
+      }
+
+      if (modelName === this.stableFallbackModelName) {
+        console.warn(`[GeminiService] ${modelName} failed. Final fallback attempt with gemini-1.5-flash`);
         return this.generateStructured<T>(prompt, schema, "gemini-1.5-flash");
       }
 
-      throw new Error(`Gemini API execution failed after multiple retries. Last error: ${errorMessage}`);
+      throw new Error(`Gemini API execution failed after multiple retries. [Last Model: ${modelName}] Detail: ${errorMessage}`);
     }
   }
 

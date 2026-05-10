@@ -62937,6 +62937,7 @@ var init_GeminiService = __esm({
       genAI;
       primaryModelName = "gemini-3.1-flash";
       highReasoningModelName = "gemini-3.1-pro";
+      stableFallbackModelName = "gemini-2.5-flash";
       /**
        * @param {string} apiKey - Google Gemini APIキー
        */
@@ -62992,11 +62993,15 @@ var init_GeminiService = __esm({
             console.warn(`[GeminiService] ${modelName} failed. Falling back to primary model: ${this.primaryModelName}`);
             return this.generateStructured(prompt, schema, this.primaryModelName);
           }
-          if (modelName === this.primaryModelName && !errorMessage.includes("1.5-flash")) {
-            console.warn(`[GeminiService] ${modelName} failed. Falling back to GA stable model: gemini-1.5-flash`);
+          if (modelName === this.primaryModelName) {
+            console.warn(`[GeminiService] ${modelName} failed. Falling back to GA stable model: ${this.stableFallbackModelName}`);
+            return this.generateStructured(prompt, schema, this.stableFallbackModelName);
+          }
+          if (modelName === this.stableFallbackModelName) {
+            console.warn(`[GeminiService] ${modelName} failed. Final fallback attempt with gemini-1.5-flash`);
             return this.generateStructured(prompt, schema, "gemini-1.5-flash");
           }
-          throw new Error(`Gemini API execution failed after multiple retries. Last error: ${errorMessage}`);
+          throw new Error(`Gemini API execution failed after multiple retries. [Last Model: ${modelName}] Detail: ${errorMessage}`);
         }
       }
       /**
@@ -132872,6 +132877,7 @@ function registerIpcHandlers() {
     try {
       const dataDir = getDataDir();
       const settingsManager = new ElectronSettingsManager2({ dataDir });
+      await settingsManager.init();
       const apiKey = await settingsManager.getApiKey();
       geminiService.updateApiKey(apiKey);
       return await geminiService.suggestCategoryDetails(categoryName);
@@ -132895,6 +132901,7 @@ function registerIpcHandlers() {
     try {
       const dataDir = getDataDir();
       const settingsManager = new ElectronSettingsManager2({ dataDir });
+      await settingsManager.init();
       const apiKey = await settingsManager.getApiKey();
       geminiService.updateApiKey(apiKey);
       const interests = await settingsManager.getInterests();
@@ -132920,6 +132927,7 @@ function registerIpcHandlers() {
     try {
       const dataDir = getDataDir();
       const settingsManager = new ElectronSettingsManager2({ dataDir });
+      await settingsManager.init();
       const apiKey = await settingsManager.getApiKey();
       scraper.updateApiKey(apiKey);
       const interests = await settingsManager.getInterests();
