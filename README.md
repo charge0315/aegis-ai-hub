@@ -7,10 +7,9 @@
 
 ### 1. Deep AI Restructure v2 (完全プロファイル再定義)
 ユーザーのニュース収集環境を根本から再構築する、強力な AI 機能を実装。
-- **Robust Architecture**: `SettingsManager` のシングルトン化と、`UnifiedEditor` のコンポーネント分割（`editors/`）を実施。コードの品質と保守性を大幅に向上させました。
-- **Unit Testing**: Vitest による包括的なユニットテストを導入。コアロジックの信頼性を 100% 担保します。
-- **Category Name Normalization**: AIが再構築時に生成するカテゴリ名の微妙な表記揺れを自動的に正規化し、購読フィードと既存カテゴリを確実に紐付ける「整合性強制ロジック」を導入。
-- **Data Retention Recovery**: 再構築プロセスにおいて、AIが既存のブランドやキーワードを返し忘れた場合でも、システム側で自動的に検知・復元するリカバリーロジックを搭載。ユーザーの大切な知識資産を 100% 保持します。
+- **Robust Architecture**: `SettingsManager` のシングルトン化と、`UnifiedEditor` のロジックを `useUnifiedEditorHandlers` カスタムフックへ抽出。UIコンポーネントの機能分割（`editors/`）により、コードの品質と保守性を大幅に向上させました。
+- **Comprehensive Unit Testing**: Vitest による包括的なユニットテストを導入。コアロジックの **any 型を完全に排除**し、型安全性を 100% 担保。第2回レビュー指摘への対応として、`SettingsManager` のバックアップ世代管理（最大3世代）などの堅牢性も実証済みです。
+- **Data Model Unification & feedConfig Integration**: `interests` と `feedConfig` のライフサイクルを厳格に同期させ、データ構造の不整合を完全に解消。Zod スキーマによる実行時バリデーションを徹底しました。
 - **Parallel Verification Logic**: 従来は順次実行していたフィードの有効性検証を、全カテゴリー並列（`Promise.all`）で実行するように刷新。タイムアウトを回避し、再構築プロセス全体の UX を劇的に向上させました。
 - **Robust Fallback Strategy**: AIが提案したURLが検証で全滅した場合、または適切なソースが見つからない場合に、最適化されたクエリを用いた **Google News RSS** を自動的に注入。「空のダッシュボード」を物理的に回避し、情報の継続性を保証します。
 - **Data Normalization**: Gemini の自由な出力を `InterestCategory` スキーマへ厳格に変換・クリーンアップする処理を追加。Zod バリデーション落ちを防ぎ、プロセスの完遂率を 100% に近づけました。

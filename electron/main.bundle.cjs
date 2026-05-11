@@ -61760,8 +61760,7 @@ var init_SettingsManager = __esm({
        * クラウド（またはインポート）からの設定を同期します。
        */
       async syncSettings(settings, fetcher) {
-        const { interests, feedConfig, feed_urls, windowState, lastUpdated } = settings || {};
-        const actualFeeds = feedConfig || feed_urls;
+        const { interests, feedConfig, windowState, lastUpdated } = settings || {};
         if (!interests) {
           throw new Error('INVALID_ARGUMENT: "interests" is required for sync.');
         }
@@ -61770,7 +61769,7 @@ var init_SettingsManager = __esm({
         const normalizedFeedConfig = {};
         const categoriesObj = validatedInterests.categories || {};
         const interestCats = Object.keys(categoriesObj);
-        const incomingFeeds = actualFeeds || {};
+        const incomingFeeds = feedConfig || {};
         for (const [feedCatName, data2] of Object.entries(incomingFeeds)) {
           if (!data2) continue;
           const targetClean = normalizeCategoryName(feedCatName);
@@ -61855,7 +61854,23 @@ var init_SettingsManager = __esm({
         try {
           const exists = await import_promises.default.access(filePath).then(() => true).catch(() => false);
           if (exists) {
-            await import_promises.default.copyFile(filePath, `${filePath}.bak`);
+            for (let i = 3; i >= 1; i--) {
+              const oldBak = i === 1 ? filePath : `${filePath}.bak${i - 1 === 1 ? "" : i - 1}`;
+              const newBak = `${filePath}.bak${i === 1 ? "" : i}`;
+              const bakExists = await import_promises.default.access(oldBak).then(() => true).catch(() => false);
+              if (bakExists) {
+                if (i === 3) {
+                  await import_promises.default.unlink(newBak).catch(() => {
+                  });
+                }
+                if (i === 1) {
+                  await import_promises.default.copyFile(filePath, newBak);
+                } else {
+                  await import_promises.default.rename(oldBak, newBak).catch(() => {
+                  });
+                }
+              }
+            }
           }
           await import_promises.default.writeFile(filePath, content, "utf8");
         } catch (writeError) {
@@ -124702,7 +124717,7 @@ var init_ImageCacheManager = __esm({
           const parsed = JSON.parse(data2);
           this.cache = new Map(Object.entries(parsed));
           this.cleanup();
-        } catch (error51) {
+        } catch {
           this.cache = /* @__PURE__ */ new Map();
         }
       }
@@ -131774,19 +131789,19 @@ var init_RSSFetcher = __esm({
               return feed.items || [];
             } catch (e) {
               lastError = e;
-              const msg2 = e instanceof Error ? e.message : String(e);
-              const isRetryable = msg2.includes("ENOTFOUND") || msg2.includes("ECONNREFUSED") || msg2.includes("ETIMEDOUT") || msg2.includes("timeout") || msg2.includes("Status code 429") || msg2.includes("Status code 503");
+              const msg = e instanceof Error ? e.message : String(e);
+              const isRetryable = msg.includes("ENOTFOUND") || msg.includes("ECONNREFUSED") || msg.includes("ETIMEDOUT") || msg.includes("timeout") || msg.includes("Status code 429") || msg.includes("Status code 503");
               if (isRetryable && i < retries) {
                 const delay = 3e3 * (i + 1);
                 console.warn(`[RSSFetcher] Fetch failed, retrying in ${delay}ms... (${i + 1}/${retries}): ${url3}`);
                 await new Promise((resolve) => setTimeout(resolve, delay));
                 continue;
               }
+              console.warn(`[RSSFetcher] Non-retryable error or exhausted retries for ${url3}: ${msg}`);
               break;
             }
           }
-          const msg = lastError instanceof Error ? lastError.message : String(lastError);
-          throw new Error(`Fetch failed: ${url3} (${msg})`);
+          throw lastError;
         });
       }
       /**
@@ -132914,7 +132929,7 @@ function registerIpcHandlers() {
   ipcMain.handle("get-settings", async () => {
     const interests = await settingsManager.getInterests();
     const feedConfig = await settingsManager.getFeedConfig();
-    return { interests, feed_urls: feedConfig };
+    return { interests, feedConfig };
   });
   ipcMain.handle("sync-settings", async (event, settings) => {
     try {

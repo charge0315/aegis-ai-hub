@@ -1,12 +1,12 @@
 # Backend Architecture Codemap
 
-**Last Updated:** 2026-05-21
+**Last Updated:** 2026-05-11
 **Version:** v5.3.0 NEXUS
 **Entry Point:** `electron/main.cjs` (App/Main Process)
 
 ## 概要
 バックエンドは、従来の独立した `server/` 構成を廃止し、**`src` 配下へ完全に統合**されました。これにより、Electron アプリケーション内で Fastify サーバーが内蔵される形式となり、単一のプロジェクト管理が可能になりました。
-v5.3.0 では、AI 再構築におけるデータの不整合を解消するための堅牢化ロジック、および **Gemini 3.1 Pro を活用した高度なトレンド分析エンジン**が導入されました。
+v5.3.0 では、AI 再構築におけるデータの不整合を解消するための堅牢化ロジック、**`interests` と `feedConfig` の厳格な同期**、および **Gemini 3.1 Pro を活用した高度なトレンド分析エンジン**が導入されました。
 
 ## システム・アーキテクチャ
 
