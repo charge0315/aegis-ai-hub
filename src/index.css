@@ -2,17 +2,47 @@
 
 @theme {
   --color-primary: #6366f1;
-  --color-background: #101112; 
-  --color-surface: rgba(16, 17, 18, 0.8);
+  --color-background: var(--surface-base);
+  --color-surface: var(--surface-panel);
+  --color-surface-panel: var(--surface-panel);
   --color-accent: #10b981;
   --color-alert: #f43f5e;
+  
+  --color-content-base: var(--text-base);
+  --color-content-muted: var(--text-muted);
   
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 }
 
 :root {
+  color-scheme: light dark;
+  
+  /* Light Theme (Default) */
+  --surface-base: #f8fafc;
+  --surface-panel: rgba(255, 255, 255, 0.7);
+  --text-base: #1e293b;
+  --text-muted: #64748b;
+  --glass-bg: rgba(255, 255, 255, 0.4);
+  --glass-border: rgba(0, 0, 0, 0.08);
+  --sidebar-bg: rgba(0, 0, 0, 0.02);
+  --card-bg: rgba(255, 255, 255, 0.6);
+  --scroll-thumb: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="dark"] {
   color-scheme: dark;
+  
+  /* Dark Theme Overrides */
+  --surface-base: #020617;
+  --surface-panel: rgba(16, 17, 18, 0.8);
+  --text-base: #e2e8f0;
+  --text-muted: #94a3b8;
+  --glass-bg: rgba(255, 255, 255, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.05);
+  --sidebar-bg: rgba(255, 255, 255, 0.03);
+  --card-bg: rgba(22, 24, 28, 0.75);
+  --scroll-thumb: rgba(255, 255, 255, 0.1);
 }
 
 /* 
@@ -28,15 +58,16 @@ body,
   height: 100%;
   width: 100%;
   overflow-x: hidden;
+  color: var(--text-base);
 }
 
 /* 
  * Window Base - Moderated Transparency
- * Adjusted to give some body back to the window while keeping the desktop hint.
  */
 .window-base {
-  background: rgba(16, 17, 18, 0.3) !important; /* Slightly darker to reduce overall transparency */
-  backdrop-filter: blur(10px); /* Subtle blur to separate from desktop */
+  background: var(--surface-base) !important;
+  opacity: 0.95; /* Allow slight transparency for Acrylic hint */
+  backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   min-height: 100vh;
   display: flex;
@@ -52,27 +83,26 @@ body,
 
 /* Sidebar Glass - Balanced readability */
 .sidebar-glass {
-  background: rgba(255, 255, 255, 0.03); 
+  background: var(--sidebar-bg); 
   backdrop-filter: blur(40px) saturate(120%);
-  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  border-right: 1px solid var(--glass-border);
 }
 
 /* 
  * Solid-feeling Glassmorphism for Article Cards (High Visibility)
- * Increased opacity and reduced blur for better text contrast.
  */
 .glass {
-  background: rgba(22, 24, 28, 0.75); /* Much more solid background */
+  background: var(--card-bg);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 10px 40px -6px rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 10px 40px -6px rgba(0, 0, 0, 0.3);
 }
 
 .glass-light {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--glass-bg);
   backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-border);
 }
 
 /* Scrollbar styling */
@@ -81,7 +111,7 @@ body,
 }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--scroll-thumb);
   border-radius: 3px;
 }
 

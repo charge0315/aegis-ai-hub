@@ -27,8 +27,8 @@ export const SkillRegistry: React.FC<SkillRegistryProps> = ({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-xl font-bold text-white">Agent Skill Registry</h3>
-          <p className="text-slate-500 text-sm">Capabilities currently deployed in the Aegis cluster.</p>
+          <h3 className="text-xl font-bold text-content-base">Agent Skill Registry</h3>
+          <p className="text-content-muted text-sm">Capabilities currently deployed in the Aegis cluster.</p>
         </div>
         <div className="flex gap-2">
           <button
@@ -38,7 +38,7 @@ export const SkillRegistry: React.FC<SkillRegistryProps> = ({
             <Plus size={14} />
             Add New Skill
           </button>
-          <div className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-xs text-slate-400 flex items-center">
+          <div className="px-3 py-1 bg-surface-panel/10 border border-content-muted/20 rounded-full text-xs text-content-muted flex items-center">
             {skills.length} Skills Active
           </div>
         </div>
@@ -54,13 +54,13 @@ export const SkillRegistry: React.FC<SkillRegistryProps> = ({
             onClick={() => onToggleSkill?.(skill.id)}
             className={`p-5 border rounded-2xl transition-all cursor-pointer group ${
               skill.enabled 
-                ? 'bg-white/5 border-white/10 hover:border-primary/50' 
-                : 'bg-black/40 border-white/5 opacity-50 grayscale'
+                ? 'bg-surface-panel/10 border-content-muted/20 hover:border-primary/50' 
+                : 'bg-background/40 border-content-muted/10 opacity-50 grayscale'
             }`}
           >
             <div className="flex items-start gap-4">
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 ${
-                skill.enabled ? 'bg-slate-800 text-primary' : 'bg-slate-900 text-slate-600'
+                skill.enabled ? 'bg-surface text-primary' : 'bg-surface/50 text-content-muted'
               }`}>
                 {skill.type === 'tool' ? <Terminal size={20} /> : 
                  skill.type === 'action' ? <Zap size={20} /> : 
@@ -68,23 +68,23 @@ export const SkillRegistry: React.FC<SkillRegistryProps> = ({
               </div>
               <div className="flex-grow">
                 <div className="flex items-center justify-between mb-1">
-                  <h4 className={`font-bold ${skill.enabled ? 'text-slate-200' : 'text-slate-500'}`}>{skill.name}</h4>
+                  <h4 className={`font-bold ${skill.enabled ? 'text-content-base' : 'text-content-muted'}`}>{skill.name}</h4>
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] px-2 py-0.5 bg-slate-800 text-slate-400 rounded-full uppercase font-mono">
+                    <span className="text-[10px] px-2 py-0.5 bg-surface text-content-muted rounded-full uppercase font-mono border border-content-muted/10">
                       {skill.agent}
                     </span>
                     {skill.enabled ? 
                       <CheckCircle2 size={14} className="text-primary" /> : 
-                      <Circle size={14} className="text-slate-600" />
+                      <Circle size={14} className="text-content-muted" />
                     }
                   </div>
                 </div>
-                <p className="text-sm text-slate-500 leading-relaxed">
+                <p className="text-sm text-content-muted leading-relaxed">
                   {skill.description}
                 </p>
                 <div className="mt-3 flex gap-2">
                   <span className={`text-[10px] font-bold uppercase tracking-wider ${
-                    skill.enabled ? 'text-primary/70' : 'text-slate-700'
+                    skill.enabled ? 'text-primary/70' : 'text-content-muted'
                   }`}>
                     {skill.type}
                   </span>
@@ -97,7 +97,7 @@ export const SkillRegistry: React.FC<SkillRegistryProps> = ({
 
       <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl flex items-center gap-4">
         <div className="text-primary"><BookOpen size={20} /></div>
-        <div className="text-xs text-slate-400">
+        <div className="text-xs text-content-muted">
           Click a skill to toggle its availability. Disabling a skill will prevent the <span className="text-primary font-bold">Orchestrator</span> from utilizing that logic for next intelligence cycle.
         </div>
       </div>

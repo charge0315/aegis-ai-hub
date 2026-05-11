@@ -3,9 +3,14 @@ import { motion } from 'framer-motion';
 import { 
   Save, 
   Key, 
-  RotateCcw
+  RotateCcw,
+  Sun,
+  Moon,
+  Monitor,
+  Sparkles
 } from 'lucide-react';
 import { GlassPanel } from '../GlassPanel';
+import type { UiSettings } from '../../types';
 
 interface SystemSettingsProps {
   apiKey: string;
@@ -14,6 +19,8 @@ interface SystemSettingsProps {
   isSaving: boolean;
   handleSaveApiKey: () => Promise<void>;
   handleResetToDefaults: () => Promise<void>;
+  theme: UiSettings['theme'];
+  setTheme: (theme: UiSettings['theme']) => void;
 }
 
 export const SystemSettings: React.FC<SystemSettingsProps> = ({
@@ -22,7 +29,9 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
   isSavingApiKey,
   isSaving,
   handleSaveApiKey,
-  handleResetToDefaults
+  handleResetToDefaults,
+  theme,
+  setTheme
 }) => {
   return (
     <motion.div
@@ -31,19 +40,61 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
       exit={{ opacity: 0, scale: 0.98 }}
       className="max-w-2xl mx-auto space-y-8"
     >
+      {/* Theme Customization */}
+      <GlassPanel className="p-8 space-y-6">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-accent/10 text-accent rounded-2xl">
+            <Sparkles size={24} />
+          </div>
+          <div>
+            <h3 className="text-xl font-bold text-content-base">Visual Experience</h3>
+            <p className="text-sm text-content-muted">Customize how Aegis Nexus appears on your desktop.</p>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <label className="text-xs font-bold text-content-muted uppercase tracking-widest px-1">
+            Interface Theme
+          </label>
+          <div className="grid grid-cols-3 gap-4">
+            <ThemeOption 
+              active={theme === 'light'} 
+              onClick={() => setTheme('light')}
+              icon={<Sun size={20} />}
+              label="Light"
+            />
+            <ThemeOption 
+              active={theme === 'dark'} 
+              onClick={() => setTheme('dark')}
+              icon={<Moon size={20} />}
+              label="Dark"
+            />
+            <ThemeOption 
+              active={theme === 'system'} 
+              onClick={() => setTheme('system')}
+              icon={<Monitor size={20} />}
+              label="System"
+            />
+          </div>
+          <p className="text-[10px] text-content-muted/60 px-1">
+            "System" will automatically synchronize with your OS light/dark mode settings.
+          </p>
+        </div>
+      </GlassPanel>
+
       <GlassPanel className="p-8 space-y-6">
         <div className="flex items-center gap-4">
           <div className="p-3 bg-primary/10 text-primary rounded-2xl">
             <Key size={24} />
           </div>
           <div>
-            <h3 className="text-xl font-bold text-white">Gemini API Intelligence</h3>
-            <p className="text-sm text-slate-500">Securely manage your Google Gemini API credentials.</p>
+            <h3 className="text-xl font-bold text-content-base">Gemini API Intelligence</h3>
+            <p className="text-sm text-content-muted">Securely manage your Google Gemini API credentials.</p>
           </div>
         </div>
 
         <div className="space-y-3">
-          <label className="text-xs font-bold text-slate-400 uppercase tracking-widest px-1">
+          <label className="text-xs font-bold text-content-muted uppercase tracking-widest px-1">
             Gemini API Key
           </label>
           <div className="relative group">
@@ -52,13 +103,13 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
               placeholder="AIzaSy..."
-              className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary/50 transition-all font-mono"
+              className="w-full bg-content-muted/10 border border-content-muted/20 rounded-xl px-4 py-3 text-content-base focus:outline-none focus:border-primary/50 transition-all font-mono"
             />
             <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none opacity-50">
               <Key size={16} />
             </div>
           </div>
-          <p className="text-[10px] text-slate-600 px-1">
+          <p className="text-[10px] text-content-muted/60 px-1">
             Your key is stored locally on this machine. It is never transmitted except to Google Gemini API endpoints.
           </p>
         </div>
@@ -82,8 +133,8 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
             <RotateCcw size={24} />
           </div>
           <div className="flex-grow">
-            <h3 className="text-xl font-bold text-white">Factory Reset</h3>
-            <p className="text-sm text-slate-500 mt-1">Restore the default intelligence profile and feed sources.</p>
+            <h3 className="text-xl font-bold text-content-base">Factory Reset</h3>
+            <p className="text-sm text-content-muted mt-1">Restore the default intelligence profile and feed sources.</p>
             <div className="mt-6">
               <button
                 onClick={handleResetToDefaults}
@@ -98,12 +149,35 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
         </div>
       </GlassPanel>
 
-      <div className="p-6 bg-slate-900/50 border border-white/5 rounded-2xl">
-        <h4 className="text-sm font-bold text-slate-300 mb-2">Usage Note</h4>
-        <p className="text-xs text-slate-500 leading-relaxed">
+      <div className="p-6 bg-background/50 border border-content-muted/20 rounded-2xl">
+        <h4 className="text-sm font-bold text-content-base mb-2">Usage Note</h4>
+        <p className="text-xs text-content-muted leading-relaxed">
           Aegis Nexus requires a valid Gemini API Key to perform intelligent news curation, category analysis, and autonomous site discovery. You can obtain a key for free at the <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Google AI Studio</a>.
         </p>
       </div>
     </motion.div>
   );
 };
+
+interface ThemeOptionProps {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  label: string;
+}
+
+const ThemeOption: React.FC<ThemeOptionProps> = ({ active, onClick, icon, label }) => (
+  <button
+    onClick={onClick}
+    className={`flex flex-col items-center gap-3 p-4 rounded-2xl border-2 transition-all ${
+      active 
+        ? 'bg-primary/10 border-primary text-content-base shadow-lg shadow-primary/10' 
+        : 'bg-content-muted/10 border-content-muted/20 text-content-muted hover:border-content-muted/20 hover:text-content-base'
+    }`}
+  >
+    <div className={active ? 'text-primary' : 'text-content-muted'}>
+      {icon}
+    </div>
+    <span className="text-xs font-bold uppercase tracking-wider">{label}</span>
+  </button>
+);

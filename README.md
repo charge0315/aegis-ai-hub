@@ -1,11 +1,17 @@
-# Aegis AI Hub 🛡️🤖 - v5.3.0 NEXUS
+# Aegis AI Hub 🛡️🤖 - v5.4.0 Aegis Chroma
 
 ユーザーの興味に特化した、究極の自律学習型知的ニュース・ダッシュボード。  
 最新の **Gemini 3.1 シリーズ (Flash/Pro)** を中枢に、Windows 11 の **Acrylic Glassmorphism** デザインと高度な自律エージェントを融合させたプロダクション・エディション。
 
-## 🌟 Aegis v5.3.0 NEXUS の主要な進化点
+## 🌟 Aegis v5.4.0 Aegis Chroma の主要な進化点
 
-### 1. Deep AI Restructure v2 (完全プロファイル再定義)
+### 1. Aegis Chroma (マルチテーマ・アーキテクチャ)
+デスクトップ環境との調和を極限まで追求した、高度なテーマ制御システムを導入。
+- **Dynamic Theme Engine**: ライト、ダーク、およびシステム設定同期の3モードを搭載。OSの配色変更をリアルタイムに検知し、瞬時にUIを最適化します。
+- **Modern CSS Variable System**: 全ての色彩設計を CSS 変数に集約。ハードコードを排除し、テーマ切り替え時のアトミックな更新と、将来的なカスタマイズ性を確保しました。
+- **Optimized Accessibility**: ダークモード時のコントラスト比を再設計し、長時間の閲覧でも目が疲れにくい視認性を実現。ライトモードでは清潔感のある Acrylic ガラスの質感を強調しています。
+
+### 2. Deep AI Restructure v2 (完全プロファイル再定義)
 ユーザーのニュース収集環境を根本から再構築する、強力な AI 機能を実装。
 - **Robust Architecture**: `SettingsManager` のシングルトン化と、`UnifiedEditor` のロジックを `useUnifiedEditorHandlers` カスタムフックへ抽出。UIコンポーネントの機能分割（`editors/`）により、コードの品質と保守性を大幅に向上させました。
 - **Comprehensive Unit Testing**: Vitest による包括的なユニットテストを導入。コアロジックの **any 型を完全に排除**し、型安全性を 100% 担保。第2回レビュー指摘への対応として、`SettingsManager` のバックアップ世代管理（最大3世代）などの堅牢性も実証済みです。

@@ -152,7 +152,7 @@ export const nexusApi = {
     if (window.nexusApi) {
       return await window.nexusApi.getUiSettings();
     }
-    return { jaOnly: false, viewMode: 'grid', hideImages: false, isInitialized: false };
+    return { jaOnly: false, viewMode: 'grid', hideImages: false, isInitialized: false, theme: 'system' };
   },
 
   async saveUiSettings(settings: UiSettings): Promise<{ success: boolean }> {

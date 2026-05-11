@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { nexusApi } from '../api/nexusApi';
-import type { NexusSettings, InterestCategory, Skill, TrendSuggestion, FeedConfig } from '../types';
+import type { NexusSettings, InterestCategory, Skill, TrendSuggestion, FeedConfig, UiSettings } from '../types';
 import type { DialogType } from '../components/CustomDialog';
 
 const DEFAULT_SKILLS: Skill[] = [
@@ -19,6 +19,8 @@ interface UseUnifiedEditorHandlersProps {
   customConfirm: (title: string, message: string) => Promise<boolean>;
   customPrompt: (title: string, message: string, defaultValue?: string, placeholder?: string) => Promise<string | null>;
   setActiveTab: (tab: 'editor' | 'graph' | 'skills' | 'system' | 'insights') => void;
+  theme: UiSettings['theme'];
+  setTheme: (theme: UiSettings['theme']) => void;
 }
 
 export function useUnifiedEditorHandlers({
@@ -27,7 +29,9 @@ export function useUnifiedEditorHandlers({
   customAlert,
   customConfirm,
   customPrompt,
-  setActiveTab
+  setActiveTab,
+  theme,
+  setTheme
 }: UseUnifiedEditorHandlersProps) {
   const [draft, setDraft] = useState<NexusSettings>(currentSettings);
   const [isSaving, setIsSaving] = useState(false);
@@ -441,6 +445,7 @@ export function useUnifiedEditorHandlers({
     handleDiscoverTrends, handlePromoteKeyword, handleDismissKeyword, handleReorderCategories, handleAddCategory,
     handleSave, handleReset, handleSaveApiKey, handleKeywordToggle, handleBrandToggle, handleToggleSkill,
     handleAddSkill, handleRenameCategory, handleEditEmoji, handleDeleteCategory, handleUpdateCategory,
-    handleAISuggest, handleRestructure, handleResetToDefaults
+    handleAISuggest, handleRestructure, handleResetToDefaults,
+    theme, setTheme
   };
 }

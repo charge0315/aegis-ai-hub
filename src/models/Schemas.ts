@@ -97,6 +97,7 @@ export const UiSettingsSchema = z.object({
   viewMode: z.enum(['grid', 'list', 'compact']).default('grid'),
   hideImages: z.boolean().default(false),
   isInitialized: z.boolean().default(false),
+  theme: z.enum(['light', 'dark', 'system']).default('system'),
 });
 
 export type UiSettings = z.infer<typeof UiSettingsSchema>;

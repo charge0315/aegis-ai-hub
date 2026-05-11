@@ -1,12 +1,20 @@
 # Aegis AI Hub - System Index
 
-**Project Status:** Production Ready (v5.3.0 NEXUS - Review 2 Completed)
-**Last Updated:** 2026-05-11
+**Project Status:** Production Ready (v5.4.0 Aegis Chroma)
+**Last Updated:** 2026-05-12
 
 ## プロジェクト概要
 Aegis AI Hub は、Gemini 3.1 を中枢に据えた「自律学習型知的ダッシュボード」です。  
-v5.3.0 NEXUS では、AI によるプロファイルの完全再構築、カテゴリ名の不一致を解消する整合性強制ロジック、およびデータの完全保持リカバリーを導入しました。
-第2回全体レビューの指摘事項を全て反映し、データモデルの厳格な統一、バックアップ世代管理の強化、UIロジックのリファクタリング（カスタムフック導入）を完了しています。
+v5.4.0 Aegis Chroma では、待望のマルチテーマ対応（Light/Dark/System）を導入し、CSS 変数体系の刷新により、あらゆるデスクトップ環境で最適な視認性と美しさを提供します。
+
+## 主要なアップデート (v5.4.0 Aegis Chroma)
+
+- **Aegis Chroma (Multi-Theme Architecture)**: 
+  - **Dynamic Theme Engine**: Light, Dark, および System（OS設定同期）の3モードを搭載。
+  - **CSS Variable System**: 全てのカラー・質感を CSS 変数 (`--surface-base`, `--text-base` 等) に抽出し、テーマ切り替え時のアトミックなスタイル更新を実現。
+  - **Dynamic `data-theme` Injection**: React ステートと連動して `document.documentElement` に `data-theme` 属性を注入する動的制御ロジックを実装。
+  - **SystemSettings Extension**: テーマ選択のための直感的な UI ユニットを「Visual Experience」として追加。
+- **UI Consistency Fixes**: テーマ切り替え時も Acrylic Glassmorphism の質感を維持しつつ、テキストのコントラスト比をアクセシビリティ基準に合わせて最適化。
 
 ## 主要なアップデート (v5.3.0 NEXUS)
 

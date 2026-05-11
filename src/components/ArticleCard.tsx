@@ -66,7 +66,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({ article, index = 0, si
       {/* Image Section - 視覚的なフック（アンカー）の提供。
           テキストモード（showImages=false）の場合は、情報密度を高めるために空間ごと省略されます。 */}
       {showImages && (
-        <div className={`relative overflow-hidden bg-slate-800 shrink-0 ${
+        <div className={`relative overflow-hidden bg-surface shrink-0 ${
           isSmall ? 'aspect-[4/3]' : 'aspect-video'
         }`}>
           {article.img && !imageError ? (
@@ -95,7 +95,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({ article, index = 0, si
               <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-primary/80 text-white rounded backdrop-blur-md">
                 {article.category}
               </span>
-              <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-black/60 text-white rounded backdrop-blur-md border border-white/10">
+              <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-content-muted/10 text-white rounded backdrop-blur-md border border-content-muted/20">
                 {article.brand}
               </span>
             </div>
@@ -103,7 +103,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({ article, index = 0, si
 
           {/* Score Badge - AIエージェントによる評価スコア。ユーザーが読むべき記事を即座に判断するための最重要指標 */}
           <div 
-            className={`absolute ${isSmall ? 'top-1 right-1 w-6 h-6 text-[8px]' : 'top-2 right-2 w-8 h-8 text-xs'} flex items-center justify-center rounded-full bg-black/60 backdrop-blur-md border border-white/10 font-bold text-accent score-badge`}
+            className={`absolute ${isSmall ? 'top-1 right-1 w-6 h-6 text-[8px]' : 'top-2 right-2 w-8 h-8 text-xs'} flex items-center justify-center rounded-full bg-content-muted/10 backdrop-blur-md border border-content-muted/20 font-bold text-accent score-badge`}
             data-testid="article-score"
           >
             {article.score}
@@ -121,7 +121,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({ article, index = 0, si
                 {article.category}
               </span>
             )}
-            <div className="w-6 h-6 flex items-center justify-center rounded-full bg-black/40 border border-white/10 font-bold text-[10px] text-accent">
+            <div className="w-6 h-6 flex items-center justify-center rounded-full bg-content-muted/10 border border-content-muted/20 font-bold text-[10px] text-accent">
               {article.score}
             </div>
           </div>
@@ -131,13 +131,13 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({ article, index = 0, si
         </h3>
         
         {!isSmall && (
-          <p className={`${isLarge ? 'text-sm' : 'text-xs'} text-slate-400 line-clamp-3 mb-4 flex-grow`}>
+          <p className={`${isLarge ? 'text-sm' : 'text-xs'} text-content-muted line-clamp-3 mb-4 flex-grow`}>
             {article.desc}
           </p>
         )}
 
-        <div className={`flex items-center justify-between mt-auto ${isSmall ? 'pt-2' : 'pt-4'} border-t border-white/5`}>
-          <div className={`flex items-center gap-2 ${isSmall ? 'text-[8px]' : 'text-[10px]'} text-slate-500`}>
+        <div className={`flex items-center justify-between mt-auto ${isSmall ? 'pt-2' : 'pt-4'} border-t border-content-muted/20`}>
+          <div className={`flex items-center gap-2 ${isSmall ? 'text-[8px]' : 'text-[10px]'} text-content-muted`}>
             <Calendar size={isSmall ? 10 : 12} />
             {new Date(article.date).toLocaleDateString()}
           </div>
@@ -150,7 +150,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({ article, index = 0, si
                   setShowReason(!showReason);
                 }}
                 data-testid="reasoning-toggle"
-                className="p-1.5 rounded-full hover:bg-white/10 text-primary transition-colors"
+                className="p-1.5 rounded-full hover:bg-surface-panel/10 text-primary transition-colors"
                 title="AI Reasoning"
               >
                 <Sparkles size={14} />
@@ -161,7 +161,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({ article, index = 0, si
               target="_blank" 
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
-              className={`${isSmall ? 'p-1' : 'p-1.5'} rounded-full hover:bg-white/10 text-slate-400 hover:text-white transition-colors`}
+              className={`${isSmall ? 'p-1' : 'p-1.5'} rounded-full hover:bg-surface-panel/10 text-content-muted hover:text-content-base transition-colors`}
             >
               <ExternalLink size={isSmall ? 12 : 14} />
             </a>
@@ -179,14 +179,14 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({ article, index = 0, si
             animate={{ opacity: 1, backdropFilter: 'blur(8px)' }}
             exit={{ opacity: 0, backdropFilter: 'blur(0px)' }}
             data-testid="reasoning-overlay"
-            className="absolute inset-0 z-10 bg-slate-900/80 p-6 flex flex-col"
+            className="absolute inset-0 z-10 bg-background/80 p-6 flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-2 text-primary mb-3">
               <Sparkles size={16} />
               <span className="text-xs font-bold uppercase tracking-widest">AI Reasoning</span>
             </div>
-            <div className="text-xs leading-relaxed text-slate-200 overflow-y-auto font-mono">
+            <div className="text-xs leading-relaxed text-content-base overflow-y-auto font-mono">
               {article.geminiReason}
             </div>
             <button 
@@ -194,7 +194,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({ article, index = 0, si
                 e.stopPropagation();
                 setShowReason(false);
               }}
-              className="mt-auto w-full py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-white border border-white/10 rounded hover:bg-white/5 transition-all"
+              className="mt-auto w-full py-2 text-[10px] font-bold uppercase tracking-wider text-content-muted hover:text-content-base border border-content-muted/20 rounded hover:bg-surface-panel/10 transition-all"
             >
               Close
             </button>

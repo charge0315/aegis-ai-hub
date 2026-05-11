@@ -1,7 +1,7 @@
 {
   "name": "aegis-nexus",
   "private": true,
-  "version": "5.3.0",
+  "version": "5.4.0",
   "description": "Next-gen Intelligence Command Center powered by Gemini 3.1",
   "author": "Aegis AI Hub Team",
   "type": "module",

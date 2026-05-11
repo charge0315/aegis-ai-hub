@@ -138,7 +138,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
             exit={{ opacity: 0 }}
             onClick={onClose}
             data-testid="command-palette-overlay"
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]"
+            className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[100]"
           />
           <div className="fixed inset-0 flex items-start justify-center pt-24 z-[101] pointer-events-none">
             <motion.div
@@ -146,19 +146,19 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: -20 }}
               data-testid="command-palette"
-              className="w-full max-w-2xl bg-slate-900/90 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden pointer-events-auto"
+              className="w-full max-w-2xl bg-background/95 backdrop-blur-2xl border border-content-muted/20 rounded-2xl shadow-2xl overflow-hidden pointer-events-auto"
             >
-              <div className="p-4 border-b border-white/5 flex items-center gap-3">
-                <Search size={20} className="text-slate-400" />
+              <div className="p-4 border-b border-content-muted/10 flex items-center gap-3">
+                <Search size={20} className="text-content-muted" />
                 <input
                   ref={inputRef}
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="What would you like to do?"
                   data-testid="command-palette-input"
-                  className="bg-transparent border-none outline-none text-slate-100 text-lg w-full placeholder:text-slate-500"
+                  className="bg-transparent border-none outline-none text-content-base text-lg w-full placeholder:text-content-muted/50"
                 />
-                <div className="px-2 py-1 bg-white/5 rounded text-[10px] font-bold text-slate-500 border border-white/5">
+                <div className="px-2 py-1 bg-surface-panel/10 rounded text-[10px] font-bold text-content-muted border border-content-muted/10">
                   ESC
                 </div>
               </div>
@@ -176,18 +176,18 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                         }}
                         className={`w-full flex items-center gap-4 p-3 rounded-xl transition-all ${
                           idx === selectedIndex 
-                            ? 'bg-primary/20 text-white shadow-lg ring-1 ring-primary/30' 
-                            : 'text-slate-400 hover:bg-white/5'
+                            ? 'bg-primary/20 text-content-base shadow-lg ring-1 ring-primary/30' 
+                            : 'text-content-muted hover:bg-white/5'
                         }`}
                       >
-                        <div className={`p-2 rounded-lg ${idx === selectedIndex ? 'bg-primary/20 text-primary' : 'bg-white/5'}`}>
+                        <div className={`p-2 rounded-lg ${idx === selectedIndex ? 'bg-primary/20 text-primary' : 'bg-surface-panel/10'}`}>
                           {cmd.icon}
                         </div>
                         <div className="flex-grow text-left">
-                          <div className={`text-sm font-semibold ${idx === selectedIndex ? 'text-white' : 'text-slate-200'}`}>
+                          <div className={`text-sm font-semibold ${idx === selectedIndex ? 'text-primary' : 'text-content-base'}`}>
                             {cmd.title}
                           </div>
-                          <div className="text-xs text-slate-500 line-clamp-1">
+                          <div className="text-xs text-content-muted line-clamp-1">
                             {cmd.subtitle}
                           </div>
                         </div>
@@ -200,13 +200,13 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                     ))}
                   </div>
                 ) : (
-                  <div className="p-8 text-center text-slate-500">
+                  <div className="p-8 text-center text-content-muted">
                     No commands found for "{query}"
                   </div>
                 )}
               </div>
 
-              <div className="p-3 bg-black/20 border-t border-white/5 flex items-center justify-between text-[10px] text-slate-500 font-medium tracking-wider uppercase">
+              <div className="p-3 bg-content-muted/5 border-t border-content-muted/10 flex items-center justify-between text-[10px] text-content-muted font-medium tracking-wider uppercase">
                 <div className="flex items-center gap-4">
                   <span className="flex items-center gap-1.5"><ArrowRight size={10} className="rotate-90" /> Select</span>
                   <span className="flex items-center gap-1.5"><Command size={10} /> Enter to Run</span>

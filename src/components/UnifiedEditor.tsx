@@ -17,7 +17,7 @@ import { CategoryEditor } from './editors/CategoryEditor';
 import { SystemSettings } from './editors/SystemSettings';
 import { AIInsightsPanel } from './editors/AIInsightsPanel';
 import { useUnifiedEditorHandlers } from '../hooks/useUnifiedEditorHandlers';
-import type { NexusSettings } from '../types';
+import type { NexusSettings, UiSettings } from '../types';
 import type { DialogType } from './CustomDialog';
 
 interface UnifiedEditorProps {
@@ -26,6 +26,8 @@ interface UnifiedEditorProps {
   alert: (title: string, message: string, type?: DialogType) => Promise<void>;
   confirm: (title: string, message: string) => Promise<boolean>;
   prompt: (title: string, message: string, defaultValue?: string, placeholder?: string) => Promise<string | null>;
+  theme: UiSettings['theme'];
+  setTheme: (theme: UiSettings['theme']) => void;
 }
 
 type Tab = 'editor' | 'graph' | 'skills' | 'system' | 'insights';
@@ -35,7 +37,9 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
   onSave,
   alert: customAlert,
   confirm: customConfirm,
-  prompt: customPrompt
+  prompt: customPrompt,
+  theme,
+  setTheme
 }) => {
   const [activeTab, setActiveTab] = useState<Tab>('editor');
 
@@ -78,7 +82,9 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
     customAlert,
     customConfirm,
     customPrompt,
-    setActiveTab
+    setActiveTab,
+    theme,
+    setTheme
   });
 
   return (
@@ -105,13 +111,13 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
       {/* Header & Main Actions */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-3">
+          <h1 className="text-2xl font-bold text-content-base flex items-center gap-3">
             <div className="p-2 bg-primary/20 rounded-lg text-primary">
               <Settings2 size={24} />
             </div>
             Nexus Command & Control
           </h1>
-          <p className="text-sm text-slate-500 mt-1">Configure intelligence parameters, visualize knowledge, and manage agent skills.</p>
+          <p className="text-sm text-content-muted mt-1">Configure intelligence parameters, visualize knowledge, and manage agent skills.</p>
         </div>
         
         <div className="flex gap-3">
@@ -131,7 +137,7 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
               animate={{ opacity: 1, x: 0 }}
               onClick={handleReset}
               data-testid="reset-draft-button"
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-400 hover:text-white transition-colors"
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-content-muted hover:text-content-base transition-colors"
             >
               <RotateCcw size={16} />
               Reset Draft
@@ -141,7 +147,7 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
             onClick={handleSave}
             disabled={!isDirty || isSaving || isSuggesting}
             data-testid="save-settings-button"
-            className="flex items-center gap-2 px-6 py-2.5 text-sm font-bold bg-primary disabled:bg-slate-800 disabled:text-slate-600 text-white rounded-xl transition-all shadow-lg shadow-primary/20 hover:shadow-primary/40 active:scale-95"
+            className="flex items-center gap-2 px-6 py-2.5 text-sm font-bold bg-primary disabled:bg-surface disabled:text-content-muted text-white rounded-xl transition-all shadow-lg shadow-primary/20 hover:shadow-primary/40 active:scale-95"
           >
             <Save size={18} />
             {isSaving ? 'Synchronizing...' : isSuggesting ? 'Thinking...' : 'Save Configuration'}
@@ -150,7 +156,7 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-white/5 gap-8">
+      <div className="flex border-b border-content-muted/20 gap-8">
         <TabButton 
           active={activeTab === 'editor'} 
           onClick={() => setActiveTab('editor')} 
@@ -196,7 +202,7 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-slate-900/60 backdrop-blur-md rounded-3xl border border-white/5 shadow-2xl"
+              className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-background/80 backdrop-blur-md rounded-3xl border border-content-muted/20 shadow-2xl"
             >
               <div className="p-10 flex flex-col items-center gap-6 text-center">
                 <div className="relative">
@@ -204,10 +210,10 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
                   <Sparkles size={24} className="absolute inset-0 m-auto text-indigo-400 animate-pulse" />
                 </div>
                 <div className="space-y-2">
-                  <h3 className="text-xl font-bold text-white tracking-tight">AI is Thinking...</h3>
+                  <h3 className="text-xl font-bold text-content-base tracking-tight">AI is Thinking...</h3>
                   <p className="text-indigo-300 font-mono text-xs uppercase tracking-[0.2em]">{restructureStep}</p>
                 </div>
-                <p className="text-slate-400 text-sm max-w-[300px]">
+                <p className="text-content-muted text-sm max-w-[300px]">
                   Analyzing your data and discovering the best news sources. This takes a few moments.
                 </p>
               </div>
@@ -282,6 +288,8 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
               isSaving={isSaving}
               handleSaveApiKey={handleSaveApiKey}
               handleResetToDefaults={handleResetToDefaults}
+              theme={theme}
+              setTheme={setTheme}
             />
           )}
         </AnimatePresence>
@@ -304,8 +312,8 @@ const TabButton: React.FC<TabButtonProps> = ({ active, onClick, icon, label, 'da
     data-testid={testId}
     className={`flex items-center gap-2 py-4 border-b-2 transition-all font-semibold text-sm ${
       active 
-        ? 'border-primary text-white' 
-        : 'border-transparent text-slate-500 hover:text-slate-300'
+        ? 'border-primary text-content-base' 
+        : 'border-transparent text-content-muted hover:text-content-base'
     }`}
   >
     {icon}

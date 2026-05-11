@@ -61658,7 +61658,8 @@ var init_Schemas = __esm({
       jaOnly: external_exports.boolean().default(false),
       viewMode: external_exports.enum(["grid", "list", "compact"]).default("grid"),
       hideImages: external_exports.boolean().default(false),
-      isInitialized: external_exports.boolean().default(false)
+      isInitialized: external_exports.boolean().default(false),
+      theme: external_exports.enum(["light", "dark", "system"]).default("system")
     });
     CredentialsSchema = external_exports.object({
       geminiApiKey: external_exports.string().optional()

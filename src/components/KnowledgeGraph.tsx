@@ -127,7 +127,7 @@ export const KnowledgeGraph: React.FC<KnowledgeGraphProps> = ({ settings, onKeyw
       .attr("dx", 15)
       .attr("dy", 5)
       .text(d => d.name)
-      .attr("fill", "white")
+      .attr("fill", "var(--text-base)")
       .attr("font-size", d => d.type === 'root' ? "14px" : "11px")
       .attr("font-weight", d => d.type === 'root' || d.type === 'category' ? "bold" : "normal")
       .attr("font-family", "Inter, sans-serif")
@@ -156,32 +156,32 @@ export const KnowledgeGraph: React.FC<KnowledgeGraphProps> = ({ settings, onKeyw
   }, [settings, onKeywordToggle, onBrandToggle]);
 
   return (
-    <div className="w-full h-[600px] bg-black/40 backdrop-blur-md rounded-2xl border border-white/5 overflow-hidden relative shadow-inner">
+    <div className="w-full h-[600px] bg-surface/40 backdrop-blur-md rounded-2xl border border-content-muted/20 overflow-hidden relative shadow-inner">
       <div className="absolute top-6 left-6 z-10">
-        <h3 className="text-white font-bold flex items-center gap-2 text-lg">
+        <h3 className="text-content-base font-bold flex items-center gap-2 text-lg">
           Intelligence Knowledge Graph
           <span className="text-[10px] px-2 py-0.5 bg-primary/20 text-primary rounded-full border border-primary/20 font-mono tracking-tighter uppercase">Live Graph</span>
         </h3>
-        <p className="text-slate-400 text-sm mt-1">
+        <p className="text-content-muted text-sm mt-1">
           Visualizing semantic relationships across your interests.
         </p>
         <div className="flex gap-4 mt-3">
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-primary" />
-            <span className="text-[10px] text-slate-500 uppercase font-bold">Nexus Core</span>
+            <span className="text-[10px] text-content-muted uppercase font-bold">Nexus Core</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-emerald-500" />
-            <span className="text-[10px] text-slate-500 uppercase font-bold">Categories</span>
+            <span className="text-[10px] text-content-muted uppercase font-bold">Categories</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-sky-400" />
-            <span className="text-[10px] text-slate-500 uppercase font-bold">Signals</span>
+            <span className="text-[10px] text-content-muted uppercase font-bold">Signals</span>
           </div>
         </div>
       </div>
       
-      <div className="absolute bottom-6 right-6 z-10 bg-slate-900/80 backdrop-blur-md p-3 rounded-lg border border-white/10 text-[10px] text-slate-400 max-w-[200px]">
+      <div className="absolute bottom-6 right-6 z-10 bg-background/80 backdrop-blur-md p-3 rounded-lg border border-content-muted/20 text-[10px] text-content-muted max-w-[200px]">
         <p>💡 <b>Interactive:</b> Drag to reorganize, use mouse wheel to zoom, or click nodes to toggle weighting.</p>
       </div>
 
