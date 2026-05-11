@@ -49,7 +49,7 @@ export class RSSFetcher {
    */
   async fetch(url: string, retries = 2): Promise<unknown[]> {
     return this.limit(async () => {
-      let lastError: any;
+      let lastError: unknown;
       for (let i = 0; i <= retries; i++) {
         try {
           const feed = await this.parser.parseURL(url);
@@ -57,7 +57,7 @@ export class RSSFetcher {
         } catch (e: unknown) {
           lastError = e;
           const msg = e instanceof Error ? e.message : String(e);
-          
+
           // ネットワーク一時不通やタイムアウトの場合はリトライ
           const isRetryable = 
             msg.includes('ENOTFOUND') || 
@@ -66,18 +66,19 @@ export class RSSFetcher {
             msg.includes('timeout') ||
             msg.includes('Status code 429') || 
             msg.includes('Status code 503');
-          
+
           if (isRetryable && i < retries) {
             const delay = 3000 * (i + 1);
             console.warn(`[RSSFetcher] Fetch failed, retrying in ${delay}ms... (${i + 1}/${retries}): ${url}`);
             await new Promise(resolve => setTimeout(resolve, delay));
             continue;
           }
+
+          console.warn(`[RSSFetcher] Non-retryable error or exhausted retries for ${url}: ${msg}`);
           break;
         }
       }
-      const msg = lastError instanceof Error ? lastError.message : String(lastError);
-      throw new Error(`Fetch failed: ${url} (${msg})`);
+      throw lastError;
     });
   }
 

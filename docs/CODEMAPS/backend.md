@@ -1,6 +1,6 @@
 # Backend Architecture Codemap
 
-**Last Updated:** 2026-05-20
+**Last Updated:** 2026-05-21
 **Version:** v5.3.0 NEXUS
 **Entry Point:** `electron/main.cjs` (App/Main Process)
 
@@ -19,14 +19,18 @@ v5.3.0 では、AI 再構築におけるデータの不整合を解消するた�
     - **`/api/v5/discover-trends`**: 最新の記事群から Gemini 3.1 Pro を用いて潜在的なトレンド、コンテキスト、信頼度を抽出する新エンドポイント。
 - **単一リポジトリ**: 全ての依存関係が `package.json` で管理されます。
 
-### 2. AI 再構築の整合性戦略 (Consistency Strategy)
-`GeminiService.getRestructureProposal` において、AI の不確実性を吸収する以下のロジックが実装されています：
+### 2. データ整合性とモデル統一 (Data Model Unification)
+システム全体の信頼性を担保するため、以下のデータ管理戦略を採用しています：
+- **Zod による厳格なバリデーション**: `src/models/Schemas.ts` において全てのデータ構造を定義。ファイル読み込み時、API通信時、同期実行時の各フェーズでスキーマ検証を強制し、不正なデータの混入を物理的に遮断します。
 - **normalizeCategoryName**: カテゴリ名の比較時に、`＆`, `&`, `・`, 空白, 大文字小文字を無視する。これにより、AI が微妙に異なる名前でカテゴリを返しても、既存のフィード設定と正しく紐付けられます。
 - **データ完全保持リカバリー**: AI が既存のブランドやキーワードをリストから漏らした場合、実行前のデータを元に自動復元します。
-- **並列検証 (`Promise.all`)**: 発見された各フィードの到達可能性を並列で検証し、タイムアウトを回避します。
-- **Google News フォールバック**: 適切なソースがないカテゴリに対し、最適化されたクエリの Google News RSS を自動設定します。
 
-### 3. 能動的インテリジェンス探索 (Active Intelligence Discovery)
+### 3. バックアップ世代管理 (Backup Generation Management)
+`SettingsManager._safeWrite` メソッドに、予期せぬ電源断やクラッシュによるデータ破損を防ぐ堅牢なバックアップ機構を実装しました：
+- **最大3世代の自動保存**: 設定ファイルを保存する際、既存のファイルを自動的に `.bak`, `.bak2`, `.bak3` へとローテーションします。
+- **アトミック書き込みの補完**: ファイルシステムへの書き込みが失敗した場合でも、直前の正常な状態を3段階まで遡って復元可能です。
+
+### 4. 能動的インテリジェンス探索 (Active Intelligence Discovery)
 `ScraperFacade.discoverTrends` メソッドを中心に、従来の受動的な学習から能動的な探索へと進化しました：
 - **Gemini 3.1 Pro 活用**: 高度な推論能力を持つ Pro モデルを使用し、単なるキーワード抽出を超えた「文脈（Context）」の理解を実現。
 - **拡張データ構造**: 抽出されるトレンドデータには、以下のメタデータが含まれます：
@@ -35,17 +39,17 @@ v5.3.0 では、AI 再構築におけるデータの不整合を解消するた�
     - `context`: なぜそのトレンドが重要なのか、既存の興味とどう関連するかの説明。
 - **検証パイプライン**: 抽出されたトレンドは即座に既存の `learned_keywords` と照合され、重複排除と優先順位付けが行われます。
 
-### 4. Windows 11 Native Glass (Acrylic)
+### 5. Windows 11 Native Glass (Acrylic)
 Electron メインプロセス (`electron/main.cjs`) では、Windows 11 の **Acrylic** 効果を有効化しています：
 - `backgroundMaterial: 'acrylic'`: ウィンドウ背面にシステムレベルの半透明効果を適用。
 - `transparent: false`: **FancyZones (スナップ機能)** への対応のため、不透明ウィンドウとして設定しつつ、Acrylic 素材で透過を表現。
 
-### 4. RSS フィード・ライフサイクル管理
+### 6. RSS フィード・ライフサイクル管理
 - **RSSFetcher.validateFeed**: フィードの有効性をパースレベルで検証する機能。
 - **自動故障検知と代替昇格**: 連続失敗したフィードを検知し、プール内の有効なフィードへと自動的に差し替える仕組みを `FeedManager` に実装。昇格前には必ずヘルスチェックが行われます。
 - **バリデーション・ガードレール**: `addFeed` および `syncSettings` 時の強制バリデーションにより、無効なフィードの登録を阻止。
 
-### 5. 多言語判定ロジック (Multilingual Detection)
+### 7. 多言語判定ロジック (Multilingual Detection)
 `ScraperFacade._detectLanguage` において、以下のロジックに基づき記事の言語を分類：
 - **判定手法**: 正規表現 `/[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/` を使用。
 - **対象**: 記事のタイトルとスニペット（要約）。
@@ -63,21 +67,21 @@ Electron メインプロセス (`electron/main.cjs`) では、Windows 11 の **A
 
 ### 2. 並列制御とキャッシュ
 - **p-limit による負荷制限**: 同時スクレイピング数を制限（デフォルト: 5）し、相手サーバーへの負荷を抑制。
-- **ImageCacheManager**: `image_cache.json` に記事URLと画像URLのペアを永続化。TTL（7日間）管理により、再起動後も高速な表示を可能にします。
+- **ImageCacheManager**: `image_cache.json` に記事URLと画像URLのペアを永続化. TTL（7日間）管理により、再起動後も高速な表示を可能にします。
 
 ## データ・整合性と同期
 
 ### 1. Shared SettingsManager (単一の真実 - シングルトン)
 - **シングルトン化**: `SettingsManager` および `ElectronSettingsManager` は、アプリケーション内で唯一のインスタンスを共有するシングルトン・パターンを前提として設計・利用されます。これにより、複数のモジュールから同時に設定変更が行われても、データの整合性が損なわれません。
 - **Fastify & Electron 統合**: Electron メインプロセスが管理する Fastify サーバーと、メインプロセスのバックグラウンドジョブが、同一のインスタンスを共有。
-- **アトミック保存**: 設定変更は `settings.json` へアトミックに書き込まれ（`.bak` 作成によるバックアップ機構付き）、全コンポーネントが常に最新の状態を即座に参照可能。
+- **アトミック保存 & バックアップ**: 設定変更は `settings.json` へアトミックに書き込まれ、前述の世代管理バックアップ機構により、不意の事故からデータを保護。
 - **環境適応型パス解決**: `!app.isPackaged` を判定基準とし、開発時はワークスペース内の `data/` を、配布後は `%APPDATA%` を参照するよう自動分岐。
 
 ## 品質管理とテスト
 v5.3.0 では、システムの安定性を担保するためにユニットテストが導入されました。
 
 ### 1. ユニットテスト (Vitest)
-- **コアロジックの検証**: `SettingsManager` の設定読み書き、APIキー取得、設定同期（Sync）ロジック、およびカテゴリ正規化機能を Vitest でテスト。
+- **コアロジックの検証**: `SettingsManager` の設定読み書き、バックアップローテーション、APIキー取得、設定同期（Sync）ロジック、およびカテゴリ正規化機能を Vitest でテスト。
 - **モック化**: `fs/promises` をモックすることで、ファイルシステムに依存しない高速かつ安定したテストを実行。
 - **信頼性**: 同期時のコンフリクト検知（`lastUpdated` 比較）などの重要な境界条件を自動テストでカバー。
 
@@ -96,7 +100,7 @@ v5.3.0 では、システムの安定性を担保するためにユニットテ�
 | `ArchivistAgent` | 自律学習 | 収集記事からトレンドを抽出し、拡張メタデータ（Confidence, Context）を付与して蓄積。 |
 | `DiscoveryService` | ソース探索 | **`Promise.all` による全カテゴリーの並列フィード検証**を導入し、探索のタイムアウトを防止。 |
 | `EnrichmentService` | 記事加工 | 並列スクレイピングによる画像補完。 |
-| `SettingsManager` | 設定の永続化 | **Fastify と Electron 間の共有シングルトン**として、整合性を担保。 |
+| `SettingsManager` | 設定の永続化 | **バックアップ世代管理**を備えたシングルトンとして、整合性と安全性を担保。 |
 
 ## 配布とビルド (electron-builder)
 - **プロダクション・パス**: 全てのデータは `%APPDATA%/aegis-nexus/` 配下に保存。

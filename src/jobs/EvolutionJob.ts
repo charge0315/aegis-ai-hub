@@ -90,7 +90,7 @@ export class EvolutionJob {
                 interests.learned_keywords![s.value] = {
                     category: s.category,
                     reason: s.reason,
-                    type: s.type as any, // 互換性のためのキャスト
+                    type: s.type, // キャストを削除
                     confidence: s.confidence,
                     context: s.context,
                     detectedAt: new Date().toISOString()

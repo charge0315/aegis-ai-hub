@@ -166,8 +166,8 @@ const App: React.FC = () => {
   }, [filteredArticles, settings]);
 
   const handleShowFeeds = async (category: string) => {
-    if (!settings || !settings.feed_urls) return;
-    const group = settings.feed_urls[category];
+    if (!settings || !settings.feedConfig) return;
+    const group = settings.feedConfig[category];
     if (!group) return;
 
     await dialogAlert(

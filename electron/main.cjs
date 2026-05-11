@@ -202,7 +202,7 @@ function registerIpcHandlers() {
   ipcMain.handle('get-settings', async () => {
     const interests = await settingsManager.getInterests();
     const feedConfig = await settingsManager.getFeedConfig();
-    return { interests, feed_urls: feedConfig };
+    return { interests, feedConfig };
   });
 
   ipcMain.handle('sync-settings', async (event, settings) => {

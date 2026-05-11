@@ -28,7 +28,7 @@ export class ImageCacheManager {
             const parsed = JSON.parse(data) as Record<string, CacheEntry>;
             this.cache = new Map(Object.entries(parsed));
             this.cleanup();
-        } catch (error) {
+        } catch {
             // ファイルが存在しない場合は新規作成
             this.cache = new Map();
         }

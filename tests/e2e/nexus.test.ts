@@ -67,8 +67,9 @@ test.describe('Nexus Dashboard E2E Tests', () => {
 
     // 初回起動ダイアログが出ないように UI 設定をモック
     await page.addInitScript(() => {
-      (window as any).nexusApi = {
-        ...(window as any).nexusApi,
+      const win = window as unknown as { nexusApi: Record<string, unknown> };
+      win.nexusApi = {
+        ...win.nexusApi,
         getUiSettings: () => Promise.resolve({ jaOnly: false, viewMode: 'grid', hideImages: false, isInitialized: true }),
         saveUiSettings: () => Promise.resolve({ success: true }),
         onAgentEvent: () => {},
@@ -79,13 +80,14 @@ test.describe('Nexus Dashboard E2E Tests', () => {
           // ここで正しい値を返す必要がある
           return fetch('/api/v5/interests').then(r => r.json()).then(interests => {
             return fetch('/api/v5/feeds').then(r => r.json()).then(feeds => {
-              return { interests, feed_urls: feeds };
+              return { interests, feedConfig: feeds };
             });
           });
         },
         getArticles: () => {
           return fetch('/api/dashboard').then(r => r.json()).then(data => {
-            const all: any[] = [];
+            const all: unknown[] = [];
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             Object.values(data).forEach((g: any) => all.push(...g.articles));
             return all;
           });
@@ -150,11 +152,15 @@ test.describe('Nexus Dashboard E2E Tests', () => {
 
     // UI 設定を「未初期化」状態でモック
     await page.addInitScript(() => {
-      (window as any).nexusApi = {
-        ...(window as any).nexusApi,
+      const win = window as unknown as { 
+        nexusApi: Record<string, unknown>,
+        _savedSettings: unknown 
+      };
+      win.nexusApi = {
+        ...win.nexusApi,
         getUiSettings: () => Promise.resolve({ jaOnly: false, viewMode: 'grid', hideImages: false, isInitialized: false }),
-        saveUiSettings: (settings: any) => {
-          (window as any)._savedSettings = settings;
+        saveUiSettings: (settings: unknown) => {
+          win._savedSettings = settings;
           return Promise.resolve({ success: true });
         },
         onAgentEvent: () => {},
@@ -162,7 +168,7 @@ test.describe('Nexus Dashboard E2E Tests', () => {
         getSettings: () => {
           return fetch('/api/v5/interests').then(r => r.json()).then(interests => {
             return fetch('/api/v5/feeds').then(r => r.json()).then(feeds => {
-              return { interests, feed_urls: feeds };
+              return { interests, feedConfig: feeds };
             });
           });
         },
@@ -188,7 +194,10 @@ test.describe('Nexus Dashboard E2E Tests', () => {
     await page.waitForTimeout(500);
 
     // isInitialized が true として保存されたことを確認
-    const savedSettings = await page.evaluate(() => (window as any)._savedSettings);
-    expect(savedSettings.isInitialized).toBe(true);
+    const isInitialized = await page.evaluate(() => {
+      const win = window as unknown as { _savedSettings: { isInitialized: boolean } };
+      return win._savedSettings.isInitialized;
+    });
+    expect(isInitialized).toBe(true);
   });
 });

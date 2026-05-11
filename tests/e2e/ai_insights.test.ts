@@ -30,8 +30,9 @@ test.describe('AI Insights & Trend Discovery', () => {
 
     // 2. UI 設定をモック (初期化済みフラグをオンにしてダイアログをスキップ)
     await page.addInitScript(() => {
-      (window as any).nexusApi = {
-        ...(window as any).nexusApi,
+      const win = window as unknown as { nexusApi: Record<string, unknown> };
+      win.nexusApi = {
+        ...win.nexusApi,
         getApiKey: () => Promise.resolve('mock-api-key'),
         getSettings: () => Promise.resolve({
           interests: { 
@@ -46,13 +47,13 @@ test.describe('AI Insights & Trend Discovery', () => {
             }, 
             learned_keywords: {} 
           },
-          feed_urls: {}
+          feedConfig: {}
         }),
         getArticles: () => Promise.resolve([]),
         onAgentEvent: () => {},
         removeAgentEventListener: () => {},
         discoverTrends: () => fetch('/api/v5/discover-trends', { method: 'POST' }).then(res => res.json()),
-        syncSettings: (settings: any) => fetch('/api/v5/sync-settings', { 
+        syncSettings: (settings: unknown) => fetch('/api/v5/sync-settings', { 
           method: 'POST', 
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(settings) 
@@ -118,7 +119,7 @@ test.describe('AI Insights & Trend Discovery', () => {
     await expect(promoteBtn).toBeVisible();
     
     // 保存リクエストを監視
-    let syncPayload: any = null;
+    let syncPayload: unknown = null;
     await page.route('**/api/v5/sync-settings', async (route) => {
       syncPayload = route.request().postDataJSON();
       await route.fulfill({ json: { lastUpdated: Date.now() } });
@@ -134,6 +135,11 @@ test.describe('AI Insights & Trend Discovery', () => {
     await saveBtn.click();
 
     // 同期されたデータにキーワードが含まれているか
-    expect(syncPayload.interests.categories["AI & Robotics"].keywords).toContain("Liquid Neural Networks");
+    const payload = syncPayload as { 
+      interests: { 
+        categories: Record<string, { keywords: string[] }> 
+      } 
+    };
+    expect(payload.interests.categories["AI & Robotics"].keywords).toContain("Liquid Neural Networks");
   });
 });

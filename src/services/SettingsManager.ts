@@ -98,10 +98,8 @@ export class SettingsManager {
   /**
    * クラウド（またはインポート）からの設定を同期します。
    */
-  async syncSettings(settings: Partial<SyncSettings> & { feed_urls?: FeedConfig }, fetcher?: { validateFeed: (url: string) => Promise<{ ok: boolean; status: number | string }> }): Promise<{ success: boolean, timestamp: string, lastUpdated: number, validatedInterests: Interests, validatedFeedConfig: FeedConfig }> {
-    // v5.2 Schema 整合性対応: payload は feedConfig を使用している
-    const { interests, feedConfig, feed_urls, windowState, lastUpdated } = settings || {};
-    const actualFeeds = feedConfig || feed_urls;
+  async syncSettings(settings: Partial<SyncSettings>, fetcher?: { validateFeed: (url: string) => Promise<{ ok: boolean; status: number | string }> }): Promise<{ success: boolean, timestamp: string, lastUpdated: number, validatedInterests: Interests, validatedFeedConfig: FeedConfig }> {
+    const { interests, feedConfig, windowState, lastUpdated } = settings || {};
 
     if (!interests) {
       throw new Error('INVALID_ARGUMENT: "interests" is required for sync.');
@@ -116,7 +114,7 @@ export class SettingsManager {
     const categoriesObj = validatedInterests.categories || {};
     const interestCats = Object.keys(categoriesObj);
 
-    const incomingFeeds = actualFeeds || {};
+    const incomingFeeds = feedConfig || {};
     for (const [feedCatName, data] of Object.entries(incomingFeeds)) {
       if (!data) continue;
       const targetClean = normalizeCategoryName(feedCatName);
@@ -225,7 +223,24 @@ export class SettingsManager {
     try {
       const exists = await fs.access(filePath).then(() => true).catch(() => false);
       if (exists) {
-        await fs.copyFile(filePath, `${filePath}.bak`);
+        // バックアップの世代管理 (最大3世代: .bak, .bak2, .bak3)
+        for (let i = 3; i >= 1; i--) {
+          const oldBak = i === 1 ? filePath : `${filePath}.bak${i - 1 === 1 ? '' : i - 1}`;
+          const newBak = `${filePath}.bak${i === 1 ? '' : i}`;
+          
+          const bakExists = await fs.access(oldBak).then(() => true).catch(() => false);
+          if (bakExists) {
+            if (i === 3) {
+              // 最古の世代を削除
+              await fs.unlink(newBak).catch(() => {});
+            }
+            if (i === 1) {
+              await fs.copyFile(filePath, newBak);
+            } else {
+              await fs.rename(oldBak, newBak).catch(() => {});
+            }
+          }
+        }
       }
       await fs.writeFile(filePath, content, 'utf8');
     } catch (writeError: unknown) {

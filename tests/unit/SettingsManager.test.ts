@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { SettingsManager } from '../../src/services/SettingsManager';
 import fs from 'fs/promises';
-import path from 'path';
 
 vi.mock('fs/promises');
 
@@ -15,6 +14,8 @@ describe('SettingsManager', () => {
         vi.mocked(fs.access).mockResolvedValue(undefined);
         vi.mocked(fs.writeFile).mockResolvedValue(undefined);
         vi.mocked(fs.copyFile).mockResolvedValue(undefined);
+        vi.mocked(fs.unlink).mockResolvedValue(undefined);
+        vi.mocked(fs.rename).mockResolvedValue(undefined);
     });
 
     describe('getApiKey', () => {
@@ -60,13 +61,13 @@ describe('SettingsManager', () => {
                         'AI & ML': { emoji: '🤖', brands: ['NewBrand'], keywords: [], score: 10 }
                     }
                 },
-                feed_urls: {
+                feedConfig: {
                     'AI&ML': { active: ['http://example.com/rss'], pool: [], failures: {} }
                 },
                 lastUpdated: 200
             };
 
-            const result = await manager.syncSettings(newSettings as any);
+            const result = await manager.syncSettings(newSettings as unknown as NexusSettings);
             expect(result.success).toBe(true);
             expect(result.validatedFeedConfig['AI & ML']).toBeDefined();
             expect(result.validatedFeedConfig['AI & ML'].active).toContain('http://example.com/rss');
@@ -84,7 +85,7 @@ describe('SettingsManager', () => {
                 lastUpdated: 500
             };
 
-            await expect(manager.syncSettings(newSettings as any)).rejects.toThrow('CONFLICT');
+            await expect(manager.syncSettings(newSettings as unknown as NexusSettings)).rejects.toThrow('CONFLICT');
         });
     });
 });

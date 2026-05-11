@@ -27,8 +27,7 @@ export type UiSettings = SchemaUiSettings;
 
 export interface NexusSettings {
   interests: Interests;
-  feedConfig?: FeedConfig;
-  feed_urls?: FeedConfig; // Legacy support
+  feedConfig: FeedConfig;
   lastUpdated?: string | number;
 }
 

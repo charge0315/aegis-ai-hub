@@ -1,12 +1,12 @@
 # Aegis AI Hub - API & Technical Reference
 
-**Last Updated:** 2026-05-20
-**Version:** 5.2 (Production Ready)
+**Last Updated:** 2026-05-21
+**Version:** 5.3.0 NEXUS (Production Ready)
 
-本ドキュメントでは、Aegis AI Hub v5.2 が提供する Fastify REST API および Electron IPC (Inter-Process Communication) の仕様について記述します。
+本ドキュメントでは、Aegis AI Hub v5.3.0 が提供する Fastify REST API および Electron IPC (Inter-Process Communication) の仕様について記述します。
 
 ## 1. Fastify REST API (Internal Server)
-v5.2 より、従来の MCP 構成に代わり、Electron アプリケーションに内蔵された Fastify ベースのサーバーが全てのロジックをホストします。
+v5.3.0 より、バックエンドロジックは Electron 内蔵の Fastify サーバーに完全に統合されました。
 
 ### 1.1 基本情報
 - **ホスト**: Electron メインプロセス内で起動
@@ -17,14 +17,16 @@ v5.2 より、従来の MCP 構成に代わり、Electron アプリケーショ�
 - **`GET /api/v5/interests`**: 現在の興味関心設定を取得。
 - **`GET /api/v5/feeds`**: 購読中のフィード設定を取得。
 - **`POST /api/v5/sync-settings`**: 興味関心およびフィード設定を同期・保存。
-    - **バリデーション**: 新規フィードが含まれる場合、保存前に `RSSFetcher` による疎通確認が行われます。
+    - **バリデーション**: Zod スキーマによる検証と、新規フィードに対する `RSSFetcher` による疎通確認を強制。
 - **`GET /api/dashboard`**: スコアリング済みの全記事を取得（ダッシュボード用）。
     - **フィルタリング**: 記事取得時に、90日以上前の記事は自動的に除外されます。
-    - **画像エンリッチメント**: v5.2.x 以降、上位記事に対して自動スクレイピングとキャッシュによる画像補完が実行されます。
+    - **画像エンリッチメント**: 上位記事に対して自動スクレイピングとキャッシュによる画像補完を実行。
+- **`POST /api/v5/discover-trends`**: **(New in v5.3.0)** 最新の記事群から Gemini 3.1 Pro を用いて潜在的なトレンドを抽出。
+    - **レスポンス**: `Confidence`, `Context`, `Type` を含むトレンドリスト。
 - **`POST /api/v5/suggest-category`**: 特定のカテゴリ名に基づき、AI によるブランド・キーワード提案を取得。
-- **`GET /api/v5/proposals`**: インストールされた情報源を分析し、新しいサイトやキーワードの進化提案を取得。
+- **`GET /api/v5/proposals`**: 情報源を分析し、新しいサイトやキーワードの進化提案を取得。
 - **`POST /api/v5/orchestrate`**: エージェントによる自律探索/解析サイクルを手動実行。
-- **`GET /api/v5/events`**: エージェントのステータス更新をリアルタイムで受信 (SSE: Server-Sent Events)。
+- **`GET /api/v5/events`**: エージェントのステータス更新をリアルタイムで受信 (SSE)。
 
 ---
 

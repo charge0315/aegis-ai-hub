@@ -1,13 +1,13 @@
 # Frontend UI Codemap
 
-**Last Updated:** 2026-05-20
+**Last Updated:** 2026-05-21
 **Version:** v5.3.0 NEXUS
 **Entry Point:** `src/main.tsx`
 
 ## 概要
 Aegis AI Hub v5.3.0 NEXUS のフロントエンドは、Windows 11 の **Acrylic Glassmorphism** を採用しています。
 デスクトップと調和しつつ、実用的な視認性と操作性を両立させた次世代の UI を提供します。
-最新アップデートでは、**能動的インテリジェンス探索 (AI Insights v2)** に対応し、トレンドの文脈や信頼度を視覚的に確認できるようになりました。
+最新アップデートでは、**UnifiedEditor の大規模なリファクタリング**と、能動的インテリジェンス探索 (AI Insights v2) に対応し、トレンドの文脈や信頼度を視覚的に確認できるようになりました。
 
 ## ビジュアル・アーキテクチャ
 
@@ -38,8 +38,8 @@ Windows 11 のネイティブな素材感を実現するためのレイヤー構
 | `UnifiedEditor.tsx` | 設定管理 | API キー管理、カテゴリ編集、**AI Restructure v2**。各機能は `editors/` 配下のサブコンポーネントに分割。 |
 | `editors/SystemSettings.tsx` | システム設定 | APIキー管理、UI設定（カードサイズ等）の集中管理。 |
 | `editors/CategoryEditor.tsx` | カテゴリ編集 | 各カテゴリのブランド・キーワードの編集インターフェース。 |
-| `editors/AIInsightsPanel.tsx` | AI分析パネル | 再構築プロセスの制御とステータス表示。 |
-| `AIInsightsTab.tsx` | トレンド管理 | **Archivist エージェント**が抽出したトレンドを一覧表示。 |
+| `editors/AIInsightsPanel.tsx` | トレンド管理 | **Archivist エージェント**が抽出したトレンドを一覧表示し、昇格・却下を制御。 |
+| `KnowledgeGraph.tsx` | 知識可視化 | 興味関心の相関関係を D3.js 風のグラフで視覚化。 |
 | `SkillRegistry.tsx` | スキル一覧 | **「Add New Skill」ボタン**による機能拡張インターフェース。 |
 
 ## インテリジェント機能

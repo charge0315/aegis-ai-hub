@@ -41,13 +41,13 @@ export const nexusApi = {
     const interests = await res.json();
     const resFeeds = await fetch(`${BACKEND_URL}/api/v5/feeds`);
     const feeds = await resFeeds.json();
-    return { interests, feed_urls: feeds };
+    return { interests, feedConfig: feeds };
   },
 
   async syncSettings(settings: NexusSettings): Promise<{ lastUpdated: number }> {
     const payload = { 
       interests: settings.interests, 
-      feedConfig: settings.feed_urls,
+      feedConfig: settings.feedConfig,
       lastUpdated: typeof settings.lastUpdated === 'number' ? settings.lastUpdated : undefined
     };
 
