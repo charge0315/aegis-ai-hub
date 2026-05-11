@@ -153,11 +153,11 @@ export class EnrichmentService {
                     if (absoluteUrl.startsWith('http')) {
                         return absoluteUrl;
                     }
-                } catch (e) {
+                } catch {
                     // URL解析失敗
                 }
             }
-        } catch (e) {
+        } catch {
             // リクエスト失敗
         }
         return null;
@@ -182,7 +182,7 @@ export class EnrichmentService {
      * RSSフィードの初期取得時に、付帯情報から最も軽量・高速に画像URLを引き出すための第一次フィルター。
      */
     extractBasicImage(item: Record<string, unknown>): string | null {
-        const mediaContent = item.mediaContent as any;
+        const mediaContent = item.mediaContent as { $?: { url?: string } } | Array<{ $?: { url?: string } }> | undefined;
         if (mediaContent) {
             if (Array.isArray(mediaContent)) {
                 if (mediaContent[0]?.$?.url) return mediaContent[0].$.url;
@@ -191,10 +191,10 @@ export class EnrichmentService {
             }
         }
 
-        const mediaThumbnail = item.mediaThumbnail as any;
+        const mediaThumbnail = item.mediaThumbnail as { $?: { url?: string } } | undefined;
         if (mediaThumbnail?.$?.url) return mediaThumbnail.$.url;
 
-        const enclosure = item.enclosure as any;
+        const enclosure = item.enclosure as { url?: string } | undefined;
         if (enclosure?.url) return enclosure.url;
 
         if (item.itunesImage) return String(item.itunesImage);

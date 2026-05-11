@@ -35,8 +35,11 @@ Windows 11 のネイティブな素材感を実現するためのレイヤー構
 | `App.tsx` | ルートレイアウト | 統一された透過デザイン、インラインダイアログの管理、ビュー切り替え。 |
 | `CustomDialog.tsx` | 汎用ダイアログ | 精密な中央配置と高視認性。**`loading` タイプ**による非ブロッキング表示に対応。 |
 | `ArticleCard.tsx` | 記事カード | 不透明度 75% の最適化。背景のノイズを抑え、可読性を最大化。 |
-| `UnifiedEditor.tsx` | 設定管理 | API キー管理、カテゴリ編集、**AI Restructure v2**。 |
-| `AIInsightsTab.tsx` | トレンド管理 | **Archivist エージェント**が抽出したトレンドを一覧表示。**Type, Confidence, Context** の詳細表示に対応。昇格（Promote）と却下（Dismiss）による **Human-in-the-loop** パーソナライズを実現。 |
+| `UnifiedEditor.tsx` | 設定管理 | API キー管理、カテゴリ編集、**AI Restructure v2**。各機能は `editors/` 配下のサブコンポーネントに分割。 |
+| `editors/SystemSettings.tsx` | システム設定 | APIキー管理、UI設定（カードサイズ等）の集中管理。 |
+| `editors/CategoryEditor.tsx` | カテゴリ編集 | 各カテゴリのブランド・キーワードの編集インターフェース。 |
+| `editors/AIInsightsPanel.tsx` | AI分析パネル | 再構築プロセスの制御とステータス表示。 |
+| `AIInsightsTab.tsx` | トレンド管理 | **Archivist エージェント**が抽出したトレンドを一覧表示。 |
 | `SkillRegistry.tsx` | スキル一覧 | **「Add New Skill」ボタン**による機能拡張インターフェース。 |
 
 ## インテリジェント機能

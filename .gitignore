@@ -50,6 +50,7 @@ __pycache__/
 .env.local
 .env.*.local
 credentials.json
+data/credentials.json
 *.pfx
 *.pem
 *.key
@@ -72,8 +73,10 @@ startup.log
 data/interests.json
 data/feed_config.json
 data/window_state.json
+data/image_cache.json
 data/*.bak
 data/*.bak2
+data/*.repro_bak
 *.db
 *.sqlite
 *.sqlite3

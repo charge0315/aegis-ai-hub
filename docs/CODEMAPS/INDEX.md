@@ -1,17 +1,21 @@
 # Aegis AI Hub - System Index
 
 **Project Status:** Production Ready (v5.3.0 NEXUS)
-**Last Updated:** 2026-05-06
+**Last Updated:** 2026-05-20
 
 ## プロジェクト概要
 Aegis AI Hub は、Gemini 3.1 を中枢に据えた「自律学習型知的ダッシュボード」です。  
 v5.3.0 NEXUS では、AI によるプロファイルの完全再構築、カテゴリ名の不一致を解消する整合性強制ロジック、およびデータの完全保持リカバリーを導入しました。
+また、プロジェクト全体の大規模なリファクタリングにより、コード品質と保守性が大幅に向上しました。
 
 ## 主要なアップデート (v5.3.0 NEXUS)
 
 - **Advanced AI Restructure v2**: カテゴリの再編、既存フィードの最適な再割り当て、および高品質な RSS ソースの自動発見を統合。
 - **Category Name Normalization**: AI の生成するカテゴリ名の揺れ（記号や空白）を正規化し、購読フィードが消失する問題を物理的に解決。
 - **Data Retention Recovery**: AI が返し忘れたブランドやキーワードを自動検知し、既存データから強制復元する保護機能を実装。
+- **SettingsManager Singletonization**: 設定管理ロジックをシングルトン化し、アプリケーション全体でのデータ整合性を強化。
+- **Component Refactoring**: `UnifiedEditor` 等の巨大なコンポーネントを機能単位に分割（`editors/` 配下）し、可読性と再利用性を向上。
+- **Unit Testing Framework**: Vitest によるユニットテストを導入し、コアロジック（SettingsManager 等）の信頼性を担保。
 - **Parallel Verification Logic (`Promise.all`)**: 検証プロセスの高速化。
 - **Google News RSS Fallback**: 提案ソース枯渇時の自動補完。
 - **AI Insights & Continuous Learning**: `Archivist` エージェントが発見したトレンドキーワードを管理・承認するための専用タブを導入。

@@ -27,6 +27,7 @@ import { CommandPalette } from './components/CommandPalette';
 import { CustomDialog } from './components/CustomDialog';
 import { useDialog } from './hooks/useDialog';
 import { useNexusSync, useAgentEvents, nexusApi } from './api/nexusApi';
+import type { UiSettings } from './types';
 
 const App: React.FC = () => {
   // --- PRIMARY CONTEXT STATE ---
@@ -40,6 +41,7 @@ const App: React.FC = () => {
   const [showImages, setShowImages] = useState(true);
   const [isJapaneseOnly, setIsJapaneseOnly] = useState(false);
   const [isInitialized, setIsInitialized] = useState<boolean | null>(null);
+  const [appIconError, setAppIconError] = useState(false);
 
   // --- RESPONSIVE STATE ---
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
@@ -86,7 +88,7 @@ const App: React.FC = () => {
           const viewMode = feedSize === 'small' ? 'compact' : feedSize === 'large' ? 'list' : 'grid';
           await nexusApi.saveUiSettings({ 
             jaOnly: isJapaneseOnly, 
-            viewMode: viewMode as any, 
+            viewMode: viewMode as UiSettings['viewMode'], 
             hideImages: !showImages,
             isInitialized
           });
@@ -95,7 +97,7 @@ const App: React.FC = () => {
         console.error("Failed to save UI settings:", err);
       }
     };
-    const timeout = setTimeout(() => { void save(); }, 500);
+    const timeout = setTimeout(() => { void save(); }, 100);
     return () => clearTimeout(timeout);
   }, [isJapaneseOnly, feedSize, showImages, isInitialized]);
 
@@ -127,7 +129,8 @@ const App: React.FC = () => {
           setIsInitialized(true);
         })();
       } else {
-        setIsInitialized(true);
+        // 同期的な setState 呼び出しによるカスケードレンダリングを避けるため非同期化
+        Promise.resolve().then(() => setIsInitialized(true));
       }
     }
   }, [settings, loading, isInitialized, dialogConfirm, refetch]);
@@ -163,7 +166,7 @@ const App: React.FC = () => {
   }, [filteredArticles, settings]);
 
   const handleShowFeeds = async (category: string) => {
-    if (!settings) return;
+    if (!settings || !settings.feed_urls) return;
     const group = settings.feed_urls[category];
     if (!group) return;
 
@@ -197,18 +200,16 @@ const App: React.FC = () => {
         <aside className={`${isCompact ? 'w-20 px-3' : 'w-64 p-6'} sidebar-glass flex flex-col sticky top-0 h-screen z-30 transition-all duration-300 drag`}>
           <div className={`mb-10 mt-6 flex ${isCompact ? 'justify-center' : 'px-2'}`}>
             <div className="w-10 h-10 rounded-xl overflow-hidden shadow-2xl bg-primary/20 flex items-center justify-center">
-              <img
-                src="./app-icon.png"
-                alt="Nexus"
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  e.currentTarget.style.display = 'none';
-                  const parent = e.currentTarget.parentElement;
-                  if (parent) {
-                    parent.innerHTML = '<span class="text-xs font-black text-primary">NEXUS</span>';
-                  }
-                }}
-              />
+              {!appIconError ? (
+                <img
+                  src="./app-icon.png"
+                  alt="Nexus"
+                  className="w-full h-full object-cover"
+                  onError={() => setAppIconError(true)}
+                />
+              ) : (
+                <span className="text-xs font-black text-primary">NEXUS</span>
+              )}
             </div>
           </div>
           <nav className="space-y-4 flex-grow no-drag">
@@ -325,7 +326,7 @@ const App: React.FC = () => {
                         </button>
                         <div className={`grid gap-6 ${feedSize === 'small' ? (isCompact ? 'grid-cols-2 md:grid-cols-3 xl:grid-cols-4' : 'grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6') : feedSize === 'large' ? (isCompact ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2 xl:grid-cols-2') : (isCompact ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4')}`}>
                           {catArticles.map((article, idx) => (
-                            <ArticleCard key={idx} article={article} index={idx} size={feedSize} showImages={showImages} />
+                            <ArticleCard key={article.link} article={article} index={idx} size={feedSize} showImages={showImages} />
                           ))}
                         </div>
                       </section>

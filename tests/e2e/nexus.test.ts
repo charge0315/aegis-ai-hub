@@ -70,7 +70,27 @@ test.describe('Nexus Dashboard E2E Tests', () => {
       (window as any).nexusApi = {
         ...(window as any).nexusApi,
         getUiSettings: () => Promise.resolve({ jaOnly: false, viewMode: 'grid', hideImages: false, isInitialized: true }),
-        saveUiSettings: () => Promise.resolve({ success: true })
+        saveUiSettings: () => Promise.resolve({ success: true }),
+        onAgentEvent: () => {},
+        removeAgentEventListener: () => {},
+        getSettings: () => {
+          // HTTP mock を使用するため、ここでは fetch をエミュレートするか null を返して fallback させる
+          // しかし nexusApi.ts のロジックでは window.nexusApi があるとそれしか使わないので、
+          // ここで正しい値を返す必要がある
+          return fetch('/api/v5/interests').then(r => r.json()).then(interests => {
+            return fetch('/api/v5/feeds').then(r => r.json()).then(feeds => {
+              return { interests, feed_urls: feeds };
+            });
+          });
+        },
+        getArticles: () => {
+          return fetch('/api/dashboard').then(r => r.json()).then(data => {
+            const all: any[] = [];
+            Object.values(data).forEach((g: any) => all.push(...g.articles));
+            return all;
+          });
+        },
+        getApiKey: () => Promise.resolve('test-key')
       };
     });
 
@@ -136,7 +156,19 @@ test.describe('Nexus Dashboard E2E Tests', () => {
         saveUiSettings: (settings: any) => {
           (window as any)._savedSettings = settings;
           return Promise.resolve({ success: true });
-        }
+        },
+        onAgentEvent: () => {},
+        removeAgentEventListener: () => {},
+        getSettings: () => {
+          return fetch('/api/v5/interests').then(r => r.json()).then(interests => {
+            return fetch('/api/v5/feeds').then(r => r.json()).then(feeds => {
+              return { interests, feed_urls: feeds };
+            });
+          });
+        },
+        getArticles: () => Promise.resolve([]),
+        getApiKey: () => Promise.resolve('test-key'),
+        resetToDefaults: () => Promise.resolve({ success: true })
       };
     });
 
@@ -151,6 +183,9 @@ test.describe('Nexus Dashboard E2E Tests', () => {
 
     // ダイアログが閉じることを確認
     await expect(page.getByText('既存の設定を検出')).not.toBeVisible();
+
+    // デバウンスによる保存を待つ
+    await page.waitForTimeout(500);
 
     // isInitialized が true として保存されたことを確認
     const savedSettings = await page.evaluate(() => (window as any)._savedSettings);

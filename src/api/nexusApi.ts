@@ -52,7 +52,7 @@ export const nexusApi = {
     };
 
     if (window.nexusApi) {
-      return await window.nexusApi.syncSettings(payload as any);
+      return await window.nexusApi.syncSettings(payload as NexusSettings);
     }
     const res = await fetch(`${BACKEND_URL}/api/v5/sync-settings`, {
       method: 'POST',

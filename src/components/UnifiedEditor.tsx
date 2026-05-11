@@ -1,32 +1,23 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence, Reorder } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Save, 
   RotateCcw, 
-  Plus, 
   Settings2, 
-  Globe, 
-  Hash, 
   Network, 
   Cpu,
   Edit3,
-  Trash2,
-  GripVertical,
-  X,
   Sparkles,
-  Key,
   AlertCircle,
-  Pencil,
-  LayoutTemplate,
-  Zap,
-  TrendingUp,
-  Target,
-  BarChart3
-} from 'lucide-react';import { GlassPanel } from './GlassPanel';
+  LayoutTemplate
+} from 'lucide-react';
 import { KnowledgeGraph } from './KnowledgeGraph';
 import { SkillRegistry } from './SkillRegistry';
+import { CategoryEditor } from './editors/CategoryEditor';
+import { SystemSettings } from './editors/SystemSettings';
+import { AIInsightsPanel } from './editors/AIInsightsPanel';
 import { nexusApi } from '../api/nexusApi';
-import type { NexusSettings, Skill, InterestCategory, TrendSuggestion } from '../types';
+import type { NexusSettings, Skill, InterestCategory, TrendSuggestion, FeedConfig } from '../types';
 import type { DialogType } from './CustomDialog';
 
 interface UnifiedEditorProps {
@@ -75,7 +66,6 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
   }, []);
 
   const isDirty = JSON.stringify(draft) !== JSON.stringify(currentSettings);
-  const categoryKeys = Object.keys(draft.interests.categories);
 
   const handleDiscoverTrends = async () => {
     // APIキーの有無を再確認
@@ -398,7 +388,7 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
 
     setDraft(prev => {
       const newCategories: Record<string, InterestCategory> = {};
-      const newFeedUrls: Record<string, any> = { ...prev.feed_urls };
+      const newFeedUrls: FeedConfig = { ...(prev.feed_urls || {}) };
 
       // 順序を維持するために既存のキーをループ
       Object.keys(prev.interests.categories).forEach(key => {
@@ -509,7 +499,7 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
       });
 
       await customAlert('AI Suggestions Added', `Gemini suggested ${newItems.length} new ${field} for "${selectedCategory}".`, 'success');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(`Failed to get AI suggestions for ${field}:`, err);
       const errorMsg = err instanceof Error ? err.message : String(err);
       await customAlert('AI Suggestion Failed', `Could not get suggestions from Gemini: ${errorMsg}`, 'error');
@@ -589,7 +579,7 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
       
       setRestructureStep(null);
       await customAlert('Restructure Complete', 'AI has successfully transformed your intelligence profile. 10 new categories are ready with optimized feed sources and synced to backend.', 'success');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Restructure failed:', err);
       setRestructureStep(null);
       const errorMsg = err instanceof Error ? err.message : String(err);
@@ -755,262 +745,22 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
 
         <AnimatePresence mode="wait">
           {activeTab === 'editor' && (
-            <motion.div
-              key="editor"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="grid grid-cols-1 lg:grid-cols-12 gap-6"
-            >
-              {/* Category Sidebar */}
-              <div className="lg:col-span-3 space-y-2">
-                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-2 mb-3">
-                  Intelligence Categories
-                </div>
-                
-                <Reorder.Group 
-                  axis="y" 
-                  values={categoryKeys} 
-                  onReorder={handleReorderCategories}
-                  className="space-y-2"
-                >
-                  {categoryKeys.map((catName) => (
-                    <Reorder.Item 
-                      key={catName} 
-                      value={catName}
-                      className="group relative flex items-center gap-1"
-                    >
-                      <div className="p-1 text-slate-700 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity">
-                        <GripVertical size={16} />
-                      </div>
-                      
-                      <button
-                        onClick={() => setSelectedCategory(catName)}
-                        className={`flex-grow flex items-center gap-3 p-3 rounded-xl transition-all ${
-                          selectedCategory === catName 
-                            ? 'bg-primary/10 text-primary border border-primary/20 shadow-lg shadow-primary/5' 
-                            : 'text-slate-400 hover:bg-white/5 border border-transparent'
-                        }`}
-                      >
-                        <span 
-                          className="text-xl hover:scale-125 transition-transform cursor-pointer"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEditEmoji(catName);
-                          }}
-                          title="Change Emoji"
-                        >
-                          {draft.interests.categories[catName].emoji}
-                        </span>
-                        <span className="font-semibold truncate text-left">{catName}</span>
-                      </button>
-                      
-                      <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button 
-                          onClick={() => handleRenameCategory(catName)}
-                          className="p-2 text-slate-600 hover:text-primary transition-colors"
-                          title="Rename Category"
-                        >
-                          <Pencil size={14} />
-                        </button>
-                        <button 
-                          onClick={() => handleDeleteCategory(catName)}
-                          className="p-2 text-slate-600 hover:text-alert transition-colors"
-                          title="Delete Category"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </Reorder.Item>
-                  ))}
-                </Reorder.Group>
-
-                <button 
-                  onClick={handleAddCategory}
-                  disabled={isSuggesting}
-                  className="w-full flex items-center gap-3 p-3 text-slate-500 hover:text-accent hover:bg-accent/5 rounded-xl border border-dashed border-white/10 transition-all mt-4 disabled:opacity-50"
-                >
-                  <Plus size={18} />
-                  <span className="text-sm font-medium">{isSuggesting ? 'Generating...' : 'Add New Category'}</span>
-                </button>
-              </div>
-
-              {/* Editor Area */}
-              <div className="lg:col-span-9 space-y-6">
-                {selectedCategory && draft.interests.categories[selectedCategory] ? (
-                  <>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* Brands Section */}
-                      <GlassPanel className="p-6">
-                        <div className="flex items-center justify-between mb-6">
-                          <h3 className="font-bold flex items-center gap-2">
-                            <Globe size={18} className="text-primary" />
-                            Target Brands
-                          </h3>
-                          <div className="flex items-center gap-3">
-                            <button
-                              onClick={() => handleAISuggest('brands')}
-                              disabled={isSuggestingBrands}
-                              className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 hover:bg-primary/20 text-primary rounded-md text-[10px] font-bold uppercase transition-all disabled:opacity-50"
-                              title="AI Suggest Brands"
-                            >
-                              {isSuggestingBrands ? (
-                                <RotateCcw size={12} className="animate-spin" />
-                              ) : (
-                                <Sparkles size={12} />
-                              )}
-                              AI Suggest
-                            </button>
-                            <span className="text-[10px] text-slate-500 font-mono">
-                              {draft.interests.categories[selectedCategory].brands.length} Total
-                            </span>
-                          </div>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          {draft.interests.categories[selectedCategory].brands.map((brand, idx) => (
-                            <div 
-                              key={idx} 
-                              className="group flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 border border-primary/20 rounded-full text-sm text-primary-foreground animate-in fade-in zoom-in duration-200"
-                            >
-                              <span 
-                                contentEditable
-                                suppressContentEditableWarning
-                                onBlur={(e) => {
-                                  const newVal = e.currentTarget.textContent || '';
-                                  const newBrands = [...draft.interests.categories[selectedCategory].brands];
-                                  newBrands[idx] = newVal;
-                                  handleUpdateCategory(selectedCategory, 'brands', newBrands.filter(b => b));
-                                }}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') {
-                                    e.preventDefault();
-                                    e.currentTarget.blur();
-                                  }
-                                }}
-                                className="outline-none focus:text-white"
-                              >
-                                {brand}
-                              </span>
-                              <button 
-                                onClick={() => {
-                                  const newBrands = draft.interests.categories[selectedCategory].brands.filter((_, i) => i !== idx);
-                                  handleUpdateCategory(selectedCategory, 'brands', newBrands);
-                                }}
-                                className="hover:text-alert transition-colors"
-                              >
-                                <X size={14} />
-                              </button>
-                            </div>
-                          ))}
-                          <button 
-                            onClick={async () => {
-                              const val = await customPrompt('Add Brand', 'Enter new brand name:');
-                              if (val) {
-                                const newBrands = [...draft.interests.categories[selectedCategory].brands, val];
-                                handleUpdateCategory(selectedCategory, 'brands', newBrands);
-                              }
-                            }}
-                            className="flex items-center justify-center w-8 h-8 rounded-full border border-dashed border-white/20 text-slate-500 hover:text-primary hover:border-primary/50 transition-all"
-                            title="Add Brand"
-                          >
-                            <Plus size={16} />
-                          </button>
-                        </div>
-                      </GlassPanel>
-
-                      {/* Keywords Section */}
-                      <GlassPanel className="p-6">
-                        <div className="flex items-center justify-between mb-6">
-                          <h3 className="font-bold flex items-center gap-2">
-                            <Hash size={18} className="text-accent" />
-                            Signal Keywords
-                          </h3>
-                          <div className="flex items-center gap-3">
-                            <button
-                              onClick={() => handleAISuggest('keywords')}
-                              disabled={isSuggestingKeywords}
-                              className="flex items-center gap-1.5 px-2 py-1 bg-accent/10 hover:bg-accent/20 text-accent rounded-md text-[10px] font-bold uppercase transition-all disabled:opacity-50"
-                              title="AI Suggest Keywords"
-                            >
-                              {isSuggestingKeywords ? (
-                                <RotateCcw size={12} className="animate-spin" />
-                              ) : (
-                                <Sparkles size={12} />
-                              )}
-                              AI Suggest
-                            </button>
-                            <span className="text-[10px] text-slate-500 font-mono">
-                              {draft.interests.categories[selectedCategory].keywords.length} Total
-                            </span>
-                          </div>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          {draft.interests.categories[selectedCategory].keywords.map((kw, idx) => (
-                            <div 
-                              key={idx} 
-                              className="group flex items-center gap-1.5 px-3 py-1.5 bg-accent/10 border border-accent/20 rounded-full text-sm text-accent-foreground animate-in fade-in zoom-in duration-200"
-                            >
-                              <span 
-                                contentEditable
-                                suppressContentEditableWarning
-                                onBlur={(e) => {
-                                  const newVal = e.currentTarget.textContent || '';
-                                  const newKws = [...draft.interests.categories[selectedCategory].keywords];
-                                  newKws[idx] = newVal;
-                                  handleUpdateCategory(selectedCategory, 'keywords', newKws.filter(k => k));
-                                }}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') {
-                                    e.preventDefault();
-                                    e.currentTarget.blur();
-                                  }
-                                }}
-                                className="outline-none focus:text-white"
-                              >
-                                {kw}
-                              </span>
-                              <button 
-                                onClick={() => {
-                                  const newKws = [...draft.interests.categories[selectedCategory].keywords].filter((_, i) => i !== idx);
-                                  handleUpdateCategory(selectedCategory, 'keywords', newKws);
-                                }}
-                                className="hover:text-alert transition-colors"
-                              >
-                                <X size={14} />
-                              </button>
-                            </div>
-                          ))}
-                          <button 
-                            onClick={async () => {
-                              const val = await customPrompt('Add Keyword', 'Enter new keyword:');
-                              if (val) {
-                                const newKws = [...draft.interests.categories[selectedCategory].keywords, val];
-                                handleUpdateCategory(selectedCategory, 'keywords', newKws);
-                              }
-                            }}
-                            className="flex items-center justify-center w-8 h-8 rounded-full border border-dashed border-white/20 text-slate-500 hover:text-accent hover:border-accent/50 transition-all"
-                            title="Add Keyword"
-                          >
-                            <Plus size={16} />
-                          </button>
-                        </div>
-                      </GlassPanel>
-                    </div>
-
-                    <div className="p-6 bg-primary/5 border border-primary/20 rounded-2xl">
-                      <h4 className="text-xs font-bold text-primary uppercase tracking-widest mb-2">AI Reasoning Overlay</h4>
-                      <p className="text-sm text-slate-400 italic">
-                        "{draft.interests.categories[selectedCategory].reason || 'No specific reasoning provided for this category.'}"
-                      </p>
-                    </div>
-                  </>
-                ) : (
-                  <div className="h-full flex items-center justify-center text-slate-600 border-2 border-dashed border-white/5 rounded-3xl">
-                    Select a category to begin editing.
-                  </div>
-                )}
-              </div>
-            </motion.div>
+            <CategoryEditor 
+              draft={draft}
+              selectedCategory={selectedCategory}
+              setSelectedCategory={setSelectedCategory}
+              isSuggesting={isSuggesting}
+              isSuggestingBrands={isSuggestingBrands}
+              isSuggestingKeywords={isSuggestingKeywords}
+              handleAddCategory={handleAddCategory}
+              handleRenameCategory={handleRenameCategory}
+              handleDeleteCategory={handleDeleteCategory}
+              handleEditEmoji={handleEditEmoji}
+              handleReorderCategories={handleReorderCategories}
+              handleAISuggest={handleAISuggest}
+              handleUpdateCategory={handleUpdateCategory}
+              customPrompt={customPrompt}
+            />
           )}
 
           {activeTab === 'graph' && (
@@ -1043,225 +793,24 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
             </motion.div>
           )}
           {activeTab === 'insights' && (
-            <motion.div
-              key="insights"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="space-y-6"
-            >
-              <div className="flex items-end justify-between">
-                <div>
-                  <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                    <Sparkles size={24} className="text-primary" />
-                    AI Intelligence Insights
-                  </h3>
-                  <p className="text-slate-500 text-sm mt-1">Autonomous agents analyzing signals for emerging patterns and breakthrough concepts.</p>
-                </div>
-                <button
-                  onClick={handleDiscoverTrends}
-                  disabled={isDiscovering}
-                  className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold transition-all ${
-                    isDiscovering 
-                      ? 'bg-primary/20 text-primary cursor-not-allowed' 
-                      : 'bg-primary text-white hover:bg-primary-hover shadow-lg shadow-primary/20 hover:scale-105 active:scale-95'
-                  }`}
-                >
-                  {isDiscovering ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                      Analyzing Feeds...
-                    </>
-                  ) : (
-                    <>
-                      <Zap size={18} />
-                      Discover Trends Now
-                    </>
-                  )}
-                </button>
-              </div>
-
-              {!draft.interests.learned_keywords || Object.keys(draft.interests.learned_keywords).length === 0 ? (
-                <div className="py-32 flex flex-col items-center justify-center border-2 border-dashed border-white/5 rounded-[2.5rem] bg-white/[0.02]">
-                  <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-6 text-primary animate-pulse">
-                    <TrendingUp size={40} />
-                  </div>
-                  <h4 className="text-xl font-bold text-white mb-2">No active trends detected</h4>
-                  <p className="text-slate-500 text-center max-w-md px-6">
-                    Click the discovery button above to have the <span className="text-primary font-bold">Archivist</span> scan your current feeds for new signals.
-                  </p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                  {Object.entries(draft.interests.learned_keywords).map(([kw, data]) => (
-                    <GlassPanel key={kw} className="p-0 overflow-hidden group hover:border-primary/40 transition-all duration-500">
-                      <div className="p-6 space-y-5">
-                        <div className="flex items-start justify-between">
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <span className={`px-2 py-0.5 text-[10px] font-bold uppercase rounded-md tracking-wider ${
-                                data.type === 'breakthrough' ? 'bg-orange-500/20 text-orange-400' :
-                                data.type === 'emerging' ? 'bg-emerald-500/20 text-emerald-400' :
-                                data.type === 'niche' ? 'bg-purple-500/20 text-purple-400' :
-                                'bg-primary/20 text-primary'
-                              }`}>
-                                {data.type || 'Standard'}
-                              </span>
-                              <span className="px-2 py-0.5 bg-white/5 text-slate-500 text-[10px] font-bold uppercase rounded-md">
-                                {data.category}
-                              </span>
-                            </div>
-                            <h4 className="text-2xl font-black text-white group-hover:text-primary transition-colors">{kw}</h4>
-                          </div>
-                          <div className="text-right space-y-1">
-                            <div className="text-[10px] font-mono text-slate-600">Detected: {new Date(data.detectedAt).toLocaleDateString()}</div>
-                            <div className="flex items-center justify-end gap-1 text-primary">
-                              <Target size={12} />
-                              <span className="text-xs font-bold font-mono">{data.confidence || 85}% Confidence</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <p className="text-sm text-slate-400 leading-relaxed border-l-2 border-primary/20 pl-4 py-1">
-                          {data.reason}
-                        </p>
-
-                        {data.context && (
-                          <div className="p-3 bg-black/20 rounded-xl text-[11px] text-slate-500 italic leading-relaxed">
-                            <BarChart3 size={14} className="mb-1 opacity-50" />
-                            "{data.context.length > 150 ? data.context.substring(0, 150) + '...' : data.context}"
-                          </div>
-                        )}
-
-                        <div className="flex gap-3 pt-2">
-                          <button
-                            onClick={() => handlePromoteKeyword(kw, data.category)}
-                            className="flex-grow flex items-center justify-center gap-2 py-3 bg-primary text-white rounded-2xl text-sm font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
-                          >
-                            <Plus size={16} /> Promote to Keyword
-                          </button>
-                          <button
-                            onClick={() => handleDismissKeyword(kw)}
-                            className="px-5 py-3 bg-white/5 hover:bg-alert/10 text-slate-500 hover:text-alert rounded-2xl text-sm font-bold transition-all border border-transparent hover:border-alert/20"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </div>
-                      
-                      <div className="h-1 w-full bg-white/5 relative overflow-hidden">
-                        <motion.div 
-                          initial={{ width: 0 }}
-                          animate={{ width: `${data.confidence || 85}%` }}
-                          transition={{ duration: 1, ease: "easeOut" }}
-                          className={`absolute inset-y-0 left-0 ${
-                            data.type === 'breakthrough' ? 'bg-orange-500' :
-                            data.type === 'emerging' ? 'bg-emerald-500' :
-                            'bg-primary'
-                          }`}
-                        />
-                      </div>
-                    </GlassPanel>
-                  ))}
-                </div>
-              )}
-
-              <div className="p-6 bg-primary/5 border border-primary/20 rounded-[2rem] flex items-start gap-4">
-                <div className="p-2 bg-primary/10 text-primary rounded-xl"><Sparkles size={24} /></div>
-                <div className="space-y-1">
-                  <h5 className="text-sm font-bold text-white">Continuous Learning Engine</h5>
-                  <p className="text-xs text-slate-500 leading-relaxed">
-                    The <span className="text-primary font-bold">Archivist</span> agent monitors signal entropy across your clusters. 
-                    When persistent patterns emerge that aren't yet in your knowledge base, they are presented here for validation. 
-                    Promoting a trend permanently increases the priority of related signals in all future curation cycles.
-                  </p>
-                </div>
-              </div>
-            </motion.div>
+            <AIInsightsPanel 
+              draft={draft}
+              isDiscovering={isDiscovering}
+              handleDiscoverTrends={handleDiscoverTrends}
+              handlePromoteKeyword={handlePromoteKeyword}
+              handleDismissKeyword={handleDismissKeyword}
+            />
           )}
 
           {activeTab === 'system' && (
-            <motion.div
-              key="system"
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.98 }}
-              className="max-w-2xl mx-auto space-y-8"
-            >
-              <GlassPanel className="p-8 space-y-6">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-primary/10 text-primary rounded-2xl">
-                    <Key size={24} />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-white">Gemini API Intelligence</h3>
-                    <p className="text-sm text-slate-500">Securely manage your Google Gemini API credentials.</p>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <label className="text-xs font-bold text-slate-400 uppercase tracking-widest px-1">
-                    Gemini API Key
-                  </label>
-                  <div className="relative group">
-                    <input
-                      type="password"
-                      value={apiKey}
-                      onChange={(e) => setApiKey(e.target.value)}
-                      placeholder="AIzaSy..."
-                      className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary/50 transition-all font-mono"
-                    />
-                    <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none opacity-50">
-                      <Key size={16} />
-                    </div>
-                  </div>
-                  <p className="text-[10px] text-slate-600 px-1">
-                    Your key is stored locally on this machine. It is never transmitted except to Google Gemini API endpoints.
-                  </p>
-                </div>
-
-                <div className="flex justify-end pt-4">
-                  <button
-                    onClick={handleSaveApiKey}
-                    disabled={isSavingApiKey}
-                    className="flex items-center gap-2 px-6 py-2.5 text-sm font-bold bg-primary text-white rounded-xl transition-all shadow-lg shadow-primary/20 hover:shadow-primary/40 active:scale-95 disabled:opacity-50"
-                  >
-                    <Save size={18} />
-                    {isSavingApiKey ? 'Saving...' : 'Apply API Key'}
-                  </button>
-                </div>
-              </GlassPanel>
-
-              {/* Advanced System Actions */}
-              <GlassPanel className="p-8 border-alert/20 bg-alert/5">
-                <div className="flex items-start gap-4">
-                  <div className="p-3 bg-alert/10 text-alert rounded-2xl">
-                    <RotateCcw size={24} />
-                  </div>
-                  <div className="flex-grow">
-                    <h3 className="text-xl font-bold text-white">Factory Reset</h3>
-                    <p className="text-sm text-slate-500 mt-1">Restore the default intelligence profile and feed sources.</p>
-                    <div className="mt-6">
-                      <button
-                        onClick={handleResetToDefaults}
-                        disabled={isSaving}
-                        className="flex items-center gap-2 px-6 py-2.5 bg-alert text-white rounded-xl text-sm font-bold shadow-lg shadow-alert/20 hover:shadow-alert/40 transition-all active:scale-95 disabled:opacity-50"
-                      >
-                        <RotateCcw size={18} />
-                        Restore Default Profile
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </GlassPanel>
-
-              <div className="p-6 bg-slate-900/50 border border-white/5 rounded-2xl">
-                <h4 className="text-sm font-bold text-slate-300 mb-2">Usage Note</h4>
-                <p className="text-xs text-slate-500 leading-relaxed">
-                  Aegis Nexus requires a valid Gemini API Key to perform intelligent news curation, category analysis, and autonomous site discovery. You can obtain a key for free at the <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Google AI Studio</a>.
-                </p>
-              </div>
-            </motion.div>
+            <SystemSettings 
+              apiKey={apiKey}
+              setApiKey={setApiKey}
+              isSavingApiKey={isSavingApiKey}
+              isSaving={isSaving}
+              handleSaveApiKey={handleSaveApiKey}
+              handleResetToDefaults={handleResetToDefaults}
+            />
           )}
         </AnimatePresence>
       </div>

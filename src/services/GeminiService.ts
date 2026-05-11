@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI, type GenerativeModel, type ChatSession, type ResponseSchema, SchemaType, type Content } from "@google/generative-ai";
 import type { Interests, InterestCategory, FeedConfig } from "../models/Schemas";
+import { normalizeCategoryName } from "../utils/normalize";
 
 export interface CuratedArticle {
   id: number;
@@ -75,9 +76,10 @@ export class GeminiService {
       
       try {
         return JSON.parse(text) as T;
-      } catch (parseError: any) {
-        console.error(`[GeminiService] JSON Parse Error: ${parseError.message}. Raw text: ${text.substring(0, 500)}...`);
-        throw new Error(`Failed to parse AI response as JSON: ${parseError.message}`);
+      } catch (parseError: unknown) {
+        const msg = parseError instanceof Error ? parseError.message : String(parseError);
+        console.error(`[GeminiService] JSON Parse Error: ${msg}. Raw text: ${text.substring(0, 500)}...`);
+        throw new Error(`Failed to parse AI response as JSON: ${msg}`, { cause: parseError });
       }
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -99,7 +101,7 @@ export class GeminiService {
         return this.generateStructured<T>(prompt, schema, "gemini-1.5-flash");
       }
 
-      throw new Error(`Gemini API execution failed after multiple retries. [Last Model: ${modelName}] Detail: ${errorMessage}`);
+      throw new Error(`Gemini API execution failed after multiple retries. [Last Model: ${modelName}] Detail: ${errorMessage}`, { cause: error });
     }
   }
 
@@ -339,7 +341,14 @@ ${JSON.stringify(allExistingUrls, null, 2)}
 日本語で回答してください。
 `;
     const result = await this.generateStructured<{ 
-      categories: Array<any>, 
+      categories: Array<{
+        name: string;
+        emoji: string;
+        brands: string[];
+        keywords: string[];
+        score: number;
+        reason: string;
+      }>, 
       feedMapping: Array<{ url: string, newCategory: string }>,
       newSuggestedFeeds: Array<{ name: string, url: string, category: string }>
     }>(prompt, schema, this.highReasoningModelName);
@@ -351,8 +360,8 @@ ${JSON.stringify(allExistingUrls, null, 2)}
     result.categories.forEach(cat => {
       categories[cat.name] = {
         emoji: cat.emoji || '🌐',
-        brands: Array.isArray(cat.brands) ? [...new Set((cat.brands as any[]).map(String))] : [],
-        keywords: Array.isArray(cat.keywords) ? [...new Set((cat.keywords as any[]).map(String))] : [],
+        brands: Array.isArray(cat.brands) ? [...new Set(cat.brands.map(String))] : [],
+        keywords: Array.isArray(cat.keywords) ? [...new Set(cat.keywords.map(String))] : [],
         score: typeof cat.score === 'number' ? cat.score : 5,
         reason: cat.reason || ''
       };
@@ -382,15 +391,14 @@ ${JSON.stringify(allExistingUrls, null, 2)}
     }
 
     // 3. カテゴリ名整合性チェック・正規化ロジック (AIの名称揺れ対策)
-    const normalizeCategoryName = (name: string): string => {
+    const mapToExistingCategory = (name: string): string => {
       if (categories[name]) return name;
       
       // 完全一致しない場合、記号や空白を無視して再検索
-      const clean = (s: string) => s.replace(/[＆&＆\s・]/g, '').toLowerCase();
-      const targetClean = clean(name);
+      const targetClean = normalizeCategoryName(name);
       
       for (const catName of Object.keys(categories)) {
-        if (clean(catName) === targetClean) return catName;
+        if (normalizeCategoryName(catName) === targetClean) return catName;
       }
 
       // それでも見つからない場合は、最も名前が似ているもの、あるいは先頭のカテゴリを返す
@@ -400,7 +408,7 @@ ${JSON.stringify(allExistingUrls, null, 2)}
 
     // 4. 既存フィードのマッピング反映
     result.feedMapping.forEach(m => {
-      const normalizedCat = normalizeCategoryName(m.newCategory);
+      const normalizedCat = mapToExistingCategory(m.newCategory);
       if (feedConfig[normalizedCat]) {
         // 有効なURLのみ追加 (Zodバリデーション落ちを防ぐ)
         if (this._isValidUrl(m.url)) {
@@ -411,7 +419,7 @@ ${JSON.stringify(allExistingUrls, null, 2)}
 
     // 5. 新規提案フィードの追加
     result.newSuggestedFeeds.forEach(s => {
-      const normalizedCat = normalizeCategoryName(s.category);
+      const normalizedCat = mapToExistingCategory(s.category);
       if (feedConfig[normalizedCat]) {
         if (this._isValidUrl(s.url) && !feedConfig[normalizedCat].active.includes(s.url)) {
           feedConfig[normalizedCat].active.push(s.url);

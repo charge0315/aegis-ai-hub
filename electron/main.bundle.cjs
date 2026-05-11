@@ -61666,6 +61666,16 @@ var init_Schemas = __esm({
   }
 });
 
+// src/utils/normalize.ts
+var normalizeCategoryName;
+var init_normalize = __esm({
+  "src/utils/normalize.ts"() {
+    normalizeCategoryName = (name) => {
+      return name.replace(/[＆&＆\s・]/g, "").toLowerCase();
+    };
+  }
+});
+
 // src/services/SettingsManager.ts
 var import_promises, import_path, SettingsManager;
 var init_SettingsManager = __esm({
@@ -61673,13 +61683,16 @@ var init_SettingsManager = __esm({
     import_promises = __toESM(require("fs/promises"), 1);
     import_path = __toESM(require("path"), 1);
     init_Schemas();
+    init_normalize();
     SettingsManager = class {
       dataDir;
+      isDev;
       interestsPath;
       feedConfigPath;
       credentialsPath;
       constructor(config2) {
         this.dataDir = config2.dataDir;
+        this.isDev = config2.isDev || false;
         this.interestsPath = import_path.default.join(this.dataDir, "interests.json");
         this.feedConfigPath = import_path.default.join(this.dataDir, "feed_config.json");
         this.credentialsPath = import_path.default.join(this.dataDir, "credentials.json");
@@ -61722,9 +61735,13 @@ var init_SettingsManager = __esm({
           const data2 = await import_promises.default.readFile(this.credentialsPath, "utf8");
           const json2 = JSON.parse(data2);
           const creds = CredentialsSchema.parse(json2);
-          return creds.geminiApiKey || process.env.GEMINI_API_KEY || "";
+          const key = creds.geminiApiKey || "";
+          if (!key && this.isDev) {
+            return process.env.GEMINI_API_KEY || "";
+          }
+          return key;
         } catch {
-          return process.env.GEMINI_API_KEY || "";
+          return this.isDev ? process.env.GEMINI_API_KEY || "" : "";
         }
       }
       async saveApiKey(apiKey) {
@@ -61750,23 +61767,21 @@ var init_SettingsManager = __esm({
         }
         const validatedInterests = InterestsSchema.parse(interests);
         const validatedWindowState = windowState ? WindowStateSchema.parse(windowState) : null;
-        let validatedFeedConfig = {};
         const normalizedFeedConfig = {};
         const categoriesObj = validatedInterests.categories || {};
         const interestCats = Object.keys(categoriesObj);
-        const clean = (s) => s.replace(/[＆&＆\s・]/g, "").toLowerCase();
         const incomingFeeds = actualFeeds || {};
         for (const [feedCatName, data2] of Object.entries(incomingFeeds)) {
           if (!data2) continue;
-          const targetClean = clean(feedCatName);
+          const targetClean = normalizeCategoryName(feedCatName);
           let finalName = interestCats.find((c) => c === feedCatName);
           if (!finalName) {
-            finalName = interestCats.find((c) => clean(c) === targetClean);
+            finalName = interestCats.find((c) => normalizeCategoryName(c) === targetClean);
           }
           const keyToUse = finalName || feedCatName;
           normalizedFeedConfig[keyToUse] = data2;
         }
-        validatedFeedConfig = normalizedFeedConfig;
+        const validatedFeedConfig = normalizedFeedConfig;
         const currentInterests = await this.getInterests();
         const serverLastUpdated = currentInterests.lastUpdated || 0;
         if (lastUpdated && lastUpdated < serverLastUpdated) {
@@ -61795,7 +61810,8 @@ var init_SettingsManager = __esm({
                   throw new Error(`VALIDATION_FAILED: ${item.url} is invalid (Status: ${check2.status})`);
                 }
               } catch (e) {
-                console.warn(`[SettingsManager] Feed validation failed for ${item.url}:`, e.message);
+                const msg = e instanceof Error ? e.message : String(e);
+                console.warn(`[SettingsManager] Feed validation failed for ${item.url}:`, msg);
                 throw e;
               }
             }));
@@ -62933,6 +62949,7 @@ var GeminiService;
 var init_GeminiService = __esm({
   "src/services/GeminiService.ts"() {
     init_dist();
+    init_normalize();
     GeminiService = class {
       genAI;
       primaryModelName = "gemini-3.1-flash";
@@ -62983,8 +63000,9 @@ var init_GeminiService = __esm({
           try {
             return JSON.parse(text3);
           } catch (parseError) {
-            console.error(`[GeminiService] JSON Parse Error: ${parseError.message}. Raw text: ${text3.substring(0, 500)}...`);
-            throw new Error(`Failed to parse AI response as JSON: ${parseError.message}`);
+            const msg = parseError instanceof Error ? parseError.message : String(parseError);
+            console.error(`[GeminiService] JSON Parse Error: ${msg}. Raw text: ${text3.substring(0, 500)}...`);
+            throw new Error(`Failed to parse AI response as JSON: ${msg}`, { cause: parseError });
           }
         } catch (error51) {
           const errorMessage = error51 instanceof Error ? error51.message : String(error51);
@@ -63001,7 +63019,7 @@ var init_GeminiService = __esm({
             console.warn(`[GeminiService] ${modelName} failed. Final fallback attempt with gemini-1.5-flash`);
             return this.generateStructured(prompt, schema, "gemini-1.5-flash");
           }
-          throw new Error(`Gemini API execution failed after multiple retries. [Last Model: ${modelName}] Detail: ${errorMessage}`);
+          throw new Error(`Gemini API execution failed after multiple retries. [Last Model: ${modelName}] Detail: ${errorMessage}`, { cause: error51 });
         }
       }
       /**
@@ -63255,18 +63273,17 @@ ${JSON.stringify(allExistingUrls, null, 2)}
             }
           });
         }
-        const normalizeCategoryName = (name) => {
+        const mapToExistingCategory = (name) => {
           if (categories[name]) return name;
-          const clean = (s) => s.replace(/[＆&＆\s・]/g, "").toLowerCase();
-          const targetClean = clean(name);
+          const targetClean = normalizeCategoryName(name);
           for (const catName of Object.keys(categories)) {
-            if (clean(catName) === targetClean) return catName;
+            if (normalizeCategoryName(catName) === targetClean) return catName;
           }
           console.warn(`[GeminiService] AI returned unknown category "${name}". Mapping to "${Object.keys(categories)[0]}"`);
           return Object.keys(categories)[0];
         };
         result.feedMapping.forEach((m) => {
-          const normalizedCat = normalizeCategoryName(m.newCategory);
+          const normalizedCat = mapToExistingCategory(m.newCategory);
           if (feedConfig[normalizedCat]) {
             if (this._isValidUrl(m.url)) {
               feedConfig[normalizedCat].active.push(m.url);
@@ -63274,7 +63291,7 @@ ${JSON.stringify(allExistingUrls, null, 2)}
           }
         });
         result.newSuggestedFeeds.forEach((s) => {
-          const normalizedCat = normalizeCategoryName(s.category);
+          const normalizedCat = mapToExistingCategory(s.category);
           if (feedConfig[normalizedCat]) {
             if (this._isValidUrl(s.url) && !feedConfig[normalizedCat].active.includes(s.url)) {
               feedConfig[normalizedCat].active.push(s.url);
@@ -63680,14 +63697,14 @@ var init_DiscoveryService = __esm({
             if (items && items.length > 0) {
               validatedSites.push(site);
             }
-          } catch (e) {
+          } catch {
             console.log(`[DiscoveryService] Skip invalid suggested feed: ${site.url}`);
           }
         }));
         return validatedSites;
       }
       async getProposals(interests) {
-        let result = await this.geminiService.getEvolutionProposals(interests);
+        const result = await this.geminiService.getEvolutionProposals(interests);
         const validatedSites = [];
         const failedSites = [];
         const validate = async (sitesToValidate) => {
@@ -63705,7 +63722,7 @@ var init_DiscoveryService = __esm({
             }
           }));
         };
-        let sites = result.sites || [];
+        const sites = result.sites || [];
         await validate(sites);
         if (validatedSites.length === 0) {
           console.log("[DiscoveryService] \u5C02\u9580\u30BD\u30FC\u30B9\u304C\u898B\u3064\u304B\u3089\u306A\u3044\u305F\u3081\u3001\u5927\u624B\u30CB\u30E5\u30FC\u30B9\u30B5\u30A4\u30C8\u304B\u3089\u306E\u30D5\u30A9\u30FC\u30EB\u30D0\u30C3\u30AF\u3092\u958B\u59CB\u3057\u307E\u3059...");
@@ -124860,10 +124877,10 @@ var init_EnrichmentService = __esm({
               if (absoluteUrl.startsWith("http")) {
                 return absoluteUrl;
               }
-            } catch (e) {
+            } catch {
             }
           }
-        } catch (e) {
+        } catch {
         }
         return null;
       }
@@ -131820,6 +131837,7 @@ __export(ScoringService_exports, {
 var ScoringService;
 var init_ScoringService = __esm({
   "src/services/ScoringService.ts"() {
+    init_normalize();
     ScoringService = class {
       interests;
       categoryKeywords;
@@ -131855,13 +131873,6 @@ var init_ScoringService = __esm({
         ];
       }
       /**
-       * カテゴリ名の表記揺れ（全角・半角、記号、空白）を吸収するための正規化。
-       * @private
-       */
-      _normalizeName(name) {
-        return name.replace(/[＆&＆\s・]/g, "").toLowerCase();
-      }
-      /**
        * 記事のタイトルと要約から、最も関連性の高い内部カテゴリを推論します。
        * @param title - 記事タイトル
        * @param desc - 記事要約
@@ -131873,9 +131884,9 @@ var init_ScoringService = __esm({
         for (const [catName, keywords] of Object.entries(this.categoryKeywords)) {
           if (keywords.some((k) => text3.includes(k))) return catName;
         }
-        const normalizedOriginal = this._normalizeName(originalCategory);
+        const normalizedOriginal = normalizeCategoryName(originalCategory);
         for (const catName of Object.keys(this.interests.categories)) {
-          if (this._normalizeName(catName) === normalizedOriginal) return catName;
+          if (normalizeCategoryName(catName) === normalizedOriginal) return catName;
         }
         return originalCategory;
       }
@@ -131931,10 +131942,10 @@ var init_NexusRouter = __esm({
   "src/api/server/NexusRouter.ts"() {
     init_Schemas();
     nexusRouter = async (fastify2, options) => {
-      const { scraper: scraper2, evolution, orchestrator: orchestrator2, settingsManager } = options;
+      const { scraper: scraper2, evolution, orchestrator: orchestrator2, settingsManager: settingsManager2 } = options;
       fastify2.get("/interests", async (_request, reply) => {
         try {
-          return await settingsManager.getInterests();
+          return await settingsManager2.getInterests();
         } catch (error51) {
           const msg = error51 instanceof Error ? error51.message : String(error51);
           reply.status(500).send({ error: "Failed to retrieve interests", details: msg });
@@ -131942,7 +131953,7 @@ var init_NexusRouter = __esm({
       });
       fastify2.get("/feeds", async (_request, reply) => {
         try {
-          return await settingsManager.getFeedConfig();
+          return await settingsManager2.getFeedConfig();
         } catch (error51) {
           const msg = error51 instanceof Error ? error51.message : String(error51);
           reply.status(500).send({ error: "Failed to retrieve feed configuration", details: msg });
@@ -131951,7 +131962,7 @@ var init_NexusRouter = __esm({
       fastify2.post("/sync-settings", async (request, reply) => {
         try {
           const validated = SyncSettingsSchema.parse(request.body);
-          const result = await settingsManager.syncSettings(validated);
+          const result = await settingsManager2.syncSettings(validated);
           if (scraper2 && scraper2.feedManager) {
             scraper2.feedManager.config = result.validatedFeedConfig;
           }
@@ -131974,7 +131985,7 @@ var init_NexusRouter = __esm({
           return;
         }
         try {
-          const apiKey = await settingsManager.getApiKey();
+          const apiKey = await settingsManager2.getApiKey();
           scraper2.updateApiKey(apiKey);
           return await scraper2.geminiService.suggestCategoryDetails(categoryName);
         } catch (error51) {
@@ -131984,9 +131995,9 @@ var init_NexusRouter = __esm({
       });
       fastify2.get("/proposals", async (_request, reply) => {
         try {
-          const apiKey = await settingsManager.getApiKey();
+          const apiKey = await settingsManager2.getApiKey();
           evolution.updateApiKey(apiKey);
-          const interests = await settingsManager.getInterests();
+          const interests = await settingsManager2.getInterests();
           return await evolution.getProposals(interests);
         } catch (error51) {
           const msg = error51 instanceof Error ? error51.message : String(error51);
@@ -132000,7 +132011,7 @@ var init_NexusRouter = __esm({
           return;
         }
         try {
-          const apiKey = await settingsManager.getApiKey();
+          const apiKey = await settingsManager2.getApiKey();
           orchestrator2.updateApiKey(apiKey);
           orchestrator2.runAutonomousLoop(requirements).catch((err) => {
             console.error("[Orchestrator Loop Error]", err);
@@ -132013,10 +132024,10 @@ var init_NexusRouter = __esm({
       });
       fastify2.post("/restructure-categories", async (_request, reply) => {
         try {
-          const apiKey = await settingsManager.getApiKey();
+          const apiKey = await settingsManager2.getApiKey();
           scraper2.updateApiKey(apiKey);
-          const currentInterests = await settingsManager.getInterests();
-          const currentFeeds = await settingsManager.getFeedConfig();
+          const currentInterests = await settingsManager2.getInterests();
+          const currentFeeds = await settingsManager2.getFeedConfig();
           const restructured = await scraper2.geminiService.getRestructureProposal(currentInterests, currentFeeds);
           const validationTasks = Object.entries(restructured.feedConfig).map(async ([catName, config2]) => {
             const sitesToValidate = config2.active.map((url3) => ({ url: url3, name: "Suggested Feed", category: catName }));
@@ -132037,9 +132048,9 @@ var init_NexusRouter = __esm({
       });
       fastify2.post("/discover-trends", async (_request, reply) => {
         try {
-          const apiKey = await settingsManager.getApiKey();
+          const apiKey = await settingsManager2.getApiKey();
           scraper2.updateApiKey(apiKey);
-          const interests = await settingsManager.getInterests();
+          const interests = await settingsManager2.getInterests();
           const suggestions = await scraper2.discoverTrends(interests);
           return { suggestions };
         } catch (error51) {
@@ -132049,7 +132060,7 @@ var init_NexusRouter = __esm({
       });
       fastify2.get("/window-state", async (_request, reply) => {
         try {
-          const state = await settingsManager.getWindowState();
+          const state = await settingsManager2.getWindowState();
           return state || { error: "Not Found" };
         } catch (error51) {
           const msg = error51 instanceof Error ? error51.message : String(error51);
@@ -132173,6 +132184,7 @@ var init_ScraperFacade = __esm({
     init_EnrichmentService();
     init_Article();
     init_GeminiService();
+    init_normalize();
     ScraperFacade = class {
       feedManager;
       rssFetcher;
@@ -132207,11 +132219,31 @@ var init_ScraperFacade = __esm({
             throw new Error("\u63A8\u85A6\u7528\u306E\u8A18\u4E8B\u5019\u88DC\u304C\u898B\u3064\u304B\u308A\u307E\u305B\u3093\u3067\u3057\u305F\u3002\u30D5\u30A3\u30FC\u30C9\u8A2D\u5B9A\u3092\u78BA\u8A8D\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
           }
           console.log(`[ScraperFacade] Gemini\u306B\u3088\u308B\u30AD\u30E5\u30EC\u30FC\u30B7\u30E7\u30F3\u3092\u958B\u59CB (${candidates.length}\u4EF6\u3092\u8A55\u4FA1\u4E2D)...`);
-          const recommendations = await this.geminiService.curate(candidates, interests);
-          await this.enrichmentService.enrichAll(recommendations);
-          return recommendations;
+          const recommendations = await this.geminiService.curate(candidates.map((a) => a.toJSON()), interests);
+          const recommendedArticles = recommendations.map((r) => {
+            const matched = candidates.find((c) => c.link === r.url);
+            if (matched) {
+              matched.geminiReason = r.geminiReason;
+              return matched;
+            }
+            return new Article({
+              title: r.title,
+              link: r.url || "",
+              desc: r.content || "",
+              brand: "",
+              score: 0,
+              category: "Uncategorized",
+              date: (/* @__PURE__ */ new Date()).toISOString(),
+              img: null,
+              language: "en",
+              geminiReason: r.geminiReason
+            });
+          });
+          await this.enrichmentService.enrichAll(recommendedArticles);
+          return recommendedArticles;
         } catch (e) {
-          console.error(`[ScraperFacade] Recommendations Error: ${e.message}`);
+          const msg = e instanceof Error ? e.message : String(e);
+          console.error(`[ScraperFacade] Recommendations Error: ${msg}`);
           throw e;
         }
       }
@@ -132225,21 +132257,20 @@ var init_ScraperFacade = __esm({
         let articlesExtended = null;
         const dashboard = {};
         const categories = Object.keys(interests.categories);
-        const clean = (s) => s.replace(/[＆&＆\s・]/g, "").toLowerCase();
         for (const catName of categories) {
-          const targetClean = clean(catName);
+          const targetClean = normalizeCategoryName(catName);
           let filtered = articlesNormal.filter((a) => {
-            return clean(a.category) === targetClean && a.language === "ja";
+            return normalizeCategoryName(a.category) === targetClean && a.language === "ja";
           });
           if (filtered.length === 0) {
-            filtered = articlesNormal.filter((a) => clean(a.category) === targetClean);
+            filtered = articlesNormal.filter((a) => normalizeCategoryName(a.category) === targetClean);
           }
           if (filtered.length === 0) {
             if (!articlesExtended) {
               console.log(`[ScraperFacade] \u30AB\u30C6\u30B4\u30EA "${catName}" \u306E\u6700\u65B0\u8A18\u4E8B\u304C0\u4EF6\u306E\u305F\u3081\u3001\u671F\u9593\u5236\u9650\u3092\u89E3\u9664\u3057\u3066\u518D\u63A2\u7D22\u3057\u307E\u3059...`);
               articlesExtended = await this.fetchAndProcessArticles(interests, true);
             }
-            filtered = articlesExtended.filter((a) => clean(a.category) === targetClean);
+            filtered = articlesExtended.filter((a) => normalizeCategoryName(a.category) === targetClean);
           }
           const topArticles = this._sortAndSlice(filtered, 50);
           await this.enrichmentService.enrichAll(topArticles);
@@ -132268,7 +132299,8 @@ var init_ScraperFacade = __esm({
           console.log(`[ScraperFacade] AI \u304B\u3089 ${suggestions.length} \u4EF6\u306E\u63D0\u6848\u3092\u53D7\u4FE1\u3057\u307E\u3057\u305F\u3002`);
           return suggestions;
         } catch (e) {
-          console.error(`[ScraperFacade] discoverTrends \u3067\u30A8\u30E9\u30FC\u304C\u767A\u751F\u3057\u307E\u3057\u305F: ${e.message}`);
+          const errorMsg = e instanceof Error ? e.message : String(e);
+          console.error(`[ScraperFacade] discoverTrends \u3067\u30A8\u30E9\u30FC\u304C\u767A\u751F\u3057\u307E\u3057\u305F: ${errorMsg}`);
           throw e;
         }
       }
@@ -132333,7 +132365,7 @@ var init_ScraperFacade = __esm({
                   img: this.enrichmentService.extractBasicImage(record2),
                   language
                 }));
-              } catch (err) {
+              } catch {
                 continue;
               }
             }
@@ -132348,8 +132380,11 @@ var init_ScraperFacade = __esm({
        */
       _detectLanguage(title, snippet) {
         const text3 = title + snippet;
-        const containsJapanese = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/.test(text3);
-        return containsJapanese ? "ja" : "en";
+        const hasKana = /[\u3040-\u309F\u30A0-\u30FF]/.test(text3);
+        if (hasKana) return "ja";
+        const hasKanji = /[\u4E00-\u9FAF]/.test(text3);
+        if (hasKanji) return "other";
+        return "en";
       }
     };
   }
@@ -132536,6 +132571,51 @@ var init_ArchivistAgent = __esm({
   }
 });
 
+// src/agents/CuratorAgent.ts
+var CuratorAgent;
+var init_CuratorAgent = __esm({
+  "src/agents/CuratorAgent.ts"() {
+    init_BaseAgent();
+    init_dist();
+    CuratorAgent = class extends BaseAgent {
+      constructor(geminiService2) {
+        super("Curator", geminiService2);
+      }
+      getSystemPrompt() {
+        return `
+\u3042\u306A\u305F\u306F Aegis Nexus \u306E 'Curator' \u30A8\u30FC\u30B8\u30A7\u30F3\u30C8\u3067\u3059\u3002
+\u5927\u91CF\u306E\u60C5\u5831\u306E\u4E2D\u304B\u3089\u3001\u30E6\u30FC\u30B6\u30FC\u306E\u8208\u5473\u306B\u6700\u3082\u5408\u81F4\u3057\u3001\u304B\u3064\u8CEA\u306E\u9AD8\u3044\u60C5\u5831\u3092\u53B3\u9078\u3057\u307E\u3059\u3002
+\u30CE\u30A4\u30BA\u3092\u6392\u9664\u3057\u3001\u60C5\u5831\u306E\u771F\u507D\u3084\u91CD\u8981\u5EA6\u3092\u8A55\u4FA1\u3059\u308B\u3053\u3068\u306B\u9577\u3051\u3066\u3044\u307E\u3059\u3002
+`;
+      }
+      /**
+       * 記事リストをキュレーションする
+       */
+      async curate(articles, interests) {
+        const schema = {
+          type: SchemaType.OBJECT,
+          properties: {
+            selected_ids: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+            reasoning: {
+              type: SchemaType.OBJECT,
+              additionalProperties: { type: SchemaType.STRING }
+            }
+          },
+          required: ["selected_ids", "reasoning"]
+        };
+        const prompt = `
+\u4EE5\u4E0B\u306E\u8A18\u4E8B\u30EA\u30B9\u30C8\u304B\u3089\u3001\u30E6\u30FC\u30B6\u30FC\u306E\u8208\u5473\uFF08${JSON.stringify(interests)}\uFF09\u306B\u5408\u81F4\u3059\u308B\u3082\u306E\u3092\u53B3\u9078\u3057\u3066\u304F\u3060\u3055\u3044\u3002
+\u5404\u8A18\u4E8B\u306B\u306F ID \u304C\u632F\u3089\u308C\u3066\u3044\u307E\u3059\u3002
+
+\u8A18\u4E8B\u30EA\u30B9\u30C8:
+${articles.map((a) => `ID: ${a.id}, Title: ${a.title}, Desc: ${a.description}`).join("\n")}
+`;
+        return await this.think(prompt, schema);
+      }
+    };
+  }
+});
+
 // src/core/NexusOrchestrator.ts
 var NexusOrchestrator_exports = {};
 __export(NexusOrchestrator_exports, {
@@ -132547,10 +132627,10 @@ var init_NexusOrchestrator = __esm({
     init_ArchitectAgent();
     init_DiscoveryAgent();
     init_ArchivistAgent();
+    init_CuratorAgent();
     NexusOrchestrator = class {
-      // private geminiService: GeminiService;
       architect;
-      // private curator: CuratorAgent;
+      curator;
       discovery;
       archivist;
       subscribers = /* @__PURE__ */ new Set();
@@ -132560,6 +132640,7 @@ var init_NexusOrchestrator = __esm({
        */
       constructor(geminiService2) {
         this.architect = new ArchitectAgent(geminiService2);
+        this.curator = new CuratorAgent(geminiService2);
         this.discovery = new DiscoveryAgent(geminiService2);
         this.archivist = new ArchivistAgent(geminiService2);
       }
@@ -132570,6 +132651,7 @@ var init_NexusOrchestrator = __esm({
         this.architect.updateApiKey(apiKey);
         this.discovery.updateApiKey(apiKey);
         this.archivist.updateApiKey(apiKey);
+        this.curator.updateApiKey(apiKey);
       }
       /**
        * フロントエンドへの通知を購読するためのSSEハンドラ登録。
@@ -132646,8 +132728,9 @@ var init_NexusOrchestrator = __esm({
           this.notify({ status: "idle", message: "\u5168\u3066\u306E\u81EA\u5F8B\u30BF\u30B9\u30AF\u304C\u6B63\u5E38\u306B\u5B8C\u4E86\u3057\u307E\u3057\u305F\u3002" });
           this.notify({ status: "refresh", message: "Updating intelligence feed..." });
         } catch (error51) {
+          const msg = error51 instanceof Error ? error51.message : String(error51);
           console.error("[NexusOrchestrator] Error:", error51);
-          this.notify({ status: "error", message: `\u30A8\u30E9\u30FC\u304C\u767A\u751F\u3057\u307E\u3057\u305F: ${error51.message}` });
+          this.notify({ status: "error", message: `\u30A8\u30E9\u30FC\u304C\u767A\u751F\u3057\u307E\u3057\u305F: ${msg}` });
         } finally {
           this.isRunning = false;
           ["architect", "curator", "discovery", "archivist"].forEach((id) => {
@@ -132683,6 +132766,7 @@ var feedManager;
 var rssFetcher;
 var discoveryService;
 var enrichmentService;
+var settingsManager;
 var scraper;
 var orchestrator;
 function getDataDir() {
@@ -132692,9 +132776,9 @@ function getDataDir() {
     return path4.join(app.getPath("userData"), "data");
   }
 }
-async function startInternalServer(settingsManager) {
+async function startInternalServer(sm) {
   const server = fastify({ logger: false });
-  await server.register(cors, { origin: "*" });
+  await server.register(cors, { origin: ["http://localhost:5173", "http://127.0.0.1:5173"] });
   const dataDir = getDataDir();
   scraper = new ScraperFacade2(
     path4.join(dataDir, "interests.json"),
@@ -132769,7 +132853,7 @@ async function initBackend() {
   console.log("[Main] Backend services initializing...");
   const dataDir = getDataDir();
   await ensureDefaultData(dataDir);
-  const settingsManager = new ElectronSettingsManager2({ dataDir });
+  settingsManager = new ElectronSettingsManager2({ dataDir });
   await settingsManager.init();
   const apiKey = await settingsManager.getApiKey();
   geminiService = new GeminiService2(apiKey);
@@ -132828,16 +132912,12 @@ function createTray() {
 }
 function registerIpcHandlers() {
   ipcMain.handle("get-settings", async () => {
-    const dataDir = getDataDir();
-    const settingsManager = new ElectronSettingsManager2({ dataDir });
     const interests = await settingsManager.getInterests();
     const feedConfig = await settingsManager.getFeedConfig();
     return { interests, feed_urls: feedConfig };
   });
   ipcMain.handle("sync-settings", async (event, settings) => {
     try {
-      const dataDir = getDataDir();
-      const settingsManager = new ElectronSettingsManager2({ dataDir });
       const result = await settingsManager.syncSettings(settings, rssFetcher);
       if (feedManager) feedManager.config = result.validatedFeedConfig;
       if (scraper && scraper.feedManager) scraper.feedManager.config = result.validatedFeedConfig;
@@ -132850,8 +132930,6 @@ function registerIpcHandlers() {
   ipcMain.handle("get-articles", async (event, options) => {
     console.log("[Main] IPC: get-articles invoked.");
     try {
-      const dataDir = getDataDir();
-      const settingsManager = new ElectronSettingsManager2({ dataDir });
       const interests = await settingsManager.getInterests();
       const articles = await scraper.fetchAndProcessArticlesWithFallback(interests);
       console.log(`[Main] IPC: Returning top 500 articles.`);
@@ -132863,8 +132941,6 @@ function registerIpcHandlers() {
   });
   ipcMain.handle("trigger-orchestration", async () => {
     try {
-      const dataDir = getDataDir();
-      const settingsManager = new ElectronSettingsManager2({ dataDir });
       const interests = await settingsManager.getInterests();
       const newFeeds = await discoveryService.run(interests);
       return { success: true, newFeedsCount: newFeeds.length };
@@ -132875,9 +132951,6 @@ function registerIpcHandlers() {
   });
   ipcMain.handle("suggest-category", async (event, categoryName) => {
     try {
-      const dataDir = getDataDir();
-      const settingsManager = new ElectronSettingsManager2({ dataDir });
-      await settingsManager.init();
       const apiKey = await settingsManager.getApiKey();
       geminiService.updateApiKey(apiKey);
       return await geminiService.suggestCategoryDetails(categoryName);
@@ -132888,8 +132961,6 @@ function registerIpcHandlers() {
   });
   ipcMain.handle("get-proposals", async () => {
     try {
-      const dataDir = getDataDir();
-      const settingsManager = new ElectronSettingsManager2({ dataDir });
       const interests = await settingsManager.getInterests();
       return await discoveryService.getProposals(interests);
     } catch (error51) {
@@ -132899,9 +132970,6 @@ function registerIpcHandlers() {
   });
   ipcMain.handle("restructure-categories", async (event, count) => {
     try {
-      const dataDir = getDataDir();
-      const settingsManager = new ElectronSettingsManager2({ dataDir });
-      await settingsManager.init();
       const apiKey = await settingsManager.getApiKey();
       geminiService.updateApiKey(apiKey);
       const interests = await settingsManager.getInterests();
@@ -132926,9 +132994,6 @@ function registerIpcHandlers() {
   });
   ipcMain.handle("discover-trends", async () => {
     try {
-      const dataDir = getDataDir();
-      const settingsManager = new ElectronSettingsManager2({ dataDir });
-      await settingsManager.init();
       const apiKey = await settingsManager.getApiKey();
       scraper.updateApiKey(apiKey);
       const interests = await settingsManager.getInterests();
@@ -132940,14 +133005,10 @@ function registerIpcHandlers() {
     }
   });
   ipcMain.handle("get-api-key", async () => {
-    const dataDir = getDataDir();
-    const settingsManager = new ElectronSettingsManager2({ dataDir });
     return await settingsManager.getApiKey();
   });
   ipcMain.handle("save-api-key", async (event, apiKey) => {
     try {
-      const dataDir = getDataDir();
-      const settingsManager = new ElectronSettingsManager2({ dataDir });
       await settingsManager.saveApiKey(apiKey);
       geminiService.updateApiKey(apiKey);
       return { success: true };
@@ -132967,7 +133028,6 @@ function registerIpcHandlers() {
         const dest = path4.join(dataDir, file2);
         if (fs5.existsSync(src)) await fs5.promises.copyFile(src, dest);
       }
-      const settingsManager = new ElectronSettingsManager2({ dataDir });
       await settingsManager.init();
       const feedConfig = await settingsManager.getFeedConfig();
       if (feedManager) feedManager.config = feedConfig;
@@ -132979,14 +133039,10 @@ function registerIpcHandlers() {
     }
   });
   ipcMain.handle("get-ui-settings", async () => {
-    const dataDir = getDataDir();
-    const settingsManager = new ElectronSettingsManager2({ dataDir });
     return await settingsManager.getUiSettings();
   });
   ipcMain.handle("save-ui-settings", async (event, settings) => {
     try {
-      const dataDir = getDataDir();
-      const settingsManager = new ElectronSettingsManager2({ dataDir });
       await settingsManager.saveUiSettings(settings);
       return { success: true };
     } catch (error51) {
@@ -133025,8 +133081,6 @@ app.whenReady().then(async () => {
     }
     if (scraper) {
       console.log("[Main] Starting background initial fetch...");
-      const dataDir = getDataDir();
-      const settingsManager = new ElectronSettingsManager2({ dataDir });
       settingsManager.getInterests().then((interests) => {
         scraper.fetchAndProcessArticlesWithFallback(interests).then((articles) => {
           console.log(`[Main] Initial fetch completed. ${articles.length} articles found.`);

@@ -13,6 +13,9 @@
     "dist": "npm run build && npm run build:electron && electron-builder",
     "lint": "eslint .",
     "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "electron:dev": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && electron .\"",
     "electron:build": "npm run dist"
@@ -59,11 +62,15 @@
     }
   },
   "dependencies": {
+    "@fastify/cors": "^10.0.1",
+    "@fastify/static": "^8.0.1",
     "@google/generative-ai": "^0.24.1",
     "axios": "^1.15.2",
     "cheerio": "^1.2.0",
     "clsx": "^2.1.1",
     "d3": "^7.9.0",
+    "dotenv": "^17.4.2",
+    "fastify": "^5.1.0",
     "framer-motion": "^12.38.0",
     "lucide-react": "^1.11.0",
     "p-limit": "^7.3.0",
@@ -71,11 +78,7 @@
     "react-dom": "^19.2.5",
     "rss-parser": "^3.13.0",
     "tailwind-merge": "^3.5.0",
-    "zod": "^4.4.1",
-    "@fastify/cors": "^10.0.1",
-    "@fastify/static": "^8.0.1",
-    "fastify": "^5.1.0",
-    "dotenv": "^17.4.2"
+    "zod": "^4.4.1"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -86,6 +89,7 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
+    "@vitest/coverage-v8": "^4.1.5",
     "autoprefixer": "^10.5.0",
     "concurrently": "^9.2.1",
     "electron": "^41.3.0",
@@ -100,6 +104,7 @@
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.58.2",
     "vite": "^8.0.10",
+    "vitest": "^4.1.5",
     "wait-on": "^9.0.5"
   }
 }

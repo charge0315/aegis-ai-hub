@@ -1,4 +1,5 @@
 import type { Interests } from '../models/Schemas';
+import { normalizeCategoryName } from '../utils/normalize';
 
 /**
  * ユーザーの興味関心に基づき、記事のスコアリング、カテゴリ判定、ブランド抽出を行うロジックをカプセル化したサービス。
@@ -31,14 +32,6 @@ export class ScoringService {
     }
 
     /**
-     * カテゴリ名の表記揺れ（全角・半角、記号、空白）を吸収するための正規化。
-     * @private
-     */
-    private _normalizeName(name: string): string {
-        return name.replace(/[＆&＆\s・]/g, '').toLowerCase();
-    }
-
-    /**
      * 記事のタイトルと要約から、最も関連性の高い内部カテゴリを推論します。
      * @param title - 記事タイトル
      * @param desc - 記事要約
@@ -54,9 +47,9 @@ export class ScoringService {
         }
         
         // 2. マッチしない場合、元のカテゴリ名との整合性を確認 (表記揺れを許容)
-        const normalizedOriginal = this._normalizeName(originalCategory);
+        const normalizedOriginal = normalizeCategoryName(originalCategory);
         for (const catName of Object.keys(this.interests.categories)) {
-            if (this._normalizeName(catName) === normalizedOriginal) return catName;
+            if (normalizeCategoryName(catName) === normalizedOriginal) return catName;
         }
         
         return originalCategory;

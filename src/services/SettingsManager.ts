@@ -1,9 +1,11 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { InterestsSchema, FeedConfigSchema, WindowStateSchema, CredentialsSchema, UiSettingsSchema, type Interests, type FeedConfig, type Credentials, type UiSettings } from '../models/Schemas';
+import { InterestsSchema, FeedConfigSchema, WindowStateSchema, CredentialsSchema, UiSettingsSchema, type Interests, type FeedConfig, type Credentials, type UiSettings, type SyncSettings } from '../models/Schemas';
+import { normalizeCategoryName } from '../utils/normalize';
 
 export interface SettingsManagerConfig {
   dataDir: string;
+  isDev?: boolean;
 }
 
 /**
@@ -13,12 +15,14 @@ export interface SettingsManagerConfig {
  */
 export class SettingsManager {
   protected dataDir: string;
+  protected isDev: boolean;
   protected interestsPath: string;
   protected feedConfigPath: string;
   protected credentialsPath: string;
 
   constructor(config: SettingsManagerConfig) {
     this.dataDir = config.dataDir;
+    this.isDev = config.isDev || false;
     this.interestsPath = path.join(this.dataDir, 'interests.json');
     this.feedConfigPath = path.join(this.dataDir, 'feed_config.json');
     this.credentialsPath = path.join(this.dataDir, 'credentials.json');
@@ -66,9 +70,13 @@ export class SettingsManager {
       const data = await fs.readFile(this.credentialsPath, 'utf8');
       const json = JSON.parse(data);
       const creds = CredentialsSchema.parse(json);
-      return creds.geminiApiKey || process.env.GEMINI_API_KEY || '';
+      const key = creds.geminiApiKey || '';
+      if (!key && this.isDev) {
+        return process.env.GEMINI_API_KEY || '';
+      }
+      return key;
     } catch {
-      return process.env.GEMINI_API_KEY || '';
+      return this.isDev ? (process.env.GEMINI_API_KEY || '') : '';
     }
   }
 
@@ -90,7 +98,7 @@ export class SettingsManager {
   /**
    * クラウド（またはインポート）からの設定を同期します。
    */
-  async syncSettings(settings: any, fetcher?: { validateFeed: (url: string) => Promise<{ ok: boolean; status: number | string }> }): Promise<any> {
+  async syncSettings(settings: Partial<SyncSettings> & { feed_urls?: FeedConfig }, fetcher?: { validateFeed: (url: string) => Promise<{ ok: boolean; status: number | string }> }): Promise<{ success: boolean, timestamp: string, lastUpdated: number, validatedInterests: Interests, validatedFeedConfig: FeedConfig }> {
     // v5.2 Schema 整合性対応: payload は feedConfig を使用している
     const { interests, feedConfig, feed_urls, windowState, lastUpdated } = settings || {};
     const actualFeeds = feedConfig || feed_urls;
@@ -103,32 +111,29 @@ export class SettingsManager {
     const validatedInterests = InterestsSchema.parse(interests);
     const validatedWindowState = windowState ? WindowStateSchema.parse(windowState) : null;
     
-    let validatedFeedConfig: FeedConfig = {};
-    
     // カテゴリ名の正規化（Mojibakeや表記揺れの吸収）
     const normalizedFeedConfig: FeedConfig = {};
     const categoriesObj = validatedInterests.categories || {};
     const interestCats = Object.keys(categoriesObj);
-    const clean = (s: string) => s.replace(/[＆&＆\s・]/g, '').toLowerCase();
 
     const incomingFeeds = actualFeeds || {};
     for (const [feedCatName, data] of Object.entries(incomingFeeds)) {
       if (!data) continue;
-      const targetClean = clean(feedCatName);
+      const targetClean = normalizeCategoryName(feedCatName);
       
       // 1. 完全一致
       let finalName = interestCats.find(c => c === feedCatName);
       
       // 2. 正規化一致
       if (!finalName) {
-        finalName = interestCats.find(c => clean(c) === targetClean);
+        finalName = interestCats.find(c => normalizeCategoryName(c) === targetClean);
       }
 
       // 3. どちらにせよ、interests に存在する名称を優先（存在しない場合はそのまま保持）
       const keyToUse = finalName || feedCatName;
-      normalizedFeedConfig[keyToUse] = data as any;
+      normalizedFeedConfig[keyToUse] = data;
     }
-    validatedFeedConfig = normalizedFeedConfig;
+    const validatedFeedConfig = normalizedFeedConfig;
 
     // Conflict Resolution
     const currentInterests = await this.getInterests();
@@ -167,8 +172,9 @@ export class SettingsManager {
             if (!check.ok) {
               throw new Error(`VALIDATION_FAILED: ${item.url} is invalid (Status: ${check.status})`);
             }
-          } catch (e: any) {
-            console.warn(`[SettingsManager] Feed validation failed for ${item.url}:`, e.message);
+          } catch (e: unknown) {
+            const msg = e instanceof Error ? e.message : String(e);
+            console.warn(`[SettingsManager] Feed validation failed for ${item.url}:`, msg);
             throw e;
           }
         }));

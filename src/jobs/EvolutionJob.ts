@@ -1,16 +1,8 @@
-import fs from 'fs';
+import fs from 'fs/promises';
 import { type ScraperFacade } from '../ScraperFacade';
 import { type DiscoveryService } from '../services/DiscoveryService';
 import { type Interests } from '../models/Schemas';
-
-interface TrendSuggestion {
-    value: string;
-    category: string;
-    reason: string;
-    type?: 'emerging' | 'breakthrough' | 'niche' | 'mainstream';
-    confidence?: number;
-    context?: string;
-}
+import { type TrendSuggestion } from '../types';
 
 /**
  * システムを自律的に進化させる定期ジョブ。
@@ -41,7 +33,8 @@ export class EvolutionJob {
         console.log("==========================================");
 
         try {
-            const interests: Interests & { learned_keywords?: Record<string, any> } = JSON.parse(fs.readFileSync(this.interestsPath, 'utf8'));
+            const content = await fs.readFile(this.interestsPath, 'utf8');
+            const interests: Interests = JSON.parse(content);
 
             // 1. 設定ファイルのクリーニング (重複排除等)
             console.log("[EvolutionJob] ステップ 1: 設定ファイルの整理を実行中...");
@@ -54,22 +47,20 @@ export class EvolutionJob {
 
             // 3. 最新記事から新しい興味（ブランド・キーワード）を抽出
             console.log("[EvolutionJob] ステップ 3: 最新記事からトレンドを抽出中...");
-            // ScraperFacade を通じて最新記事を取得
-            const articles = await this.scraper.fetchAndProcessArticles(interests);
-            const topArticles = articles.slice(0, 50).map((a: any) => ({ title: a.title, desc: a.desc, brand: a.brand }));
+            const newSuggestions = await this.scraper.discoverTrends(interests);
             
-            const newSuggestions = await this.scraper.geminiService.analyzeTrends(topArticles, interests) as unknown as TrendSuggestion[];
             if (newSuggestions && newSuggestions.length > 0) {
                 console.log(`[EvolutionJob] AI から ${newSuggestions.length} 件の新しい興味提案があります。`);
                 this.updateLearnedKeywords(interests, newSuggestions);
             }
 
             // 4. 結果を保存
-            fs.writeFileSync(this.interestsPath, JSON.stringify(interests, null, 2));
+            await fs.writeFile(this.interestsPath, JSON.stringify(interests, null, 2), 'utf8');
             console.log("[EvolutionJob] 自律進化サイクルが正常に完了しました。");
 
-        } catch (e: any) {
-            console.error(`[EvolutionJob] エラーが発生しました: ${e.message}`);
+        } catch (e: unknown) {
+            const msg = e instanceof Error ? e.message : String(e);
+            console.error(`[EvolutionJob] エラーが発生しました: ${msg}`);
         }
     }
 
@@ -77,6 +68,7 @@ export class EvolutionJob {
      * interests.json の重複や形式を整理します。
      */
     private cleanInterests(interests: Interests): void {
+        if (!interests.categories) return;
         for (const catName in interests.categories) {
             const cat = interests.categories[catName];
             cat.brands = [...new Set(cat.brands.filter(b => b))];
@@ -87,17 +79,18 @@ export class EvolutionJob {
     /**
      * AI が見つけた新しいキーワードを「学習済みキーワード」として蓄積します。
      */
-    private updateLearnedKeywords(interests: Interests & { learned_keywords?: Record<string, any> }, suggestions: TrendSuggestion[]): void {
+    private updateLearnedKeywords(interests: Interests, suggestions: TrendSuggestion[]): void {
         if (!interests.learned_keywords) interests.learned_keywords = {};
         
         suggestions.forEach(s => {
             // 既存のキーワードに含まれていないかチェック
-            const existing = interests.categories[s.category]?.keywords || [];
+            const category = interests.categories[s.category];
+            const existing = category ? (category.keywords || []) : [];
             if (!existing.includes(s.value) && !interests.learned_keywords![s.value]) {
                 interests.learned_keywords![s.value] = {
                     category: s.category,
                     reason: s.reason,
-                    type: s.type,
+                    type: s.type as any, // 互換性のためのキャスト
                     confidence: s.confidence,
                     context: s.context,
                     detectedAt: new Date().toISOString()

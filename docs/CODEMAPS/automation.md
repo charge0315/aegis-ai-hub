@@ -24,7 +24,14 @@ Aegis AI Hub v5.3 では、対話型インストーラーの導入により配�
 - **Main Process**: `esbuild` を使用。`node_modules` への依存を排除（`electron` 除く）し、単一の CJS ファイルに出力。
 - **Renderer Process**: `Vite` を使用。アセットの最適化とコード分割を実施。
 
-## 2. E2E テスト (Playwright)
+## 2. ユニットテスト (Vitest)
+システムの各コンポーネントの単体動作を高速に検証します。
+
+- **高速フィードバック**: ファイル変更を検知して即座にテストを実行する `npm run test:watch` に対応。
+- **カバレッジ計測**: `npm run test:coverage` により、コードの網羅率を確認。
+- **コアサービスの保護**: `SettingsManager` や `GeminiService` 等、ビジネスロジックの要となるサービスのデグレードを未然に防ぎます。
+
+## 3. E2E テスト (Playwright)
 デスクトップアプリとしての振る舞いを検証します。
 
 - **`data-testid` による安定性**: 主要コンポーネントに付与されたテストIDにより、UI変更の影響を受けにくいテストを実現。

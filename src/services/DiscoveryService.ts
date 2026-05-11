@@ -99,7 +99,7 @@ export class DiscoveryService {
         if (items && items.length > 0) {
           validatedSites.push(site);
         }
-      } catch (e) {
+      } catch {
         console.log(`[DiscoveryService] Skip invalid suggested feed: ${site.url}`);
       }
     }));
@@ -108,7 +108,7 @@ export class DiscoveryService {
   }
 
   async getProposals(interests: Interests): Promise<EvolutionProposals> {
-    let result = await this.geminiService.getEvolutionProposals(interests) as Record<string, unknown>;
+    const result = await this.geminiService.getEvolutionProposals(interests) as Record<string, unknown>;
 
     const validatedSites: SuggestedSite[] = [];
     const failedSites: (SuggestedSite & { error: string })[] = [];
@@ -129,7 +129,7 @@ export class DiscoveryService {
       }));
     };
 
-    let sites = (result.sites || []) as SuggestedSite[];
+    const sites = (result.sites || []) as SuggestedSite[];
     await validate(sites);
 
     // 1件もヒットしなかった場合のフォールバック（広域検索）

@@ -13,6 +13,7 @@ import { Article } from './models/Article';
 import { GeminiService } from './services/GeminiService';
 import type { Interests } from './models/Schemas';
 import type { TrendSuggestion } from './types';
+import { normalizeCategoryName } from './utils/normalize';
 
 /**
  * スクレイピング全体のワークフローを制御するファサードクラス。
@@ -47,7 +48,7 @@ export class ScraperFacade {
     /**
      * Gemini APIを活用し、ユーザーの興味に最適化されたおすすめ記事10選を生成します。
      */
-    async getRecommendations(interests: Interests): Promise<any[]> {
+    async getRecommendations(interests: Interests): Promise<Article[]> {
         try {
             await this.enrichmentService.init();
             const allArticles = await this.fetchAndProcessArticles(interests);
@@ -58,12 +59,33 @@ export class ScraperFacade {
             }
 
             console.log(`[ScraperFacade] Geminiによるキュレーションを開始 (${candidates.length}件を評価中)...`);
-            const recommendations = await this.geminiService.curate(candidates as unknown as Record<string, unknown>[], interests);
+            const recommendations = await this.geminiService.curate(candidates.map(a => a.toJSON()), interests);
             
-            await this.enrichmentService.enrichAll(recommendations as any[]);
-            return recommendations;
-        } catch (e: any) {
-            console.error(`[ScraperFacade] Recommendations Error: ${e.message}`);
+            const recommendedArticles = recommendations.map(r => {
+                const matched = candidates.find(c => c.link === r.url);
+                if (matched) {
+                    matched.geminiReason = r.geminiReason;
+                    return matched;
+                }
+                return new Article({
+                    title: r.title,
+                    link: r.url || '',
+                    desc: r.content || '',
+                    brand: '',
+                    score: 0,
+                    category: 'Uncategorized',
+                    date: new Date().toISOString(),
+                    img: null,
+                    language: 'en',
+                    geminiReason: r.geminiReason
+                });
+            });
+
+            await this.enrichmentService.enrichAll(recommendedArticles);
+            return recommendedArticles;
+        } catch (e: unknown) {
+            const msg = e instanceof Error ? e.message : String(e);
+            console.error(`[ScraperFacade] Recommendations Error: ${msg}`);
             throw e;
         }
     }
@@ -71,28 +93,27 @@ export class ScraperFacade {
     /**
      * 最新のパーソナライズ済みダッシュボードデータを構築します。
      */
-    async getDashboard(interests: Interests): Promise<Record<string, any>> {
+    async getDashboard(interests: Interests): Promise<Record<string, { emoji: string | null, articles: ReturnType<Article['toJSON']>[] }>> {
         console.log(`[ScraperFacade] パーソナライズド・ダッシュボードを構築中...`);
         await this.enrichmentService.init();
         
         const articlesNormal = await this.fetchAndProcessArticles(interests, false);
         let articlesExtended: Article[] | null = null;
 
-        const dashboard: Record<string, any> = {};
+        const dashboard: Record<string, { emoji: string | null, articles: ReturnType<Article['toJSON']>[] }> = {};
         const categories = Object.keys(interests.categories);
-        const clean = (s: string) => s.replace(/[＆&＆\s・]/g, '').toLowerCase();
 
         for (const catName of categories) {
-            const targetClean = clean(catName);
+            const targetClean = normalizeCategoryName(catName);
             
             // 言語優先（日本語）かつカテゴリ一致
             let filtered = articlesNormal.filter(a => {
-                return clean(a.category) === targetClean && a.language === 'ja';
+                return normalizeCategoryName(a.category) === targetClean && a.language === 'ja';
             });
             
             // 日本語がない場合は全言語からカテゴリ一致で検索
             if (filtered.length === 0) {
-                filtered = articlesNormal.filter(a => clean(a.category) === targetClean);
+                filtered = articlesNormal.filter(a => normalizeCategoryName(a.category) === targetClean);
             }
 
             // それでも0件の場合は期間制限を解除
@@ -101,7 +122,7 @@ export class ScraperFacade {
                     console.log(`[ScraperFacade] カテゴリ "${catName}" の最新記事が0件のため、期間制限を解除して再探索します...`);
                     articlesExtended = await this.fetchAndProcessArticles(interests, true);
                 }
-                filtered = articlesExtended.filter(a => clean(a.category) === targetClean);
+                filtered = (articlesExtended as Article[]).filter(a => normalizeCategoryName(a.category) === targetClean);
             }
             
             const topArticles = this._sortAndSlice(filtered, 50);
@@ -140,8 +161,9 @@ export class ScraperFacade {
             console.log(`[ScraperFacade] AI から ${suggestions.length} 件の提案を受信しました。`);
             
             return suggestions as unknown as TrendSuggestion[];
-        } catch (e: any) {
-            console.error(`[ScraperFacade] discoverTrends でエラーが発生しました: ${e.message}`);
+        } catch (e: unknown) {
+            const errorMsg = e instanceof Error ? e.message : String(e);
+            console.error(`[ScraperFacade] discoverTrends でエラーが発生しました: ${errorMsg}`);
             throw e;
         }
     }
@@ -222,7 +244,7 @@ export class ScraperFacade {
                             img: this.enrichmentService.extractBasicImage(record),
                             language: language
                         }));
-                    } catch (err) {
+                    } catch {
                         // 個別の記事パースエラーは無視
                         continue;
                     }
@@ -240,8 +262,14 @@ export class ScraperFacade {
      */
     private _detectLanguage(title: string, snippet: string): 'ja' | 'en' | 'other' {
         const text = title + snippet;
-        // ひらがな、カタカナ、または漢字が含まれているかチェック
-        const containsJapanese = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/.test(text);
-        return containsJapanese ? 'ja' : 'en';
+        // ひらがな、またはカタカナが含まれているかチェック (日本語の強力な指標)
+        const hasKana = /[\u3040-\u309F\u30A0-\u30FF]/.test(text);
+        if (hasKana) return 'ja';
+        
+        // 漢字が含まれているが「かな」がない場合は、中国語など他の言語の可能性が高い
+        const hasKanji = /[\u4E00-\u9FAF]/.test(text);
+        if (hasKanji) return 'other';
+
+        return 'en';
     }
 }

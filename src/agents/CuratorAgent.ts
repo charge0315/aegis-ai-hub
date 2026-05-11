@@ -27,7 +27,7 @@ export class CuratorAgent extends BaseAgent {
   /**
    * 記事リストをキュレーションする
    */
-  async curate(articles: any[], interests: Interests): Promise<CurationResult> {
+  async curate(articles: Record<string, unknown>[], interests: Interests): Promise<CurationResult> {
     const schema: ResponseSchema = {
       type: SchemaType.OBJECT,
       properties: {
@@ -35,7 +35,7 @@ export class CuratorAgent extends BaseAgent {
         reasoning: { 
           type: SchemaType.OBJECT,
           additionalProperties: { type: SchemaType.STRING }
-        } as any
+        } as unknown as ResponseSchema
       },
       required: ["selected_ids", "reasoning"]
     };

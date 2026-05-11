@@ -26,6 +26,7 @@ let feedManager;
 let rssFetcher;
 let discoveryService;
 let enrichmentService;
+let settingsManager;
 let scraper;
 let orchestrator;
 
@@ -38,9 +39,9 @@ function getDataDir() {
   }
 }
 
-async function startInternalServer(settingsManager) {
+async function startInternalServer(sm) {
   const server = fastify({ logger: false });
-  await server.register(cors, { origin: '*' });
+  await server.register(cors, { origin: ['http://localhost:5173', 'http://127.0.0.1:5173'] });
 
   const dataDir = getDataDir();
   scraper = new ScraperFacade(
@@ -132,7 +133,7 @@ async function initBackend() {
   const dataDir = getDataDir();
   await ensureDefaultData(dataDir);
 
-  const settingsManager = new ElectronSettingsManager({ dataDir });
+  settingsManager = new ElectronSettingsManager({ dataDir });
   await settingsManager.init();
 
   const apiKey = await settingsManager.getApiKey();
@@ -199,8 +200,6 @@ function createTray() {
 
 function registerIpcHandlers() {
   ipcMain.handle('get-settings', async () => {
-    const dataDir = getDataDir();
-    const settingsManager = new ElectronSettingsManager({ dataDir });
     const interests = await settingsManager.getInterests();
     const feedConfig = await settingsManager.getFeedConfig();
     return { interests, feed_urls: feedConfig };
@@ -208,8 +207,6 @@ function registerIpcHandlers() {
 
   ipcMain.handle('sync-settings', async (event, settings) => {
     try {
-      const dataDir = getDataDir();
-      const settingsManager = new ElectronSettingsManager({ dataDir });
       const result = await settingsManager.syncSettings(settings, rssFetcher);
       if (feedManager) feedManager.config = result.validatedFeedConfig;
       if (scraper && scraper.feedManager) scraper.feedManager.config = result.validatedFeedConfig;
@@ -223,8 +220,6 @@ function registerIpcHandlers() {
   ipcMain.handle('get-articles', async (event, options) => {
     console.log('[Main] IPC: get-articles invoked.');
     try {
-      const dataDir = getDataDir();
-      const settingsManager = new ElectronSettingsManager({ dataDir });
       const interests = await settingsManager.getInterests();
 
       // 修正: 記事取得の実処理（fetchAndProcessArticlesWithFallback）が欠落していたのを復旧
@@ -240,8 +235,6 @@ function registerIpcHandlers() {
 
   ipcMain.handle('trigger-orchestration', async () => {
     try {
-      const dataDir = getDataDir();
-      const settingsManager = new ElectronSettingsManager({ dataDir });
       const interests = await settingsManager.getInterests();
       const newFeeds = await discoveryService.run(interests);
       return { success: true, newFeedsCount: newFeeds.length };
@@ -253,9 +246,6 @@ function registerIpcHandlers() {
 
   ipcMain.handle('suggest-category', async (event, categoryName) => {
     try {
-      const dataDir = getDataDir();
-      const settingsManager = new ElectronSettingsManager({ dataDir });
-      await settingsManager.init();
       const apiKey = await settingsManager.getApiKey();
       geminiService.updateApiKey(apiKey);
       return await geminiService.suggestCategoryDetails(categoryName);
@@ -267,8 +257,6 @@ function registerIpcHandlers() {
 
   ipcMain.handle('get-proposals', async () => {
     try {
-      const dataDir = getDataDir();
-      const settingsManager = new ElectronSettingsManager({ dataDir });
       const interests = await settingsManager.getInterests();
       return await discoveryService.getProposals(interests);
     } catch (error) {
@@ -279,9 +267,6 @@ function registerIpcHandlers() {
 
   ipcMain.handle('restructure-categories', async (event, count) => {
     try {
-      const dataDir = getDataDir();
-      const settingsManager = new ElectronSettingsManager({ dataDir });
-      await settingsManager.init();
       const apiKey = await settingsManager.getApiKey();
       geminiService.updateApiKey(apiKey);
       
@@ -311,9 +296,6 @@ function registerIpcHandlers() {
 
   ipcMain.handle('discover-trends', async () => {
     try {
-      const dataDir = getDataDir();
-      const settingsManager = new ElectronSettingsManager({ dataDir });
-      await settingsManager.init();
       const apiKey = await settingsManager.getApiKey();
       scraper.updateApiKey(apiKey);
       
@@ -327,15 +309,11 @@ function registerIpcHandlers() {
   });
 
   ipcMain.handle('get-api-key', async () => {
-    const dataDir = getDataDir();
-    const settingsManager = new ElectronSettingsManager({ dataDir });
     return await settingsManager.getApiKey();
   });
 
   ipcMain.handle('save-api-key', async (event, apiKey) => {
     try {
-      const dataDir = getDataDir();
-      const settingsManager = new ElectronSettingsManager({ dataDir });
       await settingsManager.saveApiKey(apiKey);
       geminiService.updateApiKey(apiKey);
       return { success: true };
@@ -356,7 +334,6 @@ function registerIpcHandlers() {
         const dest = path.join(dataDir, file);
         if (fs.existsSync(src)) await fs.promises.copyFile(src, dest);
       }
-      const settingsManager = new ElectronSettingsManager({ dataDir });
       await settingsManager.init();
       const feedConfig = await settingsManager.getFeedConfig();
       if (feedManager) feedManager.config = feedConfig;
@@ -369,15 +346,11 @@ function registerIpcHandlers() {
   });
 
   ipcMain.handle('get-ui-settings', async () => {
-    const dataDir = getDataDir();
-    const settingsManager = new ElectronSettingsManager({ dataDir });
     return await settingsManager.getUiSettings();
   });
 
   ipcMain.handle('save-ui-settings', async (event, settings) => {
     try {
-      const dataDir = getDataDir();
-      const settingsManager = new ElectronSettingsManager({ dataDir });
       await settingsManager.saveUiSettings(settings);
       return { success: true };
     } catch (error) {
@@ -420,8 +393,6 @@ app.whenReady().then(async () => {
     // 起動時にバックグラウンドでフィード取得を開始
     if (scraper) {
       console.log('[Main] Starting background initial fetch...');
-      const dataDir = getDataDir();
-      const settingsManager = new ElectronSettingsManager({ dataDir });
       settingsManager.getInterests().then(interests => {
         scraper.fetchAndProcessArticlesWithFallback(interests).then(articles => {
           console.log(`[Main] Initial fetch completed. ${articles.length} articles found.`);

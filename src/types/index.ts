@@ -1,3 +1,11 @@
+import type { 
+  InterestCategory as SchemaInterestCategory, 
+  Interests as SchemaInterests, 
+  FeedConfig as SchemaFeedConfig, 
+  Skill as SchemaSkill,
+  UiSettings as SchemaUiSettings
+} from '../models/Schemas';
+
 export interface Article {
   title: string;
   link: string;
@@ -11,60 +19,17 @@ export interface Article {
   language: string;
 }
 
-export interface InterestCategory {
-  emoji: string;
-  brands: string[];
-  keywords: string[];
-  score: number;
-  reason?: string;
-}
-
-export interface Skill {
-  id: string;
-  name: string;
-  description: string;
-  agent: string;
-  type: 'tool' | 'action' | 'logic';
-  enabled: boolean;
-}
-
-export interface Interests {
-  categories: { [key: string]: InterestCategory };
-  skills?: Skill[];
-  learned_keywords?: {
-    [keyword: string]: {
-      category: string;
-      reason: string;
-      detectedAt: string;
-      type?: 'emerging' | 'breakthrough' | 'niche' | 'mainstream';
-      confidence?: number;
-      context?: string;
-    };
-  };
-  lastUpdated?: number;
-}
-
-export interface FeedGroup {
-  active: string[];
-  pool: string[];
-  failures: { [url: string]: number };
-}
-
-export interface FeedConfig {
-  [category: string]: FeedGroup;
-}
+export type InterestCategory = SchemaInterestCategory;
+export type Interests = SchemaInterests;
+export type FeedConfig = SchemaFeedConfig;
+export type Skill = SchemaSkill;
+export type UiSettings = SchemaUiSettings;
 
 export interface NexusSettings {
   interests: Interests;
-  feed_urls: FeedConfig;
+  feedConfig?: FeedConfig;
+  feed_urls?: FeedConfig; // Legacy support
   lastUpdated?: string | number;
-}
-
-export interface UiSettings {
-  jaOnly: boolean;
-  viewMode: 'grid' | 'list' | 'compact';
-  hideImages: boolean;
-  isInitialized: boolean;
 }
 
 export interface AgentStatus {

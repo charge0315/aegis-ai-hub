@@ -2,6 +2,7 @@ import type { FastifyReply } from 'fastify';
 import { ArchitectAgent, type ExecutionPlan } from "../agents/ArchitectAgent";
 import { DiscoveryAgent } from "../agents/DiscoveryAgent";
 import { ArchivistAgent } from "../agents/ArchivistAgent";
+import { CuratorAgent } from "../agents/CuratorAgent";
 import { GeminiService } from "../services/GeminiService";
 
 export interface OrchestratorNotification {
@@ -16,9 +17,8 @@ export interface OrchestratorNotification {
  * NexusOrchestrator: 各専門エージェントを協調させ、自律ワークフローを制御する中枢。
  */
 export class NexusOrchestrator {
-  // private geminiService: GeminiService;
   private architect: ArchitectAgent;
-  // private curator: CuratorAgent;
+  private curator: CuratorAgent;
   private discovery: DiscoveryAgent;
   private archivist: ArchivistAgent;
   
@@ -29,9 +29,8 @@ export class NexusOrchestrator {
    * @param {GeminiService} geminiService - Geminiサービスインスタンス
    */
   constructor(geminiService: GeminiService) {
-    // this.geminiService = geminiService;
     this.architect = new ArchitectAgent(geminiService);
-    // this.curator = new CuratorAgent(geminiService);
+    this.curator = new CuratorAgent(geminiService);
     this.discovery = new DiscoveryAgent(geminiService);
     this.archivist = new ArchivistAgent(geminiService);
   }
@@ -43,7 +42,7 @@ export class NexusOrchestrator {
     this.architect.updateApiKey(apiKey);
     this.discovery.updateApiKey(apiKey);
     this.archivist.updateApiKey(apiKey);
-    // this.curator.updateApiKey(apiKey);
+    this.curator.updateApiKey(apiKey);
   }
 
   /**
@@ -104,10 +103,10 @@ export class NexusOrchestrator {
           agentId: id
         });
 
-        let result: any;
+        let result: unknown;
         switch (step.agent) {
           case "Curator":
-            // Use this.curator if needed, but for now we just return a message
+            // 実際の実装に合わせて interests を渡す必要があるが、ここではデモとして固定メッセージ
             result = { message: "Curated 10 high-quality articles based on interests." };
             break;
           case "Discovery":
@@ -132,9 +131,10 @@ export class NexusOrchestrator {
       // フロントエンドにデータのリフレッシュを促す
       this.notify({ status: "refresh", message: "Updating intelligence feed..." });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : String(error);
       console.error("[NexusOrchestrator] Error:", error);
-      this.notify({ status: "error", message: `エラーが発生しました: ${error.message}` });
+      this.notify({ status: "error", message: `エラーが発生しました: ${msg}` });
     } finally {
       this.isRunning = false;
       // 全てのエージェントをidleに戻す
