@@ -63243,7 +63243,7 @@ var init_GeminiService = __esm({
 
 **\u91CD\u8981\u30EB\u30FC\u30EB:**
 - \u51FA\u529B\u30AB\u30C6\u30B4\u30EA\u30FC\u6570\u306F\u3010\u5FC5\u305A\u6B63\u78BA\u306B${targetCount}\u500B\u3011\u3002
-${language === "en" ? "- **\u7FFB\u8A33\u306E\u5B9F\u884C**: \u65E2\u5B58\u306E\u30AB\u30C6\u30B4\u30EA\u30FC\u540D\u3001\u30D6\u30E9\u30F3\u30C9\u540D\u3001\u30AD\u30FC\u30EF\u30FC\u30C9\u306B\u3064\u3044\u3066\u3001\u7FFB\u8A33\u53EF\u80FD\u306A\u4E00\u822C\u540D\u8A5E\u3084\u7528\u8A9E\u306F\u5168\u3066\u81EA\u7136\u306A\u82F1\u8A9E\u306B\u7FFB\u8A33\u3057\u3066\u51FA\u529B\u3057\u3066\u304F\u3060\u3055\u3044\uFF08\u56FA\u6709\u306E\u30D6\u30E9\u30F3\u30C9\u540D\u306A\u3069\u306F\u7DAD\u6301\uFF09\u3002\u65E2\u5B58\u306E\u8981\u7D20\u306F\u4E00\u3064\u3082\u524A\u9664\u305B\u305A\u3001\u5FC5\u305A\u82F1\u8A33\uFF08\u307E\u305F\u306F\u305D\u306E\u307E\u307E\uFF09\u3057\u305F\u4E0A\u3067\u65B0\u30AB\u30C6\u30B4\u30EA\u30FC\u306B\u5272\u308A\u5F53\u3066\u3066\u304F\u3060\u3055\u3044\u3002" : "- **\u65E2\u5B58\u306E\u30D6\u30E9\u30F3\u30C9\u3068\u30AD\u30FC\u30EF\u30FC\u30C9\u306F\u7D76\u5BFE\u306B\u5909\u66F4\u30FB\u524A\u9664\u305B\u305A\u3001\u5FC5\u305A\u65B0\u30AB\u30C6\u30B4\u30EA\u30FC\u306E\u3044\u305A\u308C\u304B\u306B\u542B\u3081\u3066\u304F\u3060\u3055\u3044\u3002"}
+- **\u65E2\u5B58\u306E\u30D6\u30E9\u30F3\u30C9\u3068\u30AD\u30FC\u30EF\u30FC\u30C9\u306F\u7D76\u5BFE\u306B\u5909\u66F4\u30FB\u524A\u9664\u305B\u305A\u3001\u5FC5\u305A\u65B0\u30AB\u30C6\u30B4\u30EA\u30FC\u306E\u3044\u305A\u308C\u304B\u306B\u542B\u3081\u3066\u304F\u3060\u3055\u3044\u3002**
 - \u65B0\u898F\u63D0\u6848\u306E\u30D6\u30E9\u30F3\u30C9/\u30AD\u30FC\u30EF\u30FC\u30C9\u306F\u3001\u65E2\u5B58\u306E\u3082\u306E\u3068\u306F\u5225\u306B\u65B0\u3057\u304F\u300C\u7D5E\u308A\u51FA\u3057\u3066\u300D\u8FFD\u52A0\u3057\u3066\u304F\u3060\u3055\u3044\u3002
 - **\u3010\u7DB2\u7F85\u6027\u306E\u4FDD\u8A3C\u3011: \u5404\u30AB\u30C6\u30B4\u30EA\u30FC\u306B\u5BFE\u3057\u3066\u5FC5\u305A\u65B0\u898F\u30BD\u30FC\u30B9\u3092\u63D0\u6848\u3057\u3066\u304F\u3060\u3055\u3044\u3002\u9069\u5207\u306A${language === "ja" ? "\u65E5\u672C\u8A9E" : "\u82F1\u8A9E"}\u30BD\u30FC\u30B9\u304C\u306A\u3044\u5834\u5408\u306F\u3001\u4E16\u754C\u7684\u6A29\u5A01\u306E\u82F1\u8A9E\u30BD\u30FC\u30B9\u3084\u3001\u56FD\u5185\u5927\u624B\u30E1\u30C7\u30A3\u30A2\u306E\u95A2\u9023\u30D5\u30A3\u30FC\u30C9\u3092\u5FC5\u305A\u5272\u308A\u5F53\u3066\u3066\u304F\u3060\u3055\u3044\u30020\u4EF6\u306E\u63D0\u6848\u306F\u8A8D\u3081\u3089\u308C\u307E\u305B\u3093\u3002**
 
@@ -63509,6 +63509,52 @@ ${JSON.stringify(articles.slice(0, 30).map((a) => ({ title: a.title, desc: a.des
 \u65E5\u672C\u8A9E\u3067\u56DE\u7B54\u3057\u3066\u304F\u3060\u3055\u3044\u3002
 `;
         return await this.generateStructured(prompt, schema);
+      }
+      /**
+       * Interests の内容（カテゴリ名、ブランド、キーワード）を英語に翻訳します。
+       */
+      async translateInterests(interests) {
+        const schema = {
+          type: SchemaType.OBJECT,
+          properties: {
+            categories: {
+              type: SchemaType.ARRAY,
+              description: "\u7FFB\u8A33\u3055\u308C\u305F\u30AB\u30C6\u30B4\u30EA\u306E\u30EA\u30B9\u30C8",
+              items: {
+                type: SchemaType.OBJECT,
+                properties: {
+                  originalName: { type: SchemaType.STRING, description: "\u5143\u306E\u65E5\u672C\u8A9E\u306E\u30AB\u30C6\u30B4\u30EA\u540D\uFF08\u30AD\u30FC\u3068\u3057\u3066\u4F7F\u7528\uFF09" },
+                  name: { type: SchemaType.STRING, description: "\u82F1\u8A9E\u306B\u7FFB\u8A33\u3055\u308C\u305F\u30AB\u30C6\u30B4\u30EA\u540D" },
+                  emoji: { type: SchemaType.STRING, description: "\u30AB\u30C6\u30B4\u30EA\u306E\u7D75\u6587\u5B57\uFF08\u5909\u66F4\u306A\u3057\uFF09" },
+                  brands: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: "\u82F1\u8A9E\u306B\u7FFB\u8A33\u3055\u308C\u305F\u30D6\u30E9\u30F3\u30C9\u540D\uFF08\u56FA\u6709\u540D\u8A5E\u306F\u7DAD\u6301\uFF09" },
+                  keywords: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: "\u82F1\u8A9E\u306B\u7FFB\u8A33\u3055\u308C\u305F\u30AD\u30FC\u30EF\u30FC\u30C9" },
+                  score: { type: SchemaType.NUMBER, description: "\u91CD\u8981\u5EA6\uFF08\u5909\u66F4\u306A\u3057\uFF09" },
+                  reason: { type: SchemaType.STRING, description: "\u82F1\u8A9E\u306B\u7FFB\u8A33\u3055\u308C\u305F\u7406\u7531" }
+                },
+                required: ["originalName", "name", "emoji", "brands", "keywords", "score", "reason"]
+              }
+            }
+          },
+          required: ["categories"]
+        };
+        const prompt = `
+Translate the following 'categories' data into natural English.
+Keep proper nouns (like specific brand names or product names) as they are, but translate general terms and descriptions into English.
+Return an array of categories, where 'originalName' is the original Japanese category name (the key from the input JSON), and the rest of the fields are translated.
+
+JSON DATA:
+${JSON.stringify(interests.categories, null, 2)}
+`;
+        const result = await this.generateStructured(prompt, schema);
+        const translatedCategories = {};
+        for (const cat of result.categories) {
+          const { originalName, ...rest } = cat;
+          translatedCategories[originalName] = rest;
+        }
+        return {
+          ...interests,
+          categories: translatedCategories
+        };
       }
     };
   }
@@ -133006,6 +133052,16 @@ function registerIpcHandlers() {
       return restructured;
     } catch (error51) {
       console.error("Failed to restructure categories:", error51);
+      throw error51;
+    }
+  });
+  ipcMain.handle("translate-interests", async (event, interests) => {
+    try {
+      const apiKey = await settingsManager.getApiKey();
+      geminiService.updateApiKey(apiKey);
+      return await geminiService.translateInterests(interests);
+    } catch (error51) {
+      console.error("Failed to translate interests:", error51);
       throw error51;
     }
   });

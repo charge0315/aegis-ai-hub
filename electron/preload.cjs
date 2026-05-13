@@ -67,7 +67,7 @@ contextBridge.exposeInMainWorld('nexusApi', {
   /**
    * Interestsの内容（カテゴリ名、キーワード等）を英語に翻訳します。
    */
-  translateInterests: (interests) => ipcRenderer.invoke('translate-interests', interests),
+  translateInterests: (settings) => ipcRenderer.invoke('translate-interests', settings),
 
   /**
    * 最新記事から新しいトレンドを探索します。

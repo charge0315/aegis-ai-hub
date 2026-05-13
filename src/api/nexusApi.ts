@@ -114,14 +114,14 @@ export const nexusApi = {
     return await res.json();
   },
 
-  async translateInterests(interests: Interests): Promise<Interests> {
+  async translateInterests(settings: NexusSettings): Promise<{ interests: Interests; feedConfig: FeedConfig }> {
     if (window.nexusApi) {
-      return await window.nexusApi.translateInterests(interests);
+      return await window.nexusApi.translateInterests(settings);
     }
     const res = await fetch(`${BACKEND_URL}/api/v5/translate-interests`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(interests)
+      body: JSON.stringify(settings)
     });
     return await res.json();
   },

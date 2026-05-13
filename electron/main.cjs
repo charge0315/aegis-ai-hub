@@ -294,11 +294,11 @@ function registerIpcHandlers() {
     }
   });
 
-  ipcMain.handle('translate-interests', async (event, interests) => {
+  ipcMain.handle('translate-interests', async (event, settings) => {
     try {
       const apiKey = await settingsManager.getApiKey();
       geminiService.updateApiKey(apiKey);
-      return await geminiService.translateInterests(interests);
+      return await geminiService.translateInterests(settings.interests, settings.feedConfig);
     } catch (error) {
       console.error('Failed to translate interests:', error);
       throw error;

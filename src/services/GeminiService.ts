@@ -639,9 +639,9 @@ ${JSON.stringify(articles.slice(0, 30).map(a => ({ title: a.title, desc: a.desc 
   }
 
   /**
-   * Interests の内容（カテゴリ名、ブランド、キーワード）を英語に翻訳します。
+   * Interests の内容（カテゴリ名、ブランド、キーワード）を英語に翻訳し、feedConfig のキーも同期します。
    */
-  async translateInterests(interests: Interests): Promise<Interests> {
+  async translateInterests(interests: Interests, feedConfig: FeedConfig): Promise<{ interests: Interests, feedConfig: FeedConfig }> {
     const schema: ResponseSchema = {
       type: SchemaType.OBJECT,
       properties: {
@@ -652,7 +652,7 @@ ${JSON.stringify(articles.slice(0, 30).map(a => ({ title: a.title, desc: a.desc 
             type: SchemaType.OBJECT,
             properties: {
               originalName: { type: SchemaType.STRING, description: "元の日本語のカテゴリ名（キーとして使用）" },
-              name: { type: SchemaType.STRING, description: "英語に翻訳されたカテゴリ名" },
+              name: { type: SchemaType.STRING, description: "英語に翻訳された新しいカテゴリ名" },
               emoji: { type: SchemaType.STRING, description: "カテゴリの絵文字（変更なし）" },
               brands: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: "英語に翻訳されたブランド名（固有名詞は維持）" },
               keywords: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: "英語に翻訳されたキーワード" },
@@ -675,17 +675,28 @@ JSON DATA:
 ${JSON.stringify(interests.categories, null, 2)}
 `;
 
-    const result = await this.generateStructured<{ categories: Array<InterestCategory & { originalName: string }> }>(prompt, schema);
+    const result = await this.generateStructured<{ categories: Array<InterestCategory & { originalName: string, name: string }> }>(prompt, schema);
     
     const translatedCategories: Record<string, InterestCategory> = {};
+    const translatedFeedConfig: FeedConfig = {};
+
     for (const cat of result.categories) {
-      const { originalName, ...rest } = cat;
-      translatedCategories[originalName] = rest;
+      const { originalName, name, ...rest } = cat;
+      translatedCategories[name] = rest;
+      
+      if (feedConfig[originalName]) {
+        translatedFeedConfig[name] = feedConfig[originalName];
+      } else {
+        translatedFeedConfig[name] = { active: [], pool: [], failures: {} };
+      }
     }
 
     return {
-      ...interests,
-      categories: translatedCategories
+      interests: {
+        ...interests,
+        categories: translatedCategories
+      },
+      feedConfig: translatedFeedConfig
     };
   }
 }

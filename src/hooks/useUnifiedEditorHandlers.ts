@@ -214,8 +214,8 @@ export function useUnifiedEditorHandlers({
         if (needsTranslation) {
           setIsTranslating(true);
           try {
-            const translatedInterests = await nexusApi.translateInterests(draftToSave.interests);
-            draftToSave = { ...draftToSave, interests: translatedInterests };
+            const translatedResult = await nexusApi.translateInterests(draftToSave);
+            draftToSave = { ...draftToSave, interests: translatedResult.interests, feedConfig: translatedResult.feedConfig };
             setDraft(draftToSave); // Update the local state with translated data
           } catch (e) {
             console.error('Translation failed before save', e);
