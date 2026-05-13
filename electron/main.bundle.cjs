@@ -63023,6 +63023,11 @@ var init_GeminiService = __esm({
           }
         } catch (error51) {
           const errorMessage = error51 instanceof Error ? error51.message : String(error51);
+          const isQuotaError = errorMessage.includes("429") || errorMessage.toLowerCase().includes("exhausted") || errorMessage.toLowerCase().includes("quota") || error51 && typeof error51 === "object" && error51.status === 429;
+          if (isQuotaError) {
+            console.error(`[GeminiService] Quota Exceeded detected for model ${modelName}: ${errorMessage}`);
+            throw new Error("QUOTA_EXCEEDED", { cause: error51 });
+          }
           console.error(`[GeminiService] Error with model ${modelName}: ${errorMessage}`);
           if (modelName === this.highReasoningModelName) {
             console.warn(`[GeminiService] ${modelName} failed. Falling back to primary model: ${this.primaryModelName}`);
@@ -63511,9 +63516,9 @@ ${JSON.stringify(articles.slice(0, 30).map((a) => ({ title: a.title, desc: a.des
         return await this.generateStructured(prompt, schema);
       }
       /**
-       * Interests の内容（カテゴリ名、ブランド、キーワード）を英語に翻訳します。
+       * Interests の内容（カテゴリ名、ブランド、キーワード）を英語に翻訳し、feedConfig のキーも同期します。
        */
-      async translateInterests(interests) {
+      async translateInterests(interests, feedConfig) {
         const schema = {
           type: SchemaType.OBJECT,
           properties: {
@@ -63523,13 +63528,13 @@ ${JSON.stringify(articles.slice(0, 30).map((a) => ({ title: a.title, desc: a.des
               items: {
                 type: SchemaType.OBJECT,
                 properties: {
-                  originalName: { type: SchemaType.STRING, description: "\u5143\u306E\u65E5\u672C\u8A9E\u306E\u30AB\u30C6\u30B4\u30EA\u540D\uFF08\u30AD\u30FC\u3068\u3057\u3066\u4F7F\u7528\uFF09" },
-                  name: { type: SchemaType.STRING, description: "\u82F1\u8A9E\u306B\u7FFB\u8A33\u3055\u308C\u305F\u30AB\u30C6\u30B4\u30EA\u540D" },
-                  emoji: { type: SchemaType.STRING, description: "\u30AB\u30C6\u30B4\u30EA\u306E\u7D75\u6587\u5B57\uFF08\u5909\u66F4\u306A\u3057\uFF09" },
-                  brands: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: "\u82F1\u8A9E\u306B\u7FFB\u8A33\u3055\u308C\u305F\u30D6\u30E9\u30F3\u30C9\u540D\uFF08\u56FA\u6709\u540D\u8A5E\u306F\u7DAD\u6301\uFF09" },
-                  keywords: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: "\u82F1\u8A9E\u306B\u7FFB\u8A33\u3055\u308C\u305F\u30AD\u30FC\u30EF\u30FC\u30C9" },
-                  score: { type: SchemaType.NUMBER, description: "\u91CD\u8981\u5EA6\uFF08\u5909\u66F4\u306A\u3057\uFF09" },
-                  reason: { type: SchemaType.STRING, description: "\u82F1\u8A9E\u306B\u7FFB\u8A33\u3055\u308C\u305F\u7406\u7531" }
+                  originalName: { type: SchemaType.STRING, description: "The original category name in Japanese (used as key mapping)" },
+                  name: { type: SchemaType.STRING, description: "The category name translated into natural, professional English" },
+                  emoji: { type: SchemaType.STRING, description: "The category emoji (keep unchanged)" },
+                  brands: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: "Brand names translated into English (keep specific product names as is)" },
+                  keywords: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: "Keywords and terms translated into natural English" },
+                  score: { type: SchemaType.NUMBER, description: "Priority score (keep unchanged)" },
+                  reason: { type: SchemaType.STRING, description: "Brief explanation of the translation in English" }
                 },
                 required: ["originalName", "name", "emoji", "brands", "keywords", "score", "reason"]
               }
@@ -63538,22 +63543,36 @@ ${JSON.stringify(articles.slice(0, 30).map((a) => ({ title: a.title, desc: a.des
           required: ["categories"]
         };
         const prompt = `
-Translate the following 'categories' data into natural English.
-Keep proper nouns (like specific brand names or product names) as they are, but translate general terms and descriptions into English.
-Return an array of categories, where 'originalName' is the original Japanese category name (the key from the input JSON), and the rest of the fields are translated.
+Translate the following 'categories' data from Japanese to natural and professional English.
 
-JSON DATA:
+CRITICAL INSTRUCTIONS:
+1. Translate CATEGORY NAMES (the keys in the input) to professional English terms.
+2. Translate BRANDS and KEYWORDS into natural English. Keep specific proper nouns (e.g., product names) as they are, but translate general terms.
+3. For each category, provide the mapping from 'originalName' (Japanese key) to 'name' (New English name).
+4. The output must be a valid JSON object following the provided schema.
+
+INPUT JSON DATA:
 ${JSON.stringify(interests.categories, null, 2)}
 `;
         const result = await this.generateStructured(prompt, schema);
+        console.log(`[GeminiService] Translation result received. Categories count: ${result.categories.length}`);
         const translatedCategories = {};
+        const translatedFeedConfig = {};
         for (const cat of result.categories) {
-          const { originalName, ...rest } = cat;
-          translatedCategories[originalName] = rest;
+          const { originalName, name, ...rest } = cat;
+          translatedCategories[name] = rest;
+          if (feedConfig[originalName]) {
+            translatedFeedConfig[name] = feedConfig[originalName];
+          } else {
+            translatedFeedConfig[name] = { active: [], pool: [], failures: {} };
+          }
         }
         return {
-          ...interests,
-          categories: translatedCategories
+          interests: {
+            ...interests,
+            categories: translatedCategories
+          },
+          feedConfig: translatedFeedConfig
         };
       }
     };
@@ -132109,6 +132128,17 @@ var init_NexusRouter = __esm({
           reply.status(500).send({ error: "Failed to restructure categories", details: msg });
         }
       });
+      fastify2.post("/translate-interests", async (request, reply) => {
+        try {
+          const { interests, feedConfig } = request.body;
+          const apiKey = await settingsManager2.getApiKey();
+          scraper2.updateApiKey(apiKey);
+          return await scraper2.geminiService.translateInterests(interests, feedConfig);
+        } catch (error51) {
+          const msg = error51 instanceof Error ? error51.message : String(error51);
+          reply.status(500).send({ error: "Failed to translate interests", details: msg });
+        }
+      });
       fastify2.post("/discover-trends", async (_request, reply) => {
         try {
           const apiKey = await settingsManager2.getApiKey();
@@ -133055,11 +133085,11 @@ function registerIpcHandlers() {
       throw error51;
     }
   });
-  ipcMain.handle("translate-interests", async (event, interests) => {
+  ipcMain.handle("translate-interests", async (event, settings) => {
     try {
       const apiKey = await settingsManager.getApiKey();
       geminiService.updateApiKey(apiKey);
-      return await geminiService.translateInterests(interests);
+      return await geminiService.translateInterests(settings.interests, settings.feedConfig);
     } catch (error51) {
       console.error("Failed to translate interests:", error51);
       throw error51;

@@ -83,6 +83,20 @@ export class GeminiService {
       }
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);
+      
+      // クォータ制限（429 Too Many Requests / Resource Exhausted）を検知
+      const isQuotaError = 
+        errorMessage.includes("429") || 
+        errorMessage.toLowerCase().includes("exhausted") ||
+        errorMessage.toLowerCase().includes("quota") ||
+        (error && typeof error === 'object' && (error as any).status === 429);
+
+      if (isQuotaError) {
+        console.error(`[GeminiService] Quota Exceeded detected for model ${modelName}: ${errorMessage}`);
+        // フロントエンドで容易に識別できるよう、特定のエラーコードを投げる
+        throw new Error("QUOTA_EXCEEDED", { cause: error });
+      }
+
       console.error(`[GeminiService] Error with model ${modelName}: ${errorMessage}`);
       
       // 階層型フォールバック: Pro -> Flash -> GA 安定版(2.5) -> 旧安定版(1.5)
@@ -651,13 +665,13 @@ ${JSON.stringify(articles.slice(0, 30).map(a => ({ title: a.title, desc: a.desc 
           items: {
             type: SchemaType.OBJECT,
             properties: {
-              originalName: { type: SchemaType.STRING, description: "元の日本語のカテゴリ名（キーとして使用）" },
-              name: { type: SchemaType.STRING, description: "英語に翻訳された新しいカテゴリ名" },
-              emoji: { type: SchemaType.STRING, description: "カテゴリの絵文字（変更なし）" },
-              brands: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: "英語に翻訳されたブランド名（固有名詞は維持）" },
-              keywords: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: "英語に翻訳されたキーワード" },
-              score: { type: SchemaType.NUMBER, description: "重要度（変更なし）" },
-              reason: { type: SchemaType.STRING, description: "英語に翻訳された理由" }
+              originalName: { type: SchemaType.STRING, description: "The original category name in Japanese (used as key mapping)" },
+              name: { type: SchemaType.STRING, description: "The category name translated into natural, professional English" },
+              emoji: { type: SchemaType.STRING, description: "The category emoji (keep unchanged)" },
+              brands: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: "Brand names translated into English (keep specific product names as is)" },
+              keywords: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: "Keywords and terms translated into natural English" },
+              score: { type: SchemaType.NUMBER, description: "Priority score (keep unchanged)" },
+              reason: { type: SchemaType.STRING, description: "Brief explanation of the translation in English" }
             },
             required: ["originalName", "name", "emoji", "brands", "keywords", "score", "reason"]
           }
@@ -667,15 +681,21 @@ ${JSON.stringify(articles.slice(0, 30).map(a => ({ title: a.title, desc: a.desc 
     };
 
     const prompt = `
-Translate the following 'categories' data into natural English.
-Keep proper nouns (like specific brand names or product names) as they are, but translate general terms and descriptions into English.
-Return an array of categories, where 'originalName' is the original Japanese category name (the key from the input JSON), and the rest of the fields are translated.
+Translate the following 'categories' data from Japanese to natural and professional English.
 
-JSON DATA:
+CRITICAL INSTRUCTIONS:
+1. Translate CATEGORY NAMES (the keys in the input) to professional English terms.
+2. Translate BRANDS and KEYWORDS into natural English. Keep specific proper nouns (e.g., product names) as they are, but translate general terms.
+3. For each category, provide the mapping from 'originalName' (Japanese key) to 'name' (New English name).
+4. The output must be a valid JSON object following the provided schema.
+
+INPUT JSON DATA:
 ${JSON.stringify(interests.categories, null, 2)}
 `;
 
     const result = await this.generateStructured<{ categories: Array<InterestCategory & { originalName: string, name: string }> }>(prompt, schema);
+    
+    console.log(`[GeminiService] Translation result received. Categories count: ${result.categories.length}`);
     
     const translatedCategories: Record<string, InterestCategory> = {};
     const translatedFeedConfig: FeedConfig = {};

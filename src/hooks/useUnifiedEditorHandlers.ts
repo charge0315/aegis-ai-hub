@@ -94,7 +94,11 @@ export function useUnifiedEditorHandlers({
     } catch (err) {
       console.error('Failed to discover trends:', err);
       const detail = err instanceof Error ? err.message : String(err);
-      await customAlert('Discovery Failed', `An error occurred during trend analysis.\n\nTechnical Detail: ${detail.substring(0, 100)}...`, 'error');
+      if (detail.includes('QUOTA_EXCEEDED')) {
+        await customAlert('Caution', t.handlers.quotaExceeded, 'warning');
+      } else {
+        await customAlert('Discovery Failed', `An error occurred during trend analysis.\n\nTechnical Detail: ${detail.substring(0, 100)}...`, 'error');
+      }
     } finally {
       setIsDiscovering(false);
     }
@@ -177,6 +181,10 @@ export function useUnifiedEditorHandlers({
       await customAlert('Suggestions Ready', t.handlers.suggestionsReady.replace('{name}', name), 'success');
     } catch (err) {
       console.error('Failed to get suggestions:', err);
+      const detail = err instanceof Error ? err.message : String(err);
+      if (detail.includes('QUOTA_EXCEEDED')) {
+        await customAlert('Caution', t.handlers.quotaExceeded, 'warning');
+      }
       setDraft(prev => ({
         ...prev,
         interests: {
@@ -214,9 +222,19 @@ export function useUnifiedEditorHandlers({
         if (needsTranslation) {
           setIsTranslating(true);
           try {
+            console.log('[handleSave] Starting automatic translation from Japanese to English...');
             const translatedResult = await nexusApi.translateInterests(draftToSave);
-            draftToSave = { ...draftToSave, interests: translatedResult.interests, feedConfig: translatedResult.feedConfig };
-            setDraft(draftToSave); // Update the local state with translated data
+            console.log('[handleSave] Translation successful:', translatedResult);
+            
+            // 重要: 翻訳後のデータを draftToSave に確実に反映
+            draftToSave = { 
+              ...draftToSave, 
+              interests: translatedResult.interests, 
+              feedConfig: translatedResult.feedConfig 
+            };
+            
+            // UI上のドラフト状態も更新
+            setDraft(draftToSave);
           } catch (e) {
             console.error('Translation failed before save', e);
             // Ignore error and save original if translation fails?
@@ -406,7 +424,11 @@ export function useUnifiedEditorHandlers({
     } catch (err: unknown) {
       console.error(`Failed to get AI suggestions for ${field}:`, err);
       const errorMsg = err instanceof Error ? err.message : String(err);
-      await customAlert('AI Suggestion Failed', t.handlers.aiSuggestFailed.replace('{message}', errorMsg), 'error');
+      if (errorMsg.includes('QUOTA_EXCEEDED')) {
+        await customAlert('Caution', t.handlers.quotaExceeded, 'warning');
+      } else {
+        await customAlert('AI Suggestion Failed', t.handlers.aiSuggestFailed.replace('{message}', errorMsg), 'error');
+      }
     } finally {
       if (field === 'brands') setIsSuggestingBrands(false);
       else setIsSuggestingKeywords(false);
@@ -450,7 +472,11 @@ export function useUnifiedEditorHandlers({
       console.error('Restructure failed:', err);
       setRestructureStep(null);
       const errorMsg = err instanceof Error ? err.message : String(err);
-      await customAlert('Restructure Failed', t.handlers.restructureFailed.replace('{message}', errorMsg), 'error');
+      if (errorMsg.includes('QUOTA_EXCEEDED')) {
+        await customAlert('Caution', t.handlers.quotaExceeded, 'warning');
+      } else {
+        await customAlert('Restructure Failed', t.handlers.restructureFailed.replace('{message}', errorMsg), 'error');
+      }
     } finally {
       setIsSuggesting(false);
     }

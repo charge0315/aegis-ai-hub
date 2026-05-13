@@ -167,7 +167,8 @@ export const translations = {
       restructureFailed: 'エラーが発生しました: {message}',
       resetConfirm: 'これによりすべてのカスタムカテゴリが消去され、工場出荷時の状態に復元されます。続行しますか？',
       resetSuccess: 'プロファイルがデフォルトに復元されました。再読み込み中...',
-      resetFailed: 'デフォルト設定の復元に失敗しました。'
+      resetFailed: 'デフォルト設定の復元に失敗しました。',
+      quotaExceeded: 'Gemini APIの利用制限（トークン上限）に達しました。しばらく時間を置いてから再度お試しいただくか、APIキーのプランを確認してください。'
     }
   },
   en: {
@@ -342,7 +343,8 @@ export const translations = {
       restructureFailed: 'An error occurred: {message}',
       resetConfirm: 'This will erase all custom categories and restore factory state. Proceed?',
       resetSuccess: 'Profile restored to defaults. Reloading...',
-      resetFailed: 'Failed to restore default settings.'
+      resetFailed: 'Failed to restore default settings.',
+      quotaExceeded: 'Gemini API quota limit reached. Please wait a moment before trying again or check your API key plan.'
     }
   }
 };
