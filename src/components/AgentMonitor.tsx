@@ -3,17 +3,20 @@ import { motion } from 'framer-motion';
 import { Cpu, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { GlassPanel } from './GlassPanel';
 import type { AgentStatus } from '../types';
+import { useTranslation } from '../hooks/useTranslationHook';
+
 interface AgentMonitorProps {
   agents: AgentStatus[];
   compact?: boolean;
 }
 
 export const AgentMonitor: React.FC<AgentMonitorProps> = ({ agents, compact }) => {
+  const { t } = useTranslation();
   if (compact) {
     return (
       <div className="flex flex-col items-center gap-4 py-2">
         {agents.map((agent) => (
-          <div key={agent.id} title={`${agent.name}: ${agent.lastMessage || 'Idle'}`} className="relative group">
+          <div key={agent.id} title={`${agent.name}: ${agent.lastMessage || t.agent.waiting}`} className="relative group">
             <StatusIcon status={agent.status} size={18} />
             {agent.status === 'working' && (
               <span className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full animate-ping" />
@@ -26,12 +29,10 @@ export const AgentMonitor: React.FC<AgentMonitorProps> = ({ agents, compact }) =
 
   return (
     <GlassPanel className="p-4 flex flex-col gap-4">
-// ...
-
       <div className="flex items-center justify-between border-b border-white/5 pb-2">
         <h2 className="text-xs font-bold uppercase tracking-widest text-slate-400 flex items-center gap-2">
           <Cpu size={14} />
-          Agent Swarm
+          {t.agent.swarm}
         </h2>
         <div className="flex gap-1">
           <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
@@ -66,7 +67,7 @@ export const AgentMonitor: React.FC<AgentMonitorProps> = ({ agents, compact }) =
               />
             </div>
             <p className="text-[10px] text-slate-500 truncate italic">
-              {agent.lastMessage || 'Waiting for instructions...'}
+              {agent.lastMessage || t.agent.waiting}
             </p>
           </div>
         ))}

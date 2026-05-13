@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { nexusApi } from '../api/nexusApi';
 import type { NexusSettings, InterestCategory, Skill, TrendSuggestion, FeedConfig, UiSettings } from '../types';
 import type { DialogType } from '../components/CustomDialog';
+import { useTranslation } from './useTranslationHook';
 
 const DEFAULT_SKILLS: Skill[] = [
   { id: 'rss-fetch', name: 'RSS Fetcher', description: 'Retrieves raw signals from configured sources with deduplication.', agent: 'Discovery', type: 'tool', enabled: true },
@@ -33,6 +34,7 @@ export function useUnifiedEditorHandlers({
   theme,
   setTheme
 }: UseUnifiedEditorHandlersProps) {
+  const { t, language } = useTranslation();
   const [draft, setDraft] = useState<NexusSettings>(currentSettings);
   const [isSaving, setIsSaving] = useState(false);
   const [isSuggesting, setIsSuggesting] = useState(false);
@@ -57,7 +59,7 @@ export function useUnifiedEditorHandlers({
     if (!currentApiKey) {
       const shouldGoToSettings = await customConfirm(
         'API Key Required',
-        'Trend discovery requires a Gemini API Key. Would you like to go to System Settings to configure it?'
+        t.handlers.apiKeyRequired
       );
       if (shouldGoToSettings) {
         setActiveTab('system');
@@ -86,7 +88,7 @@ export function useUnifiedEditorHandlers({
           return { ...prev, interests: { ...prev.interests, learned_keywords: newLearned } };
         });
       } else {
-        await customAlert('No New Trends', 'AI analyzed current feeds but did not find any new significant signals at this time.', 'info');
+        await customAlert('No New Trends', t.handlers.noTrends, 'info');
       }
     } catch (err) {
       console.error('Failed to discover trends:', err);
@@ -133,17 +135,17 @@ export function useUnifiedEditorHandlers({
   }, []);
 
   const handleAddCategory = useCallback(async () => {
-    const name = await customPrompt('New Category', 'Enter a name for the new intelligence category:', '', 'e.g. Quantum Computing');
+    const name = await customPrompt(t.handlers.newCategory, t.handlers.newCategoryPrompt, '', 'e.g. Quantum Computing');
     if (!name) return;
     if (draft.interests.categories[name]) {
-      await customAlert('Category Exists', 'This category already exists in your configuration.', 'warning');
+      await customAlert('Category Exists', t.handlers.categoryExists, 'warning');
       return;
     }
 
     if (!apiKey) {
       const shouldGoToSettings = await customConfirm(
         'API Key Required',
-        'Gemini API Key is not set. AI-powered category generation will be skipped. Would you like to go to System Settings to configure it?'
+        t.handlers.apiKeyRequired
       );
       if (shouldGoToSettings) {
         setActiveTab('system');
@@ -171,7 +173,7 @@ export function useUnifiedEditorHandlers({
         }
       }));
       setSelectedCategory(name);
-      await customAlert('Suggestions Ready', `Gemini has suggested 5 brands and 5 keywords for "${name}".`, 'success');
+      await customAlert('Suggestions Ready', t.handlers.suggestionsReady.replace('{name}', name), 'success');
     } catch (err) {
       console.error('Failed to get suggestions:', err);
       setDraft(prev => ({
@@ -194,15 +196,15 @@ export function useUnifiedEditorHandlers({
     setIsSaving(true);
     try {
       await onSave(draft);
-      await customAlert('Success', 'Configuration saved successfully!', 'success');
+      await customAlert('Success', t.handlers.saveSuccess, 'success');
     } catch (err: unknown) {
       console.error('Save failed:', err);
       const message = err instanceof Error ? err.message : 'Unknown error';
       if (message.includes('CONFLICT')) {
-        const shouldReload = await customConfirm('Sync Conflict', 'The configuration on the server is newer. Would you like to discard your changes and reload the latest version?');
+        const shouldReload = await customConfirm('Sync Conflict', t.handlers.syncConflict);
         if (shouldReload) window.location.reload();
       } else {
-        await customAlert('Save Failed', `Failed to save configuration: ${message}`, 'error');
+        await customAlert('Save Failed', t.handlers.saveFailed.replace('{message}', message), 'error');
       }
     } finally {
       setIsSaving(false);
@@ -217,10 +219,10 @@ export function useUnifiedEditorHandlers({
     setIsSavingApiKey(true);
     try {
       await nexusApi.saveApiKey(apiKey);
-      await customAlert('Success', 'Gemini API Key saved and applied.', 'success');
+      await customAlert('Success', t.handlers.apiKeySuccess, 'success');
     } catch (err) {
       console.error('Failed to save API key:', err);
-      await customAlert('Error', 'Failed to save API key.', 'error');
+      await customAlert('Error', t.handlers.apiKeyFailed, 'error');
     } finally {
       setIsSavingApiKey(false);
     }
@@ -265,33 +267,33 @@ export function useUnifiedEditorHandlers({
   }, []);
 
   const handleAddSkill = useCallback(async () => {
-    const name = await customPrompt('New Skill Name', 'Enter a name for the new agent capability:', '', 'e.g. Code Reviewer');
+    const name = await customPrompt(t.handlers.newSkill, t.handlers.newSkillPrompt, '', 'e.g. Code Reviewer');
     if (!name) return;
-    const description = await customPrompt('Description', `Enter a description for "${name}":`, '', 'What does this skill do?');
+    const description = await customPrompt('Description', t.handlers.skillDesc.replace('{name}', name), '', 'What does this skill do?');
     if (!description) return;
-    const agent = await customPrompt('Target Agent', 'Which agent should possess this skill?', 'Architect', 'Architect, Curator, Discovery, or Archivist');
+    const agent = await customPrompt('Target Agent', t.handlers.skillAgent, 'Architect', 'Architect, Curator, Discovery, or Archivist');
     if (!agent) return;
-    const typePrompt = await customPrompt('Skill Type', 'Enter skill type (tool, action, or logic):', 'tool');
+    const typePrompt = await customPrompt('Skill Type', t.handlers.skillType, 'tool');
     const type = (typePrompt === 'tool' || typePrompt === 'action' || typePrompt === 'logic') ? typePrompt : 'tool';
     const id = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 
     setDraft(prev => {
       const currentSkills = prev.interests.skills || DEFAULT_SKILLS;
       if (currentSkills.find(s => s.id === id)) {
-        customAlert('ID Conflict', 'A skill with a similar name already exists.', 'warning');
+        customAlert('ID Conflict', t.handlers.skillConflict, 'warning');
         return prev;
       }
       const newSkill: Skill = { id, name, description, agent, type, enabled: true };
       return { ...prev, interests: { ...prev.interests, skills: [...currentSkills, newSkill] } };
     });
-    await customAlert('Skill Registered', `Successfully added "${name}" to the ${agent} cluster.`, 'success');
+    await customAlert('Skill Registered', t.handlers.skillSuccess.replace('{name}', name).replace('{agent}', agent), 'success');
   }, [customAlert, customPrompt]);
 
   const handleRenameCategory = useCallback(async (oldName: string) => {
-    const newName = await customPrompt('Rename Category', `Enter a new name for "${oldName}":`, oldName);
+    const newName = await customPrompt('Rename Category', t.handlers.renamePrompt.replace('{oldName}', oldName), oldName);
     if (!newName || newName === oldName) return;
     if (draft.interests.categories[newName]) {
-      await customAlert('Name Conflict', 'A category with this name already exists.', 'error');
+      await customAlert('Name Conflict', t.handlers.nameConflict, 'error');
       return;
     }
     setDraft(prev => {
@@ -315,7 +317,7 @@ export function useUnifiedEditorHandlers({
 
   const handleEditEmoji = useCallback(async (catName: string) => {
     const currentEmoji = draft.interests.categories[catName].emoji;
-    const newEmoji = await customPrompt('Change Emoji', `Enter a new emoji for "${catName}":`, currentEmoji);
+    const newEmoji = await customPrompt('Change Emoji', t.handlers.emojiPrompt.replace('{catName}', catName), currentEmoji);
     if (!newEmoji || newEmoji === currentEmoji) return;
     setDraft(prev => {
       const newCategories = { ...prev.interests.categories };
@@ -325,7 +327,7 @@ export function useUnifiedEditorHandlers({
   }, [customPrompt, draft.interests.categories]);
 
   const handleDeleteCategory = useCallback(async (catName: string) => {
-    const confirmed = await customConfirm('Delete Category', `Are you sure you want to permanently delete the category "${catName}"? All associated brands and keywords will be removed.`);
+    const confirmed = await customConfirm('Delete Category', t.handlers.deleteConfirm.replace('{catName}', catName));
     if (!confirmed) return;
     setDraft(prev => {
       const newCategories = { ...prev.interests.categories };
@@ -352,7 +354,7 @@ export function useUnifiedEditorHandlers({
   const handleAISuggest = useCallback(async (field: 'brands' | 'keywords') => {
     if (!selectedCategory) return;
     if (!apiKey) {
-      const shouldGoToSettings = await customConfirm('API Key Required', 'Gemini API Key is not set. Would you like to go to System Settings to configure it now?');
+      const shouldGoToSettings = await customConfirm('API Key Required', t.handlers.apiKeyRequired);
       if (shouldGoToSettings) setActiveTab('system');
       return;
     }
@@ -368,11 +370,11 @@ export function useUnifiedEditorHandlers({
         newCategories[selectedCategory] = { ...newCategories[selectedCategory], [field]: combined };
         return { ...prev, interests: { ...prev.interests, categories: newCategories } };
       });
-      await customAlert('AI Suggestions Added', `Gemini suggested ${newItems.length} new ${field} for "${selectedCategory}".`, 'success');
+      await customAlert('AI Suggestions Added', t.handlers.aiSuggestSuccess.replace('{count}', String(newItems.length)).replace('{field}', field).replace('{category}', selectedCategory), 'success');
     } catch (err: unknown) {
       console.error(`Failed to get AI suggestions for ${field}:`, err);
       const errorMsg = err instanceof Error ? err.message : String(err);
-      await customAlert('AI Suggestion Failed', `Could not get suggestions from Gemini: ${errorMsg}`, 'error');
+      await customAlert('AI Suggestion Failed', t.handlers.aiSuggestFailed.replace('{message}', errorMsg), 'error');
     } finally {
       if (field === 'brands') setIsSuggestingBrands(false);
       else setIsSuggestingKeywords(false);
@@ -381,25 +383,25 @@ export function useUnifiedEditorHandlers({
 
   const handleRestructure = useCallback(async () => {
     if (!apiKey) {
-      await customAlert('API Key Required', 'Please set your Gemini API key in System Settings first.', 'warning');
+      await customAlert('API Key Required', t.handlers.apiKeyRequiredSimple, 'warning');
       setActiveTab('system');
       return;
     }
-    const countInput = await customPrompt('AI Restructure', 'How many categories would you like to reorganize everything into?', '10', 'Enter a number between 5 and 15');
+    const countInput = await customPrompt('AI Restructure', t.handlers.restructurePrompt, '10', 'Enter a number between 5 and 15');
     if (!countInput) return;
     const targetCount = parseInt(countInput, 10);
     if (isNaN(targetCount) || targetCount < 5 || targetCount > 15) {
-      await customAlert('Invalid Number', 'Please enter a valid number between 5 and 15.', 'error');
+      await customAlert('Invalid Number', t.handlers.restructureInvalid, 'error');
       return;
     }
-    const confirmed = await customConfirm('Deep AI Restructure', `This will completely transform your intelligence profile. AI will reorganize everything into ${targetCount} optimal categories, redistribute your existing feeds, and discover new high-quality sources for each group. Proceed?`);
+    const confirmed = await customConfirm('Deep AI Restructure', t.handlers.restructureConfirm.replace('{count}', String(targetCount)));
     if (!confirmed) return;
 
     setIsSuggesting(true);
-    setRestructureStep(`Phase 1/2: Reorganizing into ${targetCount} Categories...`);
+    setRestructureStep(t.handlers.restructurePhase1.replace('{count}', String(targetCount)));
     try {
-      const restructured = await nexusApi.restructureCategories(targetCount);
-      setRestructureStep('Phase 2/2: Injecting New High-Quality Sources...');
+      const restructured = await nexusApi.restructureCategories(targetCount, language);
+      setRestructureStep(t.handlers.restructurePhase2);
       await new Promise(resolve => setTimeout(resolve, 2000));
       const newDraft: NexusSettings = {
         ...draft,
@@ -408,31 +410,31 @@ export function useUnifiedEditorHandlers({
       };
       setDraft(newDraft);
       setSelectedCategory(Object.keys(restructured.categories)[0] || null);
-      setRestructureStep('Final Phase: Synchronizing with Backend...');
+      setRestructureStep(t.handlers.restructurePhaseFinal);
       await onSave(newDraft);
       setRestructureStep(null);
-      await customAlert('Restructure Complete', 'AI has successfully transformed your intelligence profile. Sync complete.', 'success');
+      await customAlert('Restructure Complete', t.handlers.restructureSuccess, 'success');
     } catch (err: unknown) {
       console.error('Restructure failed:', err);
       setRestructureStep(null);
       const errorMsg = err instanceof Error ? err.message : String(err);
-      await customAlert('Restructure Failed', `An error occurred: ${errorMsg}`, 'error');
+      await customAlert('Restructure Failed', t.handlers.restructureFailed.replace('{message}', errorMsg), 'error');
     } finally {
       setIsSuggesting(false);
     }
   }, [apiKey, customAlert, customConfirm, customPrompt, draft, onSave, setActiveTab]);
 
   const handleResetToDefaults = useCallback(async () => {
-    const confirmed = await customConfirm('Restore Default Profile', 'This will erase all custom categories and restore factory state. Proceed?');
+    const confirmed = await customConfirm('Restore Default Profile', t.handlers.resetConfirm);
     if (!confirmed) return;
     setIsSaving(true);
     try {
       await nexusApi.resetToDefaults();
-      await customAlert('System Reset', 'Profile restored to defaults. Reloading...', 'success');
+      await customAlert('System Reset', t.handlers.resetSuccess, 'success');
       window.location.reload();
     } catch (err) {
       console.error('Reset failed:', err);
-      await customAlert('Reset Failed', 'Failed to restore default settings.', 'error');
+      await customAlert('Reset Failed', t.handlers.resetFailed, 'error');
     } finally {
       setIsSaving(false);
     }

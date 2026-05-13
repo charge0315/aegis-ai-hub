@@ -60,8 +60,9 @@ contextBridge.exposeInMainWorld('nexusApi', {
   /**
    * AIによってカテゴリ全体を整理・再構築します。
    * @param {number} [count] - カテゴリ数
+   * @param {string} [language] - 指定言語
    */
-  restructureCategories: (count) => ipcRenderer.invoke('restructure-categories', count),
+  restructureCategories: (count, language) => ipcRenderer.invoke('restructure-categories', count, language),
 
   /**
    * 最新記事から新しいトレンドを探索します。
@@ -70,8 +71,9 @@ contextBridge.exposeInMainWorld('nexusApi', {
 
   /**
    * 設定を初期状態に戻します。
+   * @param {string} [language] - 指定言語
    */
-  resetToDefaults: () => ipcRenderer.invoke('reset-to-defaults'),
+  resetToDefaults: (language) => ipcRenderer.invoke('reset-to-defaults', language),
 
   /**
    * UI表示設定を取得・保存します。

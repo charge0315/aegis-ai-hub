@@ -19,6 +19,7 @@ import { AIInsightsPanel } from './editors/AIInsightsPanel';
 import { useUnifiedEditorHandlers } from '../hooks/useUnifiedEditorHandlers';
 import type { NexusSettings, UiSettings } from '../types';
 import type { DialogType } from './CustomDialog';
+import { useTranslation } from '../hooks/useTranslationHook';
 
 interface UnifiedEditorProps {
   currentSettings: NexusSettings;
@@ -42,6 +43,7 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
   setTheme
 }) => {
   const [activeTab, setActiveTab] = useState<Tab>('editor');
+  const { t } = useTranslation();
 
   const {
     draft,
@@ -97,13 +99,13 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
         >
           <div className="flex items-center gap-3 text-alert">
             <AlertCircle size={20} />
-            <p className="text-sm font-medium">Gemini API Key is not configured. AI Suggestions and Intelligent Discovery are disabled.</p>
+            <p className="text-sm font-medium">{t.settings.apiKeyAlert}</p>
           </div>
           <button 
             onClick={() => setActiveTab('system')}
             className="px-4 py-1.5 bg-alert text-white text-xs font-bold uppercase rounded-lg shadow-lg shadow-alert/20"
           >
-            Configure Now
+            {t.settings.configureNow}
           </button>
         </motion.div>
       )}
@@ -115,9 +117,9 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
             <div className="p-2 bg-primary/20 rounded-lg text-primary">
               <Settings2 size={24} />
             </div>
-            Nexus Command & Control
+            {t.settings.title}
           </h1>
-          <p className="text-sm text-content-muted mt-1">Configure intelligence parameters, visualize knowledge, and manage agent skills.</p>
+          <p className="text-sm text-content-muted mt-1">{t.settings.subtitle}</p>
         </div>
         
         <div className="flex gap-3">
@@ -128,7 +130,7 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
             title="AI-driven total profile reorganization"
           >
             <LayoutTemplate size={18} className={isSuggesting ? 'animate-pulse' : ''} />
-            AI Restructure
+            {t.settings.aiRestructure}
           </button>
 
           {isDirty && (
@@ -140,7 +142,7 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
               className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-content-muted hover:text-content-base transition-colors"
             >
               <RotateCcw size={16} />
-              Reset Draft
+              {t.settings.reset}
             </motion.button>
           )}
           <button
@@ -150,46 +152,46 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
             className="flex items-center gap-2 px-6 py-2.5 text-sm font-bold bg-primary disabled:bg-surface disabled:text-content-muted text-white rounded-xl transition-all shadow-lg shadow-primary/20 hover:shadow-primary/40 active:scale-95"
           >
             <Save size={18} />
-            {isSaving ? 'Synchronizing...' : isSuggesting ? 'Thinking...' : 'Save Configuration'}
+            {isSaving ? t.settings.saving : isSuggesting ? t.settings.thinking : t.settings.save}
           </button>
         </div>
       </div>
 
       {/* Tabs */}
       <div className="flex border-b border-content-muted/20 gap-8">
-        <TabButton 
+         <TabButton 
           active={activeTab === 'editor'} 
           onClick={() => setActiveTab('editor')} 
           icon={<Edit3 size={18} />} 
-          label="Nexus Editor" 
+          label={t.settings.tabs.editor} 
           data-testid="tab-editor"
         />
         <TabButton 
           active={activeTab === 'graph'} 
           onClick={() => setActiveTab('graph')} 
           icon={<Network size={18} />} 
-          label="Knowledge Graph" 
+          label={t.settings.tabs.graph} 
           data-testid="tab-graph"
         />
         <TabButton 
           active={activeTab === 'skills'} 
           onClick={() => setActiveTab('skills')} 
           icon={<Cpu size={18} />} 
-          label="Skill Registry" 
+          label={t.settings.tabs.skills} 
           data-testid="tab-skills"
         />
         <TabButton 
           active={activeTab === 'insights'} 
           onClick={() => setActiveTab('insights')} 
           icon={<Sparkles size={18} />} 
-          label="AI Insights" 
+          label={t.settings.tabs.insights} 
           data-testid="tab-insights"
         />
         <TabButton 
           active={activeTab === 'system'} 
           onClick={() => setActiveTab('system')} 
           icon={<Settings2 size={18} />} 
-          label="System Settings" 
+          label={t.settings.tabs.system} 
           data-testid="tab-system"
         />
       </div>
@@ -210,11 +212,11 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
                   <Sparkles size={24} className="absolute inset-0 m-auto text-indigo-400 animate-pulse" />
                 </div>
                 <div className="space-y-2">
-                  <h3 className="text-xl font-bold text-content-base tracking-tight">AI is Thinking...</h3>
+                  <h3 className="text-xl font-bold text-content-base tracking-tight">{t.settings.aiThinking}</h3>
                   <p className="text-indigo-300 font-mono text-xs uppercase tracking-[0.2em]">{restructureStep}</p>
                 </div>
                 <p className="text-content-muted text-sm max-w-[300px]">
-                  Analyzing your data and discovering the best news sources. This takes a few moments.
+                  {t.settings.analyzingData}
                 </p>
               </div>
             </motion.div>

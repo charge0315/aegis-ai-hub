@@ -98,6 +98,7 @@ export const UiSettingsSchema = z.object({
   hideImages: z.boolean().default(false),
   isInitialized: z.boolean().default(false),
   theme: z.enum(['light', 'dark', 'system']).default('system'),
+  language: z.enum(['ja', 'en']).default('ja'),
 });
 
 export type UiSettings = z.infer<typeof UiSettingsSchema>;

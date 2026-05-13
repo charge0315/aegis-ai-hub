@@ -254,7 +254,7 @@ export class GeminiService {
    * 現在の興味設定とフィード構成を分析し、最適な10カテゴリに再構築した完全なプロファイルを提示します。
    * 既存のフィードの再割り当てと、新しい高品質なソースの発見を含みます。
    */
-  async getRestructureProposal(interests: Interests, currentFeeds: FeedConfig, targetCount: number = 10): Promise<{ categories: Record<string, InterestCategory>, feedConfig: FeedConfig }> {
+  async getRestructureProposal(interests: Interests, currentFeeds: FeedConfig, targetCount: number = 10, language: string = 'ja'): Promise<{ categories: Record<string, InterestCategory>, feedConfig: FeedConfig }> {
     const schema: ResponseSchema = {
       type: SchemaType.OBJECT,
       properties: {
@@ -324,7 +324,7 @@ export class GeminiService {
 - 出力カテゴリー数は【必ず正確に${targetCount}個】。
 - **既存のブランドとキーワードは絶対に変更・削除せず、必ず新カテゴリーのいずれかに含めてください。**
 - 新規提案のブランド/キーワードは、既存のものとは別に新しく「絞り出して」追加してください。
-- **【網羅性の保証】: 各カテゴリーに対して必ず新規ソースを提案してください。適切な日本語ソースがない場合は、世界的権威の英語ソースや、国内大手メディアの関連フィードを必ず割り当ててください。0件の提案は認められません。**
+- **【網羅性の保証】: 各カテゴリーに対して必ず新規ソースを提案してください。適切な${language === 'ja' ? '日本語' : '英語'}ソースがない場合は、世界的権威の英語ソースや、国内大手メディアの関連フィードを必ず割り当ててください。0件の提案は認められません。**
 
 **【既存データ: ブランド】**
 ${allExistingBrands.join(', ')}
@@ -338,7 +338,7 @@ ${JSON.stringify(interests.categories, null, 2)}
 **現在の購読フィード:**
 ${JSON.stringify(allExistingUrls, null, 2)}
 
-日本語で回答してください。
+${language === 'ja' ? '日本語で回答してください。' : 'Please respond entirely in English.'}
 `;
     const result = await this.generateStructured<{ 
       categories: Array<{

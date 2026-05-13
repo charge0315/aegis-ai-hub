@@ -7,10 +7,12 @@ import {
   Sun,
   Moon,
   Monitor,
-  Sparkles
+  Sparkles,
+  Languages
 } from 'lucide-react';
 import { GlassPanel } from '../GlassPanel';
 import type { UiSettings } from '../../types';
+import { useTranslation } from '../../hooks/useTranslationHook';
 
 interface SystemSettingsProps {
   apiKey: string;
@@ -33,6 +35,8 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
   theme,
   setTheme
 }) => {
+  const { language, setLanguage, t } = useTranslation();
+
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.98 }}
@@ -40,6 +44,45 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
       exit={{ opacity: 0, scale: 0.98 }}
       className="max-w-2xl mx-auto space-y-8"
     >
+      {/* Language Selection */}
+      <GlassPanel className="p-8 space-y-6">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-indigo-500/10 text-indigo-400 rounded-2xl">
+            <Languages size={24} />
+          </div>
+          <div>
+            <h3 className="text-xl font-bold text-content-base">{t.system.language.title}</h3>
+            <p className="text-sm text-content-muted">{t.system.language.subtitle}</p>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <label className="text-xs font-bold text-content-muted uppercase tracking-widest px-1">
+            {t.system.language.label}
+          </label>
+          <div className="grid grid-cols-2 gap-4">
+            <ThemeOption 
+              active={language === 'ja'} 
+              onClick={() => {
+                // NOTE: 言語の永続化(saveUiSettings)は App.tsx 側の useEffect(language監視) で自動的に処理されます。
+                setLanguage('ja');
+              }}
+              icon={<span className="text-xl font-bold">あ</span>}
+              label="日本語"
+            />
+            <ThemeOption 
+              active={language === 'en'} 
+              onClick={() => {
+                // NOTE: 言語の永続化(saveUiSettings)は App.tsx 側の useEffect(language監視) で自動的に処理されます。
+                setLanguage('en');
+              }}
+              icon={<span className="text-xl font-bold">A</span>}
+              label="English"
+            />
+          </div>
+        </div>
+      </GlassPanel>
+
       {/* Theme Customization */}
       <GlassPanel className="p-8 space-y-6">
         <div className="flex items-center gap-4">
@@ -47,37 +90,37 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
             <Sparkles size={24} />
           </div>
           <div>
-            <h3 className="text-xl font-bold text-content-base">Visual Experience</h3>
-            <p className="text-sm text-content-muted">Customize how Aegis Nexus appears on your desktop.</p>
+            <h3 className="text-xl font-bold text-content-base">{t.system.visual.title}</h3>
+            <p className="text-sm text-content-muted">{t.system.visual.subtitle}</p>
           </div>
         </div>
 
         <div className="space-y-4">
           <label className="text-xs font-bold text-content-muted uppercase tracking-widest px-1">
-            Interface Theme
+            {t.system.visual.theme}
           </label>
           <div className="grid grid-cols-3 gap-4">
             <ThemeOption 
               active={theme === 'light'} 
               onClick={() => setTheme('light')}
               icon={<Sun size={20} />}
-              label="Light"
+              label={t.system.visual.light}
             />
             <ThemeOption 
               active={theme === 'dark'} 
               onClick={() => setTheme('dark')}
               icon={<Moon size={20} />}
-              label="Dark"
+              label={t.system.visual.dark}
             />
             <ThemeOption 
               active={theme === 'system'} 
               onClick={() => setTheme('system')}
               icon={<Monitor size={20} />}
-              label="System"
+              label={t.system.visual.system}
             />
           </div>
           <p className="text-[10px] text-content-muted/60 px-1">
-            "System" will automatically synchronize with your OS light/dark mode settings.
+            {t.system.visual.note}
           </p>
         </div>
       </GlassPanel>
@@ -88,21 +131,21 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
             <Key size={24} />
           </div>
           <div>
-            <h3 className="text-xl font-bold text-content-base">Gemini API Intelligence</h3>
-            <p className="text-sm text-content-muted">Securely manage your Google Gemini API credentials.</p>
+            <h3 className="text-xl font-bold text-content-base">{t.system.gemini.title}</h3>
+            <p className="text-sm text-content-muted">{t.system.gemini.subtitle}</p>
           </div>
         </div>
 
         <div className="space-y-3">
           <label className="text-xs font-bold text-content-muted uppercase tracking-widest px-1">
-            Gemini API Key
+            {t.system.gemini.label}
           </label>
           <div className="relative group">
             <input
               type="password"
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
-              placeholder="AIzaSy..."
+              placeholder={t.system.gemini.placeholder}
               className="w-full bg-content-muted/10 border border-content-muted/20 rounded-xl px-4 py-3 text-content-base focus:outline-none focus:border-primary/50 transition-all font-mono"
             />
             <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none opacity-50">
@@ -110,7 +153,7 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
             </div>
           </div>
           <p className="text-[10px] text-content-muted/60 px-1">
-            Your key is stored locally on this machine. It is never transmitted except to Google Gemini API endpoints.
+            {t.system.gemini.note}
           </p>
         </div>
 
@@ -121,7 +164,7 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
             className="flex items-center gap-2 px-6 py-2.5 text-sm font-bold bg-primary text-white rounded-xl transition-all shadow-lg shadow-primary/20 hover:shadow-primary/40 active:scale-95 disabled:opacity-50"
           >
             <Save size={18} />
-            {isSavingApiKey ? 'Saving...' : 'Apply API Key'}
+            {isSavingApiKey ? t.system.gemini.saving : t.system.gemini.apply}
           </button>
         </div>
       </GlassPanel>
@@ -133,8 +176,8 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
             <RotateCcw size={24} />
           </div>
           <div className="flex-grow">
-            <h3 className="text-xl font-bold text-content-base">Factory Reset</h3>
-            <p className="text-sm text-content-muted mt-1">Restore the default intelligence profile and feed sources.</p>
+            <h3 className="text-xl font-bold text-content-base">{t.system.reset.title}</h3>
+            <p className="text-sm text-content-muted mt-1">{t.system.reset.subtitle}</p>
             <div className="mt-6">
               <button
                 onClick={handleResetToDefaults}
@@ -142,7 +185,7 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
                 className="flex items-center gap-2 px-6 py-2.5 bg-alert text-white rounded-xl text-sm font-bold shadow-lg shadow-alert/20 hover:shadow-alert/40 transition-all active:scale-95 disabled:opacity-50"
               >
                 <RotateCcw size={18} />
-                Restore Default Profile
+                {t.system.reset.button}
               </button>
             </div>
           </div>
@@ -150,9 +193,9 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
       </GlassPanel>
 
       <div className="p-6 bg-background/50 border border-content-muted/20 rounded-2xl">
-        <h4 className="text-sm font-bold text-content-base mb-2">Usage Note</h4>
+        <h4 className="text-sm font-bold text-content-base mb-2">{t.system.usageNote.title}</h4>
         <p className="text-xs text-content-muted leading-relaxed">
-          Aegis Nexus requires a valid Gemini API Key to perform intelligent news curation, category analysis, and autonomous site discovery. You can obtain a key for free at the <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Google AI Studio</a>.
+          {t.system.usageNote.content}
         </p>
       </div>
     </motion.div>

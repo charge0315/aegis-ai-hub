@@ -12,6 +12,7 @@ import {
   Cpu
 } from 'lucide-react';
 import type { NexusSettings } from '../types';
+import { useTranslation } from '../hooks/useTranslationHook';
 
 interface CommandPaletteProps {
   isOpen: boolean;
@@ -42,30 +43,31 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { t } = useTranslation();
 
   const categories = settings ? Object.keys(settings.interests.categories) : [];
 
   const commands: CommandItem[] = [
     {
       id: 'go-feed',
-      title: 'Go to Intelligence Feed',
-      subtitle: 'View your personalized news stream',
+      title: t.command.feed.title,
+      subtitle: t.command.feed.subtitle,
       icon: <LayoutDashboard size={18} />,
       action: () => onNavigate('feed'),
       category: 'navigation'
     },
     {
       id: 'go-settings',
-      title: 'Open Nexus Settings',
-      subtitle: 'Configure categories, brands and keywords',
+      title: t.command.settings.title,
+      subtitle: t.command.settings.subtitle,
       icon: <Settings size={18} />,
       action: () => onNavigate('settings'),
       category: 'navigation'
     },
     {
       id: 'sync-now',
-      title: 'Force Sync Settings',
-      subtitle: 'Immediately push local changes to server',
+      title: t.command.sync.title,
+      subtitle: t.command.sync.subtitle,
       icon: <Globe size={18} />,
       action: () => {
         void onSync();
@@ -74,8 +76,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     },
     {
       id: 'trigger-ai',
-      title: 'Command Agents: Regenerate',
-      subtitle: 'Trigger full orchestration for new insights',
+      title: t.command.ai.title,
+      subtitle: t.command.ai.subtitle,
       icon: <Cpu size={18} />,
       action: () => {
         void onTriggerOrchestration("Refresh and find new insights based on current interests.");
@@ -84,8 +86,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     },
     ...categories.map(cat => ({
       id: `cat-${cat}`,
-      title: `Jump to ${cat}`,
-      subtitle: `Filter feed by ${cat} category`,
+      title: t.command.jump.title.replace('{cat}', cat),
+      subtitle: t.command.jump.subtitle.replace('{cat}', cat),
       icon: <Tag size={18} />,
       action: () => onNavigate('feed', cat),
       category: 'category' as const
@@ -154,7 +156,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                   ref={inputRef}
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="What would you like to do?"
+                  placeholder={t.command.placeholder}
                   data-testid="command-palette-input"
                   className="bg-transparent border-none outline-none text-content-base text-lg w-full placeholder:text-content-muted/50"
                 />
@@ -201,15 +203,15 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                   </div>
                 ) : (
                   <div className="p-8 text-center text-content-muted">
-                    No commands found for "{query}"
+                    {t.command.noResults.replace('{query}', query)}
                   </div>
                 )}
               </div>
 
               <div className="p-3 bg-content-muted/5 border-t border-content-muted/10 flex items-center justify-between text-[10px] text-content-muted font-medium tracking-wider uppercase">
                 <div className="flex items-center gap-4">
-                  <span className="flex items-center gap-1.5"><ArrowRight size={10} className="rotate-90" /> Select</span>
-                  <span className="flex items-center gap-1.5"><Command size={10} /> Enter to Run</span>
+                  <span className="flex items-center gap-1.5"><ArrowRight size={10} className="rotate-90" /> {t.command.footer.select}</span>
+                  <span className="flex items-center gap-1.5"><Command size={10} /> {t.command.footer.run}</span>
                 </div>
                 <div>
                   Aegis Command Center v1.0

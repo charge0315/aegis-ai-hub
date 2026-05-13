@@ -99,7 +99,7 @@ async function ensureDefaultData(dataDir) {
   if (needsInit) {
     console.log('[Main] Initializing data with defaults (missing or empty configuration detected)...');
     const resourcesPath = app.isPackaged ? process.resourcesPath : path.resolve(__dirname, '..');
-    const defaultDataDir = path.join(resourcesPath, 'default-data');
+    const defaultDataDir = app.isPackaged ? path.join(resourcesPath, 'default-data') : path.join(resourcesPath, 'data');
     
     if (!fs.existsSync(dataDir)) {
       fs.mkdirSync(dataDir, { recursive: true });
@@ -265,7 +265,7 @@ function registerIpcHandlers() {
     }
   });
 
-  ipcMain.handle('restructure-categories', async (event, count) => {
+  ipcMain.handle('restructure-categories', async (event, count, language = 'ja') => {
     try {
       const apiKey = await settingsManager.getApiKey();
       geminiService.updateApiKey(apiKey);
@@ -273,7 +273,7 @@ function registerIpcHandlers() {
       const interests = await settingsManager.getInterests();
       const currentFeeds = await settingsManager.getFeedConfig();
       const targetCount = typeof count === 'number' ? count : 10;
-      const restructured = await geminiService.getRestructureProposal(interests, currentFeeds, targetCount);
+      const restructured = await geminiService.getRestructureProposal(interests, currentFeeds, targetCount, language);
 
       const validationTasks = Object.entries(restructured.feedConfig).map(async ([catName, config]) => {
         const sitesToValidate = config.active.map(url => ({ url, name: 'Suggested Feed', category: catName }));
@@ -281,7 +281,7 @@ function registerIpcHandlers() {
         restructured.feedConfig[catName].active = validatedSites.map(s => s.url);
 
         if (restructured.feedConfig[catName].active.length === 0) {
-          const fallbackUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(catName)}&hl=ja&gl=JP&ceid=JP:ja`;
+          const fallbackUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(catName)}&hl=${language === 'ja' ? 'ja&gl=JP&ceid=JP:ja' : 'en-US&gl=US&ceid=US:en'}`;
           restructured.feedConfig[catName].active.push(fallbackUrl);
         }
       });
@@ -323,14 +323,19 @@ function registerIpcHandlers() {
     }
   });
 
-  ipcMain.handle('reset-to-defaults', async () => {
+  ipcMain.handle('reset-to-defaults', async (event, language = 'ja') => {
     try {
       const dataDir = getDataDir();
       const resourcesPath = app.isPackaged ? process.resourcesPath : path.resolve(__dirname, '..');
-      const defaultDataDir = path.join(resourcesPath, 'default-data');
+      const baseDefaultDir = app.isPackaged ? path.join(resourcesPath, 'default-data') : path.join(resourcesPath, 'data');
+      const defaultDataDir = path.join(baseDefaultDir, language);
+      const fallbackDir = baseDefaultDir;
       const files = ['interests.json', 'feed_config.json'];
       for (const file of files) {
-        const src = path.join(defaultDataDir, file);
+        let src = path.join(defaultDataDir, file);
+        if (!fs.existsSync(src)) {
+          src = path.join(fallbackDir, file);
+        }
         const dest = path.join(dataDir, file);
         if (fs.existsSync(src)) await fs.promises.copyFile(src, dest);
       }

@@ -4,6 +4,18 @@
 
 ---
 
+### #14 多言語対応の完全化とセキュリティ向上 (2026-05-13)
+- **事象**: `REVIEW_RESULT_V4.md` で指摘された、一部コンポーネントでのハードコード残存、ReactのContextとフックの不整合、およびセキュリティ上の懸念（`dangerouslySetInnerHTML` の使用）、バックエンドでの言語パラメータ未対応。
+- **原因**: 国際化 (i18n) プロセスの初期段階における実装漏れと、セマンティックな言語切り替えの一貫性欠如。
+- **対処**:
+    - **UIハードコードの排除**: `UnifiedEditor.tsx`, `SystemSettings.tsx`, `ArticleCard.tsx` の全ての固定文字列を抽出。とくに `useUnifiedEditorHandlers.ts` 内の `alert/confirm` メッセージを完全に外部化し、`translations.ts` に統合。
+    - **セキュリティ改善**: `SystemSettings.tsx` 内で使用されていた `dangerouslySetInnerHTML` を安全な React 標準レンダリングに置換し、XSSリスクを払拭。
+    - **フックとContextの最適化**: `LanguageProvider` をリファクタリングし、`t` オブジェクトをプロパティで渡すように変更。また、`useTranslation` フックを介して安全に文言を取得する設計に修正。
+    - **バックエンドの言語対応**: `nexusApi.ts`, `electron/main.cjs`, `GeminiService.ts` を改修し、`restructureCategories` および `resetToDefaults` 呼び出し時に言語引数 (`language`) を渡すように対応。プロンプト出力も指定言語に合わせるよう修正。
+    - **デフォルト設定の分離**: `data/ja/` と `data/en/` ディレクトリを作成し、言語別の `interests.json` および `feed_config.json` を配備。
+
+---
+
 ### #13 マルチテーマ対応 (Aegis Chroma) の導入 (2026-05-11)
 - **概要**: ダークテーマのみだったUIを、ライトテーマおよびシステム設定同期に対応させた。
 - **実装内容**:

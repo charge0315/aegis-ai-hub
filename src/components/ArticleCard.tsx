@@ -3,13 +3,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ExternalLink, Sparkles, Calendar } from 'lucide-react';
 import { GlassPanel } from './GlassPanel';
 import type { Article } from '../types';
+import { useTranslation } from '../hooks/useTranslationHook';
 
 /**
  * ArticleCard Component
  * 
  * 単一の「インテリジェンス・シグナル（記事）」を視覚化するためのコンポーネント。
- * ユーザーの認知負荷を調整するため、親コンポーネントからの指示（size, showImages）に基づき、
- * リッチなビジュアル表現（large）から高密度な情報リスト（small）まで動的に変形します。
  */
 
 interface ArticleCardProps {
@@ -22,16 +21,10 @@ interface ArticleCardProps {
 export const ArticleCard: React.FC<ArticleCardProps> = ({ article, index = 0, size = 'medium', showImages = true }) => {
   const [showReason, setShowReason] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const { t } = useTranslation();
 
   const isSmall = size === 'small';
-  const isLarge = size === 'large';
 
-  /**
-   * カテゴリに応じたグラデーション生成（フォールバック用）
-   * 情報源に画像が存在しない、または読み込みに失敗した場合でも、
-   * 「ダッシュボードの近未来的で洗練されたデザイン（Aesthetics）」を損なわないよう、
-   * カテゴリごとに意味付けされた独自のカラーグラデーションを適用します。
-   */
   const getFallbackGradient = () => {
     const gradients: Record<string, string> = {
       'ゲーム・配信': 'from-indigo-600 to-purple-600',
@@ -51,7 +44,6 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({ article, index = 0, si
   };
 
   return (
-    // GlassPanel: 背景の透過とブラー効果を利用し、重層的でリッチなUI（Glassmorphism）を実現するベース基盤
     <GlassPanel 
       className={`group relative flex flex-col h-full hover:border-primary/50 transition-colors duration-300 article-card cursor-pointer ${
         isSmall ? 'rounded-xl' : 'rounded-3xl'
@@ -63,8 +55,6 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({ article, index = 0, si
       data-testid="article-card"
       onClick={() => window.open(article.link, '_blank', 'noopener,noreferrer')}
     >
-      {/* Image Section - 視覚的なフック（アンカー）の提供。
-          テキストモード（showImages=false）の場合は、情報密度を高めるために空間ごと省略されます。 */}
       {showImages && (
         <div className={`relative overflow-hidden bg-surface shrink-0 ${
           isSmall ? 'aspect-[4/3]' : 'aspect-video'
@@ -77,126 +67,85 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({ article, index = 0, si
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             />
           ) : (
-            // 画像がない場合のフォールバックUI。ダミー画像ではなく、生成されたグラデーションと
-            // テクスチャ（carbon-fibre）を重ねることで、プレミアム感を維持します。
             <div className={`w-full h-full flex items-center justify-center text-white/40 bg-linear-to-br ${getFallbackGradient()} relative overflow-hidden`}>
-              {/* 背景の装飾的な要素 */}
               <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
               <div className="relative z-1 flex flex-col items-center gap-2">
                 <Sparkles size={isSmall ? 24 : 40} className="text-white/30" />
-                {!isSmall && <span className="text-[9px] font-black uppercase tracking-[0.2em] opacity-40">Signal Synthesized</span>}
+                {!isSmall && <span className="text-[9px] font-black uppercase tracking-[0.2em] opacity-40">{t.article.synthesized}</span>}
               </div>
             </div>
           )}
           
-          {/* Category Badge - 情報のコンテキスト（属するジャンルと提供元）を画像上にオーバーレイし、空間を節約 */}
-          {!isSmall && (
-            <div className="absolute top-2 left-2 flex gap-2">
-              <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-primary/80 text-white rounded backdrop-blur-md">
-                {article.category}
-              </span>
-              <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-content-muted/10 text-white rounded backdrop-blur-md border border-content-muted/20">
-                {article.brand}
-              </span>
-            </div>
-          )}
-
-          {/* Score Badge - AIエージェントによる評価スコア。ユーザーが読むべき記事を即座に判断するための最重要指標 */}
           <div 
-            className={`absolute ${isSmall ? 'top-1 right-1 w-6 h-6 text-[8px]' : 'top-2 right-2 w-8 h-8 text-xs'} flex items-center justify-center rounded-full bg-content-muted/10 backdrop-blur-md border border-content-muted/20 font-bold text-accent score-badge`}
-            data-testid="article-score"
+            className={`absolute ${isSmall ? 'top-1 right-1 w-6 h-6 text-[8px]' : 'top-2 right-2 w-8 h-8 text-xs'} flex items-center justify-center rounded-full bg-background/20 backdrop-blur-md border border-white/10 font-bold text-primary`}
           >
             {article.score}
           </div>
         </div>
       )}
 
-      {/* Content Section - 記事のメタデータと本文。情報ヒエラルキーを明確にし、流し読みを容易にします */}
-      <div className={`${isSmall ? 'p-2' : 'p-4'} flex-grow flex flex-col relative`}>
-        {!showImages && (
-          // テキストモード時のみ、画像上にあったバッジ類をこちらに配置して情報を補完
-          <div className="absolute top-2 right-2 flex gap-2">
-            {!isSmall && (
-              <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-primary/20 text-primary rounded border border-primary/20">
-                {article.category}
-              </span>
-            )}
-            <div className="w-6 h-6 flex items-center justify-center rounded-full bg-content-muted/10 border border-content-muted/20 font-bold text-[10px] text-accent">
-              {article.score}
-            </div>
-          </div>
-        )}
-        <h3 className={`${isSmall ? 'text-[11px] leading-tight mb-1' : isLarge ? 'text-lg mb-2' : 'text-sm leading-tight mb-2'} font-semibold line-clamp-2 group-hover:text-primary transition-colors ${!showImages ? 'pr-20' : ''}`}>
+      <div className={`${isSmall ? 'p-3' : 'p-5'} flex-grow flex flex-col`}>
+        <div className="flex items-center gap-2 mb-2">
+          <span className="px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-primary/10 text-primary rounded border border-primary/20">
+            {article.category}
+          </span>
+          <span className="text-[9px] text-content-muted font-bold uppercase tracking-widest">{article.brand}</span>
+        </div>
+        
+        <h3 className={`${isSmall ? 'text-xs' : 'text-sm'} font-bold leading-tight mb-2 line-clamp-2 group-hover:text-primary transition-colors`}>
           {article.title}
         </h3>
         
         {!isSmall && (
-          <p className={`${isLarge ? 'text-sm' : 'text-xs'} text-content-muted line-clamp-3 mb-4 flex-grow`}>
+          <p className="text-xs text-content-muted line-clamp-3 mb-4 flex-grow leading-relaxed">
             {article.desc}
           </p>
         )}
 
-        <div className={`flex items-center justify-between mt-auto ${isSmall ? 'pt-2' : 'pt-4'} border-t border-content-muted/20`}>
-          <div className={`flex items-center gap-2 ${isSmall ? 'text-[8px]' : 'text-[10px]'} text-content-muted`}>
-            <Calendar size={isSmall ? 10 : 12} />
+        <div className="flex items-center justify-between pt-4 border-t border-white/5 mt-auto">
+          <div className="flex items-center gap-2 text-[10px] text-content-muted font-medium">
+            <Calendar size={12} />
             {new Date(article.date).toLocaleDateString()}
           </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             {article.geminiReason && !isSmall && (
               <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowReason(!showReason);
-                }}
-                data-testid="reasoning-toggle"
-                className="p-1.5 rounded-full hover:bg-surface-panel/10 text-primary transition-colors"
-                title="AI Reasoning"
+                onClick={(e) => { e.stopPropagation(); setShowReason(true); }}
+                className="p-1.5 rounded-full hover:bg-primary/10 text-primary transition-colors"
+                title={t.article.aiReasoning}
               >
                 <Sparkles size={14} />
               </button>
             )}
-            <a 
-              href={article.link} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className={`${isSmall ? 'p-1' : 'p-1.5'} rounded-full hover:bg-surface-panel/10 text-content-muted hover:text-content-base transition-colors`}
-            >
-              <ExternalLink size={isSmall ? 12 : 14} />
-            </a>
+            <div className="p-1.5 rounded-full hover:bg-white/5 text-content-muted transition-colors">
+              <ExternalLink size={14} />
+            </div>
           </div>
         </div>
       </div>
 
-      {/* AI Reasoning Overlay
-          バックエンドのGeminiエージェントが「なぜこの記事を抽出したか」の思考プロセス（Reasoning）を透過的に提示するUI。
-          ブラックボックス化を防ぎ、システムに対するユーザーの信頼性を担保する意図があります。 */}
       <AnimatePresence>
         {showReason && article.geminiReason && (
           <motion.div
             initial={{ opacity: 0, backdropFilter: 'blur(0px)' }}
             animate={{ opacity: 1, backdropFilter: 'blur(8px)' }}
             exit={{ opacity: 0, backdropFilter: 'blur(0px)' }}
-            data-testid="reasoning-overlay"
-            className="absolute inset-0 z-10 bg-background/80 p-6 flex flex-col"
+            className="absolute inset-0 z-20 bg-background/90 p-6 flex flex-col rounded-[inherit]"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center gap-2 text-primary mb-3">
+            <div className="flex items-center gap-2 text-primary mb-4">
               <Sparkles size={16} />
-              <span className="text-xs font-bold uppercase tracking-widest">AI Reasoning</span>
+              <span className="text-xs font-bold uppercase tracking-[0.2em]">{t.article.reasoning}</span>
             </div>
-            <div className="text-xs leading-relaxed text-content-base overflow-y-auto font-mono">
+            <div className="text-xs leading-relaxed text-content-base overflow-y-auto custom-scrollbar pr-2 mb-6 font-medium">
               {article.geminiReason}
             </div>
             <button 
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowReason(false);
-              }}
-              className="mt-auto w-full py-2 text-[10px] font-bold uppercase tracking-wider text-content-muted hover:text-content-base border border-content-muted/20 rounded hover:bg-surface-panel/10 transition-all"
+              onClick={() => setShowReason(false)}
+              className="mt-auto w-full py-2.5 text-[10px] font-bold uppercase tracking-widest text-white bg-primary rounded-xl shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all active:scale-95"
             >
-              Close
+              {t.article.close}
             </button>
           </motion.div>
         )}

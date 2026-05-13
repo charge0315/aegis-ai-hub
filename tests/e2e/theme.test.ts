@@ -47,7 +47,7 @@ test.describe('Multi-Theme Support (Aegis Chroma)', () => {
     await page.getByTestId('tab-system').click();
 
     // ライトテーマに切り替え
-    await page.getByRole('button', { name: 'Light' }).click();
+    await page.getByRole('button', { name: /Light|ライト/ }).click();
 
     // 属性が更新されたか確認
     await expect(root).toHaveAttribute('data-theme', 'light');
@@ -60,7 +60,7 @@ test.describe('Multi-Theme Support (Aegis Chroma)', () => {
     expect(saved.theme).toBe('light');
 
     // ダークテーマに戻す
-    await page.getByRole('button', { name: 'Dark' }).click();
+    await page.getByRole('button', { name: /Dark|ダーク/ }).click();
     await expect(root).toHaveAttribute('data-theme', 'dark');
   });
 

@@ -1,0 +1,102 @@
+{
+  "High Performance PC & Components": {
+    "active": [
+      "https://rss.itmedia.co.jp/rss/2.0/pcuser.xml",
+      "https://akiba-pc.watch.impress.co.jp/data/rss/1.0/ah/feed.rdf",
+      "https://ascii.jp/rss.xml",
+      "https://pc.watch.impress.co.jp/data/rss/1.0/pcw/feed.rdf"
+    ],
+    "pool": [],
+    "failures": {}
+  },
+  "Personal Devices & XR Ecosystem": {
+    "active": [
+      "https://rss.itmedia.co.jp/rss/2.0/itmedia_all.xml",
+      "https://www.gizmodo.jp/index.xml",
+      "https://www.theverge.com/rss/index.xml",
+      "https://k-tai.watch.impress.co.jp/data/rss/1.0/ktw/feed.rdf"
+    ],
+    "pool": [],
+    "failures": {}
+  },
+  "Audio & Music Production": {
+    "active": [
+      "https://av.watch.impress.co.jp/data/rss/1.0/avw/feed.rdf",
+      "https://www.dtmstation.com/feed",
+      "https://www.soundonsound.com/rss.xml",
+      "https://www.snrec.jp/feed"
+    ],
+    "pool": [],
+    "failures": {}
+  },
+  "Digital Entertainment & Immersive Experiences": {
+    "active": [
+      "https://news.denfaminicogamer.jp/feed",
+      "https://jp.ign.com/feed.xml",
+      "https://www.4gamer.net/rss/index.xml",
+      "https://game.watch.impress.co.jp/data/rss/1.0/gmw/feed.rdf"
+    ],
+    "pool": [],
+    "failures": {}
+  },
+  "AI Core Tech & Research": {
+    "active": [
+      "https://rss.itmedia.co.jp/rss/2.0/ait.xml",
+      "https://www.technologyreview.com/topic/artificial-intelligence/feed/",
+      "https://zenn.dev/topics/ai/feed",
+      "https://techcrunch.com/category/artificial-intelligence/feed/"
+    ],
+    "pool": [],
+    "failures": {}
+  },
+  "Software Development & Cloud Infrastructure": {
+    "active": [
+      "https://www.publickey1.jp/atom.xml",
+      "https://atmarkit.itmedia.co.jp/rss/rssit.xml",
+      "https://aws.amazon.com/jp/blogs/aws/feed/",
+      "https://cloud.google.com/blog/rss/"
+    ],
+    "pool": [],
+    "failures": {}
+  },
+  "Future Mobility & Smart Infrastructure": {
+    "active": [
+      "https://car.watch.impress.co.jp/data/rss/1.0/car/feed.rdf",
+      "https://response.jp/rss/index.rdf",
+      "https://electrek.co/feed/",
+      "https://insideevs.com/rss/news/all/"
+    ],
+    "pool": [],
+    "failures": {}
+  },
+  "Smart Home & Wellness Lifestyle": {
+    "active": [
+      "https://kaden.watch.impress.co.jp/data/rss/1.0/kdw/feed.rdf",
+      "https://www.roomie.jp/feed/",
+      "https://www.lifehacker.jp/feed/index.xml",
+      "https://iotnews.jp/feed"
+    ],
+    "pool": [],
+    "failures": {}
+  },
+  "E-commerce & Retail Transformation": {
+    "active": [
+      "https://www.ryutsuu.biz/feed",
+      "https://www.modernretail.co/feed/",
+      "https://www.nytimes.com/wirecutter/feed/",
+      "https://www.retaildive.com/feeds/news/"
+    ],
+    "pool": [],
+    "failures": {}
+  },
+  "Data Science & Business Intelligence": {
+    "active": [
+      "https://www.databricks.com/feed",
+      "https://huggingface.co/blog/feed.xml",
+      "https://www.zdnet.com/news/ai/rss.xml",
+      "https://japan.googleblog.com/atom.xml"
+    ],
+    "pool": [],
+    "failures": {}
+  }
+}
