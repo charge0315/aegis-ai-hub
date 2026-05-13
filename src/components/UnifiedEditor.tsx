@@ -204,19 +204,19 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-background/80 backdrop-blur-md rounded-3xl border border-content-muted/20 shadow-2xl"
+              className="absolute inset-0 z-50 bg-background/80 backdrop-blur-md rounded-3xl border border-content-muted/20 shadow-2xl"
             >
-              <div className="p-10 flex flex-col items-center gap-6 text-center">
+              <div className="sticky top-[40vh] p-10 flex flex-col items-center justify-center gap-6 text-center">
                 <div className="relative">
                   <div className="w-16 h-16 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
                   <Sparkles size={24} className="absolute inset-0 m-auto text-indigo-400 animate-pulse" />
                 </div>
                 <div className="space-y-2">
-                  <h3 className="text-xl font-bold text-content-base tracking-tight">{t.settings.aiThinking}</h3>
+                  <h3 className="text-xl font-bold text-content-base tracking-tight">{t.settings.thinking}</h3>
                   <p className="text-indigo-300 font-mono text-xs uppercase tracking-[0.2em]">{restructureStep}</p>
                 </div>
                 <p className="text-content-muted text-sm max-w-[300px]">
-                  {t.settings.analyzingData}
+                  {t.agent.waiting}
                 </p>
               </div>
             </motion.div>
