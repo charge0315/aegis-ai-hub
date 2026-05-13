@@ -61659,7 +61659,8 @@ var init_Schemas = __esm({
       viewMode: external_exports.enum(["grid", "list", "compact"]).default("grid"),
       hideImages: external_exports.boolean().default(false),
       isInitialized: external_exports.boolean().default(false),
-      theme: external_exports.enum(["light", "dark", "system"]).default("system")
+      theme: external_exports.enum(["light", "dark", "system"]).default("system"),
+      language: external_exports.enum(["ja", "en"]).default("ja")
     });
     CredentialsSchema = external_exports.object({
       geminiApiKey: external_exports.string().optional()
@@ -63177,7 +63178,7 @@ var init_GeminiService = __esm({
        * 現在の興味設定とフィード構成を分析し、最適な10カテゴリに再構築した完全なプロファイルを提示します。
        * 既存のフィードの再割り当てと、新しい高品質なソースの発見を含みます。
        */
-      async getRestructureProposal(interests, currentFeeds, targetCount = 10) {
+      async getRestructureProposal(interests, currentFeeds, targetCount = 10, language = "ja") {
         const schema = {
           type: SchemaType.OBJECT,
           properties: {
@@ -63242,9 +63243,9 @@ var init_GeminiService = __esm({
 
 **\u91CD\u8981\u30EB\u30FC\u30EB:**
 - \u51FA\u529B\u30AB\u30C6\u30B4\u30EA\u30FC\u6570\u306F\u3010\u5FC5\u305A\u6B63\u78BA\u306B${targetCount}\u500B\u3011\u3002
-- **\u65E2\u5B58\u306E\u30D6\u30E9\u30F3\u30C9\u3068\u30AD\u30FC\u30EF\u30FC\u30C9\u306F\u7D76\u5BFE\u306B\u5909\u66F4\u30FB\u524A\u9664\u305B\u305A\u3001\u5FC5\u305A\u65B0\u30AB\u30C6\u30B4\u30EA\u30FC\u306E\u3044\u305A\u308C\u304B\u306B\u542B\u3081\u3066\u304F\u3060\u3055\u3044\u3002**
+${language === "en" ? "- **\u7FFB\u8A33\u306E\u5B9F\u884C**: \u65E2\u5B58\u306E\u30AB\u30C6\u30B4\u30EA\u30FC\u540D\u3001\u30D6\u30E9\u30F3\u30C9\u540D\u3001\u30AD\u30FC\u30EF\u30FC\u30C9\u306B\u3064\u3044\u3066\u3001\u7FFB\u8A33\u53EF\u80FD\u306A\u4E00\u822C\u540D\u8A5E\u3084\u7528\u8A9E\u306F\u5168\u3066\u81EA\u7136\u306A\u82F1\u8A9E\u306B\u7FFB\u8A33\u3057\u3066\u51FA\u529B\u3057\u3066\u304F\u3060\u3055\u3044\uFF08\u56FA\u6709\u306E\u30D6\u30E9\u30F3\u30C9\u540D\u306A\u3069\u306F\u7DAD\u6301\uFF09\u3002\u65E2\u5B58\u306E\u8981\u7D20\u306F\u4E00\u3064\u3082\u524A\u9664\u305B\u305A\u3001\u5FC5\u305A\u82F1\u8A33\uFF08\u307E\u305F\u306F\u305D\u306E\u307E\u307E\uFF09\u3057\u305F\u4E0A\u3067\u65B0\u30AB\u30C6\u30B4\u30EA\u30FC\u306B\u5272\u308A\u5F53\u3066\u3066\u304F\u3060\u3055\u3044\u3002" : "- **\u65E2\u5B58\u306E\u30D6\u30E9\u30F3\u30C9\u3068\u30AD\u30FC\u30EF\u30FC\u30C9\u306F\u7D76\u5BFE\u306B\u5909\u66F4\u30FB\u524A\u9664\u305B\u305A\u3001\u5FC5\u305A\u65B0\u30AB\u30C6\u30B4\u30EA\u30FC\u306E\u3044\u305A\u308C\u304B\u306B\u542B\u3081\u3066\u304F\u3060\u3055\u3044\u3002"}
 - \u65B0\u898F\u63D0\u6848\u306E\u30D6\u30E9\u30F3\u30C9/\u30AD\u30FC\u30EF\u30FC\u30C9\u306F\u3001\u65E2\u5B58\u306E\u3082\u306E\u3068\u306F\u5225\u306B\u65B0\u3057\u304F\u300C\u7D5E\u308A\u51FA\u3057\u3066\u300D\u8FFD\u52A0\u3057\u3066\u304F\u3060\u3055\u3044\u3002
-- **\u3010\u7DB2\u7F85\u6027\u306E\u4FDD\u8A3C\u3011: \u5404\u30AB\u30C6\u30B4\u30EA\u30FC\u306B\u5BFE\u3057\u3066\u5FC5\u305A\u65B0\u898F\u30BD\u30FC\u30B9\u3092\u63D0\u6848\u3057\u3066\u304F\u3060\u3055\u3044\u3002\u9069\u5207\u306A\u65E5\u672C\u8A9E\u30BD\u30FC\u30B9\u304C\u306A\u3044\u5834\u5408\u306F\u3001\u4E16\u754C\u7684\u6A29\u5A01\u306E\u82F1\u8A9E\u30BD\u30FC\u30B9\u3084\u3001\u56FD\u5185\u5927\u624B\u30E1\u30C7\u30A3\u30A2\u306E\u95A2\u9023\u30D5\u30A3\u30FC\u30C9\u3092\u5FC5\u305A\u5272\u308A\u5F53\u3066\u3066\u304F\u3060\u3055\u3044\u30020\u4EF6\u306E\u63D0\u6848\u306F\u8A8D\u3081\u3089\u308C\u307E\u305B\u3093\u3002**
+- **\u3010\u7DB2\u7F85\u6027\u306E\u4FDD\u8A3C\u3011: \u5404\u30AB\u30C6\u30B4\u30EA\u30FC\u306B\u5BFE\u3057\u3066\u5FC5\u305A\u65B0\u898F\u30BD\u30FC\u30B9\u3092\u63D0\u6848\u3057\u3066\u304F\u3060\u3055\u3044\u3002\u9069\u5207\u306A${language === "ja" ? "\u65E5\u672C\u8A9E" : "\u82F1\u8A9E"}\u30BD\u30FC\u30B9\u304C\u306A\u3044\u5834\u5408\u306F\u3001\u4E16\u754C\u7684\u6A29\u5A01\u306E\u82F1\u8A9E\u30BD\u30FC\u30B9\u3084\u3001\u56FD\u5185\u5927\u624B\u30E1\u30C7\u30A3\u30A2\u306E\u95A2\u9023\u30D5\u30A3\u30FC\u30C9\u3092\u5FC5\u305A\u5272\u308A\u5F53\u3066\u3066\u304F\u3060\u3055\u3044\u30020\u4EF6\u306E\u63D0\u6848\u306F\u8A8D\u3081\u3089\u308C\u307E\u305B\u3093\u3002**
 
 **\u3010\u65E2\u5B58\u30C7\u30FC\u30BF: \u30D6\u30E9\u30F3\u30C9\u3011**
 ${allExistingBrands.join(", ")}
@@ -63258,7 +63259,7 @@ ${JSON.stringify(interests.categories, null, 2)}
 **\u73FE\u5728\u306E\u8CFC\u8AAD\u30D5\u30A3\u30FC\u30C9:**
 ${JSON.stringify(allExistingUrls, null, 2)}
 
-\u65E5\u672C\u8A9E\u3067\u56DE\u7B54\u3057\u3066\u304F\u3060\u3055\u3044\u3002
+${language === "ja" ? "\u65E5\u672C\u8A9E\u3067\u56DE\u7B54\u3057\u3066\u304F\u3060\u3055\u3044\u3002" : "Please respond entirely in English."}
 `;
         const result = await this.generateStructured(prompt, schema, this.highReasoningModelName);
         const categories = {};
@@ -132842,7 +132843,7 @@ async function ensureDefaultData(dataDir) {
   if (needsInit) {
     console.log("[Main] Initializing data with defaults (missing or empty configuration detected)...");
     const resourcesPath = app.isPackaged ? process.resourcesPath : path4.resolve(__dirname, "..");
-    const defaultDataDir = path4.join(resourcesPath, "default-data");
+    const defaultDataDir = app.isPackaged ? path4.join(resourcesPath, "default-data") : path4.join(resourcesPath, "data");
     if (!fs5.existsSync(dataDir)) {
       fs5.mkdirSync(dataDir, { recursive: true });
     }
@@ -132984,20 +132985,20 @@ function registerIpcHandlers() {
       throw error51;
     }
   });
-  ipcMain.handle("restructure-categories", async (event, count) => {
+  ipcMain.handle("restructure-categories", async (event, count, language = "ja") => {
     try {
       const apiKey = await settingsManager.getApiKey();
       geminiService.updateApiKey(apiKey);
       const interests = await settingsManager.getInterests();
       const currentFeeds = await settingsManager.getFeedConfig();
       const targetCount = typeof count === "number" ? count : 10;
-      const restructured = await geminiService.getRestructureProposal(interests, currentFeeds, targetCount);
+      const restructured = await geminiService.getRestructureProposal(interests, currentFeeds, targetCount, language);
       const validationTasks = Object.entries(restructured.feedConfig).map(async ([catName, config2]) => {
         const sitesToValidate = config2.active.map((url3) => ({ url: url3, name: "Suggested Feed", category: catName }));
         const validatedSites = await discoveryService.validateSuggestedFeeds(sitesToValidate);
         restructured.feedConfig[catName].active = validatedSites.map((s) => s.url);
         if (restructured.feedConfig[catName].active.length === 0) {
-          const fallbackUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(catName)}&hl=ja&gl=JP&ceid=JP:ja`;
+          const fallbackUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(catName)}&hl=${language === "ja" ? "ja&gl=JP&ceid=JP:ja" : "en-US&gl=US&ceid=US:en"}`;
           restructured.feedConfig[catName].active.push(fallbackUrl);
         }
       });
@@ -133033,14 +133034,19 @@ function registerIpcHandlers() {
       throw error51;
     }
   });
-  ipcMain.handle("reset-to-defaults", async () => {
+  ipcMain.handle("reset-to-defaults", async (event, language = "ja") => {
     try {
       const dataDir = getDataDir();
       const resourcesPath = app.isPackaged ? process.resourcesPath : path4.resolve(__dirname, "..");
-      const defaultDataDir = path4.join(resourcesPath, "default-data");
+      const baseDefaultDir = app.isPackaged ? path4.join(resourcesPath, "default-data") : path4.join(resourcesPath, "data");
+      const defaultDataDir = path4.join(baseDefaultDir, language);
+      const fallbackDir = baseDefaultDir;
       const files = ["interests.json", "feed_config.json"];
       for (const file2 of files) {
-        const src = path4.join(defaultDataDir, file2);
+        let src = path4.join(defaultDataDir, file2);
+        if (!fs5.existsSync(src)) {
+          src = path4.join(fallbackDir, file2);
+        }
         const dest = path4.join(dataDir, file2);
         if (fs5.existsSync(src)) await fs5.promises.copyFile(src, dest);
       }

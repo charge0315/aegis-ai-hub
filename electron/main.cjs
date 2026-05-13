@@ -294,6 +294,17 @@ function registerIpcHandlers() {
     }
   });
 
+  ipcMain.handle('translate-interests', async (event, interests) => {
+    try {
+      const apiKey = await settingsManager.getApiKey();
+      geminiService.updateApiKey(apiKey);
+      return await geminiService.translateInterests(interests);
+    } catch (error) {
+      console.error('Failed to translate interests:', error);
+      throw error;
+    }
+  });
+
   ipcMain.handle('discover-trends', async () => {
     try {
       const apiKey = await settingsManager.getApiKey();

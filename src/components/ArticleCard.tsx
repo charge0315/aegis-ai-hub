@@ -113,7 +113,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({ article, index = 0, si
               <button 
                 onClick={(e) => { e.stopPropagation(); setShowReason(true); }}
                 className="p-1.5 rounded-full hover:bg-primary/10 text-primary transition-colors"
-                title={t.article.aiReasoning}
+                title={t.article.reasoning}
               >
                 <Sparkles size={14} />
               </button>

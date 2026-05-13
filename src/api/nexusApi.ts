@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { Article, NexusSettings, AgentStatus, InterestCategory, FeedConfig, UiSettings, TrendSuggestion } from '../types';
+import type { Article, NexusSettings, AgentStatus, InterestCategory, FeedConfig, UiSettings, TrendSuggestion, Interests } from '../types';
 
 export interface WindowState {
   width: number;
@@ -110,6 +110,18 @@ export const nexusApi = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ count, language })
+    });
+    return await res.json();
+  },
+
+  async translateInterests(interests: Interests): Promise<Interests> {
+    if (window.nexusApi) {
+      return await window.nexusApi.translateInterests(interests);
+    }
+    const res = await fetch(`${BACKEND_URL}/api/v5/translate-interests`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(interests)
     });
     return await res.json();
   },

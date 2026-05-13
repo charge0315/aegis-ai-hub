@@ -41,6 +41,7 @@ export function useUnifiedEditorHandlers({
   const [isDiscovering, setIsDiscovering] = useState(false);
   const [isSuggestingBrands, setIsSuggestingBrands] = useState(false);
   const [isSuggestingKeywords, setIsSuggestingKeywords] = useState(false);
+  const [isTranslating, setIsTranslating] = useState(false);
   const [apiKey, setApiKey] = useState<string>('');
   const [isSavingApiKey, setIsSavingApiKey] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(
@@ -195,7 +196,38 @@ export function useUnifiedEditorHandlers({
   const handleSave = useCallback(async () => {
     setIsSaving(true);
     try {
-      await onSave(draft);
+      let draftToSave = draft;
+
+      if (language === 'en') {
+        const hasJapanese = (str: string) => /[\u3000-\u303f\u3040-\u309f\u30a0-\u30ff\uff00-\uff9f\u4e00-\u9faf]/.test(str);
+        
+        let needsTranslation = false;
+        for (const [catName, catData] of Object.entries(draftToSave.interests.categories)) {
+          if (hasJapanese(catName) || 
+              catData.brands.some(hasJapanese) || 
+              catData.keywords.some(hasJapanese)) {
+            needsTranslation = true;
+            break;
+          }
+        }
+
+        if (needsTranslation) {
+          setIsTranslating(true);
+          try {
+            const translatedInterests = await nexusApi.translateInterests(draftToSave.interests);
+            draftToSave = { ...draftToSave, interests: translatedInterests };
+            setDraft(draftToSave); // Update the local state with translated data
+          } catch (e) {
+            console.error('Translation failed before save', e);
+            // Ignore error and save original if translation fails?
+            // User requested translation, so let's try to proceed or just let it save as Japanese if it fails.
+          } finally {
+            setIsTranslating(false);
+          }
+        }
+      }
+
+      await onSave(draftToSave);
       await customAlert('Success', t.handlers.saveSuccess, 'success');
     } catch (err: unknown) {
       console.error('Save failed:', err);
@@ -209,7 +241,7 @@ export function useUnifiedEditorHandlers({
     } finally {
       setIsSaving(false);
     }
-  }, [draft, onSave, customAlert, customConfirm]);
+  }, [draft, language, onSave, customAlert, customConfirm, t.handlers]);
 
   const handleReset = useCallback(() => {
     setDraft(currentSettings);
@@ -443,7 +475,7 @@ export function useUnifiedEditorHandlers({
   return {
     draft, setDraft, apiKey, setApiKey, selectedCategory, setSelectedCategory,
     isSaving, isSuggesting, isDiscovering, isSuggestingBrands, isSuggestingKeywords, isSavingApiKey, restructureStep,
-    isDirty,
+    isDirty, isTranslating,
     handleDiscoverTrends, handlePromoteKeyword, handleDismissKeyword, handleReorderCategories, handleAddCategory,
     handleSave, handleReset, handleSaveApiKey, handleKeywordToggle, handleBrandToggle, handleToggleSkill,
     handleAddSkill, handleRenameCategory, handleEditEmoji, handleDeleteCategory, handleUpdateCategory,

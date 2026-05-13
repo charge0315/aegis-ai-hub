@@ -65,6 +65,11 @@ contextBridge.exposeInMainWorld('nexusApi', {
   restructureCategories: (count, language) => ipcRenderer.invoke('restructure-categories', count, language),
 
   /**
+   * Interestsの内容（カテゴリ名、キーワード等）を英語に翻訳します。
+   */
+  translateInterests: (interests) => ipcRenderer.invoke('translate-interests', interests),
+
+  /**
    * 最新記事から新しいトレンドを探索します。
    */
   discoverTrends: () => ipcRenderer.invoke('discover-trends'),

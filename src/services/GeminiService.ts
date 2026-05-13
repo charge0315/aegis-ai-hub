@@ -322,9 +322,7 @@ export class GeminiService {
 
 **重要ルール:**
 - 出力カテゴリー数は【必ず正確に${targetCount}個】。
-${language === 'en' 
-  ? '- **翻訳の実行**: 既存のカテゴリー名、ブランド名、キーワードについて、翻訳可能な一般名詞や用語は全て自然な英語に翻訳して出力してください（固有のブランド名などは維持）。既存の要素は一つも削除せず、必ず英訳（またはそのまま）した上で新カテゴリーに割り当ててください。' 
-  : '- **既存のブランドとキーワードは絶対に変更・削除せず、必ず新カテゴリーのいずれかに含めてください。'}
+- **既存のブランドとキーワードは絶対に変更・削除せず、必ず新カテゴリーのいずれかに含めてください。**
 - 新規提案のブランド/キーワードは、既存のものとは別に新しく「絞り出して」追加してください。
 - **【網羅性の保証】: 各カテゴリーに対して必ず新規ソースを提案してください。適切な${language === 'ja' ? '日本語' : '英語'}ソースがない場合は、世界的権威の英語ソースや、国内大手メディアの関連フィードを必ず割り当ててください。0件の提案は認められません。**
 
@@ -638,5 +636,56 @@ ${JSON.stringify(articles.slice(0, 30).map(a => ({ title: a.title, desc: a.desc 
 日本語で回答してください。
 `;
     return await this.generateStructured<{ brands: string[], keywords: string[], emoji: string, reason: string }>(prompt, schema);
+  }
+
+  /**
+   * Interests の内容（カテゴリ名、ブランド、キーワード）を英語に翻訳します。
+   */
+  async translateInterests(interests: Interests): Promise<Interests> {
+    const schema: ResponseSchema = {
+      type: SchemaType.OBJECT,
+      properties: {
+        categories: {
+          type: SchemaType.ARRAY,
+          description: "翻訳されたカテゴリのリスト",
+          items: {
+            type: SchemaType.OBJECT,
+            properties: {
+              originalName: { type: SchemaType.STRING, description: "元の日本語のカテゴリ名（キーとして使用）" },
+              name: { type: SchemaType.STRING, description: "英語に翻訳されたカテゴリ名" },
+              emoji: { type: SchemaType.STRING, description: "カテゴリの絵文字（変更なし）" },
+              brands: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: "英語に翻訳されたブランド名（固有名詞は維持）" },
+              keywords: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: "英語に翻訳されたキーワード" },
+              score: { type: SchemaType.NUMBER, description: "重要度（変更なし）" },
+              reason: { type: SchemaType.STRING, description: "英語に翻訳された理由" }
+            },
+            required: ["originalName", "name", "emoji", "brands", "keywords", "score", "reason"]
+          }
+        }
+      },
+      required: ["categories"]
+    };
+
+    const prompt = `
+Translate the following 'categories' data into natural English.
+Keep proper nouns (like specific brand names or product names) as they are, but translate general terms and descriptions into English.
+Return an array of categories, where 'originalName' is the original Japanese category name (the key from the input JSON), and the rest of the fields are translated.
+
+JSON DATA:
+${JSON.stringify(interests.categories, null, 2)}
+`;
+
+    const result = await this.generateStructured<{ categories: Array<InterestCategory & { originalName: string }> }>(prompt, schema);
+    
+    const translatedCategories: Record<string, InterestCategory> = {};
+    for (const cat of result.categories) {
+      const { originalName, ...rest } = cat;
+      translatedCategories[originalName] = rest;
+    }
+
+    return {
+      ...interests,
+      categories: translatedCategories
+    };
   }
 }

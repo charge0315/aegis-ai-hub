@@ -80,6 +80,7 @@ export interface NexusApiBridge {
   saveApiKey: (apiKey: string) => Promise<{ success: boolean }>;
   getProposals: () => Promise<{ sites: { url: string; name: string; reason: string; category: string }[] }>;
   restructureCategories: (count?: number) => Promise<{ categories: Record<string, InterestCategory>; feedConfig: FeedConfig }>;
+  translateInterests: (interests: Interests) => Promise<Interests>;
   discoverTrends: () => Promise<{ suggestions: TrendSuggestion[] }>;
   resetToDefaults: () => Promise<{ success: boolean }>;
   windowControl: (action: 'minimize' | 'maximize' | 'close') => void;

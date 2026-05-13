@@ -59,6 +59,7 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
     isSavingApiKey,
     restructureStep,
     isDirty,
+    isTranslating,
     handleDiscoverTrends,
     handlePromoteKeyword,
     handleDismissKeyword,
@@ -147,12 +148,12 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
           )}
           <button
             onClick={handleSave}
-            disabled={!isDirty || isSaving || isSuggesting}
+            disabled={!isDirty || isSaving || isSuggesting || isTranslating}
             data-testid="save-settings-button"
             className="flex items-center gap-2 px-6 py-2.5 text-sm font-bold bg-primary disabled:bg-surface disabled:text-content-muted text-white rounded-xl transition-all shadow-lg shadow-primary/20 hover:shadow-primary/40 active:scale-95"
           >
             <Save size={18} />
-            {isSaving ? t.settings.saving : isSuggesting ? t.settings.thinking : t.settings.save}
+            {isTranslating ? t.settings.translating : isSaving ? t.settings.saving : isSuggesting ? t.settings.thinking : t.settings.save}
           </button>
         </div>
       </div>
