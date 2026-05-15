@@ -3,7 +3,8 @@ import type {
   Interests as SchemaInterests, 
   FeedConfig as SchemaFeedConfig, 
   Skill as SchemaSkill,
-  UiSettings as SchemaUiSettings
+  UiSettings as SchemaUiSettings,
+  UsageStats as SchemaUsageStats
 } from '../models/Schemas';
 
 export interface Article {
@@ -24,6 +25,7 @@ export type Interests = SchemaInterests;
 export type FeedConfig = SchemaFeedConfig;
 export type Skill = SchemaSkill;
 export type UiSettings = SchemaUiSettings;
+export type UsageStats = SchemaUsageStats;
 
 export interface NexusSettings {
   interests: Interests;
@@ -68,7 +70,7 @@ export interface NexusApiBridge {
   getSettings: () => Promise<NexusSettings>;
   syncSettings: (settings: NexusSettings) => Promise<{ lastUpdated: number }>;
   triggerOrchestration: () => Promise<{ success: boolean; newFeedsCount: number }>;
-  onAgentEvent: (callback: (data: AgentEventData) => void) => void;
+  onAgentEvent: (callback: (data: AgentEventData) => void) => (() => void);
   removeAgentEventListener: () => void;
   suggestCategory: (categoryName: string) => Promise<{
     brands: string[];
@@ -86,7 +88,8 @@ export interface NexusApiBridge {
   windowControl: (action: 'minimize' | 'maximize' | 'close') => void;
   getUiSettings: () => Promise<UiSettings>;
   saveUiSettings: (settings: UiSettings) => Promise<{ success: boolean }>;
-  getUsageStats: () => Promise<any>;
+  getUsageStats: () => Promise<UsageStats>;
+  onUsageUpdate: (callback: (stats: UsageStats) => void) => (() => void);
 }
 
 declare global {

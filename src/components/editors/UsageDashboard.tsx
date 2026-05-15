@@ -5,11 +5,13 @@ import {
 } from 'recharts';
 import { GlassPanel } from '../GlassPanel';
 import { nexusApi } from '../../api/nexusApi';
+import { useTranslation } from '../../hooks/useTranslationHook';
 import type { UsageStats } from '../../models/Schemas';
 
 const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#0088FE', '#00C49F'];
 
 export const UsageDashboard: React.FC = () => {
+  const { t } = useTranslation();
   const [stats, setStats] = useState<UsageStats>({});
   const [loading, setLoading] = useState(true);
 
@@ -25,6 +27,18 @@ export const UsageDashboard: React.FC = () => {
       }
     };
     fetchStats();
+
+    // リアルタイム更新の購読
+    const unsubscribe = nexusApi.onUsageUpdate((newStats) => {
+      console.log('[UsageDashboard] Stats updated in real-time');
+      setStats(newStats);
+    });
+
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
   }, []);
 
   // グラフ用データの整形 (直近30日間)
@@ -63,7 +77,7 @@ export const UsageDashboard: React.FC = () => {
   }, [chartData]);
 
   if (loading) {
-    return <div className="p-8 text-center opacity-50">Loading usage statistics...</div>;
+    return <div className="p-8 text-center opacity-50">{t.usage.loading}</div>;
   }
 
   return (
@@ -71,15 +85,15 @@ export const UsageDashboard: React.FC = () => {
       {/* 概要カード */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <GlassPanel className="p-4 flex flex-col items-center justify-center">
-          <span className="text-xs opacity-60 uppercase tracking-wider mb-1">Total Tokens</span>
+          <span className="text-xs opacity-60 uppercase tracking-wider mb-1">{t.usage.totalTokens}</span>
           <span className="text-3xl font-bold text-indigo-400">{totalTokens.toLocaleString()}</span>
         </GlassPanel>
         <GlassPanel className="p-4 flex flex-col items-center justify-center">
-          <span className="text-xs opacity-60 uppercase tracking-wider mb-1">Active Days</span>
+          <span className="text-xs opacity-60 uppercase tracking-wider mb-1">{t.usage.activeDays}</span>
           <span className="text-3xl font-bold text-emerald-400">{Object.keys(stats).length}</span>
         </GlassPanel>
         <GlassPanel className="p-4 flex flex-col items-center justify-center">
-          <span className="text-xs opacity-60 uppercase tracking-wider mb-1">API Calls</span>
+          <span className="text-xs opacity-60 uppercase tracking-wider mb-1">{t.usage.apiCalls}</span>
           <span className="text-3xl font-bold text-amber-400">
             {Object.values(stats).reduce((acc, day) => acc + Object.values(day).reduce((a, m) => a + m.callCount, 0), 0).toLocaleString()}
           </span>
@@ -90,7 +104,7 @@ export const UsageDashboard: React.FC = () => {
         {/* 利用推移グラフ */}
         <GlassPanel className="lg:col-span-2 p-6 min-h-[400px]">
           <h3 className="text-lg font-medium mb-6 flex items-center gap-2">
-            <span className="text-xl">📈</span> Token Usage History
+            <span className="text-xl">📈</span> {t.usage.historyTitle}
           </h3>
           <div className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -117,8 +131,8 @@ export const UsageDashboard: React.FC = () => {
                   contentStyle={{ backgroundColor: 'rgba(20, 20, 30, 0.9)', border: 'none', borderRadius: '8px', boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}
                   itemStyle={{ fontSize: '12px' }}
                 />
-                <Area type="monotone" dataKey="prompt" stroke="#8884d8" fillOpacity={1} fill="url(#colorPrompt)" name="Input Tokens" />
-                <Area type="monotone" dataKey="candidates" stroke="#82ca9d" fillOpacity={1} fill="url(#colorCand)" name="Output Tokens" />
+                <Area type="monotone" dataKey="prompt" stroke="#8884d8" fillOpacity={1} fill="url(#colorPrompt)" name={t.usage.inputTokens} />
+                <Area type="monotone" dataKey="candidates" stroke="#82ca9d" fillOpacity={1} fill="url(#colorCand)" name={t.usage.outputTokens} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -127,7 +141,7 @@ export const UsageDashboard: React.FC = () => {
         {/* モデル別比率 */}
         <GlassPanel className="p-6 flex flex-col min-h-[400px]">
           <h3 className="text-lg font-medium mb-6 flex items-center gap-2">
-            <span className="text-xl">📊</span> Model Distribution
+            <span className="text-xl">📊</span> {t.usage.distributionTitle}
           </h3>
           <div className="flex-1 h-[250px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -152,9 +166,8 @@ export const UsageDashboard: React.FC = () => {
               </PieChart>
             </ResponsiveContainer>
           </div>
-          <div className="mt-4 text-xs opacity-50 text-center leading-relaxed">
-            モデルごとのトークン消費割合を表示しています。<br/>
-            Flashモデルは高速、Proモデルは高度な推論に適しています。
+          <div className="mt-4 text-xs opacity-50 text-center whitespace-pre-wrap leading-relaxed">
+            {t.usage.modelNote}
           </div>
         </GlassPanel>
       </div>
@@ -162,17 +175,17 @@ export const UsageDashboard: React.FC = () => {
       {/* 詳細テーブル (アクセシビリティ対応) */}
       <GlassPanel className="p-6">
         <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
-          <span className="text-xl">📋</span> Detailed Logs
+          <span className="text-xl">📋</span> {t.usage.logsTitle}
         </h3>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-white/10">
-                <th className="py-2 opacity-60 font-medium">Date</th>
-                <th className="py-2 opacity-60 font-medium text-right">Input</th>
-                <th className="py-2 opacity-60 font-medium text-right">Output</th>
-                <th className="py-2 opacity-60 font-medium text-right">Total</th>
-                <th className="py-2 opacity-60 font-medium text-right">Calls</th>
+                <th className="py-2 opacity-60 font-medium">{t.usage.date}</th>
+                <th className="py-2 opacity-60 font-medium text-right">{t.usage.input}</th>
+                <th className="py-2 opacity-60 font-medium text-right">{t.usage.output}</th>
+                <th className="py-2 opacity-60 font-medium text-right">{t.usage.total}</th>
+                <th className="py-2 opacity-60 font-medium text-right">{t.usage.calls}</th>
               </tr>
             </thead>
             <tbody>
@@ -189,7 +202,7 @@ export const UsageDashboard: React.FC = () => {
               ))}
               {chartData.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="py-8 text-center opacity-30 italic">No usage data recorded yet.</td>
+                  <td colSpan={5} className="py-8 text-center opacity-30 italic">{t.usage.noData}</td>
                 </tr>
               )}
             </tbody>

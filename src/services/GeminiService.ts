@@ -16,7 +16,7 @@ export interface CuratedArticle {
 
 /**
  * Aegis AI Hubの「思考エンジン」として機能する中核サービス。
- * Google Gemini 3.1 APIを利用し、ただテキストを生成するのではなく「Structured Output（スキーマ強制）」
+ * Google Gemini 3.1 APIを利用し、ただテキストを生成するのではなくStructured Output（スキーマ強制）
  * を用いることで、AIの出力をプログラムが確実に解釈できる堅牢なデータ構造へと変換します。
  * これにより、AIの推論結果をシームレスにシステムのビジネスロジックへ組み込むことを可能にします。
  */
@@ -29,7 +29,7 @@ export class GeminiService {
 
   /**
    * @param {string} apiKey - Google Gemini APIキー
-   * @param {UsageManager} usageManager - 利用統計マネージャー
+   * @param {UsageManager} usageManager - 利用統計のマネージャー
    */
   constructor(apiKey: string | undefined, usageManager?: UsageManager) {
     this.genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
@@ -48,9 +48,9 @@ export class GeminiService {
 
   /**
    * AIの「自由な発話」を封じ、あらかじめシステムが定義したZod（JSON）スキーマ通りの
-   * 厳格なデータ構造でのみ返答を許すためのコア・インターフェース。
+   * 厳格なデータ構造でのみ回答を許すためのコア・インターフェース。
    * これにより、"JSONパースエラー" という生成AI特有の不確実性を根本から排除します。
-   * 
+   *
    * @param {string} prompt - AIに与える指示文（コンテキスト）
    * @param {ResponseSchema} schema - 返してほしいデータの構造定義（バリデーションの要）
    * @param {string} [modelName] - タスクの複雑さに応じてモデルを切り替えるためのオプション
@@ -82,13 +82,13 @@ export class GeminiService {
       }
 
       const text = response.text();
-      
+
       console.log(`[GeminiService] Received response from ${modelName}. Size: ${text?.length || 0} chars.`);
-      
+
       if (!text) {
         throw new Error(`Empty response received from model ${modelName}`);
       }
-      
+
       try {
         return JSON.parse(text) as T;
       } catch (parseError: unknown) {
@@ -98,13 +98,13 @@ export class GeminiService {
       }
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      
+
       // クォータ制限（429 Too Many Requests / Resource Exhausted）を検知
-      const isQuotaError = 
-        errorMessage.includes("429") || 
+      const isQuotaError =
+        errorMessage.includes("429") ||
         errorMessage.toLowerCase().includes("exhausted") ||
         errorMessage.toLowerCase().includes("quota") ||
-        (error && typeof error === 'object' && (error as any).status === 429);
+        (error && typeof error === 'object' && 'status' in error && (error as { status: unknown }).status === 429);
 
       if (isQuotaError) {
         console.error(`[GeminiService] Quota Exceeded detected for model ${modelName}: ${errorMessage}`);
@@ -113,13 +113,13 @@ export class GeminiService {
       }
 
       console.error(`[GeminiService] Error with model ${modelName}: ${errorMessage}`);
-      
+
       // 階層型フォールバック: Pro -> Flash -> GA 安定版(2.5) -> 旧安定版(1.5)
       if (modelName === this.highReasoningModelName) {
         console.warn(`[GeminiService] ${modelName} failed. Falling back to primary model: ${this.primaryModelName}`);
         return this.generateStructured<T>(prompt, schema, this.primaryModelName);
       }
-      
+
       if (modelName === this.primaryModelName) {
         console.warn(`[GeminiService] ${modelName} failed. Falling back to GA stable model: ${this.stableFallbackModelName}`);
         return this.generateStructured<T>(prompt, schema, this.stableFallbackModelName);
@@ -232,12 +232,11 @@ export class GeminiService {
 
     const prompt = `
 あなたはニュースソースの専門家です。現在の興味リストに基づき、進化提案（フィード、ブランド、キーワード）を生成してください。
-
 **重要ルール:**
 1. sitesのURLは、必ず「RSSフィード」または「Atomフィード」の直接のURLを指定してください。
 2. 日本語の信頼できるニュースサイトを最優先してください。
 3. **【重要】日本語の専門サイトが見つからない、または不足している場合は、世界的に権威のある英語のRSSフィード（Techニュース、公式ブログ、業界誌など）を必ず提案に含めてください。**
-4. 出力を空（0件）にしないでください。特定の専門ソースがない場合は、そのトピックをカバーする一般的な大手ニュースサイト（ITmedia, TechCrunch, The Verge等）の関連セクションを提案してください。
+4. 出力を空（0件）にしないでください。特定の専門ソースがない場合は、そのトピックをカバーする一般的な大手ニュースサイト（ITmedia, TechCrunch, The Verge 等）の関連セクションを提案してください。
 5. カテゴリ名は、入力された interests のキー名と正確に一致させてください。
 
 現在の興味リスト: ${JSON.stringify(interests)}
@@ -270,17 +269,14 @@ export class GeminiService {
     };
 
     const prompt = `
-特定の興味カテゴリに対して専門的なニュースソースが見つかりませんでした。
-代わりに、幅広いトピックをカバーする日本の大手信頼できるニュースサイト（ITmedia, ギズモード・ジャパン, TechCrunch Japan, ロイター, BBC等）から、以下の興味に関連するセクションのRSSフィードを提案してください。
-必ず有効なRSSフィードのURL（ホームページのURLではない）を3件提案してください。
-
+特定の興味カテゴリに対して専門的なニュースソースが見つかりませんでした。代わりに、幅広いトピックをカバーする日本の大手信頼できるニュースサイト（ITmedia, ギズモード・ジャパン, TechCrunch Japan, ロイター, BBC等）から、以下の興味に関連するセクションのRSSフィードを提案してください。必ず有効なRSSフィードのURL（ホームページのURLではない）を3件提案してください。
 興味設定: ${JSON.stringify(interests.categories)}
 `;
     return await this.generateStructured<Record<string, unknown>>(prompt, schema);
   }
 
   /**
-   * 現在の興味設定とフィード構成を分析し、最適な10カテゴリに再構築した完全なプロファイルを提示します。
+   * 現在の興味設定とフィード構成を分析し、最適な10カテゴリに再構築した完全なプロフィールを提示します。
    * 既存のフィードの再割り当てと、新しい高品質なソースの発見を含みます。
    */
   async getRestructureProposal(interests: Interests, currentFeeds: FeedConfig, targetCount: number = 10, language: string = 'ja'): Promise<{ categories: Record<string, InterestCategory>, feedConfig: FeedConfig }> {
@@ -296,7 +292,7 @@ export class GeminiService {
               emoji: { type: SchemaType.STRING, description: "カテゴリにふさわしい絵文字" },
               brands: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: "既存のブランド全て + AIによる新規提案5つ" },
               keywords: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: "既存のキーワード全て + AIによる新規提案5つ" },
-              score: { type: SchemaType.NUMBER, description: "重要度（0-10）" },
+              score: { type: SchemaType.NUMBER, description: "重要度(1-10)" },
               reason: { type: SchemaType.STRING, description: "この分類の理由" }
             },
             required: ["name", "emoji", "brands", "keywords", "score", "reason"]
@@ -331,7 +327,7 @@ export class GeminiService {
       required: ["categories", "feedMapping", "newSuggestedFeeds"]
     };
 
-    const allExistingUrls = Object.entries(currentFeeds).flatMap(([cat, data]) => 
+    const allExistingUrls = Object.entries(currentFeeds).flatMap(([cat, data]) =>
       data.active.map((url: string) => ({ url, oldCategory: cat }))
     );
 
@@ -339,21 +335,18 @@ export class GeminiService {
     const allExistingKeywords = [...new Set(Object.values(interests.categories).flatMap(c => c.keywords))];
 
     const prompt = `
-あなたはインテリジェンス・アーキテクトです。
-ユーザーのニュース収集環境を根本から再構築し、情報を【正確に${targetCount}個の洗練されたカテゴリ】に整理してください。
-
+あなたはインテリジェンス・アーキテクトです。ユーザーのニュース収集環境を根本から再構築し、情報をより正確に${targetCount}個の洗練されたカテゴリに整理してください。
 **ミッション:**
-1. **カテゴリーの再生成**: 既存の興味関心を分析し、モダンで包括的な${targetCount}個の新しいカテゴリーを生成してください。
-2. **既存データの完全保持と自動割り当て**: 以下の【既存データ】にある全てのブランドとキーワードを、重複を除いて、新しい${targetCount}カテゴリーのいずれかに最適に割り当ててください。**一つも削除してはいけません。**
-3. **AIによる拡張（SUGGEST機能）**: 割り当て後、各カテゴリーの専門性を高めるために、新しいブランドとキーワードをそれぞれ5個ずつ新規に提案して追加してください。
-4. **既存フィードの移設**: ユーザーが現在購読しているフィードを、新しい${targetCount}カテゴリーのいずれかに最適に割り当て直してください。
-5. **新規ソースの注入**: 各カテゴリーに対して、情報の質を高めるための高品質なRSS/Atomフィードを2〜3個ずつ新しく提案してください。
-
+1. **カテゴリの再生生成**: 既存の興味関心を分析し、モダンで包括的な${targetCount}個の新しいカテゴリを生成してください。
+2. **既存データの完全保持と自動割り当て**: 以下の【既存データ】にある全てのブランドとキーワードを、重複を除いて、新しい${targetCount}カテゴリのいずれかに最適に割り当ててください。*一つも削除してはいけません。*
+3. **AIによる拡張（SUGGEST機能）**: 割り当て後、各カテゴリの専門性を高めるために、新しいブランドとキーワードをそれぞれ5個ずつ新規に提案して追加してください。
+4. **既存フィードの移設**: ユーザーが現在購読しているフィードを、新しい${targetCount}カテゴリのいずれかに最適に割り当て直してください。
+5. **新規ソースの注入**: 各カテゴリに対して、情報の質を高めるための高品質なRSS/Atomフィードを2〜3個ずつ新しく提案してください。
 **重要ルール:**
-- 出力カテゴリー数は【必ず正確に${targetCount}個】。
-- **既存のブランドとキーワードは絶対に変更・削除せず、必ず新カテゴリーのいずれかに含めてください。**
-- 新規提案のブランド/キーワードは、既存のものとは別に新しく「絞り出して」追加してください。
-- **【網羅性の保証】: 各カテゴリーに対して必ず新規ソースを提案してください。適切な${language === 'ja' ? '日本語' : '英語'}ソースがない場合は、世界的権威の英語ソースや、国内大手メディアの関連フィードを必ず割り当ててください。0件の提案は認められません。**
+- 出力カテゴリ数は、【必ず正確に${targetCount}個】にしてください。
+- **既存のブランドとキーワードは絶対に変更・削除せず、必ず新カテゴリのいずれかに含めてください。**
+- 新規提案のブランド・キーワードは、既存のものとは別に新しく「絞り出して」追加してください。
+- **【網羅性の保証】** 各カテゴリに対して必ず新規ソースを提案してください。適切な${language === 'ja' ? '日本語' : '英語'}ソースがない場合は、世界的な権威の英語ソースや、国内大手メディアの関連フィードを必ず割り当ててください。0件の提案は認められません。
 
 **【既存データ: ブランド】**
 ${allExistingBrands.join(', ')}
@@ -361,7 +354,7 @@ ${allExistingBrands.join(', ')}
 **【既存データ: キーワード】**
 ${allExistingKeywords.join(', ')}
 
-**現在のカテゴリー構成:**
+**現在のカテゴリ構成:**
 ${JSON.stringify(interests.categories, null, 2)}
 
 **現在の購読フィード:**
@@ -369,7 +362,7 @@ ${JSON.stringify(allExistingUrls, null, 2)}
 
 ${language === 'ja' ? '日本語で回答してください。' : 'Please respond entirely in English.'}
 `;
-    const result = await this.generateStructured<{ 
+    const result = await this.generateStructured<{
       categories: Array<{
         name: string;
         emoji: string;
@@ -377,7 +370,7 @@ ${language === 'ja' ? '日本語で回答してください。' : 'Please respon
         keywords: string[];
         score: number;
         reason: string;
-      }>, 
+      }>,
       feedMapping: Array<{ url: string, newCategory: string }>,
       newSuggestedFeeds: Array<{ name: string, url: string, category: string }>
     }>(prompt, schema, this.highReasoningModelName);
@@ -388,7 +381,7 @@ ${language === 'ja' ? '日本語で回答してください。' : 'Please respon
     // 1. カテゴリの初期化とAI結果の反映
     result.categories.forEach(cat => {
       categories[cat.name] = {
-        emoji: cat.emoji || '🌐',
+        emoji: cat.emoji || '✨',
         brands: Array.isArray(cat.brands) ? [...new Set(cat.brands.map(String))] : [],
         keywords: Array.isArray(cat.keywords) ? [...new Set(cat.keywords.map(String))] : [],
         score: typeof cat.score === 'number' ? cat.score : 5,
@@ -397,7 +390,7 @@ ${language === 'ja' ? '日本語で回答してください。' : 'Please respon
       feedConfig[cat.name] = { active: [], pool: [], failures: {} };
     });
 
-    // 2. データ完全保持リカバリーロジック (AIの取りこぼし防止)
+    // 2. データ完全保持リカバリロジック (AIの取りこぼし防止)
     const categoryNames = Object.keys(categories);
     const firstCategory = categoryNames[0];
 
@@ -405,7 +398,7 @@ ${language === 'ja' ? '日本語で回答してください。' : 'Please respon
       const returnedBrands = new Set(Object.values(categories).flatMap(c => c.brands));
       allExistingBrands.forEach(b => {
         if (!returnedBrands.has(b)) {
-          // AIが返し忘れたブランドを先頭のカテゴリー（または適切な場所）に強制復元
+          // AIが返し忘れたブランドを先頭のカテゴリ（または適切な場所）に強制復元
           categories[firstCategory].brands.push(b);
         }
       });
@@ -413,7 +406,7 @@ ${language === 'ja' ? '日本語で回答してください。' : 'Please respon
       const returnedKeywords = new Set(Object.values(categories).flatMap(c => c.keywords));
       allExistingKeywords.forEach(k => {
         if (!returnedKeywords.has(k)) {
-          // AIが返し忘れたキーワードを先頭のカテゴリーに強制復元
+          // AIが返し忘れたキーワードを先頭のカテゴリに強制復元
           categories[firstCategory].keywords.push(k);
         }
       });
@@ -422,10 +415,10 @@ ${language === 'ja' ? '日本語で回答してください。' : 'Please respon
     // 3. カテゴリ名整合性チェック・正規化ロジック (AIの名称揺れ対策)
     const mapToExistingCategory = (name: string): string => {
       if (categories[name]) return name;
-      
+
       // 完全一致しない場合、記号や空白を無視して再検索
       const targetClean = normalizeCategoryName(name);
-      
+
       for (const catName of Object.keys(categories)) {
         if (normalizeCategoryName(catName) === targetClean) return catName;
       }
@@ -456,7 +449,7 @@ ${language === 'ja' ? '日本語で回答してください。' : 'Please respon
       }
     });
 
-    // 6. 【網羅性の最終ガード】各カテゴリに少なくとも1つのフィードを保証
+    // 6. 【網羅性の最終ガード】各カテゴリに少なくとも一つのフィードを保証
     Object.keys(categories).forEach(catName => {
       if (feedConfig[catName].active.length === 0) {
         console.log(`[GeminiService] カテゴリ "${catName}" のフィードが空のため、Google News RSS をフォールバックとして設定します。`);
@@ -500,9 +493,7 @@ ${language === 'ja' ? '日本語で回答してください。' : 'Please respon
       required: ["sites"]
     };
     const prompt = `
-以下の興味設定に合致する、新しいニュースソースを提案してください。
-URLは必ず「RSSフィード」または「Atomフィード」の直接のURLを指定し、ホームページのURLは絶対に含めないでください。
-日本語のサイトを優先してください。
+以下の興味設定に合致する、新しいニュースソースを提案してください。URLは必ず「RSSフィード」または「Atomフィード」の直接のURLを指定し、ホームページのURLは絶対に含めないでください。日本語のサイトを優先してください。
 興味設定: ${JSON.stringify(interests.categories)}
 `;
     const result = await this.generateStructured<{ sites: Record<string, unknown>[] }>(prompt, schema);
@@ -539,11 +530,8 @@ URLは必ず「RSSフィード」または「Atomフィード」の直接のURL�
     }));
 
     const prompt = `
-以下のカテゴリにおいて、日本語のニュースソースが不足しています。
-世界的に権威のある、英語のRSSフィード（Techニュース、公式ブログ、業界誌など）を提案してください。
-対象カテゴリ: ${JSON.stringify(targetInterests)}
-出力は必ず英語圏のサイトURLを含めてください。
-`;
+以下のカテゴリにおいて、日本語のニュースソースが不足しています。世界的に権威のある、英語のRSSフィード（Techニュース、公式ブログ、業界誌など）を提案してください。対象カテゴリ: ${JSON.stringify(targetInterests)}
+出力は必ず英語圏のサイトURLを含めてください。`;
     const result = await this.generateStructured<{ sites: Record<string, unknown>[] }>(prompt, schema);
     return result.sites;
   }
@@ -571,8 +559,7 @@ URLは必ず「RSSフィード」または「Atomフィード」の直接のURL�
     };
 
     const prompt = `
-以下の記事リストを、自然な日本語に翻訳してください。
-技術用語や固有名詞は適切に扱い、ニュースとして読みやすい表現にしてください。
+以下の記事リストを、自然な日本語に翻訳してください。技術用語や固有名詞は適切に扱い、ニュースとして読みやすい表現にしてください。
 リスト: ${JSON.stringify(articles)}
 `;
 
@@ -592,8 +579,8 @@ URLは必ず「RSSフィード」または「Atomフィード」の直接のURL�
               value: { type: SchemaType.STRING, description: "トレンドキーワードまたはブランド名" },
               category: { type: SchemaType.STRING, description: "割り当てるべき既存のカテゴリ名" },
               reason: { type: SchemaType.STRING, description: "なぜこれが重要なのか（ユーザーへの説明）" },
-              type: { 
-                type: SchemaType.STRING, 
+              type: {
+                type: SchemaType.STRING,
                 enum: ["emerging", "breakthrough", "niche", "mainstream"],
                 format: "enum",
                 description: "トレンドの種類: emerging(新興), breakthrough(躍進), niche(専門的), mainstream(主流)"
@@ -610,20 +597,17 @@ URLは必ず「RSSフィード」または「Atomフィード」の直接のURL�
 
     const prompt = `
 あなたは Aegis Nexus の 'Archivist' エージェントです。最新のインテリジェンス・フィードを分析し、ユーザーがまだ設定していないが、注目すべき【新しいシグナル（トレンド、ブランド、テクノロジー）】を抽出してください。
-
 **ミッション:**
-1. **新奇性の発見**: 既存の興味設定には含まれていないが、最新記事の中で繰り返し登場する、または強いインパクトを持つ新しい概念を見つけ出してください。
+1. **新兆候の発見**: 既存の興味設定には含まれていないが、最新記事の中で繰り返し登場する、または強いインパクトを持つ新しい概念を見つけ出してください。
 2. **パーソナライズ**: ユーザーの既存の関心領域（カテゴリ）に関連するが、一歩先を行くトピックを優先してください。
 3. **詳細な分析**: 各トレンドに対し、その性質（タイプ）、AIとしての確信度、および抽出の根拠（コンテキスト）を付与してください。
-
 **現在の興味カテゴリ:**
 ${Object.keys(interests.categories).join(', ')}
 
 **最新記事リスト (上位30件):**
 ${JSON.stringify(articles.slice(0, 30).map(a => ({ title: a.title, desc: a.desc })))}
 
-日本語で回答してください。
-`;
+日本語で回答してください。`;
     // ペイロード過大による失敗を防ぐため上位30件に絞り、モデルも Flash から試行する
     const result = await this.generateStructured<{ suggestions: Record<string, unknown>[] }>(prompt, schema, this.primaryModelName);
     return result.suggestions;
@@ -651,19 +635,15 @@ ${JSON.stringify(articles.slice(0, 30).map(a => ({ title: a.title, desc: a.desc 
           maxItems: 10
         },
         emoji: { type: SchemaType.STRING, description: "カテゴリーを象徴する絵文字1つ" },
-        reason: { type: SchemaType.STRING, description: "この提案の理由（1文）" }
+        reason: { type: SchemaType.STRING, description: "この提案の理由（一文）" }
       },
       required: ["brands", "keywords", "emoji", "reason"]
     };
 
     const prompt = `
-以下の新しいインテリジェンス・カテゴリ名に関連する、主要なブランドを【必ず5つ】、および重要なキーワードを【必ず5つ】提案してください。
-5つ未満や5つを超える提案は一切認められません。必ず正確に5つずつ生成してください。
-また、そのカテゴリにふさわしい絵文字を1つ選んでください。
-
+以下の新しいインテリジェンス・カテゴリ名に関連する、主要なブランドを【必ず5つ】、および重要なキーワードを【必ず5つ】提案してください。5つ未満、あるいは10つを超える提案は一切認められません。必ず正確に5つずつ生成してください。また、そのカテゴリにふさわしい絵文字を1つ選んでください。
 カテゴリ名: "${categoryName}"
-日本語で回答してください。
-`;
+日本語で回答してください。`;
     return await this.generateStructured<{ brands: string[], keywords: string[], emoji: string, reason: string }>(prompt, schema);
   }
 
@@ -709,16 +689,16 @@ ${JSON.stringify(interests.categories, null, 2)}
 `;
 
     const result = await this.generateStructured<{ categories: Array<InterestCategory & { originalName: string, name: string }> }>(prompt, schema);
-    
+
     console.log(`[GeminiService] Translation result received. Categories count: ${result.categories.length}`);
-    
+
     const translatedCategories: Record<string, InterestCategory> = {};
     const translatedFeedConfig: FeedConfig = {};
 
     for (const cat of result.categories) {
       const { originalName, name, ...rest } = cat;
       translatedCategories[name] = rest;
-      
+
       if (feedConfig[originalName]) {
         translatedFeedConfig[name] = feedConfig[originalName];
       } else {

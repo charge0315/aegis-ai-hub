@@ -102,7 +102,7 @@ export function useUnifiedEditorHandlers({
     } finally {
       setIsDiscovering(false);
     }
-  }, [customAlert, customConfirm, setActiveTab]);
+  }, [customAlert, customConfirm, setActiveTab, t.handlers.apiKeyRequired, t.handlers.noTrends, t.handlers.quotaExceeded]);
 
   const handlePromoteKeyword = useCallback((keyword: string, category: string) => {
     setDraft(prev => {
@@ -168,7 +168,7 @@ export function useUnifiedEditorHandlers({
           categories: {
             ...prev.interests.categories,
             [name]: {
-              emoji: suggestions.emoji || '🆕',
+              emoji: suggestions.emoji || '✨',
               brands: (suggestions.brands || []).slice(0, 5),
               keywords: (suggestions.keywords || []).slice(0, 5),
               score: 5,
@@ -191,7 +191,7 @@ export function useUnifiedEditorHandlers({
           ...prev.interests,
           categories: {
             ...prev.interests.categories,
-            [name]: { emoji: '🆕', brands: [], keywords: [], score: 5, reason: 'Manually added category.' }
+            [name]: { emoji: '✨', brands: [], keywords: [], score: 5, reason: 'Manually added category.' }
           }
         }
       }));
@@ -199,7 +199,7 @@ export function useUnifiedEditorHandlers({
     } finally {
       setIsSuggesting(false);
     }
-  }, [apiKey, customAlert, customConfirm, customPrompt, draft.interests.categories, setActiveTab]);
+  }, [apiKey, customAlert, customConfirm, customPrompt, draft.interests.categories, setActiveTab, t.handlers.apiKeyRequired, t.handlers.categoryExists, t.handlers.newCategory, t.handlers.newCategoryPrompt, t.handlers.quotaExceeded, t.handlers.suggestionsReady]);
 
   const handleSave = useCallback(async () => {
     setIsSaving(true);
@@ -208,11 +208,11 @@ export function useUnifiedEditorHandlers({
 
       if (language === 'en') {
         const hasJapanese = (str: string) => /[\u3000-\u303f\u3040-\u309f\u30a0-\u30ff\uff00-\uff9f\u4e00-\u9faf]/.test(str);
-        
+
         let needsTranslation = false;
         for (const [catName, catData] of Object.entries(draftToSave.interests.categories)) {
-          if (hasJapanese(catName) || 
-              catData.brands.some(hasJapanese) || 
+          if (hasJapanese(catName) ||
+              catData.brands.some(hasJapanese) ||
               catData.keywords.some(hasJapanese)) {
             needsTranslation = true;
             break;
@@ -225,20 +225,18 @@ export function useUnifiedEditorHandlers({
             console.log('[handleSave] Starting automatic translation from Japanese to English...');
             const translatedResult = await nexusApi.translateInterests(draftToSave);
             console.log('[handleSave] Translation successful:', translatedResult);
-            
-            // 重要: 翻訳後のデータを draftToSave に確実に反映
-            draftToSave = { 
-              ...draftToSave, 
-              interests: translatedResult.interests, 
-              feedConfig: translatedResult.feedConfig 
+
+            // 重要：翻訳後のデータを draftToSave に確実に反映
+            draftToSave = {
+              ...draftToSave,
+              interests: translatedResult.interests,
+              feedConfig: translatedResult.feedConfig
             };
-            
+
             // UI上のドラフト状態も更新
             setDraft(draftToSave);
           } catch (e) {
             console.error('Translation failed before save', e);
-            // Ignore error and save original if translation fails?
-            // User requested translation, so let's try to proceed or just let it save as Japanese if it fails.
           } finally {
             setIsTranslating(false);
           }
@@ -276,7 +274,7 @@ export function useUnifiedEditorHandlers({
     } finally {
       setIsSavingApiKey(false);
     }
-  }, [apiKey, customAlert]);
+  }, [apiKey, customAlert, t.handlers.apiKeyFailed, t.handlers.apiKeySuccess]);
 
   const handleKeywordToggle = useCallback((category: string, keyword: string, enabled: boolean) => {
     setDraft(prev => {
@@ -337,7 +335,7 @@ export function useUnifiedEditorHandlers({
       return { ...prev, interests: { ...prev.interests, skills: [...currentSkills, newSkill] } };
     });
     await customAlert('Skill Registered', t.handlers.skillSuccess.replace('{name}', name).replace('{agent}', agent), 'success');
-  }, [customAlert, customPrompt]);
+  }, [customAlert, customPrompt, t.handlers.newSkill, t.handlers.newSkillPrompt, t.handlers.skillAgent, t.handlers.skillConflict, t.handlers.skillDesc, t.handlers.skillSuccess, t.handlers.skillType]);
 
   const handleRenameCategory = useCallback(async (oldName: string) => {
     const newName = await customPrompt('Rename Category', t.handlers.renamePrompt.replace('{oldName}', oldName), oldName);
@@ -363,7 +361,7 @@ export function useUnifiedEditorHandlers({
       return { ...prev, interests: { ...prev.interests, categories: newCategories }, feedConfig: newFeedConfig };
     });
     if (selectedCategory === oldName) setSelectedCategory(newName);
-  }, [customAlert, customPrompt, draft.interests.categories, selectedCategory]);
+  }, [customAlert, customPrompt, draft.interests.categories, selectedCategory, t.handlers.nameConflict, t.handlers.renamePrompt]);
 
   const handleEditEmoji = useCallback(async (catName: string) => {
     const currentEmoji = draft.interests.categories[catName].emoji;
@@ -374,7 +372,7 @@ export function useUnifiedEditorHandlers({
       newCategories[catName] = { ...newCategories[catName], emoji: newEmoji };
       return { ...prev, interests: { ...prev.interests, categories: newCategories } };
     });
-  }, [customPrompt, draft.interests.categories]);
+  }, [customPrompt, draft.interests.categories, t.handlers.emojiPrompt]);
 
   const handleDeleteCategory = useCallback(async (catName: string) => {
     const confirmed = await customConfirm('Delete Category', t.handlers.deleteConfirm.replace('{catName}', catName));
@@ -391,7 +389,7 @@ export function useUnifiedEditorHandlers({
       const remaining = keys.filter(k => k !== catName);
       setSelectedCategory(remaining[0] || null);
     }
-  }, [customConfirm, draft.interests.categories, selectedCategory]);
+  }, [customConfirm, draft.interests.categories, selectedCategory, t.handlers.deleteConfirm]);
 
   const handleUpdateCategory = useCallback((name: string, field: 'brands' | 'keywords', values: string[]) => {
     setDraft(prev => {
@@ -420,7 +418,7 @@ export function useUnifiedEditorHandlers({
         newCategories[selectedCategory] = { ...newCategories[selectedCategory], [field]: combined };
         return { ...prev, interests: { ...prev.interests, categories: newCategories } };
       });
-      await customAlert('AI Suggestions Added', t.handlers.aiSuggestSuccess.replace('{count}', String(newItems.length)).replace('{field}', field).replace('{category}', selectedCategory), 'success');
+      await customAlert('AI Suggestions Added', t.handlers.aiSuggestSuccess.replace('{count}', String(newItems.length)).replace('{field}', field).replace('{category}', selectedCategory), 'success');   
     } catch (err: unknown) {
       console.error(`Failed to get AI suggestions for ${field}:`, err);
       const errorMsg = err instanceof Error ? err.message : String(err);
@@ -433,7 +431,7 @@ export function useUnifiedEditorHandlers({
       if (field === 'brands') setIsSuggestingBrands(false);
       else setIsSuggestingKeywords(false);
     }
-  }, [apiKey, customAlert, customConfirm, selectedCategory, setActiveTab]);
+  }, [apiKey, customAlert, customConfirm, selectedCategory, setActiveTab, t.handlers.aiSuggestFailed, t.handlers.aiSuggestSuccess, t.handlers.apiKeyRequired, t.handlers.quotaExceeded]);
 
   const handleRestructure = useCallback(async () => {
     if (!apiKey) {
@@ -480,7 +478,7 @@ export function useUnifiedEditorHandlers({
     } finally {
       setIsSuggesting(false);
     }
-  }, [apiKey, customAlert, customConfirm, customPrompt, draft, onSave, setActiveTab]);
+  }, [apiKey, customAlert, customConfirm, customPrompt, draft, language, onSave, setActiveTab, t.handlers.apiKeyRequiredSimple, t.handlers.quotaExceeded, t.handlers.restructureConfirm, t.handlers.restructureFailed, t.handlers.restructureInvalid, t.handlers.restructurePhase1, t.handlers.restructurePhase2, t.handlers.restructurePhaseFinal, t.handlers.restructurePrompt, t.handlers.restructureSuccess]);
 
   const handleResetToDefaults = useCallback(async () => {
     const confirmed = await customConfirm('Restore Default Profile', t.handlers.resetConfirm);
@@ -496,7 +494,7 @@ export function useUnifiedEditorHandlers({
     } finally {
       setIsSaving(false);
     }
-  }, [customAlert, customConfirm]);
+  }, [customAlert, customConfirm, t.handlers.resetConfirm, t.handlers.resetFailed, t.handlers.resetSuccess]);
 
   return {
     draft, setDraft, apiKey, setApiKey, selectedCategory, setSelectedCategory,

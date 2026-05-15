@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { Article, NexusSettings, AgentStatus, InterestCategory, FeedConfig, UiSettings, TrendSuggestion, Interests } from '../types';
+import type { Article, NexusSettings, AgentStatus, InterestCategory, FeedConfig, UiSettings, TrendSuggestion, Interests, UsageStats } from '../types';
 
 export interface WindowState {
   width: number;
@@ -183,12 +183,36 @@ export const nexusApi = {
     return { success: !!res.ok };
   },
 
-  async getUsageStats(): Promise<any> {
+  async getUsageStats(): Promise<UsageStats> {
     if (window.nexusApi) {
       return await window.nexusApi.getUsageStats();
     }
     const res = await fetch(`${BACKEND_URL}/api/v5/usage-stats`);
     return await res.json();
+  },
+
+  onUsageUpdate(callback: (stats: UsageStats) => void): () => void {
+    if (window.nexusApi) {
+      return window.nexusApi.onUsageUpdate(callback);
+    }
+    // Browser fallback: NexusRouter の SSE (/events) で 'usage-updated' イベントを受け取る
+    console.log('[Browser] Subscribing to usage updates via SSE fallback...');
+    const eventSource = new EventSource(`${BACKEND_URL}/api/v5/events`);
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'usage-updated') {
+          callback(data.stats);
+        }
+      } catch (err) {
+        console.error('[Browser] Failed to parse usage update from SSE', err);
+      }
+    };
+    
+    return () => {
+      console.log('[Browser] Unsubscribing from usage updates...');
+      eventSource.close();
+    };
   }
 };
 
@@ -302,7 +326,7 @@ export function useAgentEvents(onRefresh?: () => void) {
 
     console.log('[Electron] Registering agent event listener...');
     
-    window.nexusApi.onAgentEvent((data) => {
+    const unsubscribe = window.nexusApi.onAgentEvent((data) => {
       try {
         if (data.status === 'refresh') {
           onRefresh?.();
@@ -322,8 +346,11 @@ export function useAgentEvents(onRefresh?: () => void) {
 
     // Electronリスナーのクリーンアップ
     return () => {
-      // ipcRendererのリスナーを削除
-      if (window.nexusApi?.removeAgentEventListener) {
+      console.log('[Electron] Unsubscribing from agent events...');
+      if (unsubscribe) {
+        unsubscribe();
+      } else if (window.nexusApi?.removeAgentEventListener) {
+        // フォールバック: 解除関数がなかった場合（古いバージョンのpreload等）
         window.nexusApi.removeAgentEventListener();
       }
     };

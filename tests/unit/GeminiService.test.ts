@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { GeminiService } from '../../src/services/GeminiService';
 import type { Interests, FeedConfig } from '../../src/models/Schemas';
 import { UsageManager } from '../../src/services/UsageManager';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
 
 // Mocking @google/generative-ai
 vi.mock('@google/generative-ai', () => {
@@ -56,9 +56,10 @@ describe('GeminiService', () => {
 
       const genAI = new GoogleGenerativeAI('test-key');
       const mockModel = genAI.getGenerativeModel({ model: 'any' });
-      vi.mocked(mockModel.generateContent).mockResolvedValue(mockResult as any);
+      // @ts-expect-error - Mocking complex API response
+      vi.mocked(mockModel.generateContent).mockResolvedValue(mockResult);
 
-      await service.generateStructured('test prompt', { type: 'OBJECT' as any });
+      await service.generateStructured('test prompt', { type: SchemaType.OBJECT });
 
       expect(mockUsageManager.recordUsage).toHaveBeenCalledWith(
         expect.any(String),

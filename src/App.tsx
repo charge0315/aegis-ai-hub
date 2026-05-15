@@ -168,7 +168,7 @@ const App: React.FC = () => {
         Promise.resolve().then(() => setIsInitialized(true));
       }
     }
-  }, [settings, loading, isInitialized, dialogConfirm, refetch]);
+  }, [settings, loading, isInitialized, dialogConfirm, refetch, t.dialog.detectConfig.title, t.dialog.detectConfig.message]);
 
   const agentEvents = useAgentEvents(useCallback(() => {
     void refetch(false);
