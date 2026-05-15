@@ -87,6 +87,11 @@ contextBridge.exposeInMainWorld('nexusApi', {
   saveUiSettings: (settings) => ipcRenderer.invoke('save-ui-settings', settings),
 
   /**
+   * Gemini API利用統計を取得します。
+   */
+  getUsageStats: () => ipcRenderer.invoke('get-usage-stats'),
+
+  /**
    * ウィンドウコントロール
    */
   windowControl: (action) => ipcRenderer.send('window-control', action)

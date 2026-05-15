@@ -1,7 +1,7 @@
 # Backend Architecture Codemap
 
-**Last Updated:** 2026-05-11
-**Version:** v5.3.0 NEXUS
+**Last Updated:** 2026-05-21
+**Version:** v5.5.0 NEXUS
 **Entry Point:** `electron/main.cjs` (App/Main Process)
 
 ## 概要
@@ -49,7 +49,13 @@ Electron メインプロセス (`electron/main.cjs`) では、Windows 11 の **A
 - **自動故障検知と代替昇格**: 連続失敗したフィードを検知し、プール内の有効なフィードへと自動的に差し替える仕組みを `FeedManager` に実装。昇格前には必ずヘルスチェックが行われます。
 - **バリデーション・ガードレール**: `addFeed` および `syncSettings` 時の強制バリデーションにより、無効なフィードの登録を阻止。
 
-### 7. 多言語判定ロジック (Multilingual Detection)
+### 7. Gemini API 利用量トラッキング (Usage Tracking)
+v5.5.0 では、コスト管理と利用状況の可視化のため、API 利用量を詳細に記録する機構が導入されました：
+- **`UsageManager`**: 日次およびモデル別のトークン消費量を `data/usage_stats.json` に永続化。
+- **自動記録**: `GeminiService` を通じた全ての API 呼び出しにおいて、レスポンスから取得した `promptTokens` および `candidatesTokens` を自動的に累計。
+- **安全な書き込み**: `SettingsManager` と同様のバックアップ世代管理（最大3世代）を実装し、統計データの損失を防止。
+
+### 8. 多言語判定ロジック (Multilingual Detection)
 `ScraperFacade._detectLanguage` において、以下のロジックに基づき記事の言語を分類：
 - **判定手法**: 正規表現 `/[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/` を使用。
 - **対象**: 記事のタイトルとスニペット（要約）。
@@ -101,6 +107,7 @@ v5.3.0 では、システムの安定性を担保するためにユニットテ�
 | `DiscoveryService` | ソース探索 | **`Promise.all` による全カテゴリーの並列フィード検証**を導入し、探索のタイムアウトを防止。 |
 | `EnrichmentService` | 記事加工 | 並列スクレイピングによる画像補完。 |
 | `SettingsManager` | 設定の永続化 | **バックアップ世代管理**を備えたシングルトンとして、整合性と安全性を担保。 |
+| `UsageManager` | 利用統計管理 | **Gemini API トークン使用量の日次・モデル別記録**と永続化。 |
 
 ## 配布とビルド (electron-builder)
 - **プロダクション・パス**: 全てのデータは `%APPDATA%/aegis-nexus/` 配下に保存。

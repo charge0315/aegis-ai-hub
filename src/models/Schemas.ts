@@ -111,3 +111,26 @@ export const CredentialsSchema = z.object({
 });
 
 export type Credentials = z.infer<typeof CredentialsSchema>;
+
+/**
+ * v5.5 Usage Statistics Schema
+ * API利用量を日次・モデル別にトラッキングするためのスキーマ。
+ */
+export const UsageStatsItemSchema = z.object({
+  promptTokens: z.number().default(0),
+  candidatesTokens: z.number().default(0),
+  totalTokens: z.number().default(0),
+  callCount: z.number().default(0),
+});
+
+export type UsageStatsItem = z.infer<typeof UsageStatsItemSchema>;
+
+export const UsageStatsSchema = z.record(
+  z.string(), // Date key: YYYY-MM-DD
+  z.record(
+    z.string(), // Model name key
+    UsageStatsItemSchema
+  )
+);
+
+export type UsageStats = z.infer<typeof UsageStatsSchema>;

@@ -16,6 +16,7 @@ import { SkillRegistry } from './SkillRegistry';
 import { CategoryEditor } from './editors/CategoryEditor';
 import { SystemSettings } from './editors/SystemSettings';
 import { AIInsightsPanel } from './editors/AIInsightsPanel';
+import { UsageDashboard } from './editors/UsageDashboard';
 import { useUnifiedEditorHandlers } from '../hooks/useUnifiedEditorHandlers';
 import type { NexusSettings, UiSettings } from '../types';
 import type { DialogType } from './CustomDialog';
@@ -31,7 +32,7 @@ interface UnifiedEditorProps {
   setTheme: (theme: UiSettings['theme']) => void;
 }
 
-type Tab = 'editor' | 'graph' | 'skills' | 'system' | 'insights';
+type Tab = 'editor' | 'graph' | 'skills' | 'system' | 'insights' | 'usage';
 
 export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
   currentSettings,
@@ -114,7 +115,7 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
       {/* Header & Main Actions */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-content-base flex items-center gap-3">
+          <h1 className="text-2xl font-bold text-content-base flex items-center gap-3" data-testid="settings-title">
             <div className="p-2 bg-primary/20 rounded-lg text-primary">
               <Settings2 size={24} />
             </div>
@@ -194,6 +195,13 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
           icon={<Settings2 size={18} />} 
           label={t.settings.tabs.system} 
           data-testid="tab-system"
+        />
+        <TabButton 
+          active={activeTab === 'usage'} 
+          onClick={() => setActiveTab('usage')} 
+          icon={<LayoutTemplate size={18} />} 
+          label={t.settings.tabs.usage} 
+          data-testid="tab-usage"
         />
       </div>
 
@@ -294,6 +302,16 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
               theme={theme}
               setTheme={setTheme}
             />
+          )}
+          {activeTab === 'usage' && (
+            <motion.div
+              key="usage"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+            >
+              <UsageDashboard />
+            </motion.div>
           )}
         </AnimatePresence>
       </div>

@@ -137,7 +137,8 @@ async function initBackend() {
   await settingsManager.init();
 
   const apiKey = await settingsManager.getApiKey();
-  geminiService = new GeminiService(apiKey);
+  const usageManager = settingsManager.getUsageManager();
+  geminiService = new GeminiService(apiKey, usageManager);
 
   const feedConfigPath = path.join(dataDir, 'feed_config.json');
   feedManager = new FeedManager(feedConfigPath);
@@ -372,6 +373,15 @@ function registerIpcHandlers() {
     } catch (error) {
       console.error('Failed to save UI settings:', error);
       throw error;
+    }
+  });
+
+  ipcMain.handle('get-usage-stats', async () => {
+    try {
+      return await settingsManager.getUsageManager().getStats();
+    } catch (error) {
+      console.error('Failed to get usage stats:', error);
+      return {};
     }
   });
 

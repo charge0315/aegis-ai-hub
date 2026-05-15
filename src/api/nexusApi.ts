@@ -166,14 +166,29 @@ export const nexusApi = {
     if (window.nexusApi) {
       return await window.nexusApi.getUiSettings();
     }
-    return { jaOnly: false, viewMode: 'grid', hideImages: false, isInitialized: false, theme: 'system', language: 'ja' };
+    const res = await fetch(`${BACKEND_URL}/api/v5/ui-settings`);
+    if (!res.ok) return { jaOnly: false, viewMode: 'grid', hideImages: false, isInitialized: false, theme: 'system', language: 'ja' };
+    return await res.json();
   },
 
   async saveUiSettings(settings: UiSettings): Promise<{ success: boolean }> {
     if (window.nexusApi) {
       return await window.nexusApi.saveUiSettings(settings);
     }
-    return { success: true };
+    const res = await fetch(`${BACKEND_URL}/api/v5/save-ui-settings`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(settings)
+    });
+    return { success: !!res.ok };
+  },
+
+  async getUsageStats(): Promise<any> {
+    if (window.nexusApi) {
+      return await window.nexusApi.getUsageStats();
+    }
+    const res = await fetch(`${BACKEND_URL}/api/v5/usage-stats`);
+    return await res.json();
   }
 };
 

@@ -2,6 +2,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { InterestsSchema, FeedConfigSchema, WindowStateSchema, CredentialsSchema, UiSettingsSchema, type Interests, type FeedConfig, type Credentials, type UiSettings, type SyncSettings } from '../models/Schemas';
 import { normalizeCategoryName } from '../utils/normalize';
+import { UsageManager } from './UsageManager';
 
 export interface SettingsManagerConfig {
   dataDir: string;
@@ -19,6 +20,7 @@ export class SettingsManager {
   protected interestsPath: string;
   protected feedConfigPath: string;
   protected credentialsPath: string;
+  protected usageManager: UsageManager;
 
   constructor(config: SettingsManagerConfig) {
     this.dataDir = config.dataDir;
@@ -26,6 +28,7 @@ export class SettingsManager {
     this.interestsPath = path.join(this.dataDir, 'interests.json');
     this.feedConfigPath = path.join(this.dataDir, 'feed_config.json');
     this.credentialsPath = path.join(this.dataDir, 'credentials.json');
+    this.usageManager = new UsageManager(this.dataDir);
   }
 
   async init(): Promise<void> {
@@ -33,6 +36,13 @@ export class SettingsManager {
     await this._ensureFile(this.interestsPath, { categories: {}, lastUpdated: Date.now() });
     await this._ensureFile(this.feedConfigPath, {});
     await this._ensureFile(this.credentialsPath, { geminiApiKey: '' });
+  }
+
+  /**
+   * 利用統計マネージャーを取得します。
+   */
+  getUsageManager(): UsageManager {
+    return this.usageManager;
   }
 
   protected async _ensureFile(filePath: string, defaultContent: unknown): Promise<void> {

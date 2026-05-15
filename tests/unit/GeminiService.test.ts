@@ -1,18 +1,22 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { GeminiService } from '../../src/services/GeminiService';
 import type { Interests, FeedConfig } from '../../src/models/Schemas';
+import { UsageManager } from '../../src/services/UsageManager';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 // Mocking @google/generative-ai
 vi.mock('@google/generative-ai', () => {
-  class MockGoogleGenerativeAI {
-    getGenerativeModel() {
-      return {
-        generateContent: vi.fn()
-      };
-    }
-  }
+  const mockGenerateContent = vi.fn();
+  const mockGetGenerativeModel = vi.fn(() => ({
+    generateContent: mockGenerateContent
+  }));
+  
   return {
-    GoogleGenerativeAI: MockGoogleGenerativeAI,
+    GoogleGenerativeAI: vi.fn().mockImplementation(function() {
+      return {
+        getGenerativeModel: mockGetGenerativeModel
+      };
+    }),
     SchemaType: {
       OBJECT: 'OBJECT',
       ARRAY: 'ARRAY',
@@ -25,10 +29,43 @@ vi.mock('@google/generative-ai', () => {
 
 describe('GeminiService', () => {
   let service: GeminiService;
+  let mockUsageManager: UsageManager;
 
   beforeEach(() => {
-    service = new GeminiService('test-key');
+    mockUsageManager = {
+      recordUsage: vi.fn().mockResolvedValue(undefined),
+      getStats: vi.fn(),
+      resetStats: vi.fn()
+    } as unknown as UsageManager;
+
+    service = new GeminiService('test-key', mockUsageManager);
     vi.clearAllMocks();
+  });
+
+  describe('generateStructured', () => {
+    it('should record usage when response contains usageMetadata', async () => {
+      const mockResult = {
+        response: {
+          text: () => JSON.stringify({ result: 'ok' }),
+          usageMetadata: {
+            promptTokenCount: 123,
+            candidatesTokenCount: 456
+          }
+        }
+      };
+
+      const genAI = new GoogleGenerativeAI('test-key');
+      const mockModel = genAI.getGenerativeModel({ model: 'any' });
+      vi.mocked(mockModel.generateContent).mockResolvedValue(mockResult as any);
+
+      await service.generateStructured('test prompt', { type: 'OBJECT' as any });
+
+      expect(mockUsageManager.recordUsage).toHaveBeenCalledWith(
+        expect.any(String),
+        123,
+        456
+      );
+    });
   });
 
   describe('getRestructureProposal', () => {

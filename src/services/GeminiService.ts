@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI, type GenerativeModel, type ChatSession, type ResponseSchema, SchemaType, type Content } from "@google/generative-ai";
 import type { Interests, InterestCategory, FeedConfig } from "../models/Schemas";
 import { normalizeCategoryName } from "../utils/normalize";
+import { UsageManager } from "./UsageManager";
 
 export interface CuratedArticle {
   id: number;
@@ -24,12 +25,17 @@ export class GeminiService {
   private primaryModelName: string = "gemini-3.1-flash";
   private highReasoningModelName: string = "gemini-3.1-pro";
   private stableFallbackModelName: string = "gemini-2.5-flash";
+  private usageManager: UsageManager | null = null;
 
   /**
    * @param {string} apiKey - Google Gemini APIキー
+   * @param {UsageManager} usageManager - 利用統計マネージャー
    */
-  constructor(apiKey: string | undefined) {
+  constructor(apiKey: string | undefined, usageManager?: UsageManager) {
     this.genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
+    if (usageManager) {
+      this.usageManager = usageManager;
+    }
   }
 
   /**
@@ -66,6 +72,15 @@ export class GeminiService {
 
       const result = await model.generateContent(prompt);
       const response = await result.response;
+
+      // 利用統計の記録
+      if (this.usageManager && response.usageMetadata) {
+        const { promptTokenCount = 0, candidatesTokenCount = 0 } = response.usageMetadata;
+        this.usageManager.recordUsage(modelName, promptTokenCount, candidatesTokenCount).catch(err => {
+          console.error(`[GeminiService] Failed to record usage:`, err);
+        });
+      }
+
       const text = response.text();
       
       console.log(`[GeminiService] Received response from ${modelName}. Size: ${text?.length || 0} chars.`);

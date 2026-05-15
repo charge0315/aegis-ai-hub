@@ -86,6 +86,7 @@ export interface NexusApiBridge {
   windowControl: (action: 'minimize' | 'maximize' | 'close') => void;
   getUiSettings: () => Promise<UiSettings>;
   saveUiSettings: (settings: UiSettings) => Promise<{ success: boolean }>;
+  getUsageStats: () => Promise<any>;
 }
 
 declare global {
