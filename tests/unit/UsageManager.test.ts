@@ -114,4 +114,27 @@ describe('UsageManager', () => {
     const stats = await usageManager.getStats();
     expect(stats).toEqual({});
   });
+
+  it('should handle concurrent usage recording without race conditions', async () => {
+    const model = 'gemini-3.1-flash';
+    const today = new Date().toISOString().split('T')[0];
+    const iterations = 20;
+    const promptPerCall = 10;
+    const candidatesPerCall = 5;
+
+    // 同時に複数のrecordUsageを呼び出す
+    await Promise.all(
+      Array.from({ length: iterations }).map(() => 
+        usageManager.recordUsage(model, promptPerCall, candidatesPerCall)
+      )
+    );
+
+    const stats = await usageManager.getStats();
+    const item = stats[today][model];
+
+    expect(item.callCount).toBe(iterations);
+    expect(item.promptTokens).toBe(iterations * promptPerCall);
+    expect(item.candidatesTokens).toBe(iterations * candidatesPerCall);
+    expect(item.totalTokens).toBe(iterations * (promptPerCall + candidatesPerCall));
+  });
 });

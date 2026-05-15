@@ -30,7 +30,11 @@ contextBridge.exposeInMainWorld('nexusApi', {
   /**
    * エージェントからのリアルタイムイベントを受信します。
    */
-  onAgentEvent: (callback) => ipcRenderer.on('agent-event', (event, data) => callback(data)),
+  onAgentEvent: (callback) => {
+    const listener = (event, data) => callback(data);
+    ipcRenderer.on('agent-event', listener);
+    return () => ipcRenderer.removeListener('agent-event', listener);
+  },
 
   /**
    * エージェントからのリアルタイムイベントの受信を解除します。
@@ -90,6 +94,15 @@ contextBridge.exposeInMainWorld('nexusApi', {
    * Gemini API利用統計を取得します。
    */
   getUsageStats: () => ipcRenderer.invoke('get-usage-stats'),
+
+  /**
+   * 利用統計の更新を検知します。
+   */
+  onUsageUpdate: (callback) => {
+    const listener = (event, data) => callback(data);
+    ipcRenderer.on('usage-updated', listener);
+    return () => ipcRenderer.removeListener('usage-updated', listener);
+  },
 
   /**
    * ウィンドウコントロール

@@ -1,15 +1,18 @@
 import fs from 'fs/promises';
 import path from 'path';
+import { EventEmitter } from 'events';
 import { UsageStatsSchema, type UsageStats } from '../models/Schemas';
 
 /**
  * Gemini APIの利用統計（トークン消費量）を管理するマネージャー。
  * 日次およびモデル別の統計情報を data/usage_stats.json に永続化します。
  */
-export class UsageManager {
+export class UsageManager extends EventEmitter {
   private statsPath: string;
+  private writeLock: Promise<void> = Promise.resolve();
 
   constructor(dataDir: string) {
+    super();
     this.statsPath = path.join(dataDir, 'usage_stats.json');
   }
 
@@ -34,29 +37,41 @@ export class UsageManager {
    * @param candidatesTokens 候補（出力）トークン数
    */
   async recordUsage(modelName: string, promptTokens: number, candidatesTokens: number): Promise<void> {
-    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-    const stats = await this.getStats();
+    // 競合状態を防ぐためにロックを使用
+    this.writeLock = this.writeLock.then(async () => {
+      try {
+        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+        const stats = await this.getStats();
 
-    if (!stats[today]) {
-      stats[today] = {};
-    }
+        if (!stats[today]) {
+          stats[today] = {};
+        }
 
-    if (!stats[today][modelName]) {
-      stats[today][modelName] = {
-        promptTokens: 0,
-        candidatesTokens: 0,
-        totalTokens: 0,
-        callCount: 0,
-      };
-    }
+        if (!stats[today][modelName]) {
+          stats[today][modelName] = {
+            promptTokens: 0,
+            candidatesTokens: 0,
+            totalTokens: 0,
+            callCount: 0,
+          };
+        }
 
-    const item = stats[today][modelName];
-    item.promptTokens += promptTokens;
-    item.candidatesTokens += candidatesTokens;
-    item.totalTokens += (promptTokens + candidatesTokens);
-    item.callCount += 1;
+        const item = stats[today][modelName];
+        item.promptTokens += promptTokens;
+        item.candidatesTokens += candidatesTokens;
+        item.totalTokens += (promptTokens + candidatesTokens);
+        item.callCount += 1;
 
-    await this._safeWrite(this.statsPath, stats);
+        await this._safeWrite(this.statsPath, stats);
+
+        // 更新イベントを発火
+        this.emit('usage-updated', stats);
+      } catch (error) {
+        console.error('[UsageManager] recordUsage failed:', error);
+      }
+    });
+
+    return this.writeLock;
   }
 
   /**

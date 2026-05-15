@@ -140,6 +140,13 @@ async function initBackend() {
   const usageManager = settingsManager.getUsageManager();
   geminiService = new GeminiService(apiKey, usageManager);
 
+  // 利用統計の更新をフロントエンドに通知
+  usageManager.on('usage-updated', (stats) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('usage-updated', stats);
+    }
+  });
+
   const feedConfigPath = path.join(dataDir, 'feed_config.json');
   feedManager = new FeedManager(feedConfigPath);
   rssFetcher = new RSSFetcher();
