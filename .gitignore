@@ -121,4 +121,4 @@ fix_ui*.py
 *.bak
 *.bak2
 dashboard/
-server/
+/server/
