@@ -54,7 +54,7 @@ jobs:
       - name: Run Markdown Lint
         run: |
           npm install -g markdownlint-cli
-          markdownlint '**/*.md' --ignore node_modules --ignore .github
+          markdownlint '**/*.md' --ignore node_modules --ignore .github --config .markdownlint.json
 
       - name: Run lint
         run: npm run lint
