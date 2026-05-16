@@ -1,0 +1,27 @@
+frontend:
+  - 'src/components/**/*'
+  - 'src/App.tsx'
+  - 'src/App.css'
+  - 'src/index.css'
+  - 'public/**/*'
+
+backend:
+  - 'src/api/**/*'
+  - 'electron/**/*'
+
+logic:
+  - 'src/agents/**/*'
+  - 'src/core/**/*'
+  - 'src/services/**/*'
+
+testing:
+  - 'tests/**/*'
+  - 'playwright.config.ts'
+  - 'vitest.config.ts'
+
+ci:
+  - '.github/workflows/**/*'
+
+docs:
+  - '**/*.md'
+  - 'docs/**/*'
