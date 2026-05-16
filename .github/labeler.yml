@@ -1,27 +1,39 @@
 frontend:
-  - 'src/components/**/*'
-  - 'src/App.tsx'
-  - 'src/App.css'
-  - 'src/index.css'
-  - 'public/**/*'
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'src/components/**/*'
+          - 'src/App.tsx'
+          - 'src/App.css'
+          - 'src/index.css'
+          - 'public/**/*'
 
 backend:
-  - 'src/api/**/*'
-  - 'electron/**/*'
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'src/api/**/*'
+          - 'electron/**/*'
 
 logic:
-  - 'src/agents/**/*'
-  - 'src/core/**/*'
-  - 'src/services/**/*'
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'src/agents/**/*'
+          - 'src/core/**/*'
+          - 'src/services/**/*'
 
 testing:
-  - 'tests/**/*'
-  - 'playwright.config.ts'
-  - 'vitest.config.ts'
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'tests/**/*'
+          - 'playwright.config.ts'
+          - 'vitest.config.ts'
 
 ci:
-  - '.github/workflows/**/*'
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/workflows/**/*'
 
 docs:
-  - '**/*.md'
-  - 'docs/**/*'
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/*.md'
+          - 'docs/**/*'
