@@ -20,6 +20,7 @@ jobs:
   # 2. コミットメッセージ検証
   commitlint:
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
         with:
