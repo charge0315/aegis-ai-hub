@@ -19,7 +19,7 @@ export default defineConfig({
   ],
   webServer: [
     {
-      command: 'node --loader esbuild-register/loader src/api/server/standalone.ts',
+      command: 'npx tsx src/api/server/standalone.ts',
       port: 3005,
       reuseExistingServer: !process.env.CI,
     },
