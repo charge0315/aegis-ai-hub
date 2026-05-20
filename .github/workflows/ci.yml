@@ -53,3 +53,7 @@ jobs:
         run: npm ci
       - name: Test (Unit)
         run: npm run test
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
+      - name: Test (E2E)
+        run: npm run test:e2e -- --project=chromium

@@ -2,7 +2,6 @@ import { z } from 'zod';
 
 /**
  * システムが外部から受信するフィード情報（ニュースソース）の健全性を担保するための型定義。
- * 万が一不正なURLが混入してアプリ全体がクラッシュするのを防ぐ「関所」として機能します。
  */
 export const FeedConfigSchema = z.record(
   z.string(),
@@ -16,8 +15,7 @@ export const FeedConfigSchema = z.record(
 export type FeedConfig = z.infer<typeof FeedConfigSchema>;
 
 /**
- * ユーザーの個人的な嗜好（カテゴリごとの関心度や抽出キーワード）を定義するスキーマ。
- * これがAegis AI Hubの「パーソナライズの核」となり、AIがどの情報に重み付けをするかの基準となります。
+ * ユーザーの個人的な嗜好を定義するスキーマ。
  */
 export const InterestCategorySchema = z.object({
   emoji: z.string(),
@@ -29,10 +27,6 @@ export const InterestCategorySchema = z.object({
 
 export type InterestCategory = z.infer<typeof InterestCategorySchema>;
 
-/**
- * エージェントが自律的に実行可能な「スキル」を定義するスキーマ。
- * 単なるアクションの羅列ではなく、どのアクションが有効（enabled）かを制御するスイッチでもあります。
- */
 export const SkillSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -45,8 +39,7 @@ export const SkillSchema = z.object({
 export type Skill = z.infer<typeof SkillSchema>;
 
 /**
- * システムが学習した「ユーザーの興味関心の全体像（プロファイル）」を束ねるスキーマ。
- * AIによる自動学習（トレンド分析）によって定期的に拡張・アップデートされる生きたデータです。
+ * プロファイル全体のスキーマ。
  */
 export const InterestsSchema = z.object({
   categories: z.record(z.string(), InterestCategorySchema),
@@ -64,10 +57,6 @@ export const InterestsSchema = z.object({
 
 export type Interests = z.infer<typeof InterestsSchema>;
 
-/**
- * UIの利便性を維持するためのウィンドウ状態スキーマ。
- * 次回起動時にも「ユーザーが一番使いやすかった画面サイズと位置」を復元するために記憶します。
- */
 export const WindowStateSchema = z.object({
   width: z.number(),
   height: z.number(),
@@ -77,9 +66,6 @@ export const WindowStateSchema = z.object({
 
 export type WindowState = z.infer<typeof WindowStateSchema>;
 
-/**
- * v5.2 Sync Settings Schema
- */
 export const SyncSettingsSchema = z.object({
   interests: InterestsSchema,
   feedConfig: FeedConfigSchema,
@@ -90,7 +76,7 @@ export const SyncSettingsSchema = z.object({
 export type SyncSettings = z.infer<typeof SyncSettingsSchema>;
 
 /**
- * v5.3 UI Settings Schema
+ * UI 設定スキーマ (v5.5 追加フィールド対応)
  */
 export const UiSettingsSchema = z.object({
   jaOnly: z.boolean().default(false),
@@ -98,13 +84,29 @@ export const UiSettingsSchema = z.object({
   hideImages: z.boolean().default(false),
   isInitialized: z.boolean().default(false),
   theme: z.enum(['light', 'dark', 'system']).default('system'),
+  language: z.enum(['ja', 'en']).default('ja'),
 });
 
 export type UiSettings = z.infer<typeof UiSettingsSchema>;
 
 /**
- * v5.2 Credentials Schema
+ * 利用統計スキーマ
  */
+export const UsageStatsSchema = z.record(
+  z.string(), // YYYY-MM-DD
+  z.record(
+    z.string(), // model name
+    z.object({
+      promptTokens: z.number(),
+      candidatesTokens: z.number(),
+      totalTokens: z.number(),
+      callCount: z.number()
+    })
+  )
+);
+
+export type UsageStats = z.infer<typeof UsageStatsSchema>;
+
 export const CredentialsSchema = z.object({
   geminiApiKey: z.string().optional(),
 });

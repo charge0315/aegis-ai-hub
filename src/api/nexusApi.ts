@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { Article, NexusSettings, AgentStatus, InterestCategory, FeedConfig, UiSettings, TrendSuggestion } from '../types';
+import type { Article, NexusSettings, AgentStatus, InterestCategory, FeedConfig, UiSettings, TrendSuggestion, Interests, UsageStats } from '../types';
 
 export interface WindowState {
   width: number;
@@ -8,164 +8,162 @@ export interface WindowState {
   y: number;
 }
 
-// Fallback for non-Electron environments (e.g. Playwright tests)
-const BACKEND_URL = 'http://localhost:3005';
+const isE2E = () => (typeof window !== 'undefined' && (window as unknown as { isE2ETest?: boolean }).isE2ETest === true);
 
 /**
  * Electron IPC Bridge または HTTP API を介した API 呼び出し
  */
 export const nexusApi = {
+  getBackendUrl(): string {
+    return isE2E() ? '' : 'http://localhost:3005';
+  },
+
   async getArticles(): Promise<Article[]> {
-    if (window.nexusApi) {
-      return await window.nexusApi.getArticles();
+    if (window.nexusApi?.getArticles && !isE2E()) return await window.nexusApi.getArticles();
+    try {
+      const url = `${this.getBackendUrl()}/api/dashboard`;
+      const res = await fetch(url);
+      const data = await res.json();
+      const allArticles: Article[] = [];
+      Object.values(data as Record<string, { articles: Article[] }>).forEach(group => {
+        if (group?.articles) allArticles.push(...group.articles);
+      });
+      return allArticles;
+    } catch (e) {
+      console.error('[nexusApi] Fetch articles failed:', e);
+      return [];
     }
-    const res = await fetch(`${BACKEND_URL}/api/dashboard`);
-    const data = await res.json();
-    
-    // data is Record<string, { emoji: string, articles: Article[] }>
-    const allArticles: Article[] = [];
-    const groupedData = data as Record<string, { emoji: string, articles: Article[] }>;
-    Object.values(groupedData).forEach((group) => {
-      if (group && Array.isArray(group.articles)) {
-        allArticles.push(...group.articles);
-      }
-    });
-    return allArticles;
   },
 
   async getSettings(): Promise<NexusSettings> {
-    if (window.nexusApi) {
-      return await window.nexusApi.getSettings();
+    if (window.nexusApi?.getSettings && !isE2E()) return await window.nexusApi.getSettings();
+    try {
+      const urlInterests = `${this.getBackendUrl()}/api/v5/interests`;
+      const urlFeeds = `${this.getBackendUrl()}/api/v5/feeds`;
+      const interests = await fetch(urlInterests).then(r => r.json());
+      const feeds = await fetch(urlFeeds).then(r => r.json());
+      return { interests, feedConfig: feeds };
+    } catch (e) {
+      console.error('[nexusApi] Fetch settings failed:', e);
+      throw e;
     }
-    const res = await fetch(`${BACKEND_URL}/api/v5/interests`);
-    const interests = await res.json();
-    const resFeeds = await fetch(`${BACKEND_URL}/api/v5/feeds`);
-    const feeds = await resFeeds.json();
-    return { interests, feedConfig: feeds };
   },
 
   async syncSettings(settings: NexusSettings): Promise<{ lastUpdated: number }> {
-    const payload = { 
-      interests: settings.interests, 
-      feedConfig: settings.feedConfig,
-      lastUpdated: typeof settings.lastUpdated === 'number' ? settings.lastUpdated : undefined
-    };
-
-    if (window.nexusApi) {
-      return await window.nexusApi.syncSettings(payload as NexusSettings);
-    }
-    const res = await fetch(`${BACKEND_URL}/api/v5/sync-settings`, {
+    if (window.nexusApi?.syncSettings && !isE2E()) return await window.nexusApi.syncSettings(settings);
+    const res = await fetch(`${this.getBackendUrl()}/api/v5/sync-settings`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(settings)
     });
-    if (!res.ok) {
-      const errorData = await res.json();
-      throw new Error(errorData.details || errorData.error || 'Failed to sync settings');
-    }
     return await res.json();
   },
 
-  async triggerOrchestration(requirements: string): Promise<void> {
-    if (window.nexusApi) {
-      await window.nexusApi.triggerOrchestration();
-      return;
-    }
-    await fetch(`${BACKEND_URL}/api/v5/orchestrate`, {
+  async triggerOrchestration(requirements?: string): Promise<{ success: boolean; newFeedsCount: number }> {
+    if (window.nexusApi?.triggerOrchestration && !isE2E()) return await window.nexusApi.triggerOrchestration(requirements);
+    const res = await fetch(`${this.getBackendUrl()}/api/v5/orchestrate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ requirements })
     });
+    return await res.json();
   },
 
   async suggestCategory(categoryName: string): Promise<{ brands: string[], keywords: string[], emoji: string, reason: string }> {
-    if (window.nexusApi) {
-      return await window.nexusApi.suggestCategory(categoryName);
-    }
-    const res = await fetch(`${BACKEND_URL}/api/v5/suggest-category`, {
+    if (window.nexusApi?.suggestCategory && !isE2E()) return await window.nexusApi.suggestCategory(categoryName);
+    const res = await fetch(`${this.getBackendUrl()}/api/v5/suggest-category`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ categoryName })
     });
-    if (!res.ok) {
-      const errorData = await res.json();
-      throw new Error(errorData.details || errorData.error || 'Failed to generate suggestions');
-    }
     return await res.json();
   },
 
-  async getProposals(): Promise<Record<string, unknown>> {
-    if (window.nexusApi) {
-      return await window.nexusApi.getProposals();
-    }
-    const res = await fetch(`${BACKEND_URL}/api/v5/proposals`);
-    return await res.json();
-  },
-
-  async restructureCategories(count?: number): Promise<{ categories: Record<string, InterestCategory>, feedConfig: FeedConfig }> {
-    if (window.nexusApi) {
-      return await window.nexusApi.restructureCategories(count);
-    }
-    const res = await fetch(`${BACKEND_URL}/api/v5/restructure-categories`, {
+  async restructureCategories(count?: number, language: string = 'ja'): Promise<{ categories: Record<string, InterestCategory>, feedConfig: FeedConfig }> {
+    if (window.nexusApi?.restructureCategories && !isE2E()) return await window.nexusApi.restructureCategories(count, language);
+    const res = await fetch(`${this.getBackendUrl()}/api/v5/restructure-categories`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ count })
+      body: JSON.stringify({ count, language })
     });
     return await res.json();
   },
 
   async discoverTrends(): Promise<{ suggestions: TrendSuggestion[] }> {
-    if (window.nexusApi) {
-      return await window.nexusApi.discoverTrends();
-    }
-    const res = await fetch(`${BACKEND_URL}/api/v5/discover-trends`, {
-      method: 'POST'
+    if (window.nexusApi?.discoverTrends && !isE2E()) return await window.nexusApi.discoverTrends();
+    const res = await fetch(`${this.getBackendUrl()}/api/v5/discover-trends`, { method: 'POST' });
+    return await res.json();
+  },
+
+  async translateInterests(settings: NexusSettings): Promise<{ interests: Interests, feedConfig: FeedConfig }> {
+    if (window.nexusApi?.translateInterests && !isE2E()) return await window.nexusApi.translateInterests(settings);
+    const res = await fetch(`${this.getBackendUrl()}/api/v5/translate-interests`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(settings)
     });
     return await res.json();
   },
 
-  async resetToDefaults(): Promise<{ success: boolean }> {
-    if (window.nexusApi) {
-      return await window.nexusApi.resetToDefaults();
-    }
-    const res = await fetch(`${BACKEND_URL}/api/v5/reset-to-defaults`, {
-      method: 'POST'
+  async resetToDefaults(language: string = 'ja'): Promise<{ success: boolean }> {
+    if (window.nexusApi?.resetToDefaults && !isE2E()) return await window.nexusApi.resetToDefaults(language);
+    const res = await fetch(`${this.getBackendUrl()}/api/v5/reset-to-defaults`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ language })
     });
     return await res.json();
   },
 
   async getApiKey(): Promise<string> {
-    if (window.nexusApi) {
-      return await window.nexusApi.getApiKey();
-    }
+    if (window.nexusApi?.getApiKey && !isE2E()) return await window.nexusApi.getApiKey();
     return '';
   },
 
   async saveApiKey(apiKey: string): Promise<{ success: boolean }> {
-    if (window.nexusApi) {
-      return await window.nexusApi.saveApiKey(apiKey);
-    }
+    if (window.nexusApi?.saveApiKey && !isE2E()) return await window.nexusApi.saveApiKey(apiKey);
     return { success: true };
   },
 
   async getUiSettings(): Promise<UiSettings> {
-    if (window.nexusApi) {
-      return await window.nexusApi.getUiSettings();
+    if (window.nexusApi?.getUiSettings && !isE2E()) return await window.nexusApi.getUiSettings();
+    try {
+      const url = `${this.getBackendUrl()}/api/v5/ui-settings`;
+      const res = await fetch(url);
+      return await res.json();
+    } catch {
+      return { jaOnly: false, viewMode: 'grid', hideImages: false, isInitialized: true, theme: 'system', language: 'ja' };
     }
-    return { jaOnly: false, viewMode: 'grid', hideImages: false, isInitialized: false, theme: 'system' };
   },
 
   async saveUiSettings(settings: UiSettings): Promise<{ success: boolean }> {
-    if (window.nexusApi) {
-      return await window.nexusApi.saveUiSettings(settings);
-    }
+    if (window.nexusApi?.saveUiSettings && !isE2E()) return await window.nexusApi.saveUiSettings(settings);
     return { success: true };
+  },
+
+  onUsageUpdate(callback: (stats: UsageStats) => void): () => void {
+    if (window.nexusApi?.onUsageUpdate && !isE2E()) return window.nexusApi.onUsageUpdate(callback);
+    return () => {};
+  },
+
+  async getUsageStats(): Promise<UsageStats> {
+    if (window.nexusApi?.getUsageStats && !isE2E()) return await window.nexusApi.getUsageStats();
+    try {
+      const url = `${this.getBackendUrl()}/api/v5/usage-stats`;
+      const res = await fetch(url);
+      return await res.json();
+    } catch {
+      return {};
+    }
+  },
+
+  windowControl(action: 'minimize' | 'maximize' | 'close' | 'quit'): void {
+    if (window.nexusApi?.windowControl && !isE2E()) {
+      window.nexusApi.windowControl(action as unknown as 'minimize' | 'maximize' | 'close');
+    }
   }
 };
 
-/**
- * データ取得と同期のためのカスタムフック
- */
 export function useNexusSync() {
   const [settings, setSettings] = useState<NexusSettings | null>(null);
   const [articles, setArticles] = useState<Article[]>([]);
@@ -175,65 +173,36 @@ export function useNexusSync() {
   const fetchData = useCallback(async (showLoading = true) => {
     try {
       if (showLoading) setLoading(true);
-      const [s, a] = await Promise.all([
-        nexusApi.getSettings(),
-        nexusApi.getArticles()
-      ]);
+      const s = await nexusApi.getSettings();
+      const a = await nexusApi.getArticles();
       setSettings(s);
       setArticles(a);
       setError(null);
     } catch (err: unknown) {
-      console.error('Fetch data failed:', err);
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError('Failed to fetch data');
-      }
+      console.error('[useNexusSync] Fetch data failed:', err);
+      setError(err instanceof Error ? err.message : 'Fetch error');
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    let isMounted = true;
-    
-    const init = async () => {
-      await fetchData(false);
-      if (!isMounted) return;
-    };
-
-    void init();
-    
-    return () => { isMounted = false; };
+    const timer = setTimeout(() => {
+      void fetchData(false);
+    }, 0);
+    return () => clearTimeout(timer);
   }, [fetchData]);
 
   const sync = useCallback(async (newSettings: NexusSettings) => {
-    try {
-      const result = await nexusApi.syncSettings(newSettings);
-      const updatedSettings = {
-        ...newSettings,
-        interests: {
-          ...newSettings.interests,
-          lastUpdated: result.lastUpdated
-        }
-      };
-      setSettings(updatedSettings);
-
-      // 同期後に記事をリフレッシュ
-      const a = await nexusApi.getArticles();
-      setArticles(a);
-    } catch (err) {
-      console.error('Failed to sync settings:', err);
-      throw err; // Re-throw to allow UI to catch it
-    }
+    const result = await nexusApi.syncSettings(newSettings);
+    setSettings({ ...newSettings, interests: { ...newSettings.interests, lastUpdated: result.lastUpdated } });
+    const a = await nexusApi.getArticles();
+    setArticles(a);
   }, []);
 
   return { settings, articles, loading, error, sync, refetch: fetchData };
 }
 
-/**
- * エージェントイベントを受信するためのカスタムフック
- */
 export function useAgentEvents(onRefresh?: () => void) {
   const [events, setEvents] = useState<AgentStatus[]>([
     { id: 'architect', name: 'Architect', status: 'idle', lastMessage: '', timestamp: '' },
@@ -243,61 +212,21 @@ export function useAgentEvents(onRefresh?: () => void) {
   ]);
 
   useEffect(() => {
-    if (!window.nexusApi) {
-      // Fallback for browser: Use SSE
-      console.log('[Browser] Connecting to SSE for agent events...');
-      const eventSource = new EventSource(`${BACKEND_URL}/api/v5/events`);
-      
-      eventSource.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          if (data.status === 'refresh') {
-            console.log('[Browser] Refresh signal received');
-            onRefresh?.();
-            return;
-          }
-          if (data.agentId) {
-            setEvents(prev => prev.map(agent => 
-              agent.id === data.agentId 
-                ? { ...agent, status: data.status, lastMessage: data.message, timestamp: data.timestamp || new Date().toISOString() }
-                : agent
-            ));
-          }
-        } catch (err) {
-          console.error('[Browser] Failed to process SSE event', err);
-        }
+    const backendUrl = isE2E() ? '' : 'http://localhost:3005';
+    if (!window.nexusApi || isE2E()) {
+      const eventSource = new EventSource(`${backendUrl}/api/v5/events`);
+      eventSource.onmessage = (e) => {
+        const data = JSON.parse(e.data);
+        if (data.status === 'refresh') onRefresh?.();
+        else if (data.agentId) setEvents(prev => prev.map(a => a.id === data.agentId ? { ...a, ...data } : a));
       };
-
       return () => eventSource.close();
     }
-
-    console.log('[Electron] Registering agent event listener...');
-    
     window.nexusApi.onAgentEvent((data) => {
-      try {
-        if (data.status === 'refresh') {
-          onRefresh?.();
-          return;
-        }
-        if (data.agentId) {
-          setEvents(prev => prev.map(agent => 
-            agent.id === data.agentId 
-              ? { ...agent, status: data.status, lastMessage: data.message, timestamp: data.timestamp || new Date().toISOString() }
-              : agent
-          ));
-        }
-      } catch (err) {
-        console.error('[Electron] Failed to process agent event', err);
-      }
+      if (data.status === 'refresh') onRefresh?.();
+      else if (data.agentId) setEvents(prev => prev.map(a => a.id === data.agentId ? { ...a, ...data } : a));
     });
-
-    // Electronリスナーのクリーンアップ
-    return () => {
-      // ipcRendererのリスナーを削除
-      if (window.nexusApi?.removeAgentEventListener) {
-        window.nexusApi.removeAgentEventListener();
-      }
-    };
+    return () => { window.nexusApi?.removeAgentEventListener?.(); };
   }, [onRefresh]);
 
   return events;

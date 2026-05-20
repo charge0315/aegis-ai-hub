@@ -19,14 +19,10 @@ export default defineConfig({
   ],
   webServer: [
     {
-      command: 'node -r esbuild-register src/api/server/standalone.ts',
-      port: 3005,
-      reuseExistingServer: !process.env.CI,
-    },
-    {
       command: 'npm run dev',
       url: 'http://localhost:5173',
       reuseExistingServer: !process.env.CI,
+      timeout: 120000,
     }
   ],
 });

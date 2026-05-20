@@ -60,12 +60,12 @@ export class DiscoveryService {
       }
     }
 
-    const validFeeds: SuggestedSite[] = [];
     const existingUrls = this.feedManager.getAllActiveFeeds().map(f => f.url);
+    const sitesToValidate = suggestedSites.filter(s => !existingUrls.includes(s.url));
 
-    for (const site of suggestedSites) {
-      if (existingUrls.includes(site.url)) continue;
-
+    // 並列検証
+    const validFeeds: SuggestedSite[] = [];
+    await Promise.all(sitesToValidate.map(async (site) => {
       try {
         const items = await this.rssFetcher.fetch(site.url);
         if (items && items.length > 0) {
@@ -75,11 +75,11 @@ export class DiscoveryService {
         const msg = e instanceof Error ? e.message : String(e);
         console.log(`[DiscoveryService] NG: ${site.name} - ${msg}`);
       }
-    }
+    }));
 
     if (validFeeds.length > 0) {
       for (const feed of validFeeds) {
-        await this.feedManager.addFeed(feed.category, feed.url, this.rssFetcher, feed.name);
+        await this.feedManager.addFeed(feed.category, feed.url, this.rssFetcher);
       }
       console.log(`[DiscoveryService] 完了: ${validFeeds.length} 件の新しいフィードを登録しました。`);
     }

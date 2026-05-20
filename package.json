@@ -76,6 +76,7 @@
     "p-limit": "^7.3.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
+    "recharts": "^3.8.1",
     "rss-parser": "^3.13.0",
     "tailwind-merge": "^3.5.0",
     "zod": "^4.4.1"

@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Save, 
   RotateCcw, 
@@ -16,9 +15,11 @@ import { SkillRegistry } from './SkillRegistry';
 import { CategoryEditor } from './editors/CategoryEditor';
 import { SystemSettings } from './editors/SystemSettings';
 import { AIInsightsPanel } from './editors/AIInsightsPanel';
+import { UsageDashboard } from './editors/UsageDashboard';
 import { useUnifiedEditorHandlers } from '../hooks/useUnifiedEditorHandlers';
 import type { NexusSettings, UiSettings } from '../types';
 import type { DialogType } from './CustomDialog';
+import { useTranslation } from '../hooks/useTranslationHook';
 
 interface UnifiedEditorProps {
   currentSettings: NexusSettings;
@@ -30,7 +31,7 @@ interface UnifiedEditorProps {
   setTheme: (theme: UiSettings['theme']) => void;
 }
 
-type Tab = 'editor' | 'graph' | 'skills' | 'system' | 'insights';
+type Tab = 'editor' | 'graph' | 'skills' | 'system' | 'insights' | 'usage';
 
 export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
   currentSettings,
@@ -42,6 +43,7 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
   setTheme
 }) => {
   const [activeTab, setActiveTab] = useState<Tab>('editor');
+  const { t } = useTranslation();
 
   const {
     draft,
@@ -57,6 +59,7 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
     isSavingApiKey,
     restructureStep,
     isDirty,
+    isTranslating,
     handleDiscoverTrends,
     handlePromoteKeyword,
     handleDismissKeyword,
@@ -90,138 +93,93 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
   return (
     <div className="space-y-6">
       {!apiKey && activeTab !== 'system' && (
-        <motion.div 
-          initial={{ height: 0, opacity: 0 }}
-          animate={{ height: 'auto', opacity: 1 }}
-          className="bg-alert/10 border border-alert/20 rounded-2xl p-4 flex items-center justify-between gap-4"
-        >
+        <div className="bg-alert/10 border border-alert/20 rounded-2xl p-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 text-alert">
             <AlertCircle size={20} />
-            <p className="text-sm font-medium">Gemini API Key is not configured. AI Suggestions and Intelligent Discovery are disabled.</p>
+            <p className="text-sm font-medium">{t.settings?.apiKeyAlert}</p>
           </div>
           <button 
             onClick={() => setActiveTab('system')}
             className="px-4 py-1.5 bg-alert text-white text-xs font-bold uppercase rounded-lg shadow-lg shadow-alert/20"
           >
-            Configure Now
+            {t.settings?.configureNow}
           </button>
-        </motion.div>
+        </div>
       )}
 
       {/* Header & Main Actions */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-content-base flex items-center gap-3">
+          <h1 className="text-2xl font-bold text-content-base flex items-center gap-3" data-testid="settings-title">
             <div className="p-2 bg-primary/20 rounded-lg text-primary">
               <Settings2 size={24} />
             </div>
-            Nexus Command & Control
+            {t.settings?.title}
           </h1>
-          <p className="text-sm text-content-muted mt-1">Configure intelligence parameters, visualize knowledge, and manage agent skills.</p>
+          <p className="text-sm text-content-muted mt-1">{t.settings?.subtitle}</p>
         </div>
         
         <div className="flex gap-3">
           <button
             onClick={handleRestructure}
+            data-testid="ai-restructure-button"
             disabled={isSuggesting || isSaving}
             className="flex items-center gap-2 px-4 py-2.5 bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 border border-indigo-500/20 rounded-xl transition-all font-bold text-xs uppercase tracking-wider disabled:opacity-50"
-            title="AI-driven total profile reorganization"
           >
-            <LayoutTemplate size={18} className={isSuggesting ? 'animate-pulse' : ''} />
-            AI Restructure
+            <LayoutTemplate size={18} />
+            {t.settings?.aiRestructure}
           </button>
 
           {isDirty && (
-            <motion.button
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
+            <button
               onClick={handleReset}
               data-testid="reset-draft-button"
               className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-content-muted hover:text-content-base transition-colors"
             >
               <RotateCcw size={16} />
-              Reset Draft
-            </motion.button>
+              {t.settings?.reset}
+            </button>
           )}
           <button
             onClick={handleSave}
-            disabled={!isDirty || isSaving || isSuggesting}
+            disabled={!isDirty || isSaving || isSuggesting || isTranslating}
             data-testid="save-settings-button"
             className="flex items-center gap-2 px-6 py-2.5 text-sm font-bold bg-primary disabled:bg-surface disabled:text-content-muted text-white rounded-xl transition-all shadow-lg shadow-primary/20 hover:shadow-primary/40 active:scale-95"
           >
             <Save size={18} />
-            {isSaving ? 'Synchronizing...' : isSuggesting ? 'Thinking...' : 'Save Configuration'}
+            {isTranslating ? t.settings?.translating : isSaving ? t.settings?.saving : isSuggesting ? t.settings?.thinking : t.settings?.save}
           </button>
         </div>
       </div>
 
       {/* Tabs */}
       <div className="flex border-b border-content-muted/20 gap-8">
-        <TabButton 
-          active={activeTab === 'editor'} 
-          onClick={() => setActiveTab('editor')} 
-          icon={<Edit3 size={18} />} 
-          label="Nexus Editor" 
-          data-testid="tab-editor"
-        />
-        <TabButton 
-          active={activeTab === 'graph'} 
-          onClick={() => setActiveTab('graph')} 
-          icon={<Network size={18} />} 
-          label="Knowledge Graph" 
-          data-testid="tab-graph"
-        />
-        <TabButton 
-          active={activeTab === 'skills'} 
-          onClick={() => setActiveTab('skills')} 
-          icon={<Cpu size={18} />} 
-          label="Skill Registry" 
-          data-testid="tab-skills"
-        />
-        <TabButton 
-          active={activeTab === 'insights'} 
-          onClick={() => setActiveTab('insights')} 
-          icon={<Sparkles size={18} />} 
-          label="AI Insights" 
-          data-testid="tab-insights"
-        />
-        <TabButton 
-          active={activeTab === 'system'} 
-          onClick={() => setActiveTab('system')} 
-          icon={<Settings2 size={18} />} 
-          label="System Settings" 
-          data-testid="tab-system"
-        />
+         <TabButton active={activeTab === 'editor'} onClick={() => setActiveTab('editor')} icon={<Edit3 size={18} />} label={t.settings?.tabs?.editor} data-testid="tab-editor" />
+         <TabButton active={activeTab === 'graph'} onClick={() => setActiveTab('graph')} icon={<Network size={18} />} label={t.settings?.tabs?.graph} data-testid="tab-graph" />
+         <TabButton active={activeTab === 'skills'} onClick={() => setActiveTab('skills')} icon={<Cpu size={18} />} label={t.settings?.tabs?.skills} data-testid="tab-skills" />
+         <TabButton active={activeTab === 'insights'} onClick={() => setActiveTab('insights')} icon={<Sparkles size={18} />} label={t.settings?.tabs?.insights} data-testid="tab-insights" />
+         <TabButton active={activeTab === 'system'} onClick={() => setActiveTab('system')} icon={<Settings2 size={18} />} label={t.settings?.tabs?.system} data-testid="tab-system" />
+         <TabButton active={activeTab === 'usage'} onClick={() => setActiveTab('usage')} icon={<LayoutTemplate size={18} />} label={t.settings?.tabs?.usage} data-testid="tab-usage" />
       </div>
 
       {/* Tab Content */}
       <div className="min-h-[600px] relative">
-        <AnimatePresence>
-          {restructureStep && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-background/80 backdrop-blur-md rounded-3xl border border-content-muted/20 shadow-2xl"
-            >
-              <div className="p-10 flex flex-col items-center gap-6 text-center">
-                <div className="relative">
-                  <div className="w-16 h-16 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
-                  <Sparkles size={24} className="absolute inset-0 m-auto text-indigo-400 animate-pulse" />
-                </div>
-                <div className="space-y-2">
-                  <h3 className="text-xl font-bold text-content-base tracking-tight">AI is Thinking...</h3>
-                  <p className="text-indigo-300 font-mono text-xs uppercase tracking-[0.2em]">{restructureStep}</p>
-                </div>
-                <p className="text-content-muted text-sm max-w-[300px]">
-                  Analyzing your data and discovering the best news sources. This takes a few moments.
-                </p>
+        {restructureStep && (
+          <div className="absolute inset-0 z-50 bg-[#0a0b0c]/80 backdrop-blur-md rounded-3xl border border-white/10 shadow-2xl">
+            <div className="sticky top-[40vh] p-10 flex flex-col items-center justify-center gap-6 text-center">
+              <div className="relative">
+                <div className="w-16 h-16 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
+                <Sparkles size={24} className="absolute inset-0 m-auto text-indigo-400 animate-pulse" />
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              <div className="space-y-2">
+                <h3 className="text-xl font-bold text-white tracking-tight">{t.settings?.thinking}</h3>
+                <p data-testid="restructure-step-text" className="text-indigo-300 font-mono text-xs uppercase tracking-[0.2em]">{restructureStep}</p>
+              </div>
+            </div>
+          </div>
+        )}
 
-        <AnimatePresence mode="wait">
+        <div className="relative">
           {activeTab === 'editor' && (
             <CategoryEditor 
               draft={draft}
@@ -242,33 +200,19 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
           )}
 
           {activeTab === 'graph' && (
-            <motion.div
-              key="graph"
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.98 }}
-            >
-              <KnowledgeGraph 
-                settings={draft} 
-                onKeywordToggle={handleKeywordToggle}
-                onBrandToggle={handleBrandToggle}
-              />
-            </motion.div>
+            <KnowledgeGraph 
+              settings={draft} 
+              onKeywordToggle={handleKeywordToggle}
+              onBrandToggle={handleBrandToggle}
+            />
           )}
 
           {activeTab === 'skills' && (
-            <motion.div
-              key="skills"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-            >
-              <SkillRegistry
-                skills={draft.interests.skills}
-                onToggleSkill={handleToggleSkill}
-                onAddSkill={handleAddSkill}
-              />
-            </motion.div>
+            <SkillRegistry
+              skills={draft.interests.skills}
+              onToggleSkill={handleToggleSkill}
+              onAddSkill={handleAddSkill}
+            />
           )}
           {activeTab === 'insights' && (
             <AIInsightsPanel 
@@ -292,7 +236,10 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
               setTheme={setTheme}
             />
           )}
-        </AnimatePresence>
+          {activeTab === 'usage' && (
+            <UsageDashboard />
+          )}
+        </div>
       </div>
     </div>
   );
