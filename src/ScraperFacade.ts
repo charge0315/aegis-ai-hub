@@ -26,27 +26,26 @@ export class ScraperFacade {
     public geminiService: GeminiService;
 
     /**
-     * @param _interestsPath - 興味設定ファイルのパス（現在は内部的に使用していません）
+     * @param _interestsPath - 未使用
      * @param feedsPath - フィード構成ファイルのパス
-     * @param dataDir - データディレクトリ（オプション。EnrichmentServiceのキャッシュ等に使用）
+     * @param dataDir - データディレクトリ
      */
     constructor(_interestsPath: string, feedsPath: string, dataDir?: string) {
         this.feedManager = new FeedManager(feedsPath);
-        // 大量取得を考慮し並列数を20に設定
         this.rssFetcher = new RSSFetcher(20);
         this.geminiService = new GeminiService(process.env.GEMINI_API_KEY);
         this.enrichmentService = new EnrichmentService(this.geminiService, dataDir);
     }
 
     /**
-     * APIキーを更新し、関連サービスに反映させます。
+     * APIキーを更新します。
      */
     public updateApiKey(apiKey: string): void {
         this.geminiService.updateApiKey(apiKey);
     }
 
     /**
-     * Gemini APIを活用し、ユーザーの興味に最適化されたおすすめ記事10選を生成します。
+     * AIによるおすすめ記事10選を生成。
      */
     async getRecommendations(interests: Interests): Promise<Article[]> {
         try {
@@ -55,12 +54,13 @@ export class ScraperFacade {
             const candidates = this._sortAndSlice(allArticles, 30);
 
             if (candidates.length === 0) {
-                throw new Error("推薦用の記事候補が見つかりませんでした。フィード設定を確認してください。");
+                console.warn("[ScraperFacade] No candidates for recommendations.");
+                return [];
             }
 
-            console.log(`[ScraperFacade] Geminiによるキュレーションを開始 (${candidates.length}件を評価中)...`);
+            console.log(`[ScraperFacade] AIキュレーション中 (${candidates.length}件)...`);
             const recommendations = await this.geminiService.curate(candidates.map(a => a.toJSON()), interests);
-            
+
             const recommendedArticles = recommendations.map(r => {
                 const matched = candidates.find(c => c.link === r.url);
                 if (matched) {
@@ -84,82 +84,91 @@ export class ScraperFacade {
             await this.enrichmentService.enrichAll(recommendedArticles);
             return recommendedArticles;
         } catch (e: unknown) {
-            const msg = e instanceof Error ? e.message : String(e);
-            console.error(`[ScraperFacade] Recommendations Error: ${msg}`);
-            throw e;
+            console.error(`[ScraperFacade] Recommendations Error: ${String(e)}`);
+            return [];
         }
     }
 
     /**
-     * 最新のパーソナライズ済みダッシュボードデータを構築します。
+     * 最新のダッシュボードデータを構築。
      */
     async getDashboard(interests: Interests): Promise<Record<string, { emoji: string | null, articles: ReturnType<Article['toJSON']>[] }>> {
-        console.log(`[ScraperFacade] パーソナライズド・ダッシュボードを構築中...`);
+        console.log(`[ScraperFacade] ダッシュボード構築を開始...`);
         await this.enrichmentService.init();
-        
-        const articlesNormal = await this.fetchAndProcessArticles(interests, false);
-        let articlesExtended: Article[] | null = null;
 
+        const articlesNormal = await this.fetchAndProcessArticles(interests, false);
+        console.log(`[ScraperFacade] 取得記事数 (通常): ${articlesNormal.length}`);
+        
+        let articlesExtended: Article[] | null = null;
         const dashboard: Record<string, { emoji: string | null, articles: ReturnType<Article['toJSON']>[] }> = {};
         const categories = Object.keys(interests.categories);
 
+        // カテゴリ不一致記事のバッファ（後で統合フィードや未分類として表示可能）
+        const uncategorizedArticles: Article[] = [];
+        const seenLinks = new Set<string>();
+
         for (const catName of categories) {
             const targetClean = normalizeCategoryName(catName);
-            
-            // 修正: カテゴリ一致する記事を優先的に取得（言語制限を解除）
+
             let filtered = articlesNormal.filter(a => {
-                return normalizeCategoryName(a.category) === targetClean;
+                const isMatch = normalizeCategoryName(a.category) === targetClean;
+                if (isMatch) seenLinks.add(a.link);
+                return isMatch;
             });
 
-            // それでも0件の場合は期間制限を解除
             if (filtered.length === 0) {
                 if (!articlesExtended) {
-                    console.log(`[ScraperFacade] カテゴリ "${catName}" の最新記事が0件のため、期間制限を解除して再探索します...`);
+                    console.log(`[ScraperFacade] カテゴリ "${catName}" の最新記事が0件のため期間解除探索中...`);
                     articlesExtended = await this.fetchAndProcessArticles(interests, true);
                 }
-                filtered = (articlesExtended as Article[]).filter(a => normalizeCategoryName(a.category) === targetClean);
+                filtered = articlesExtended.filter(a => {
+                    const isMatch = normalizeCategoryName(a.category) === targetClean;
+                    if (isMatch) seenLinks.add(a.link);
+                    return isMatch;
+                });
             }
-            
-            const topArticles = this._sortAndSlice(filtered, 50);
+
+            const topArticles = this._sortAndSlice(filtered, 15);
             await this.enrichmentService.enrichAll(topArticles);
 
             dashboard[catName] = {
                 emoji: interests.categories[catName].emoji || null,
-                articles: topArticles
-                    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                    .slice(0, 15)
-                    .map(a => a.toJSON())
+                articles: topArticles.map(a => a.toJSON())
             };
         }
 
+        // 未分類記事の収集
+        articlesNormal.forEach(a => {
+            if (!seenLinks.has(a.link)) uncategorizedArticles.push(a);
+        });
+
+        if (uncategorizedArticles.length > 0) {
+            const topUncategorized = this._sortAndSlice(uncategorizedArticles, 15);
+            await this.enrichmentService.enrichAll(topUncategorized);
+            dashboard['Uncategorized'] = {
+                emoji: '🌐',
+                articles: topUncategorized.map(a => a.toJSON())
+            };
+        }
+
+        console.log(`[ScraperFacade] ダッシュボード構築完了 (カテゴリ数: ${Object.keys(dashboard).length})`);
         return dashboard;
     }
 
     /**
-     * 最新の記事群から新しいトレンドキーワードやブランドを抽出します。
+     * トレンド探索。
      */
     async discoverTrends(interests: Interests): Promise<TrendSuggestion[]> {
-        console.log(`[ScraperFacade] トレンド探索を開始します...`);
         try {
             const articles = await this.fetchAndProcessArticles(interests);
-            console.log(`[ScraperFacade] 解析対象の記事数: ${articles.length}`);
-            
-            if (articles.length === 0) {
-                console.warn(`[ScraperFacade] 解析対象の記事が0件です。トレンド探索をスキップします。`);
-                return [];
-            }
+            if (articles.length === 0) return [];
 
-            const topArticles = articles.slice(0, 50).map((a: Article) => ({ title: a.title, desc: a.desc, brand: a.brand }));
-            console.log(`[ScraperFacade] Gemini API にリクエストを送信中 (上位50件)...`);
-            
+            const topArticles = articles.slice(0, 50).map(a => ({ title: a.title, desc: a.desc, brand: a.brand }));
             const suggestions = await this.geminiService.analyzeTrends(topArticles, interests);
-            console.log(`[ScraperFacade] AI から ${suggestions.length} 件の提案を受信しました。`);
-            
             return suggestions as unknown as TrendSuggestion[];
         } catch (e: unknown) {
-            const errorMsg = e instanceof Error ? e.message : String(e);
-            console.error(`[ScraperFacade] discoverTrends でエラーが発生しました: ${errorMsg}`);
-            throw e;
+            console.error(`[ScraperFacade] discoverTrends Error: ${String(e)}`);
+            return [];
         }
     }
 
@@ -170,101 +179,84 @@ export class ScraperFacade {
     }
 
     /**
-     * 記事が0件の場合に期間制限を解除するフォールバック機能付きの取得メソッド。
+     * フォールバック付き取得。
      */
     async fetchAndProcessArticlesWithFallback(interests: Interests): Promise<Article[]> {
-        console.log(`[ScraperFacade] Starting fetchAndProcessArticlesWithFallback...`);
-        // 1. 通常取得 (90日制限あり)
         let articles = await this.fetchAndProcessArticles(interests, false);
-        
-        // 2. 0件の場合、期間制限なしで再取得
         if (articles.length === 0) {
-            console.warn(`[ScraperFacade] No articles found within 90 days. Retrying without date limit...`);
             articles = await this.fetchAndProcessArticles(interests, true);
         }
-        
         return articles;
     }
 
     /**
-     * 各フィードから記事を並列取得し、パース・カテゴリ判定・スコアリングを行うコアロジック。
+     * 各フィードから記事を並列取得。
      */
     async fetchAndProcessArticles(interests: Interests, ignoreDateLimit: boolean = false): Promise<Article[]> {
         const scorer = new ScoringService(interests);
         const feeds = this.feedManager.getAllActiveFeeds();
         const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
 
-        console.log(`[ScraperFacade] Fetching ${feeds.length} feeds (ignoreDateLimit: ${ignoreDateLimit})...`);
+        if (feeds.length === 0) {
+            console.warn("[ScraperFacade] No active feeds found.");
+            return [];
+        }
 
+        console.log(`[ScraperFacade] Fetching ${feeds.length} feeds...`);
         const results = await this.rssFetcher.fetchAll(feeds);
         const allArticles: Article[] = [];
-        let successCount = 0;
-        let failCount = 0;
 
         for (const res of results) {
-            if (!res.success) {
-                failCount++;
-                if (failCount <= 10) console.warn(`[ScraperFacade] Feed failed: ${res.url} - ${res.error}`);
-                await this.feedManager.reportFailure(res.category, res.url);
+            if (!res.success || !res.items) {
+                if (!res.success) await this.feedManager.reportFailure(res.category, res.url);
                 continue;
             }
-            successCount++;
+            
             this.feedManager.reportSuccess(res.category, res.url);
 
-            if (res.items) {
-                for (const item of res.items) {
-                    try {
-                        const record = item as Record<string, unknown>;
-                        const pubDateStr = String(record.isoDate || record.pubDate || '');
-                        const pubDate = new Date(pubDateStr);
-                        
-                        const isDateValid = !isNaN(pubDate.getTime());
-                        if (!ignoreDateLimit && isDateValid && pubDate.getTime() < ninetyDaysAgo.getTime()) continue;
+            for (const item of res.items) {
+                try {
+                    const record = item as Record<string, unknown>;
+                    const pubDateStr = String(record.isoDate || record.pubDate || '');
+                    const pubDate = new Date(pubDateStr);
+                    const isDateValid = !isNaN(pubDate.getTime());
 
-                        const title = String(record.title || '');
-                        const snippet = String(record.contentSnippet || record.description || '');
-                        const detectedCat = scorer.detectCategory(title, snippet, res.category);
-                        const score = scorer.calculateScore(title, snippet, detectedCat);
-                        const brand = scorer.extractBrand(title);
-                        const language = this._detectLanguage(title, snippet);
+                    if (!ignoreDateLimit && isDateValid && pubDate.getTime() < ninetyDaysAgo.getTime()) continue;
 
-                        allArticles.push(new Article({
-                            title: record.title,
-                            link: record.link,
-                            desc: record.contentSnippet || record.description,
-                            brand: brand,
-                            score: score,
-                            category: detectedCat,
-                            date: isDateValid ? pubDate.toISOString() : new Date().toISOString(),
-                            img: this.enrichmentService.extractBasicImage(record),
-                            language: language
-                        }));
-                    } catch {
-                        // 個別の記事パースエラーは無視
-                        continue;
-                    }
+                    const title = String(record.title || '');
+                    const snippet = String(record.contentSnippet || record.description || '');
+                    const detectedCat = scorer.detectCategory(title, snippet, res.category);
+                    const score = scorer.calculateScore(title, snippet, detectedCat);
+                    const brand = scorer.extractBrand(title);
+                    const language = this._detectLanguage(title, snippet);
+
+                    allArticles.push(new Article({
+                        title,
+                        link: String(record.link || ''),
+                        desc: snippet,
+                        brand,
+                        score,
+                        category: detectedCat,
+                        date: isDateValid ? pubDate.toISOString() : new Date().toISOString(),
+                        img: this.enrichmentService.extractBasicImage(record),
+                        language
+                    }));
+                } catch {
+                    continue;
                 }
             }
         }
-        
-        console.log(`[ScraperFacade] Fetch completed. Success: ${successCount}, Failed: ${failCount}, Articles: ${allArticles.length}`);
-        return allArticles;
+
+        console.log(`[ScraperFacade] Processed ${allArticles.length} articles.`);
+        return allArticles.sort((a, b) => b.score - a.score);
     }
 
-    /**
-     * テキスト内容から言語を簡易的に判定します。
-     * @private
-     */
     private _detectLanguage(title: string, snippet: string): 'ja' | 'en' | 'other' {
         const text = title + snippet;
-        // ひらがな、またはカタカナが含まれているかチェック (日本語の強力な指標)
         const hasKana = /[\u3040-\u309F\u30A0-\u30FF]/.test(text);
         if (hasKana) return 'ja';
-        
-        // 漢字が含まれているが「かな」がない場合は、中国語など他の言語の可能性が高い
         const hasKanji = /[\u4E00-\u9FAF]/.test(text);
         if (hasKanji) return 'other';
-
         return 'en';
     }
 }
