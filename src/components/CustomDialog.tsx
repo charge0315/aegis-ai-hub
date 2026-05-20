@@ -30,7 +30,6 @@ export const CustomDialog: React.FC<CustomDialogProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setInputValue(defaultValue);
     }
   }, [isOpen, defaultValue]);
@@ -49,7 +48,7 @@ export const CustomDialog: React.FC<CustomDialogProps> = ({
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" data-testid="custom-dialog">
           {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -71,8 +70,8 @@ export const CustomDialog: React.FC<CustomDialogProps> = ({
                 <div className="p-3 bg-white/5 rounded-2xl">
                   {getIcon()}
                 </div>
-                <h2 className="text-xl font-bold text-white tracking-tight">{title}</h2>
-                <div className="text-slate-400 text-sm leading-relaxed max-h-[200px] overflow-y-auto w-full px-2">
+                <h2 className="text-xl font-bold text-white tracking-tight" data-testid="dialog-title">{title}</h2>
+                <div className="text-slate-400 text-sm leading-relaxed max-h-[200px] overflow-y-auto w-full px-2" data-testid="dialog-message">
                   {message}
                 </div>
               </div>
@@ -85,6 +84,7 @@ export const CustomDialog: React.FC<CustomDialogProps> = ({
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
                     placeholder={placeholder}
+                    data-testid="dialog-input"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') onConfirm(inputValue);
                       if (e.key === 'Escape') onCancel?.();
@@ -99,6 +99,7 @@ export const CustomDialog: React.FC<CustomDialogProps> = ({
                   {onCancel && (
                     <button
                       onClick={() => onCancel()}
+                      data-testid="dialog-cancel-button"
                       className="flex-1 px-6 py-3 rounded-xl text-sm font-bold text-slate-400 hover:text-white hover:bg-white/5 transition-all border border-transparent hover:border-white/10"
                     >
                       Cancel
@@ -106,6 +107,7 @@ export const CustomDialog: React.FC<CustomDialogProps> = ({
                   )}
                   <button
                     onClick={() => onConfirm(type === 'prompt' ? inputValue : undefined)}
+                    data-testid="dialog-confirm-button"
                     className="flex-2 px-8 py-3 rounded-xl text-sm font-bold bg-primary text-white shadow-lg shadow-primary/20 hover:shadow-primary/40 active:scale-95 transition-all"
                   >
                     {(type === 'confirm' || type === 'warning') ? 'Confirm' : 'Continue'}
@@ -119,5 +121,3 @@ export const CustomDialog: React.FC<CustomDialogProps> = ({
     </AnimatePresence>
   );
 };
-
-

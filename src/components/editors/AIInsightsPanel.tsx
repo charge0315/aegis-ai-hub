@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import { 
   Plus, 
   Trash2,
@@ -28,12 +27,7 @@ export const AIInsightsPanel: React.FC<AIInsightsPanelProps> = ({
   handleDismissKeyword
 }) => {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      className="space-y-6"
-    >
+    <div className="space-y-6">
       <div className="flex items-end justify-between">
         <div>
           <h3 className="text-xl font-bold text-content-base flex items-center gap-2">
@@ -45,6 +39,7 @@ export const AIInsightsPanel: React.FC<AIInsightsPanelProps> = ({
         <button
           onClick={handleDiscoverTrends}
           disabled={isDiscovering}
+          data-testid="discover-trends-button"
           className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold transition-all ${
             isDiscovering 
               ? 'bg-primary/20 text-primary cursor-not-allowed' 
@@ -120,12 +115,14 @@ export const AIInsightsPanel: React.FC<AIInsightsPanelProps> = ({
                 <div className="flex gap-3 pt-2">
                   <button
                     onClick={() => handlePromoteKeyword(kw, data.category)}
+                    data-testid="promote-trend-button"
                     className="flex-grow flex items-center justify-center gap-2 py-3 bg-primary text-white rounded-2xl text-sm font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
                   >
                     <Plus size={16} /> Promote to Keyword
                   </button>
                   <button
                     onClick={() => handleDismissKeyword(kw)}
+                    data-testid="dismiss-trend-button"
                     className="px-5 py-3 bg-surface-panel/10 hover:bg-alert/10 text-content-muted hover:text-alert rounded-2xl text-sm font-bold transition-all border border-transparent hover:border-alert/20"
                   >
                     <Trash2 size={16} />
@@ -134,10 +131,8 @@ export const AIInsightsPanel: React.FC<AIInsightsPanelProps> = ({
               </div>
               
               <div className="h-1 w-full bg-surface-panel/10 relative overflow-hidden">
-                <motion.div 
-                  initial={{ width: 0 }}
-                  animate={{ width: `${data.confidence || 85}%` }}
-                  transition={{ duration: 1, ease: "easeOut" }}
+                <div 
+                  style={{ width: `${data.confidence || 85}%` }}
                   className={`absolute inset-y-0 left-0 ${
                     data.type === 'breakthrough' ? 'bg-orange-500' :
                     data.type === 'emerging' ? 'bg-emerald-500' :
@@ -161,6 +156,6 @@ export const AIInsightsPanel: React.FC<AIInsightsPanelProps> = ({
           </p>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 };

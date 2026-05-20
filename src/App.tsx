@@ -1,381 +1,202 @@
-/**
- * Aegis Nexus Dashboard - Main Application Component
- * 
- * ダッシュボード全体の「中枢神経系」として機能するトップレベルコンポーネント。
- * バックエンド（エージェント群）からの情報を視覚化し、ユーザーが「知の統合」を
- * 効率的に行えるよう、フィードの閲覧とシステム設定のルーティングを管理します。
- * また、ウィンドウのリサイズや透過モード（Acrylic）などのネイティブ体験も統括します。
- */
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { motion } from 'framer-motion';
-import {
-  LayoutDashboard,
-  Settings2,
-  Search,
-  RefreshCcw,
-  Sparkles,
-  ImageIcon,
-  ImageOff,
-  LayoutGrid,
-  List as ListIcon,
-  Languages
+import { 
+  Settings, 
+  Search, 
+  Layout, 
+  Command,
+  Menu,
+  AlertTriangle
 } from 'lucide-react';
+
 import { ArticleCard } from './components/ArticleCard';
 import { AgentMonitor } from './components/AgentMonitor';
 import { UnifiedEditor } from './components/UnifiedEditor';
 import { CommandPalette } from './components/CommandPalette';
 import { CustomDialog } from './components/CustomDialog';
 import { useDialog } from './hooks/useDialog';
-import { useNexusSync, useAgentEvents, nexusApi } from './api/nexusApi';
-import type { UiSettings } from './types';
+import { useNexusSync, useAgentEvents } from './api/nexusApi';
+import { useTheme } from './hooks/useTheme';
+import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
+import { useUiSettingsSync } from './hooks/useUiSettingsSync';
+import { LanguageProvider } from './hooks/LanguageProvider';
+import { useTranslation } from './hooks/useTranslationHook';
+import type { NexusSettings, Article } from './types';
 
-const App: React.FC = () => {
-  // --- PRIMARY CONTEXT STATE ---
+interface AppBodyProps {
+  ui: ReturnType<typeof useUiSettingsSync>;
+  settings: NexusSettings | null;
+  articles: Article[];
+  sync: (s: NexusSettings) => Promise<void>;
+  refetch: () => Promise<void>;
+  syncError: string | null;
+}
+
+const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch, syncError }) => {
+  const {
+    feedSize,
+    showImages,
+    isJapaneseOnly,
+    isInitialized, setIsInitialized,
+    theme, setTheme
+  } = ui;
+
   const [currentView, setCurrentView] = useState<'feed' | 'settings'>('feed');
-  const { settings, articles, loading, sync, refetch } = useNexusSync();
-
-  // --- COGNITIVE FILTER STATE ---
   const [searchQuery, setSearchQuery] = useState('');
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
-  const [feedSize, setFeedSize] = useState<'small' | 'medium' | 'large'>('medium');
-  const [showImages, setShowImages] = useState(true);
-  const [isJapaneseOnly, setIsJapaneseOnly] = useState(false);
-  const [isInitialized, setIsInitialized] = useState<boolean | null>(null);
-  const [theme, setTheme] = useState<UiSettings['theme']>('system');
-  const [appIconError, setAppIconError] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 1024);
+  const { t } = useTranslation();
 
-  // --- THEME ENGINE ---
+  useTheme(theme);
+  useKeyboardShortcuts(useMemo(() => ({
+    toggleCommandPalette: () => setIsCommandPaletteOpen(prev => !prev)
+  }), []));
+
+  const handleNavigate = useCallback((view: 'feed' | 'settings', category?: string) => {
+    setCurrentView(view);
+    if (category) setSearchQuery(category);
+  }, []);
+
   useEffect(() => {
-    const applyTheme = () => {
-      const root = document.documentElement;
-      const effectiveTheme: 'light' | 'dark' = theme === 'system'
-        ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
-        : theme;
-
-      root.setAttribute('data-theme', effectiveTheme);
-      root.style.colorScheme = effectiveTheme;
-    };
-
-    applyTheme();
-
-    // システムテーマの変更を監視
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleChange = () => {
-      if (theme === 'system') applyTheme();
-    };
-
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
-  }, [theme]);
-
-  // --- RESPONSIVE STATE ---
-  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
-  useEffect(() => {
-    const handleResize = () => setWindowWidth(window.innerWidth);
+    const handleResize = () => setIsSidebarOpen(window.innerWidth >= 1024);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
-  const isCompact = windowWidth < 1024;
+
+  const { dialog, alert: dialogAlert, confirm: dialogConfirm, prompt: dialogPrompt } = useDialog();
 
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault();
-        setIsCommandPaletteOpen(prev => !prev);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
-  // --- UI表示設定の永続化 ---
-  useEffect(() => {
-    const loadUiSettings = async () => {
-      try {
-        if (nexusApi?.getUiSettings) {
-          const saved = await nexusApi.getUiSettings();
-          setIsJapaneseOnly(saved.jaOnly);
-          setFeedSize(saved.viewMode === 'compact' ? 'small' : saved.viewMode === 'list' ? 'large' : 'medium');
-          setShowImages(!saved.hideImages);
-          setIsInitialized(saved.isInitialized);
-          setTheme(saved.theme || 'system');
-        }
-      } catch (err) {
-        console.error("Failed to load UI settings:", err);
-      }
-    };
-    void loadUiSettings();
-  }, []);
-
-  useEffect(() => {
-    const save = async () => {
-      try {
-        if (nexusApi?.saveUiSettings && isInitialized !== null) {
-          const viewMode = feedSize === 'small' ? 'compact' : feedSize === 'large' ? 'list' : 'grid';
-          await nexusApi.saveUiSettings({ 
-            jaOnly: isJapaneseOnly, 
-            viewMode: viewMode as UiSettings['viewMode'], 
-            hideImages: !showImages,
-            isInitialized,
-            theme
-          });
-        }
-      } catch (err) {
-        console.error("Failed to save UI settings:", err);
-      }
-    };
-    const timeout = setTimeout(() => { void save(); }, 100);
-    return () => clearTimeout(timeout);
-  }, [isJapaneseOnly, feedSize, showImages, isInitialized, theme]);
-
-  // --- INTERACTIVE DIALOG STATE ---
-  const {
-    dialog,
-    alert: dialogAlert,
-    confirm: dialogConfirm,
-    prompt: dialogPrompt
-  } = useDialog();
-
-  // --- INITIAL SETUP CHECK ---
-  useEffect(() => {
-    if (settings && !loading && isInitialized === false) {
-      const hasCategories = Object.keys(settings.interests.categories).length > 0;
-
-      if (hasCategories) {
-        void (async () => {
-          const shouldOverwrite = await dialogConfirm(
-            '既存の設定を検出',
-            '既にブランドやキーワードの設定が存在します。これらをデフォルトのプロファイルで上書きしますか？（「キャンセル」を選択すると既存の設定を保持します）',
-            'warning'
-          );
-          if (shouldOverwrite) {
-            await nexusApi.resetToDefaults();
-            void refetch();
-          }
-          // 上書きするかどうかにかかわらず、チェック自体は完了したので true に設定する
-          setIsInitialized(true);
-        })();
-      } else {
-        // 同期的な setState 呼び出しによるカスケードレンダリングを避けるため非同期化
-        Promise.resolve().then(() => setIsInitialized(true));
-      }
+    if (isInitialized === false) {
+      setIsInitialized(true);
+      localStorage.setItem('nexus_initialized', 'true');
     }
-  }, [settings, loading, isInitialized, dialogConfirm, refetch]);
+  }, [isInitialized, setIsInitialized]);
 
-  const agentEvents = useAgentEvents(useCallback(() => {
-    void refetch(false);
-  }, [refetch]));
+  const agents = useAgentEvents(refetch);
 
   const filteredArticles = useMemo(() => {
-    const query = searchQuery.toLowerCase();
-    return articles
-      .filter(article => {
-        const matchQuery = article.title.toLowerCase().includes(query) ||
-                           article.category.toLowerCase().includes(query);
-        const matchLang = isJapaneseOnly ? article.language === 'ja' : true;
-        return matchQuery && matchLang;
-      })
-      .sort((a, b) => {
-        if (a.language === 'ja' && b.language !== 'ja') return -1;
-        if (a.language !== 'ja' && b.language === 'ja') return 1;
-        return 0;
-      });
+    let result = [...articles];
+    const limitDate = new Date();
+    limitDate.setDate(limitDate.getDate() - 90);
+    result = result.filter(a => new Date(a.date) > limitDate);
+
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(a => 
+        a.category?.toLowerCase().includes(q) || 
+        a.title.toLowerCase().includes(q)
+      );
+    }
+    if (isJapaneseOnly) result = result.filter(a => a.language === 'ja');
+    
+    return result.sort((a, b) => {
+      if (a.language === 'ja' && b.language !== 'ja') return -1;
+      if (a.language !== 'ja' && b.language === 'ja') return 1;
+      return (b.score || 0) - (a.score || 0);
+    });
   }, [articles, searchQuery, isJapaneseOnly]);
 
-  const groupedArticles = useMemo(() => {
-    const groups: Record<string, typeof articles> = {};
-    if (settings) {
-      Object.keys(settings.interests.categories).forEach(cat => {
-        groups[cat] = filteredArticles.filter(a => a.category === cat);
-      });
-    }
-    return groups;
-  }, [filteredArticles, settings]);
-
-  const handleShowFeeds = async (category: string) => {
-    if (!settings || !settings.feedConfig) return;
-    const group = settings.feedConfig[category];
-    if (!group) return;
-
-    await dialogAlert(
-      `${category} - Active Nodes`,
-      group.active.length > 0 ? group.active.join('\n') : 'No active nodes connected.',
-      'info'
-    );
-  };
+  const categories = useMemo(() => Object.keys(settings?.interests?.categories || {}), [settings]);
 
   return (
-    <React.Fragment>
-      {dialog && (
+    <div className="flex h-screen bg-[#0a0b0c] text-slate-200 overflow-hidden font-sans">
+      {dialog.isOpen && (
         <CustomDialog 
-          {...dialog} 
-          onConfirm={dialog.onConfirm}
-          onCancel={dialog.onCancel}
+          isOpen={dialog.isOpen} 
+          type={dialog.type} 
+          title={dialog.title} 
+          message={dialog.message} 
+          defaultValue={dialog.defaultValue} 
+          placeholder={dialog.placeholder} 
+          onConfirm={dialog.onConfirm} 
+          onCancel={dialog.onCancel} 
         />
       )}
 
-      <div className="window-base text-content-base">
-        <CommandPalette
-          isOpen={isCommandPaletteOpen}
-          onClose={() => setIsCommandPaletteOpen(false)}
-          settings={settings}
-          onNavigate={(v) => setCurrentView(v)}
-          onSync={async () => { if (settings) await sync(settings); }}
-          onTriggerOrchestration={async (req) => { await nexusApi.triggerOrchestration(req); }}
-        />
+      <CommandPalette isOpen={isCommandPaletteOpen} onClose={() => setIsCommandPaletteOpen(false)} onNavigate={handleNavigate} categories={categories} />
 
-        <aside className={`${isCompact ? 'w-20 px-3' : 'w-64 p-6'} sidebar-glass flex flex-col sticky top-0 h-screen z-30 transition-all duration-300 drag`}>
-          <div className={`mb-10 mt-6 flex ${isCompact ? 'justify-center' : 'px-2'}`}>
-            <div className="w-10 h-10 rounded-xl overflow-hidden shadow-2xl bg-primary/20 flex items-center justify-center">
-              {!appIconError ? (
-                <img
-                  src="./app-icon.png"
-                  alt="Nexus"
-                  className="w-full h-full object-cover"
-                  onError={() => setAppIconError(true)}
+      <aside 
+        style={{ width: isSidebarOpen ? '280px' : '0px' }} 
+        className="relative z-40 flex-shrink-0 bg-black/40 backdrop-blur-2xl border-r border-white/5 overflow-hidden flex flex-col transition-all duration-300"
+      >
+        <div className="p-6 border-b border-white/5">
+          <h1 className="text-lg font-bold text-white tracking-widest">NEXUS</h1>
+        </div>
+        <nav className="flex-1 overflow-y-auto p-4 space-y-2">
+          <button onClick={() => handleNavigate('feed')} data-testid="nav-feed" className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${currentView === 'feed' ? 'bg-primary text-white shadow-lg shadow-primary/20 font-bold' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}>
+            <Layout size={20} />
+            <span>{t.sidebar?.feed}</span>
+          </button>
+          <button onClick={() => handleNavigate('settings')} data-testid="nav-settings" className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${currentView === 'settings' ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20 font-bold' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}>
+            <Settings size={20} />
+            <span>{t.sidebar?.settings}</span>
+          </button>
+        </nav>
+        <div className="p-4 border-t border-white/5"><AgentMonitor agents={agents} /></div>
+      </aside>
+
+      <main className="flex-1 flex flex-col min-w-0 bg-transparent relative">
+        <header className="h-20 flex items-center justify-between px-8 bg-black/10 backdrop-blur-md border-b border-white/5 z-30">
+          <div className="flex items-center gap-6">
+            <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 bg-white/5 rounded-xl"><Menu size={20} /></button>
+            <h2 className="text-xl font-bold">{currentView === 'settings' ? t.sidebar?.settings : t.sidebar?.feed}</h2>
+          </div>
+          <div className="flex items-center gap-4">
+            {currentView === 'feed' && (
+              <div className="relative group">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
+                <input type="text" placeholder={t.header?.search || 'Search...'} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-64 bg-white/5 border border-white/10 rounded-2xl pl-12 pr-4 py-2 text-sm text-white focus:outline-none focus:border-primary/50 transition-all" />
+              </div>
+            )}
+            <button onClick={() => setIsCommandPaletteOpen(true)} className="p-2 bg-white/5 rounded-xl"><Command size={20} /></button>
+          </div>
+        </header>
+
+        <div className="flex-1 overflow-y-auto p-8 custom-scrollbar" data-testid="main-content">
+          {syncError && (
+            <div className="mb-6 p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl flex items-center gap-3 text-rose-400" data-testid="sync-error">
+              <AlertTriangle size={20} />
+              <p className="text-sm font-bold">Sync Error: {syncError}</p>
+            </div>
+          )}
+
+          {currentView === 'feed' ? (
+            <div className="max-w-[1600px] mx-auto grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {filteredArticles.map((article, idx) => (
+                <ArticleCard key={idx} article={article} compact={feedSize === 'small'} large={feedSize === 'large'} showImage={showImages} />
+              ))}
+            </div>
+          ) : (
+            settings ? (
+              <div data-testid="unified-editor-container">
+                <UnifiedEditor 
+                  currentSettings={settings} 
+                  onSave={sync} 
+                  alert={dialogAlert} 
+                  confirm={dialogConfirm} 
+                  prompt={dialogPrompt} 
+                  theme={theme} 
+                  setTheme={setTheme} 
                 />
-              ) : (
-                <span className="text-xs font-black text-primary">NEXUS</span>
-              )}
-            </div>
-          </div>
-          <nav className="space-y-4 flex-grow no-drag">
-            <button data-testid="nav-feed" onClick={() => setCurrentView('feed')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${currentView === 'feed' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-content-muted hover:bg-surface-panel/10'}`}>
-              <LayoutDashboard size={18} /> {!isCompact && <span className="text-sm font-bold">Intelligence Feed</span>}
-            </button>
-            <button data-testid="nav-settings" onClick={() => setCurrentView('settings')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${currentView === 'settings' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-content-muted hover:bg-surface-panel/10'}`}>
-              <Settings2 size={18} /> {!isCompact && <span className="text-sm font-bold">Nexus Command</span>}
-            </button>
-          </nav>
-          <div className={`mt-auto py-6 border-t border-content-muted/20 ${isCompact ? 'flex justify-center' : ''}`}>
-            <AgentMonitor agents={agentEvents} compact={isCompact} />
-          </div>
-        </aside>
-
-        <main className="flex-grow flex flex-col min-h-screen">
-          <header className={`h-16 border-b border-content-muted/10 sidebar-glass flex items-center justify-between ${isCompact ? 'px-4' : 'px-8'} sticky top-0 z-20 drag`}>
-            <div className="flex items-center gap-6 flex-grow no-drag">
-              <Search size={16} className="text-content-muted" />
-              <input type="text" placeholder="Search signals..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="bg-transparent outline-none text-sm w-full text-content-base placeholder-content-muted/50" />
-            </div>
-            <div className="flex items-center gap-4 no-drag">
-              {currentView === 'feed' && (
-                <div className="flex items-center gap-2 mr-4 border-r border-content-muted/20 pr-6">
-                  <div className="flex bg-content-muted/10 rounded-lg p-1 mr-2">
-                    <button onClick={() => setFeedSize('small')} className={`p-1.5 rounded-md transition-all ${feedSize === 'small' ? 'bg-surface-panel/10 text-white' : 'text-content-muted hover:text-white'}`} title="Small Grid">
-                      <ListIcon size={14} />
-                    </button>
-                    <button onClick={() => setFeedSize('medium')} className={`p-1.5 rounded-md transition-all ${feedSize === 'medium' ? 'bg-surface-panel/10 text-white' : 'text-content-muted hover:text-white'}`} title="Medium Grid">
-                      <LayoutGrid size={14} />
-                    </button>
-                    <button onClick={() => setFeedSize('large')} className={`p-1.5 rounded-md transition-all ${feedSize === 'large' ? 'bg-surface-panel/10 text-white' : 'text-content-muted hover:text-white'}`} title="Large Grid">
-                      <LayoutDashboard size={14} />
-                    </button>
-                  </div>
-
-                  <button
-                    onClick={() => setIsJapaneseOnly(prev => !prev)}
-                    className={`p-1.5 rounded-lg border transition-all flex items-center gap-1.5 px-2.5 ${isJapaneseOnly ? 'bg-primary/20 border-primary/30 text-primary' : 'bg-surface-panel/10 border-content-muted/20 text-content-muted hover:text-content-base'}`}
-                    title={isJapaneseOnly ? "Showing Japanese Only" : "Showing All Languages"}
-                  >
-                    <Languages size={16} />
-                    <span className="text-[10px] font-bold uppercase tracking-tighter">JA Only</span>
-                  </button>
-
-                  <button
-                    onClick={() => setShowImages(!showImages)}
-                    className={`p-1.5 rounded-lg border transition-all ${showImages ? 'bg-primary/20 border-primary/30 text-primary' : 'bg-surface-panel/10 border-content-muted/20 text-content-muted'}`}
-                    title={showImages ? "Hide Images" : "Show Images"}
-                  >
-                    {showImages ? <ImageIcon size={16} /> : <ImageOff size={16} />}
-                  </button>
-                </div>
-              )}
-              <motion.button
-                onClick={() => refetch()}
-                disabled={loading}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                className="p-2 text-content-muted hover:text-content-base transition-colors disabled:opacity-50"
-              >
-                <motion.div
-                  animate={loading ? { rotate: 360 } : { rotate: 0 }}
-                  transition={loading ? { duration: 1, repeat: Infinity, ease: "linear" } : { duration: 0.5 }}
-                  className="flex items-center justify-center"
-                >
-                  <RefreshCcw size={18} />
-                </motion.div>
-              </motion.button>
-            </div>
-          </header>
-
-          <div className={`flex-grow ${isCompact ? 'p-4' : 'p-8'}`}>
-            {currentView === 'feed' ? (
-              <div>
-                <div className="mb-10">
-                  <h2 className="text-4xl font-black text-content-base tracking-tight mb-2">Intelligence Feed</h2>
-                  <p className="text-content-muted text-sm font-medium">Synthesizing signals from your designated node cluster.</p>
-                </div>
-
-                {loading && articles.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-20 space-y-6">
-                    <div className="relative">
-                      <motion.div
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                        className="w-16 h-16 border-4 border-primary/20 border-t-primary rounded-full"
-                      />
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <Sparkles size={24} className="text-primary animate-pulse" />
-                      </div>
-                    </div>
-                    <div className="text-center space-y-2">
-                      <h3 className="text-lg font-bold text-content-base uppercase tracking-widest">Intercepting Signals</h3>
-                      <p className="text-content-muted text-xs font-mono">Initializing node handshake & decrypting packet streams...</p>
-                    </div>
-                  </div>
-                ) : articles.length === 0 && !loading ? (
-                  <div className="flex flex-col items-center justify-center py-20 text-content-muted">
-                    <p>No active signals detected. Check your feed configuration.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-16">
-                    {Object.entries(groupedArticles).map(([category, catArticles]) => (
-                      <section key={category}>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); void handleShowFeeds(category); }}
-                          className="group text-xl font-black mb-8 hover:text-primary transition-all flex items-center gap-4 uppercase tracking-tighter"
-                        >
-                          <span className="text-2xl">{settings?.interests.categories[category]?.emoji}</span>
-                          {category}
-                          <div className="h-px w-20 bg-content-muted/10 group-hover:w-32 group-hover:bg-primary/30 transition-all"></div>
-                          <span className="text-[10px] font-mono bg-surface-panel/10 px-2 py-0.5 rounded border border-content-muted/20 opacity-60">{catArticles.length} SIGNALS</span>
-                        </button>
-                        <div className={`grid gap-6 ${feedSize === 'small' ? (isCompact ? 'grid-cols-2 md:grid-cols-3 xl:grid-cols-4' : 'grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6') : feedSize === 'large' ? (isCompact ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2 xl:grid-cols-2') : (isCompact ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4')}`}>
-                          {catArticles.map((article, idx) => (
-                            <ArticleCard key={article.link} article={article} index={idx} size={feedSize} showImages={showImages} />
-                          ))}
-                        </div>
-                      </section>
-                    ))}
-                  </div>
-                )}
               </div>
             ) : (
-              settings && <UnifiedEditor
-                currentSettings={settings}
-                onSave={sync}
-                alert={dialogAlert}
-                confirm={dialogConfirm}
-                prompt={dialogPrompt}
-                theme={theme}
-                setTheme={setTheme}
-              />
-            )}
-          </div>
-        </main>
-      </div>
-    </React.Fragment>
+              <div className="flex items-center justify-center h-full text-content-muted" data-testid="settings-loading">Loading settings...</div>
+            )
+          )}
+        </div>
+      </main>
+    </div>
+  );
+};
+
+const App: React.FC = () => {
+  const ui = useUiSettingsSync();
+  const { settings, articles, sync, refetch, error: syncError } = useNexusSync();
+
+  return (
+    <LanguageProvider value={{ language: ui.language, setLanguage: ui.setLanguage }}>
+      <AppBody ui={ui} settings={settings} articles={articles} sync={sync} refetch={refetch} syncError={syncError} />
+    </LanguageProvider>
   );
 };
 

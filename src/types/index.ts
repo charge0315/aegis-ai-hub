@@ -63,6 +63,8 @@ export interface TrendSuggestion {
   context?: string;
 }
 
+export type EditorTab = 'editor' | 'graph' | 'skills' | 'system' | 'insights' | 'usage';
+
 export interface NexusApiBridge {
   getArticles: (options?: Record<string, unknown>) => Promise<Article[]>;
   getSettings: () => Promise<NexusSettings>;
