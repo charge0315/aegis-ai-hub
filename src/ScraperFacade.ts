@@ -186,7 +186,7 @@ export class ScraperFacade {
 
             for (const item of res.items) {
                 try {
-                    const record = item as any;
+                    const record = item as Record<string, unknown>;
                     const pubDateStr = String(record.isoDate || record.pubDate || '');
                     const pubDate = new Date(pubDateStr);
                     const isDateValid = !isNaN(pubDate.getTime());
@@ -211,7 +211,7 @@ export class ScraperFacade {
                         img: this.enrichmentService.extractBasicImage(record),
                         language: language
                     }));
-                } catch (err) {
+                } catch {
                     continue;
                 }
             }
