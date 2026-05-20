@@ -25,7 +25,7 @@ contextBridge.exposeInMainWorld('nexusApi', {
   /**
    * AIによる情報の収集・分析（オーケストレーション）を即時実行します。
    */
-  triggerOrchestration: () => ipcRenderer.invoke('trigger-orchestration'),
+  triggerOrchestration: (requirements) => ipcRenderer.invoke('trigger-orchestration', requirements),
 
   /**
    * エージェントからのリアルタイムイベントを受信します。
@@ -58,10 +58,11 @@ contextBridge.exposeInMainWorld('nexusApi', {
   saveApiKey: (apiKey) => ipcRenderer.invoke('save-api-key', apiKey),
 
   /**
-   * AIによってカテゴリ全体を整理・再構築します。
-   * @param {number} [count] - カテゴリ数
+   * AIによってカテゴリー全体を整理・再構築します。
+   * @param {number} [count] - カテゴリー数
+   * @param {string} [language] - 言語 ('ja' | 'en')
    */
-  restructureCategories: (count) => ipcRenderer.invoke('restructure-categories', count),
+  restructureCategories: (count, language) => ipcRenderer.invoke('restructure-categories', count, language),
 
   /**
    * 最新記事から新しいトレンドを探索します。
@@ -71,7 +72,7 @@ contextBridge.exposeInMainWorld('nexusApi', {
   /**
    * 設定を初期状態に戻します。
    */
-  resetToDefaults: () => ipcRenderer.invoke('reset-to-defaults'),
+  resetToDefaults: (language) => ipcRenderer.invoke('reset-to-defaults', language),
 
   /**
    * UI表示設定を取得・保存します。
@@ -80,7 +81,17 @@ contextBridge.exposeInMainWorld('nexusApi', {
   saveUiSettings: (settings) => ipcRenderer.invoke('save-ui-settings', settings),
 
   /**
+   * 利用統計を取得します。
+   */
+  getUsageStats: () => ipcRenderer.invoke('get-usage-stats'),
+
+  /**
    * ウィンドウコントロール
    */
-  windowControl: (action) => ipcRenderer.send('window-control', action)
+  windowControl: (action) => ipcRenderer.send('window-control', action),
+
+  /**
+   * 外部リンクをブラウザで開く
+   */
+  openExternal: (url) => ipcRenderer.send('open-external', url)
 });
