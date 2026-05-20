@@ -15,15 +15,13 @@ export const useUiSettingsSync = () => {
   useEffect(() => {
     const loadUiSettings = async () => {
       try {
-        if (nexusApi?.getUiSettings) {
-          const saved = await nexusApi.getUiSettings();
-          setIsJapaneseOnly(saved.jaOnly);
-          setFeedSize(saved.viewMode === 'compact' ? 'small' : saved.viewMode === 'list' ? 'large' : 'medium');
-          setShowImages(!saved.hideImages);
-          setIsInitialized(saved.isInitialized);
-          setTheme(saved.theme || 'system');
-          setLanguage(saved.language || 'ja');
-        }
+        const saved = await nexusApi.getUiSettings();
+        setIsJapaneseOnly(saved.jaOnly);
+        setFeedSize(saved.viewMode === 'compact' ? 'small' : saved.viewMode === 'list' ? 'large' : 'medium');
+        setShowImages(!saved.hideImages);
+        setIsInitialized(saved.isInitialized);
+        setTheme(saved.theme || 'system');
+        setLanguage(saved.language || 'ja');
       } catch (err) {
         console.error("Failed to load UI settings:", err);
       }
@@ -35,7 +33,7 @@ export const useUiSettingsSync = () => {
   useEffect(() => {
     const save = async () => {
       try {
-        if (nexusApi?.saveUiSettings && isInitialized !== null) {
+        if (isInitialized !== null) {
           const viewMode = feedSize === 'small' ? 'compact' : feedSize === 'large' ? 'list' : 'grid';
           await nexusApi.saveUiSettings({ 
             jaOnly: isJapaneseOnly, 

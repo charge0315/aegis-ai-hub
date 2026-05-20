@@ -23,16 +23,21 @@ export const DEFAULT_MOCK_SETTINGS = {
  */
 export class MockFactory {
   private static currentSettings = JSON.parse(JSON.stringify(DEFAULT_MOCK_SETTINGS));
-  private static currentUiSettings = { jaOnly: false, viewMode: 'grid', hideImages: false, isInitialized: true, theme: 'system', language: 'ja' };
-  private static currentArticles: any[] = [];
+  private static currentUiSettings = { jaOnly: false, viewMode: 'grid' as const, hideImages: false, isInitialized: true, theme: 'system' as const, language: 'ja' as const };
+  private static currentArticles: unknown[] = [];
 
   static async setupCommonMocks(page: Page, overrides: {
-    settings?: any,
-    uiSettings?: any,
-    articles?: any
+    settings?: unknown,
+    uiSettings?: unknown,
+    articles?: unknown[]
   } = {}) {
-    this.currentSettings = overrides.settings || JSON.parse(JSON.stringify(DEFAULT_MOCK_SETTINGS));
-    this.currentUiSettings = overrides.uiSettings || { jaOnly: false, viewMode: 'grid', hideImages: false, isInitialized: true, theme: 'system', language: 'ja' };
+    // @ts-expect-error - Overriding with partial mock data
+    if (overrides.settings) this.currentSettings = overrides.settings;
+    else this.currentSettings = JSON.parse(JSON.stringify(DEFAULT_MOCK_SETTINGS));
+
+    // @ts-expect-error - Overriding with partial mock data
+    if (overrides.uiSettings) this.currentUiSettings = overrides.uiSettings;
+    
     this.currentArticles = overrides.articles || [];
 
     await page.setViewportSize({ width: 1440, height: 900 });
@@ -41,7 +46,7 @@ export class MockFactory {
       const style = document.createElement('style');
       style.innerHTML = `*, *::before, *::after { transition-duration: 0s !important; animation-duration: 0s !important; opacity: 1 !important; visibility: visible !important; }`;
       document.head.appendChild(style);
-      (window as any).isE2ETest = true;
+      (window as unknown as { isE2ETest: boolean }).isE2ETest = true;
     });
 
     // 唯一のルート設定 (Singleton route)
@@ -63,7 +68,7 @@ export class MockFactory {
     });
 
     await page.addInitScript(() => {
-      (window as any).nexusApi = {
+      (window as unknown as { nexusApi: unknown }).nexusApi = {
         getApiKey: () => Promise.resolve('mock-api-key'),
         saveApiKey: () => Promise.resolve({ success: true }),
         onAgentEvent: () => () => {},
@@ -77,17 +82,17 @@ export class MockFactory {
   /**
    * テスト中に動的にモックデータを更新
    */
-  static updateCurrentSettings(newSettings: any) {
+  static updateCurrentSettings(newSettings: unknown) {
     this.currentSettings = JSON.parse(JSON.stringify(newSettings));
   }
 
-  static async mockDiscoverTrends(page: Page, suggestions: any[]) {
+  static async mockDiscoverTrends(page: Page, suggestions: unknown[]) {
     await page.route(url => url.href.includes('/api/v5/discover-trends'), async (route) => {
       await route.fulfill({ json: { suggestions }, headers: { 'Access-Control-Allow-Origin': '*' } });
     });
   }
 
-  static async mockRestructureProposal(page: Page, proposal: any) {
+  static async mockRestructureProposal(page: Page, proposal: unknown) {
     await page.route(url => url.href.includes('/api/v5/restructure-categories'), async (route) => {
       await route.fulfill({ json: proposal, headers: { 'Access-Control-Allow-Origin': '*' } });
     });

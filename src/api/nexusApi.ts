@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { Article, NexusSettings, AgentStatus, InterestCategory, FeedConfig, UiSettings, TrendSuggestion } from '../types';
+import type { Article, NexusSettings, AgentStatus, InterestCategory, FeedConfig, UiSettings, TrendSuggestion, Interests, UsageStats } from '../types';
 
 export interface WindowState {
   width: number;
@@ -8,7 +8,7 @@ export interface WindowState {
   y: number;
 }
 
-const isE2E = () => (typeof window !== 'undefined' && (window as any).isE2ETest === true);
+const isE2E = () => (typeof window !== 'undefined' && (window as unknown as { isE2ETest?: boolean }).isE2ETest === true);
 
 /**
  * Electron IPC Bridge または HTTP API を介した API 呼び出し
@@ -22,7 +22,6 @@ export const nexusApi = {
     if (window.nexusApi?.getArticles && !isE2E()) return await window.nexusApi.getArticles();
     try {
       const url = `${this.getBackendUrl()}/api/dashboard`;
-      console.log(`[nexusApi] Fetching articles: ${url}`);
       const res = await fetch(url);
       const data = await res.json();
       const allArticles: Article[] = [];
@@ -41,7 +40,6 @@ export const nexusApi = {
     try {
       const urlInterests = `${this.getBackendUrl()}/api/v5/interests`;
       const urlFeeds = `${this.getBackendUrl()}/api/v5/feeds`;
-      console.log(`[nexusApi] Fetching settings: ${urlInterests}, ${urlFeeds}`);
       const interests = await fetch(urlInterests).then(r => r.json());
       const feeds = await fetch(urlFeeds).then(r => r.json());
       return { interests, feedConfig: feeds };
@@ -61,13 +59,14 @@ export const nexusApi = {
     return await res.json();
   },
 
-  async triggerOrchestration(requirements: string): Promise<void> {
+  async triggerOrchestration(requirements?: string): Promise<{ success: boolean; newFeedsCount: number }> {
     if (window.nexusApi?.triggerOrchestration && !isE2E()) return await window.nexusApi.triggerOrchestration(requirements);
-    await fetch(`${this.getBackendUrl()}/api/v5/orchestrate`, {
+    const res = await fetch(`${this.getBackendUrl()}/api/v5/orchestrate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ requirements })
     });
+    return await res.json();
   },
 
   async suggestCategory(categoryName: string): Promise<{ brands: string[], keywords: string[], emoji: string, reason: string }> {
@@ -130,7 +129,6 @@ export const nexusApi = {
     if (window.nexusApi?.getUiSettings && !isE2E()) return await window.nexusApi.getUiSettings();
     try {
       const url = `${this.getBackendUrl()}/api/v5/ui-settings`;
-      console.log(`[nexusApi] Fetching UI settings: ${url}`);
       const res = await fetch(url);
       return await res.json();
     } catch {
@@ -143,12 +141,12 @@ export const nexusApi = {
     return { success: true };
   },
 
-  onUsageUpdate(callback: (stats: any) => void): () => void {
+  onUsageUpdate(callback: (stats: UsageStats) => void): () => void {
     if (window.nexusApi?.onUsageUpdate && !isE2E()) return window.nexusApi.onUsageUpdate(callback);
     return () => {};
   },
 
-  async getUsageStats(): Promise<any> {
+  async getUsageStats(): Promise<UsageStats> {
     if (window.nexusApi?.getUsageStats && !isE2E()) return await window.nexusApi.getUsageStats();
     try {
       const url = `${this.getBackendUrl()}/api/v5/usage-stats`;
@@ -157,6 +155,10 @@ export const nexusApi = {
     } catch {
       return {};
     }
+  },
+
+  windowControl(action: 'minimize' | 'maximize' | 'close' | 'quit'): void {
+    if (window.nexusApi?.windowControl && !isE2E()) window.nexusApi.windowControl(action as unknown as 'minimize' | 'maximize' | 'close');
   }
 };
 
@@ -183,7 +185,10 @@ export function useNexusSync() {
   }, []);
 
   useEffect(() => {
-    void fetchData(false);
+    const timer = setTimeout(() => {
+      void fetchData(false);
+    }, 0);
+    return () => clearTimeout(timer);
   }, [fetchData]);
 
   const sync = useCallback(async (newSettings: NexusSettings) => {
@@ -205,8 +210,9 @@ export function useAgentEvents(onRefresh?: () => void) {
   ]);
 
   useEffect(() => {
+    const backendUrl = isE2E() ? '' : 'http://localhost:3005';
     if (!window.nexusApi || isE2E()) {
-      const eventSource = new EventSource(`${isE2E() ? '' : 'http://localhost:3005'}/api/v5/events`);
+      const eventSource = new EventSource(`${backendUrl}/api/v5/events`);
       eventSource.onmessage = (e) => {
         const data = JSON.parse(e.data);
         if (data.status === 'refresh') onRefresh?.();

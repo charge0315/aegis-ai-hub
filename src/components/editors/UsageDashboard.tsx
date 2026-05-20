@@ -20,7 +20,7 @@ import {
   Info
 } from 'lucide-react';
 import { nexusApi } from '../../api/nexusApi';
-import type { UsageStats } from '../../models/Schemas';
+import type { UsageStats } from '../../types';
 import { useTranslation } from '../../hooks/useTranslationHook';
 
 const COLORS = ['#6366f1', '#a855f7', '#ec4899', '#f43f5e', '#ef4444'];
@@ -42,12 +42,12 @@ export const UsageDashboard: React.FC = () => {
       }
     };
 
-    loadStats();
+    void loadStats();
 
-    const unsubscribe = nexusApi.onUsageUpdate?.((newStats: UsageStats) => {
+    const unsubscribe = nexusApi.onUsageUpdate((newStats: UsageStats) => {
       setStats(newStats);
     });
-    return () => unsubscribe?.();
+    return () => unsubscribe();
   }, []);
 
   const totalTokens = useMemo(() => {
@@ -96,9 +96,9 @@ export const UsageDashboard: React.FC = () => {
     <div className="space-y-8 pb-12">
       {/* Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <StatCard icon={<Zap className="text-primary" />} label={t.usage.totalTokens} value={totalTokens.toLocaleString()} color="primary" />
-        <StatCard icon={<Activity className="text-purple-400" />} label={t.usage.activeDays} value={activeDays.toString()} color="purple" />
-        <StatCard icon={<Database className="text-pink-400" />} label={t.usage.apiCalls} value={apiCalls.toLocaleString()} color="pink" />
+        <StatCard icon={<Zap className="text-primary" />} label={t.usage.totalTokens} value={totalTokens.toLocaleString()} />
+        <StatCard icon={<Activity className="text-purple-400" />} label={t.usage.activeDays} value={activeDays.toString()} />
+        <StatCard icon={<Database className="text-pink-400" />} label={t.usage.apiCalls} value={apiCalls.toLocaleString()} />
       </div>
 
       {/* Charts Section */}
@@ -157,7 +157,7 @@ export const UsageDashboard: React.FC = () => {
   );
 };
 
-const StatCard: React.FC<{ icon: React.ReactNode; label: string; value: string; color: string }> = ({ icon, label, value }) => (
+const StatCard: React.FC<{ icon: React.ReactNode; label: string; value: string }> = ({ icon, label, value }) => (
   <div className="bg-surface-dark/30 border border-white/5 p-6 rounded-3xl backdrop-blur-xl group hover:border-primary/20 transition-all duration-300">
     <div className="flex items-center gap-4">
       <div className="p-3 bg-white/5 rounded-2xl group-hover:scale-110 transition-transform duration-500">{icon}</div>

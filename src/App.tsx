@@ -14,7 +14,7 @@ import { UnifiedEditor } from './components/UnifiedEditor';
 import { CommandPalette } from './components/CommandPalette';
 import { CustomDialog } from './components/CustomDialog';
 import { useDialog } from './hooks/useDialog';
-import { useNexusSync, useAgentEvents } from './api/nexusApi';
+import { useNexusSync, useAgentEvents, nexusApi } from './api/nexusApi';
 import { useTheme } from './hooks/useTheme';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useUiSettingsSync } from './hooks/useUiSettingsSync';
@@ -95,8 +95,6 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
     });
   }, [articles, searchQuery, isJapaneseOnly]);
 
-  const categories = useMemo(() => Object.keys(settings?.interests?.categories || {}), [settings]);
-
   return (
     <div className="flex h-screen bg-[#0a0b0c] text-slate-200 overflow-hidden font-sans">
       {dialog.isOpen && (
@@ -112,7 +110,14 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
         />
       )}
 
-      <CommandPalette isOpen={isCommandPaletteOpen} onClose={() => setIsCommandPaletteOpen(false)} onNavigate={handleNavigate} categories={categories} />
+      <CommandPalette 
+        isOpen={isCommandPaletteOpen} 
+        onClose={() => setIsCommandPaletteOpen(false)} 
+        settings={settings}
+        onNavigate={handleNavigate} 
+        onSync={() => settings ? sync(settings) : Promise.resolve()}
+        onTriggerOrchestration={async (req) => { await nexusApi.triggerOrchestration(req); }}
+      />
 
       <aside 
         style={{ width: isSidebarOpen ? '280px' : '0px' }} 
@@ -163,7 +168,7 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
           {currentView === 'feed' ? (
             <div className="max-w-[1600px] mx-auto grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {filteredArticles.map((article, idx) => (
-                <ArticleCard key={idx} article={article} compact={feedSize === 'small'} large={feedSize === 'large'} showImage={showImages} />
+                <ArticleCard key={idx} article={article} index={idx} size={feedSize} showImages={showImages} />
               ))}
             </div>
           ) : (

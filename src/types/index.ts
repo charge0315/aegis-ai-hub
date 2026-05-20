@@ -3,7 +3,8 @@ import type {
   Interests as SchemaInterests, 
   FeedConfig as SchemaFeedConfig, 
   Skill as SchemaSkill,
-  UiSettings as SchemaUiSettings
+  UiSettings as SchemaUiSettings,
+  UsageStats as SchemaUsageStats
 } from '../models/Schemas';
 
 export interface Article {
@@ -24,6 +25,7 @@ export type Interests = SchemaInterests;
 export type FeedConfig = SchemaFeedConfig;
 export type Skill = SchemaSkill;
 export type UiSettings = SchemaUiSettings;
+export type UsageStats = SchemaUsageStats;
 
 export interface NexusSettings {
   interests: Interests;
@@ -46,7 +48,6 @@ export interface NexusState {
   lastUpdated: string;
 }
 
-// Electron IPC Bridge definitions
 export interface AgentEventData {
   agentId: string;
   status: 'idle' | 'working' | 'error' | 'success' | 'refresh';
@@ -69,7 +70,7 @@ export interface NexusApiBridge {
   getArticles: (options?: Record<string, unknown>) => Promise<Article[]>;
   getSettings: () => Promise<NexusSettings>;
   syncSettings: (settings: NexusSettings) => Promise<{ lastUpdated: number }>;
-  triggerOrchestration: () => Promise<{ success: boolean; newFeedsCount: number }>;
+  triggerOrchestration: (requirements?: string) => Promise<{ success: boolean; newFeedsCount: number }>;
   onAgentEvent: (callback: (data: AgentEventData) => void) => void;
   removeAgentEventListener: () => void;
   suggestCategory: (categoryName: string) => Promise<{
@@ -81,12 +82,15 @@ export interface NexusApiBridge {
   getApiKey: () => Promise<string>;
   saveApiKey: (apiKey: string) => Promise<{ success: boolean }>;
   getProposals: () => Promise<{ sites: { url: string; name: string; reason: string; category: string }[] }>;
-  restructureCategories: (count?: number) => Promise<{ categories: Record<string, InterestCategory>; feedConfig: FeedConfig }>;
+  restructureCategories: (count?: number, language?: string) => Promise<{ categories: Record<string, InterestCategory>; feedConfig: FeedConfig }>;
   discoverTrends: () => Promise<{ suggestions: TrendSuggestion[] }>;
-  resetToDefaults: () => Promise<{ success: boolean }>;
-  windowControl: (action: 'minimize' | 'maximize' | 'close') => void;
+  translateInterests: (settings: NexusSettings) => Promise<{ interests: Interests, feedConfig: FeedConfig }>;
+  resetToDefaults: (language?: string) => Promise<{ success: boolean }>;
+  windowControl: (action: 'minimize' | 'maximize' | 'close' | 'quit') => void;
   getUiSettings: () => Promise<UiSettings>;
   saveUiSettings: (settings: UiSettings) => Promise<{ success: boolean }>;
+  getUsageStats: () => Promise<UsageStats>;
+  onUsageUpdate: (callback: (stats: UsageStats) => void) => () => void;
 }
 
 declare global {

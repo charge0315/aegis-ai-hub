@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { test, expect } from '@playwright/test';
 import { MockFactory, DEFAULT_MOCK_SETTINGS } from './helpers/mock-factory';
 

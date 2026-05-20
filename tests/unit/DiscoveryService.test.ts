@@ -13,11 +13,11 @@ describe('DiscoveryService', () => {
 
   beforeEach(() => {
     mockGeminiService = {
-      discoverSites: vi.fn(),
-      discoverEnglishSites: vi.fn(),
-      getFallbackEvolutionProposals: vi.fn(),
+      discoverSites: vi.fn().mockResolvedValue([]),
+      discoverEnglishSites: vi.fn().mockResolvedValue([]),
+      getFallbackEvolutionProposals: vi.fn().mockResolvedValue({ sites: [] }),
       getRestructureProposal: vi.fn(),
-      getEvolutionProposals: vi.fn(),
+      getEvolutionProposals: vi.fn().mockResolvedValue({ sites: [], brands: [], keywords: [] }),
       updateApiKey: vi.fn(),
     } as unknown as vi.Mocked<GeminiService>;
 
@@ -30,6 +30,8 @@ describe('DiscoveryService', () => {
       getActiveFeeds: vi.fn().mockReturnValue([]),
       getAllActiveFeeds: vi.fn().mockReturnValue([]),
       addFeed: vi.fn(),
+      reportSuccess: vi.fn(),
+      reportFailure: vi.fn(),
     } as unknown as vi.Mocked<FeedManager>;
 
     discoveryService = new DiscoveryService(
@@ -49,7 +51,7 @@ describe('DiscoveryService', () => {
 
       mockGeminiService.discoverSites.mockResolvedValue(suggestedSites);
       mockRSSFetcher.fetch.mockImplementation(async (url: string) => {
-        if (url === 'https://example.com/rss') return [{ title: 'Article 1', link: 'l1', content: 'c1', date: new Date().toISOString() }];
+        if (url === 'https://example.com/rss') return [{ title: 'Article 1', link: 'l1', content: 'c1', date: new Date().toISOString(), category: 'AI', brand: 'B', score: 10, language: 'en', img: null }];
         throw new Error('Fetch failed');
       });
 
@@ -57,7 +59,7 @@ describe('DiscoveryService', () => {
 
       expect(result).toHaveLength(1);
       expect(result[0].name).toBe('Valid AI Blog');
-      expect(mockFeedManager.addFeed).toHaveBeenCalledWith('AI', 'https://example.com/rss', expect.anything(), 'Valid AI Blog');
+      expect(mockFeedManager.addFeed).toHaveBeenCalledWith('AI', 'https://example.com/rss', mockRSSFetcher);
     });
   });
 
@@ -71,7 +73,7 @@ describe('DiscoveryService', () => {
       };
 
       mockGeminiService.getEvolutionProposals.mockResolvedValue(apiResult);
-      mockRSSFetcher.fetch.mockResolvedValue([{ title: 'Article', link: 'l1', content: 'c1', date: new Date().toISOString() }]);
+      mockRSSFetcher.fetch.mockResolvedValue([{ title: 'Article', link: 'l1', content: 'c1', date: new Date().toISOString(), category: 'AI', brand: 'B', score: 10, language: 'en', img: null }]);
 
       const proposals = await discoveryService.getProposals(interests);
 
@@ -87,7 +89,7 @@ describe('DiscoveryService', () => {
       mockGeminiService.getFallbackEvolutionProposals.mockResolvedValue({
         sites: [{ name: 'Google News Fallback', url: 'https://news.google.com/rss', category: 'Niche Topic', reason: 'Fallback' }]
       });
-      mockRSSFetcher.fetch.mockResolvedValue([{ title: 'Fallback Article', link: 'f1', content: 'c1', date: new Date().toISOString() }]);
+      mockRSSFetcher.fetch.mockResolvedValue([{ title: 'Fallback Article', link: 'f1', content: 'c1', date: new Date().toISOString(), category: 'AI', brand: 'B', score: 10, language: 'en', img: null }]);
 
       const result = await discoveryService.getProposals(interests);
 

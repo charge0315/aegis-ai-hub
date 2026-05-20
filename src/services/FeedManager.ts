@@ -74,6 +74,27 @@ export class FeedManager {
     }
   }
 
+  async reportSuccess(category: string, url: string): Promise<void> {
+    const group = this.config[category];
+    if (group && group.failures[url]) {
+      delete group.failures[url];
+      await this.saveConfig();
+    }
+  }
+
+  async reportFailure(category: string, url: string): Promise<void> {
+    const group = this.config[category];
+    if (group) {
+      group.failures[url] = (group.failures[url] || 0) + 1;
+      // 5回以上失敗したらアクティブから外す
+      if (group.failures[url] >= 5) {
+        group.active = group.active.filter(u => u !== url);
+        if (!group.pool.includes(url)) group.pool.push(url);
+      }
+      await this.saveConfig();
+    }
+  }
+
   async cleanConfig(): Promise<void> {
     for (const cat in this.config) {
       this.config[cat].active = [...new Set(this.config[cat].active)];

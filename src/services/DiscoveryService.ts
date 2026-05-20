@@ -79,7 +79,7 @@ export class DiscoveryService {
 
     if (validFeeds.length > 0) {
       for (const feed of validFeeds) {
-        await this.feedManager.addFeed(feed.category, feed.url, this.rssFetcher, feed.name);
+        await this.feedManager.addFeed(feed.category, feed.url, this.rssFetcher);
       }
       console.log(`[DiscoveryService] 完了: ${validFeeds.length} 件の新しいフィードを登録しました。`);
     }

@@ -30,7 +30,10 @@ export const CustomDialog: React.FC<CustomDialogProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      setInputValue(defaultValue);
+      const timer = setTimeout(() => {
+        setInputValue(defaultValue);
+      }, 0);
+      return () => clearTimeout(timer);
     }
   }, [isOpen, defaultValue]);
 
