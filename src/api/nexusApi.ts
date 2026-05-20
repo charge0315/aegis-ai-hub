@@ -11,24 +11,31 @@ export interface WindowState {
 const isE2E = () => (typeof window !== 'undefined' && (window as unknown as { isE2ETest?: boolean }).isE2ETest === true);
 
 /**
- * Electron IPC Bridge または HTTP API を介した API 呼び出し
+ * Aegis Nexus API Client
+ * Provides a unified interface for both Electron IPC and Browser (via HTTP proxy)
  */
 export const nexusApi = {
   getBackendUrl(): string {
+    // In dev mode, we use the Vite proxy or direct Fastify port
     return isE2E() ? '' : 'http://localhost:3005';
   },
 
   async getArticles(): Promise<Article[]> {
-    if (window.nexusApi?.getArticles && !isE2E()) return await window.nexusApi.getArticles();
+    // 1. Electron IPC (Preferred)
+    if (window.nexusApi?.getArticles && !isE2E()) {
+      return await window.nexusApi.getArticles();
+    }
+    // 2. Browser Fallback (Fetch)
     try {
       const url = `${this.getBackendUrl()}/api/dashboard`;
       const res = await fetch(url);
       const data = await res.json();
       const allArticles: Article[] = [];
+      // Flatten grouped dashboard data from HTTP API
       Object.values(data as Record<string, { articles: Article[] }>).forEach(group => {
         if (group?.articles) allArticles.push(...group.articles);
       });
-      return allArticles;
+      return allArticles.sort((a, b) => b.score - a.score);
     } catch (e) {
       console.error('[nexusApi] Fetch articles failed:', e);
       return [];
@@ -36,7 +43,9 @@ export const nexusApi = {
   },
 
   async getSettings(): Promise<NexusSettings> {
-    if (window.nexusApi?.getSettings && !isE2E()) return await window.nexusApi.getSettings();
+    if (window.nexusApi?.getSettings && !isE2E()) {
+      return await window.nexusApi.getSettings();
+    }
     try {
       const urlInterests = `${this.getBackendUrl()}/api/v5/interests`;
       const urlFeeds = `${this.getBackendUrl()}/api/v5/feeds`;
@@ -50,7 +59,9 @@ export const nexusApi = {
   },
 
   async syncSettings(settings: NexusSettings): Promise<{ lastUpdated: number }> {
-    if (window.nexusApi?.syncSettings && !isE2E()) return await window.nexusApi.syncSettings(settings);
+    if (window.nexusApi?.syncSettings && !isE2E()) {
+      return await window.nexusApi.syncSettings(settings);
+    }
     const res = await fetch(`${this.getBackendUrl()}/api/v5/sync-settings`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -60,7 +71,9 @@ export const nexusApi = {
   },
 
   async triggerOrchestration(requirements?: string): Promise<{ success: boolean; newFeedsCount: number }> {
-    if (window.nexusApi?.triggerOrchestration && !isE2E()) return await window.nexusApi.triggerOrchestration(requirements);
+    if (window.nexusApi?.triggerOrchestration && !isE2E()) {
+      return await window.nexusApi.triggerOrchestration(requirements);
+    }
     const res = await fetch(`${this.getBackendUrl()}/api/v5/orchestrate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -70,7 +83,9 @@ export const nexusApi = {
   },
 
   async suggestCategory(categoryName: string): Promise<{ brands: string[], keywords: string[], emoji: string, reason: string }> {
-    if (window.nexusApi?.suggestCategory && !isE2E()) return await window.nexusApi.suggestCategory(categoryName);
+    if (window.nexusApi?.suggestCategory && !isE2E()) {
+      return await window.nexusApi.suggestCategory(categoryName);
+    }
     const res = await fetch(`${this.getBackendUrl()}/api/v5/suggest-category`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -80,7 +95,9 @@ export const nexusApi = {
   },
 
   async restructureCategories(count?: number, language: string = 'ja'): Promise<{ categories: Record<string, InterestCategory>, feedConfig: FeedConfig }> {
-    if (window.nexusApi?.restructureCategories && !isE2E()) return await window.nexusApi.restructureCategories(count, language);
+    if (window.nexusApi?.restructureCategories && !isE2E()) {
+      return await window.nexusApi.restructureCategories(count, language);
+    }
     const res = await fetch(`${this.getBackendUrl()}/api/v5/restructure-categories`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -90,13 +107,17 @@ export const nexusApi = {
   },
 
   async discoverTrends(): Promise<{ suggestions: TrendSuggestion[] }> {
-    if (window.nexusApi?.discoverTrends && !isE2E()) return await window.nexusApi.discoverTrends();
+    if (window.nexusApi?.discoverTrends && !isE2E()) {
+      return await window.nexusApi.discoverTrends();
+    }
     const res = await fetch(`${this.getBackendUrl()}/api/v5/discover-trends`, { method: 'POST' });
     return await res.json();
   },
 
   async translateInterests(settings: NexusSettings): Promise<{ interests: Interests, feedConfig: FeedConfig }> {
-    if (window.nexusApi?.translateInterests && !isE2E()) return await window.nexusApi.translateInterests(settings);
+    if (window.nexusApi?.translateInterests && !isE2E()) {
+      return await window.nexusApi.translateInterests(settings);
+    }
     const res = await fetch(`${this.getBackendUrl()}/api/v5/translate-interests`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -106,7 +127,9 @@ export const nexusApi = {
   },
 
   async resetToDefaults(language: string = 'ja'): Promise<{ success: boolean }> {
-    if (window.nexusApi?.resetToDefaults && !isE2E()) return await window.nexusApi.resetToDefaults(language);
+    if (window.nexusApi?.resetToDefaults && !isE2E()) {
+      return await window.nexusApi.resetToDefaults(language);
+    }
     const res = await fetch(`${this.getBackendUrl()}/api/v5/reset-to-defaults`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -116,17 +139,23 @@ export const nexusApi = {
   },
 
   async getApiKey(): Promise<string> {
-    if (window.nexusApi?.getApiKey && !isE2E()) return await window.nexusApi.getApiKey();
+    if (window.nexusApi?.getApiKey && !isE2E()) {
+      return await window.nexusApi.getApiKey();
+    }
     return '';
   },
 
   async saveApiKey(apiKey: string): Promise<{ success: boolean }> {
-    if (window.nexusApi?.saveApiKey && !isE2E()) return await window.nexusApi.saveApiKey(apiKey);
+    if (window.nexusApi?.saveApiKey && !isE2E()) {
+      return await window.nexusApi.saveApiKey(apiKey);
+    }
     return { success: true };
   },
 
   async getUiSettings(): Promise<UiSettings> {
-    if (window.nexusApi?.getUiSettings && !isE2E()) return await window.nexusApi.getUiSettings();
+    if (window.nexusApi?.getUiSettings && !isE2E()) {
+      return await window.nexusApi.getUiSettings();
+    }
     try {
       const url = `${this.getBackendUrl()}/api/v5/ui-settings`;
       const res = await fetch(url);
@@ -137,17 +166,23 @@ export const nexusApi = {
   },
 
   async saveUiSettings(settings: UiSettings): Promise<{ success: boolean }> {
-    if (window.nexusApi?.saveUiSettings && !isE2E()) return await window.nexusApi.saveUiSettings(settings);
+    if (window.nexusApi?.saveUiSettings && !isE2E()) {
+      return await window.nexusApi.saveUiSettings(settings);
+    }
     return { success: true };
   },
 
   onUsageUpdate(callback: (stats: UsageStats) => void): () => void {
-    if (window.nexusApi?.onUsageUpdate && !isE2E()) return window.nexusApi.onUsageUpdate(callback);
+    if (window.nexusApi?.onUsageUpdate && !isE2E()) {
+      return window.nexusApi.onUsageUpdate(callback);
+    }
     return () => {};
   },
 
   async getUsageStats(): Promise<UsageStats> {
-    if (window.nexusApi?.getUsageStats && !isE2E()) return await window.nexusApi.getUsageStats();
+    if (window.nexusApi?.getUsageStats && !isE2E()) {
+      return await window.nexusApi.getUsageStats();
+    }
     try {
       const url = `${this.getBackendUrl()}/api/v5/usage-stats`;
       const res = await fetch(url);
@@ -161,9 +196,20 @@ export const nexusApi = {
     if (window.nexusApi?.windowControl && !isE2E()) {
       window.nexusApi.windowControl(action as unknown as 'minimize' | 'maximize' | 'close');
     }
+  },
+  
+  openExternal(url: string): void {
+    if (window.nexusApi?.openExternal && !isE2E()) {
+      window.nexusApi.openExternal(url);
+    } else {
+      window.open(url, '_blank');
+    }
   }
 };
 
+/**
+ * Hook to synchronize Nexus settings and articles
+ */
 export function useNexusSync() {
   const [settings, setSettings] = useState<NexusSettings | null>(null);
   const [articles, setArticles] = useState<Article[]>([]);
@@ -173,13 +219,15 @@ export function useNexusSync() {
   const fetchData = useCallback(async (showLoading = true) => {
     try {
       if (showLoading) setLoading(true);
-      const s = await nexusApi.getSettings();
-      const a = await nexusApi.getArticles();
+      const [s, a] = await Promise.all([
+        nexusApi.getSettings(),
+        nexusApi.getArticles()
+      ]);
       setSettings(s);
       setArticles(a);
       setError(null);
     } catch (err: unknown) {
-      console.error('[useNexusSync] Fetch data failed:', err);
+      console.error('[useNexusSync] Fetch failed:', err);
       setError(err instanceof Error ? err.message : 'Fetch error');
     } finally {
       setLoading(false);
@@ -187,15 +235,24 @@ export function useNexusSync() {
   }, []);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      void fetchData(false);
-    }, 0);
-    return () => clearTimeout(timer);
+    let active = true;
+    const load = async () => {
+      if (active) await fetchData(false);
+    };
+    void load();
+    return () => { active = false; };
   }, [fetchData]);
 
   const sync = useCallback(async (newSettings: NexusSettings) => {
     const result = await nexusApi.syncSettings(newSettings);
-    setSettings({ ...newSettings, interests: { ...newSettings.interests, lastUpdated: result.lastUpdated } });
+    setSettings({ 
+      ...newSettings, 
+      interests: { 
+        ...newSettings.interests, 
+        lastUpdated: result.lastUpdated 
+      } 
+    });
+    // Refresh articles after sync
     const a = await nexusApi.getArticles();
     setArticles(a);
   }, []);
@@ -203,6 +260,9 @@ export function useNexusSync() {
   return { settings, articles, loading, error, sync, refetch: fetchData };
 }
 
+/**
+ * Hook to monitor Agent swarm events
+ */
 export function useAgentEvents(onRefresh?: () => void) {
   const [events, setEvents] = useState<AgentStatus[]>([
     { id: 'architect', name: 'Architect', status: 'idle', lastMessage: '', timestamp: '' },
@@ -213,20 +273,36 @@ export function useAgentEvents(onRefresh?: () => void) {
 
   useEffect(() => {
     const backendUrl = isE2E() ? '' : 'http://localhost:3005';
+    // If not in Electron or specifically in E2E mode, use SSE
     if (!window.nexusApi || isE2E()) {
       const eventSource = new EventSource(`${backendUrl}/api/v5/events`);
       eventSource.onmessage = (e) => {
-        const data = JSON.parse(e.data);
-        if (data.status === 'refresh') onRefresh?.();
-        else if (data.agentId) setEvents(prev => prev.map(a => a.id === data.agentId ? { ...a, ...data } : a));
+        try {
+          const data = JSON.parse(e.data);
+          if (data.status === 'refresh') {
+            onRefresh?.();
+          } else if (data.agentId) {
+            setEvents(prev => prev.map(a => a.id === data.agentId ? { ...a, ...data } : a));
+          }
+        } catch (err) {
+          console.error('[SSE] Event parse error:', err);
+        }
       };
       return () => eventSource.close();
     }
+    
+    // Electron IPC Event Listener
     window.nexusApi.onAgentEvent((data) => {
-      if (data.status === 'refresh') onRefresh?.();
-      else if (data.agentId) setEvents(prev => prev.map(a => a.id === data.agentId ? { ...a, ...data } : a));
+      if (data.status === 'refresh') {
+        onRefresh?.();
+      } else if (data.agentId) {
+        setEvents(prev => prev.map(a => a.id === data.agentId ? { ...a, ...data } : a));
+      }
     });
-    return () => { window.nexusApi?.removeAgentEventListener?.(); };
+    
+    return () => { 
+      window.nexusApi?.removeAgentEventListener?.(); 
+    };
   }, [onRefresh]);
 
   return events;

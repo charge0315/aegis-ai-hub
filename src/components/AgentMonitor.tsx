@@ -3,17 +3,30 @@ import { motion } from 'framer-motion';
 import { Cpu, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { GlassPanel } from './GlassPanel';
 import type { AgentStatus } from '../types';
+import { useTranslation } from '../hooks/useTranslationHook';
+
 interface AgentMonitorProps {
   agents: AgentStatus[];
   compact?: boolean;
 }
 
 export const AgentMonitor: React.FC<AgentMonitorProps> = ({ agents, compact }) => {
+  const { t } = useTranslation();
+
+  const getAgentName = (id: string, fallback: string) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const agentsMap = (t.settings as any).agents;
+    if (agentsMap && id in agentsMap) {
+      return agentsMap[id as keyof typeof agentsMap];
+    }
+    return fallback;
+  };
+
   if (compact) {
     return (
       <div className="flex flex-col items-center gap-4 py-2">
         {agents.map((agent) => (
-          <div key={agent.id} title={`${agent.name}: ${agent.lastMessage || 'Idle'}`} className="relative group">
+          <div key={agent.id} title={`${getAgentName(agent.id, agent.name)}: ${agent.lastMessage || 'Idle'}`} className="relative group">
             <StatusIcon status={agent.status} size={18} />
             {agent.status === 'working' && (
               <span className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full animate-ping" />
@@ -26,8 +39,6 @@ export const AgentMonitor: React.FC<AgentMonitorProps> = ({ agents, compact }) =
 
   return (
     <GlassPanel className="p-4 flex flex-col gap-4">
-// ...
-
       <div className="flex items-center justify-between border-b border-white/5 pb-2">
         <h2 className="text-xs font-bold uppercase tracking-widest text-slate-400 flex items-center gap-2">
           <Cpu size={14} />
@@ -44,10 +55,11 @@ export const AgentMonitor: React.FC<AgentMonitorProps> = ({ agents, compact }) =
         {agents.map((agent) => (
           <div key={agent.id} className="space-y-1.5" data-testid={`agent-monitor-${agent.name}`}>
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-medium text-slate-300">{agent.name}</span>
+              <span className="text-[11px] font-medium text-slate-300">{getAgentName(agent.id, agent.name)}</span>
               <StatusIcon status={agent.status} />
             </div>
             <div className="relative h-1 w-full bg-white/5 rounded-full overflow-hidden">
+
               {agent.status === 'working' && (
                 <motion.div 
                   className="absolute inset-0 bg-primary/40"

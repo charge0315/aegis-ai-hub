@@ -1,7 +1,7 @@
 import type { GeminiService } from './GeminiService';
 import type { RSSFetcher } from './RSSFetcher';
 import type { FeedManager } from './FeedManager';
-import type { Interests } from '../models/Schemas';
+import type { Interests, FeedConfig, InterestCategory } from '../models/Schemas';
 
 interface SuggestedSite {
   name: string;
@@ -30,6 +30,21 @@ export class DiscoveryService {
     this.geminiService = geminiService;
     this.rssFetcher = rssFetcher;
     this.feedManager = feedManager;
+  }
+
+  /**
+   * AIによるカテゴリ再編の提案を取得します。
+   */
+  async getRestructureProposal(interests: Interests, targetCount: number = 10, language: string = 'ja'): Promise<{ categories: Record<string, InterestCategory>, feedConfig: FeedConfig }> {
+    const currentFeeds = this.feedManager.config;
+    return await this.geminiService.getRestructureProposal(interests, currentFeeds, targetCount, language);
+  }
+
+  /**
+   * カテゴリ設定を翻訳します。
+   */
+  async translateInterests(interests: Interests): Promise<{ interests: Interests, feedConfig: FeedConfig }> {
+    return await this.geminiService.translateInterests(interests);
   }
 
   /**
