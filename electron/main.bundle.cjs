@@ -4680,7 +4680,7 @@ var require_atomic_sleep = __commonJS({
 var require_sonic_boom = __commonJS({
   "node_modules/sonic-boom/index.js"(exports2, module2) {
     "use strict";
-    var fs6 = require("fs");
+    var fs7 = require("fs");
     var EventEmitter2 = require("events");
     var inherits2 = require("util").inherits;
     var path5 = require("path");
@@ -4737,20 +4737,20 @@ var require_sonic_boom = __commonJS({
       const mode = sonic.mode;
       if (sonic.sync) {
         try {
-          if (sonic.mkdir) fs6.mkdirSync(path5.dirname(file2), { recursive: true });
-          const fd = fs6.openSync(file2, flags, mode);
+          if (sonic.mkdir) fs7.mkdirSync(path5.dirname(file2), { recursive: true });
+          const fd = fs7.openSync(file2, flags, mode);
           fileOpened(null, fd);
         } catch (err) {
           fileOpened(err);
           throw err;
         }
       } else if (sonic.mkdir) {
-        fs6.mkdir(path5.dirname(file2), { recursive: true }, (err) => {
+        fs7.mkdir(path5.dirname(file2), { recursive: true }, (err) => {
           if (err) return fileOpened(err);
-          fs6.open(file2, flags, mode, fileOpened);
+          fs7.open(file2, flags, mode, fileOpened);
         });
       } else {
-        fs6.open(file2, flags, mode, fileOpened);
+        fs7.open(file2, flags, mode, fileOpened);
       }
     }
     function SonicBoom(opts) {
@@ -4791,8 +4791,8 @@ var require_sonic_boom = __commonJS({
         this.flush = flushBuffer;
         this.flushSync = flushBufferSync;
         this._actualWrite = actualWriteBuffer;
-        fsWriteSync = () => fs6.writeSync(this.fd, this._writingBuf);
-        fsWrite = () => fs6.write(this.fd, this._writingBuf, this.release);
+        fsWriteSync = () => fs7.writeSync(this.fd, this._writingBuf);
+        fsWrite = () => fs7.write(this.fd, this._writingBuf, this.release);
       } else if (contentMode === void 0 || contentMode === kContentModeUtf8) {
         this._writingBuf = "";
         this.write = write;
@@ -4801,15 +4801,15 @@ var require_sonic_boom = __commonJS({
         this._actualWrite = actualWrite;
         fsWriteSync = () => {
           if (Buffer.isBuffer(this._writingBuf)) {
-            return fs6.writeSync(this.fd, this._writingBuf);
+            return fs7.writeSync(this.fd, this._writingBuf);
           }
-          return fs6.writeSync(this.fd, this._writingBuf, "utf8");
+          return fs7.writeSync(this.fd, this._writingBuf, "utf8");
         };
         fsWrite = () => {
           if (Buffer.isBuffer(this._writingBuf)) {
-            return fs6.write(this.fd, this._writingBuf, this.release);
+            return fs7.write(this.fd, this._writingBuf, this.release);
           }
-          return fs6.write(this.fd, this._writingBuf, "utf8", this.release);
+          return fs7.write(this.fd, this._writingBuf, "utf8", this.release);
         };
       } else {
         throw new Error(`SonicBoom supports "${kContentModeUtf8}" and "${kContentModeBuffer}", but passed ${contentMode}`);
@@ -4866,7 +4866,7 @@ var require_sonic_boom = __commonJS({
           }
         }
         if (this._fsync) {
-          fs6.fsyncSync(this.fd);
+          fs7.fsyncSync(this.fd);
         }
         const len = this._len;
         if (this._reopening) {
@@ -4980,7 +4980,7 @@ var require_sonic_boom = __commonJS({
       const onDrain = () => {
         if (!this._fsync) {
           try {
-            fs6.fsync(this.fd, (err) => {
+            fs7.fsync(this.fd, (err) => {
               this._flushPending = false;
               cb(err);
             });
@@ -5082,7 +5082,7 @@ var require_sonic_boom = __commonJS({
       const fd = this.fd;
       this.once("ready", () => {
         if (fd !== this.fd) {
-          fs6.close(fd, (err) => {
+          fs7.close(fd, (err) => {
             if (err) {
               return this.emit("error", err);
             }
@@ -5131,7 +5131,7 @@ var require_sonic_boom = __commonJS({
           buf = this._bufs[0];
         }
         try {
-          const n = Buffer.isBuffer(buf) ? fs6.writeSync(this.fd, buf) : fs6.writeSync(this.fd, buf, "utf8");
+          const n = Buffer.isBuffer(buf) ? fs7.writeSync(this.fd, buf) : fs7.writeSync(this.fd, buf, "utf8");
           const releasedBufObj = releaseWritingBuf(buf, this._len, n);
           buf = releasedBufObj.writingBuf;
           this._len = releasedBufObj.len;
@@ -5147,7 +5147,7 @@ var require_sonic_boom = __commonJS({
         }
       }
       try {
-        fs6.fsyncSync(this.fd);
+        fs7.fsyncSync(this.fd);
       } catch {
       }
     }
@@ -5168,7 +5168,7 @@ var require_sonic_boom = __commonJS({
           buf = mergeBuf(this._bufs[0], this._lens[0]);
         }
         try {
-          const n = fs6.writeSync(this.fd, buf);
+          const n = fs7.writeSync(this.fd, buf);
           buf = buf.subarray(n);
           this._len = Math.max(this._len - n, 0);
           if (buf.length <= 0) {
@@ -5196,13 +5196,13 @@ var require_sonic_boom = __commonJS({
       this._writingBuf = this._writingBuf.length ? this._writingBuf : this._bufs.shift() || "";
       if (this.sync) {
         try {
-          const written = Buffer.isBuffer(this._writingBuf) ? fs6.writeSync(this.fd, this._writingBuf) : fs6.writeSync(this.fd, this._writingBuf, "utf8");
+          const written = Buffer.isBuffer(this._writingBuf) ? fs7.writeSync(this.fd, this._writingBuf) : fs7.writeSync(this.fd, this._writingBuf, "utf8");
           release(null, written);
         } catch (err) {
           release(err);
         }
       } else {
-        fs6.write(this.fd, this._writingBuf, release);
+        fs7.write(this.fd, this._writingBuf, release);
       }
     }
     function actualWriteBuffer() {
@@ -5211,7 +5211,7 @@ var require_sonic_boom = __commonJS({
       this._writingBuf = this._writingBuf.length ? this._writingBuf : mergeBuf(this._bufs.shift(), this._lens.shift());
       if (this.sync) {
         try {
-          const written = fs6.writeSync(this.fd, this._writingBuf);
+          const written = fs7.writeSync(this.fd, this._writingBuf);
           release(null, written);
         } catch (err) {
           release(err);
@@ -5220,7 +5220,7 @@ var require_sonic_boom = __commonJS({
         if (kCopyBuffer) {
           this._writingBuf = Buffer.from(this._writingBuf);
         }
-        fs6.write(this.fd, this._writingBuf, release);
+        fs7.write(this.fd, this._writingBuf, release);
       }
     }
     function actualClose(sonic) {
@@ -5236,12 +5236,12 @@ var require_sonic_boom = __commonJS({
       sonic._lens = [];
       assert2(typeof sonic.fd === "number", `sonic.fd must be a number, got ${typeof sonic.fd}`);
       try {
-        fs6.fsync(sonic.fd, closeWrapped);
+        fs7.fsync(sonic.fd, closeWrapped);
       } catch {
       }
       function closeWrapped() {
         if (sonic.fd !== 1 && sonic.fd !== 2) {
-          fs6.close(sonic.fd, done);
+          fs7.close(sonic.fd, done);
         } else {
           done();
         }
@@ -26516,12 +26516,12 @@ var require_dist = __commonJS({
         throw new Error(`Unknown format "${name}"`);
       return f;
     };
-    function addFormats(ajv, list, fs6, exportName) {
+    function addFormats(ajv, list, fs7, exportName) {
       var _a7;
       var _b;
       (_a7 = (_b = ajv.opts.code).formats) !== null && _a7 !== void 0 ? _a7 : _b.formats = (0, codegen_1._)`require("ajv-formats/dist/formats").${exportName}`;
       for (const f of list)
-        ajv.addFormat(f, fs6[f]);
+        ajv.addFormat(f, fs7[f]);
     }
     module2.exports = exports2 = formatsPlugin;
     Object.defineProperty(exports2, "__esModule", { value: true });
@@ -61602,7 +61602,7 @@ var init_zod = __esm({
 });
 
 // src/models/Schemas.ts
-var FeedConfigSchema, InterestCategorySchema, SkillSchema, InterestsSchema, WindowStateSchema, SyncSettingsSchema, UiSettingsSchema, CredentialsSchema;
+var FeedConfigSchema, InterestCategorySchema, SkillSchema, InterestsSchema, WindowStateSchema, SyncSettingsSchema, UiSettingsSchema, UsageStatsSchema, CredentialsSchema;
 var init_Schemas = __esm({
   "src/models/Schemas.ts"() {
     init_zod();
@@ -61659,8 +61659,23 @@ var init_Schemas = __esm({
       viewMode: external_exports.enum(["grid", "list", "compact"]).default("grid"),
       hideImages: external_exports.boolean().default(false),
       isInitialized: external_exports.boolean().default(false),
-      theme: external_exports.enum(["light", "dark", "system"]).default("system")
+      theme: external_exports.enum(["light", "dark", "system"]).default("system"),
+      language: external_exports.enum(["ja", "en"]).default("ja")
     });
+    UsageStatsSchema = external_exports.record(
+      external_exports.string(),
+      // YYYY-MM-DD
+      external_exports.record(
+        external_exports.string(),
+        // model name
+        external_exports.object({
+          promptTokens: external_exports.number(),
+          candidatesTokens: external_exports.number(),
+          totalTokens: external_exports.number(),
+          callCount: external_exports.number()
+        })
+      )
+    );
     CredentialsSchema = external_exports.object({
       geminiApiKey: external_exports.string().optional()
     });
@@ -61677,38 +61692,106 @@ var init_normalize = __esm({
   }
 });
 
+// src/services/UsageManager.ts
+var import_promises, UsageManager;
+var init_UsageManager = __esm({
+  "src/services/UsageManager.ts"() {
+    import_promises = __toESM(require("fs/promises"), 1);
+    init_Schemas();
+    UsageManager = class {
+      statsPath;
+      stats = {};
+      constructor(statsPath) {
+        this.statsPath = statsPath;
+      }
+      async init() {
+        try {
+          const data2 = await import_promises.default.readFile(this.statsPath, "utf-8");
+          this.stats = UsageStatsSchema.parse(JSON.parse(data2));
+        } catch {
+          this.stats = {};
+        }
+      }
+      async recordUsage(model, promptTokens, candidatesTokens) {
+        const today = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
+        if (!this.stats[today]) this.stats[today] = {};
+        if (!this.stats[today][model]) {
+          this.stats[today][model] = { promptTokens: 0, candidatesTokens: 0, totalTokens: 0, callCount: 0 };
+        }
+        const s = this.stats[today][model];
+        s.promptTokens += promptTokens;
+        s.candidatesTokens += candidatesTokens;
+        s.totalTokens = s.promptTokens + s.candidatesTokens;
+        s.callCount += 1;
+        await this.save();
+      }
+      async getStats() {
+        return this.stats;
+      }
+      async save() {
+        try {
+          await import_promises.default.writeFile(this.statsPath, JSON.stringify(this.stats, null, 2), "utf-8");
+        } catch (err) {
+          console.error("[UsageManager] Save failed:", err);
+        }
+      }
+    };
+  }
+});
+
 // src/services/SettingsManager.ts
-var import_promises, import_path, SettingsManager;
+var import_promises2, import_path, SettingsManager;
 var init_SettingsManager = __esm({
   "src/services/SettingsManager.ts"() {
-    import_promises = __toESM(require("fs/promises"), 1);
+    import_promises2 = __toESM(require("fs/promises"), 1);
     import_path = __toESM(require("path"), 1);
     init_Schemas();
     init_normalize();
+    init_UsageManager();
     SettingsManager = class {
       dataDir;
       isDev;
       interestsPath;
       feedConfigPath;
       credentialsPath;
+      usageManager;
       constructor(config2) {
         this.dataDir = config2.dataDir;
         this.isDev = config2.isDev || false;
         this.interestsPath = import_path.default.join(this.dataDir, "interests.json");
         this.feedConfigPath = import_path.default.join(this.dataDir, "feed_config.json");
         this.credentialsPath = import_path.default.join(this.dataDir, "credentials.json");
+        const usagePath = import_path.default.join(this.dataDir, "usage_stats.json");
+        this.usageManager = new UsageManager(usagePath);
       }
       async init() {
-        await import_promises.default.mkdir(this.dataDir, { recursive: true });
+        await import_promises2.default.mkdir(this.dataDir, { recursive: true });
         await this._ensureFile(this.interestsPath, { categories: {}, lastUpdated: Date.now() });
         await this._ensureFile(this.feedConfigPath, {});
         await this._ensureFile(this.credentialsPath, { geminiApiKey: "" });
+        await this.usageManager.init();
+      }
+      /**
+       * 工場出荷時のデフォルト設定に戻します。
+       */
+      async resetToDefaults() {
+        try {
+          await this._safeWrite(this.interestsPath, { categories: {}, lastUpdated: Date.now() });
+          await this._safeWrite(this.feedConfigPath, {});
+          return true;
+        } catch (err) {
+          console.error("[SettingsManager] Reset failed:", err);
+          return false;
+        }
+      }
+      async getUsageStats() {
+        return await this.usageManager.getStats();
       }
       async _ensureFile(filePath, defaultContent) {
         try {
-          await import_promises.default.access(filePath);
+          await import_promises2.default.access(filePath);
         } catch {
-          await import_promises.default.writeFile(filePath, JSON.stringify(defaultContent, null, 2), "utf8");
+          await import_promises2.default.writeFile(filePath, JSON.stringify(defaultContent, null, 2), "utf8");
         }
       }
       /**
@@ -61733,7 +61816,7 @@ var init_SettingsManager = __esm({
       }
       async getApiKey() {
         try {
-          const data2 = await import_promises.default.readFile(this.credentialsPath, "utf8");
+          const data2 = await import_promises2.default.readFile(this.credentialsPath, "utf8");
           const json2 = JSON.parse(data2);
           const creds = CredentialsSchema.parse(json2);
           const key = creds.geminiApiKey || "";
@@ -61750,11 +61833,11 @@ var init_SettingsManager = __esm({
         await this._safeWrite(this.credentialsPath, creds);
       }
       async getInterests() {
-        const data2 = await import_promises.default.readFile(this.interestsPath, "utf8");
+        const data2 = await import_promises2.default.readFile(this.interestsPath, "utf8");
         return InterestsSchema.parse(JSON.parse(data2));
       }
       async getFeedConfig() {
-        const data2 = await import_promises.default.readFile(this.feedConfigPath, "utf8");
+        const data2 = await import_promises2.default.readFile(this.feedConfigPath, "utf8");
         return FeedConfigSchema.parse(JSON.parse(data2));
       }
       /**
@@ -61836,7 +61919,7 @@ var init_SettingsManager = __esm({
       async getWindowState() {
         const windowStatePath = import_path.default.join(this.dataDir, "window_state.json");
         try {
-          const content = await import_promises.default.readFile(windowStatePath, "utf-8");
+          const content = await import_promises2.default.readFile(windowStatePath, "utf-8");
           return JSON.parse(content);
         } catch {
           return null;
@@ -61844,7 +61927,7 @@ var init_SettingsManager = __esm({
       }
       async _safeRead(filePath) {
         try {
-          const content = await import_promises.default.readFile(filePath, "utf8");
+          const content = await import_promises2.default.readFile(filePath, "utf8");
           return JSON.parse(content);
         } catch {
           throw new Error(`Read failed: ${filePath}`);
@@ -61853,27 +61936,27 @@ var init_SettingsManager = __esm({
       async _safeWrite(filePath, data2) {
         const content = JSON.stringify(data2, null, 2);
         try {
-          const exists = await import_promises.default.access(filePath).then(() => true).catch(() => false);
+          const exists = await import_promises2.default.access(filePath).then(() => true).catch(() => false);
           if (exists) {
             for (let i = 3; i >= 1; i--) {
               const oldBak = i === 1 ? filePath : `${filePath}.bak${i - 1 === 1 ? "" : i - 1}`;
               const newBak = `${filePath}.bak${i === 1 ? "" : i}`;
-              const bakExists = await import_promises.default.access(oldBak).then(() => true).catch(() => false);
+              const bakExists = await import_promises2.default.access(oldBak).then(() => true).catch(() => false);
               if (bakExists) {
                 if (i === 3) {
-                  await import_promises.default.unlink(newBak).catch(() => {
+                  await import_promises2.default.unlink(newBak).catch(() => {
                   });
                 }
                 if (i === 1) {
-                  await import_promises.default.copyFile(filePath, newBak);
+                  await import_promises2.default.copyFile(filePath, newBak);
                 } else {
-                  await import_promises.default.rename(oldBak, newBak).catch(() => {
+                  await import_promises2.default.rename(oldBak, newBak).catch(() => {
                   });
                 }
               }
             }
           }
-          await import_promises.default.writeFile(filePath, content, "utf8");
+          await import_promises2.default.writeFile(filePath, content, "utf8");
         } catch (writeError) {
           const msg = writeError instanceof Error ? writeError.message : String(writeError);
           console.error(`[SettingsManager] Write failed for ${filePath}: ${msg}`);
@@ -61890,11 +61973,11 @@ __export(ElectronSettingsManager_exports, {
   ElectronSettingsManager: () => ElectronSettingsManager,
   default: () => ElectronSettingsManager_default
 });
-var import_electron, import_promises2, ElectronSettingsManager, ElectronSettingsManager_default;
+var import_electron, import_promises3, ElectronSettingsManager, ElectronSettingsManager_default;
 var init_ElectronSettingsManager = __esm({
   "electron/ElectronSettingsManager.ts"() {
     import_electron = require("electron");
-    import_promises2 = __toESM(require("fs/promises"), 1);
+    import_promises3 = __toESM(require("fs/promises"), 1);
     init_SettingsManager();
     init_Schemas();
     ElectronSettingsManager = class extends SettingsManager {
@@ -61914,7 +61997,7 @@ var init_ElectronSettingsManager = __esm({
        */
       async getApiKey() {
         try {
-          const data2 = await import_promises2.default.readFile(this.credentialsPath, "utf8");
+          const data2 = await import_promises3.default.readFile(this.credentialsPath, "utf8");
           const json2 = JSON.parse(data2);
           const creds = CredentialsSchema.parse(json2);
           let apiKey = creds.geminiApiKey || "";
@@ -62956,6 +63039,398 @@ var init_dist = __esm({
   }
 });
 
+// src/services/prompts/GeminiPrompts.ts
+var CURATE_SCHEMA, curatePrompt, EVOLUTION_SCHEMA, evolutionPrompt, FALLBACK_EVOLUTION_SCHEMA, fallbackEvolutionPrompt, RESTRUCTURE_SCHEMA, restructurePrompt, DISCOVER_SITES_SCHEMA, discoverSitesPrompt, DISCOVER_ENGLISH_SITES_SCHEMA, discoverEnglishSitesPrompt, TRANSLATE_ARTICLES_SCHEMA, translateArticlesPrompt, ANALYZE_TRENDS_SCHEMA, analyzeTrendsPrompt, SUGGEST_CATEGORY_DETAILS_SCHEMA, suggestCategoryDetailsPrompt, TRANSLATE_INTERESTS_SCHEMA, translateInterestsPrompt;
+var init_GeminiPrompts = __esm({
+  "src/services/prompts/GeminiPrompts.ts"() {
+    init_dist();
+    CURATE_SCHEMA = {
+      type: SchemaType.OBJECT,
+      properties: {
+        selections: {
+          type: SchemaType.ARRAY,
+          items: {
+            type: SchemaType.OBJECT,
+            properties: {
+              id: { type: SchemaType.NUMBER },
+              reason: { type: SchemaType.STRING }
+            },
+            required: ["id", "reason"]
+          }
+        }
+      },
+      required: ["selections"]
+    };
+    curatePrompt = (interests, pool) => `
+\u30E6\u30FC\u30B6\u30FC\u306E\u8208\u5473\u306B\u57FA\u3065\u3044\u3066\u3001\u6700\u65B0\u8A18\u4E8B\u5019\u88DC\u306E\u4E2D\u304B\u3089\u6700\u9069\u306A10\u4EF6\u3092\u9078\u3093\u3067\u304F\u3060\u3055\u3044\u3002
+\u8208\u5473: ${interests}
+\u5019\u88DC: ${pool}
+`;
+    EVOLUTION_SCHEMA = {
+      type: SchemaType.OBJECT,
+      properties: {
+        sites: {
+          type: SchemaType.ARRAY,
+          items: {
+            type: SchemaType.OBJECT,
+            properties: {
+              name: { type: SchemaType.STRING },
+              url: { type: SchemaType.STRING },
+              category: { type: SchemaType.STRING },
+              reason: { type: SchemaType.STRING }
+            },
+            required: ["name", "url", "category", "reason"]
+          }
+        },
+        brands: {
+          type: SchemaType.ARRAY,
+          items: {
+            type: SchemaType.OBJECT,
+            properties: {
+              value: { type: SchemaType.STRING },
+              category: { type: SchemaType.STRING },
+              reason: { type: SchemaType.STRING }
+            },
+            required: ["value", "category", "reason"]
+          }
+        },
+        keywords: {
+          type: SchemaType.ARRAY,
+          items: {
+            type: SchemaType.OBJECT,
+            properties: {
+              value: { type: SchemaType.STRING },
+              category: { type: SchemaType.STRING },
+              reason: { type: SchemaType.STRING }
+            },
+            required: ["value", "category", "reason"]
+          }
+        }
+      },
+      required: ["sites", "brands", "keywords"]
+    };
+    evolutionPrompt = (interests) => `
+\u3042\u306A\u305F\u306F\u30CB\u30E5\u30FC\u30B9\u30BD\u30FC\u30B9\u306E\u5C02\u9580\u5BB6\u3067\u3059\u3002\u73FE\u5728\u306E\u8208\u5473\u30EA\u30B9\u30C8\u306B\u57FA\u3065\u304D\u3001\u9032\u5316\u63D0\u6848\uFF08\u30D5\u30A3\u30FC\u30C9\u3001\u30D6\u30E9\u30F3\u30C9\u3001\u30AD\u30FC\u30EF\u30FC\u30C9\uFF09\u3092\u751F\u6210\u3057\u3066\u304F\u3060\u3055\u3044\u3002
+\u6307\u793A: \u6709\u52B9\u306ARSS\u30D5\u30A3\u30FC\u30C9\u3001\u30D6\u30E9\u30F3\u30C9\u3001\u30AD\u30FC\u30EF\u30FC\u30C9\u3092\u63D0\u6848\u3057\u3066\u304F\u3060\u3055\u3044\u3002
+\u73FE\u5728\u306E\u8208\u5473\u30EA\u30B9\u30C8: ${interests}
+`;
+    FALLBACK_EVOLUTION_SCHEMA = {
+      type: SchemaType.OBJECT,
+      properties: {
+        sites: {
+          type: SchemaType.ARRAY,
+          items: {
+            type: SchemaType.OBJECT,
+            properties: {
+              name: { type: SchemaType.STRING },
+              url: { type: SchemaType.STRING },
+              category: { type: SchemaType.STRING },
+              reason: { type: SchemaType.STRING }
+            },
+            required: ["name", "url", "category", "reason"]
+          }
+        }
+      },
+      required: ["sites"]
+    };
+    fallbackEvolutionPrompt = (categories) => `
+\u7279\u5B9A\u306E\u8208\u5473\u30AB\u30C6\u30B4\u30EA\u306B\u5BFE\u3057\u3066\u5C02\u9580\u7684\u306A\u30CB\u30E5\u30FC\u30B9\u30BD\u30FC\u30B9\u304C\u898B\u3064\u304B\u308A\u307E\u305B\u3093\u3067\u3057\u305F\u3002\u5927\u624B\u4FE1\u983C\u3067\u304D\u308B\u30CB\u30E5\u30FC\u30B9\u30B5\u30A4\u30C8\u304B\u3089\u3001\u95A2\u9023\u30BB\u30AF\u30B7\u30E7\u30F3\u306ERSS\u30D5\u30A3\u30FC\u30C9\u3092\u63D0\u6848\u3057\u3066\u304F\u3060\u3055\u3044\u3002
+\u8208\u5473\u8A2D\u5B9A: ${categories}
+`;
+    RESTRUCTURE_SCHEMA = (targetCount) => ({
+      type: SchemaType.OBJECT,
+      properties: {
+        categories: {
+          type: SchemaType.ARRAY,
+          items: {
+            type: SchemaType.OBJECT,
+            properties: {
+              name: { type: SchemaType.STRING },
+              emoji: { type: SchemaType.STRING },
+              brands: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+              keywords: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+              score: { type: SchemaType.NUMBER },
+              reason: { type: SchemaType.STRING }
+            },
+            required: ["name", "emoji", "brands", "keywords", "score", "reason"]
+          },
+          minItems: targetCount,
+          maxItems: targetCount
+        },
+        feedMapping: {
+          type: SchemaType.ARRAY,
+          items: {
+            type: SchemaType.OBJECT,
+            properties: {
+              url: { type: SchemaType.STRING },
+              newCategory: { type: SchemaType.STRING }
+            },
+            required: ["url", "newCategory"]
+          }
+        },
+        newSuggestedFeeds: {
+          type: SchemaType.ARRAY,
+          items: {
+            type: SchemaType.OBJECT,
+            properties: {
+              name: { type: SchemaType.STRING },
+              url: { type: SchemaType.STRING },
+              category: { type: SchemaType.STRING }
+            },
+            required: ["name", "url", "category"]
+          }
+        }
+      },
+      required: ["categories", "feedMapping", "newSuggestedFeeds"]
+    });
+    restructurePrompt = (targetCount, language, brands, keywords, categories, feeds) => `
+\u30E6\u30FC\u30B6\u30FC\u306E\u30CB\u30E5\u30FC\u30B9\u53CE\u96C6\u74B0\u5883\u3092${targetCount}\u500B\u306E\u30AB\u30C6\u30B4\u30EA\u306B\u518D\u69CB\u7BC9\u3057\u3066\u304F\u3060\u3055\u3044\u3002
+\u8A00\u8A9E: ${language}
+\u30D6\u30E9\u30F3\u30C9: ${brands}
+\u30AD\u30FC\u30EF\u30FC\u30C9: ${keywords}
+\u73FE\u5728\u306E\u30AB\u30C6\u30B4\u30EA: ${categories}
+\u73FE\u5728\u306E\u30D5\u30A3\u30FC\u30C9: ${feeds}
+`;
+    DISCOVER_SITES_SCHEMA = {
+      type: SchemaType.OBJECT,
+      properties: {
+        sites: {
+          type: SchemaType.ARRAY,
+          items: {
+            type: SchemaType.OBJECT,
+            properties: {
+              name: { type: SchemaType.STRING },
+              url: { type: SchemaType.STRING },
+              category: { type: SchemaType.STRING }
+            },
+            required: ["name", "url", "category"]
+          }
+        }
+      },
+      required: ["sites"]
+    };
+    discoverSitesPrompt = (interests) => `
+\u4EE5\u4E0B\u306E\u8208\u5473\u8A2D\u5B9A\u306B\u5408\u81F4\u3059\u308B\u3001\u65B0\u3057\u3044\u30CB\u30E5\u30FC\u30B9\u30BD\u30FC\u30B9(RSS/Atom)\u3092\u63D0\u6848\u3057\u3066\u304F\u3060\u3055\u3044\u3002
+\u8208\u5473\u8A2D\u5B9A: ${interests}
+`;
+    DISCOVER_ENGLISH_SITES_SCHEMA = {
+      type: SchemaType.OBJECT,
+      properties: {
+        sites: {
+          type: SchemaType.ARRAY,
+          items: {
+            type: SchemaType.OBJECT,
+            properties: {
+              name: { type: SchemaType.STRING },
+              url: { type: SchemaType.STRING },
+              category: { type: SchemaType.STRING },
+              lang: { type: SchemaType.STRING }
+            },
+            required: ["name", "url", "category", "lang"]
+          }
+        }
+      },
+      required: ["sites"]
+    };
+    discoverEnglishSitesPrompt = (targetInterests) => `
+\u4EE5\u4E0B\u306E\u30AB\u30C6\u30B4\u30EA\u306B\u304A\u3044\u3066\u3001\u82F1\u8A9E\u306ERSS\u30D5\u30A3\u30FC\u30C9\u3092\u63D0\u6848\u3057\u3066\u304F\u3060\u3055\u3044\u3002\u5BFE\u8C61\u30AB\u30C6\u30B4\u30EA: ${targetInterests}
+`;
+    TRANSLATE_ARTICLES_SCHEMA = {
+      type: SchemaType.OBJECT,
+      properties: {
+        translations: {
+          type: SchemaType.ARRAY,
+          items: {
+            type: SchemaType.OBJECT,
+            properties: {
+              title: { type: SchemaType.STRING },
+              desc: { type: SchemaType.STRING }
+            },
+            required: ["title", "desc"]
+          }
+        }
+      },
+      required: ["translations"]
+    };
+    translateArticlesPrompt = (articles) => `
+\u4EE5\u4E0B\u306E\u8A18\u4E8B\u30EA\u30B9\u30C8\u3092\u7FFB\u8A33\u3057\u3066\u304F\u3060\u3055\u3044\u3002
+\u30EA\u30B9\u30C8: ${articles}
+`;
+    ANALYZE_TRENDS_SCHEMA = {
+      type: SchemaType.OBJECT,
+      properties: {
+        suggestions: {
+          type: SchemaType.ARRAY,
+          items: {
+            type: SchemaType.OBJECT,
+            properties: {
+              value: { type: SchemaType.STRING },
+              category: { type: SchemaType.STRING },
+              reason: { type: SchemaType.STRING },
+              type: { type: SchemaType.STRING },
+              confidence: { type: SchemaType.NUMBER },
+              context: { type: SchemaType.STRING }
+            },
+            required: ["value", "category", "reason", "type", "confidence", "context"]
+          }
+        }
+      },
+      required: ["suggestions"]
+    };
+    analyzeTrendsPrompt = (categories, articles) => `
+\u6700\u65B0\u8A18\u4E8B\u304B\u3089\u65B0\u3057\u3044\u8208\u5473\uFF08\u30C8\u30EC\u30F3\u30C9\u3001\u30D6\u30E9\u30F3\u30C9\uFF09\u3092\u62BD\u51FA\u3057\u3066\u304F\u3060\u3055\u3044\u3002
+\u73FE\u5728\u306E\u30AB\u30C6\u30B4\u30EA: ${categories}
+\u6700\u65B0\u8A18\u4E8B: ${articles}
+`;
+    SUGGEST_CATEGORY_DETAILS_SCHEMA = {
+      type: SchemaType.OBJECT,
+      properties: {
+        brands: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+        keywords: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+        emoji: { type: SchemaType.STRING },
+        reason: { type: SchemaType.STRING }
+      },
+      required: ["brands", "keywords", "emoji", "reason"]
+    };
+    suggestCategoryDetailsPrompt = (categoryName) => `
+\u30AB\u30C6\u30B4\u30EA\u300C${categoryName}\u300D\u306B\u95A2\u9023\u3059\u308B\u30D6\u30E9\u30F3\u30C9(5\u3064)\u3068\u30AD\u30FC\u30EF\u30FC\u30C9(5\u3064)\u3092\u63D0\u6848\u3057\u3066\u304F\u3060\u3055\u3044\u3002
+`;
+    TRANSLATE_INTERESTS_SCHEMA = {
+      type: SchemaType.OBJECT,
+      properties: {
+        categories: {
+          type: SchemaType.ARRAY,
+          items: {
+            type: SchemaType.OBJECT,
+            properties: {
+              originalName: { type: SchemaType.STRING },
+              name: { type: SchemaType.STRING },
+              emoji: { type: SchemaType.STRING },
+              brands: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+              keywords: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+              score: { type: SchemaType.NUMBER },
+              reason: { type: SchemaType.STRING }
+            },
+            required: ["originalName", "name", "emoji", "brands", "keywords", "score", "reason"]
+          }
+        }
+      },
+      required: ["categories"]
+    };
+    translateInterestsPrompt = (interestsJson) => `
+\u4EE5\u4E0B\u306E\u8A2D\u5B9A\u30C7\u30FC\u30BF\u3092\u82F1\u8A9E\u306B\u7FFB\u8A33\u3057\u3066\u304F\u3060\u3055\u3044\u3002
+${interestsJson}
+`;
+  }
+});
+
+// src/models/AiSchemas.ts
+var CurateResponseSchema, EvolutionProposalSchema, FallbackEvolutionSchema, RestructureResponseSchema, DiscoverSitesSchema, DiscoverEnglishSitesSchema, TranslateArticlesSchema, AnalyzeTrendsSchema, SuggestCategoryDetailsSchema, TranslateInterestsSchema;
+var init_AiSchemas = __esm({
+  "src/models/AiSchemas.ts"() {
+    init_zod();
+    CurateResponseSchema = external_exports.object({
+      selections: external_exports.array(external_exports.object({
+        id: external_exports.number(),
+        reason: external_exports.string()
+      }))
+    });
+    EvolutionProposalSchema = external_exports.object({
+      sites: external_exports.array(external_exports.object({
+        name: external_exports.string(),
+        url: external_exports.string().url(),
+        category: external_exports.string(),
+        reason: external_exports.string()
+      })),
+      brands: external_exports.array(external_exports.object({
+        value: external_exports.string(),
+        category: external_exports.string(),
+        reason: external_exports.string()
+      })),
+      keywords: external_exports.array(external_exports.object({
+        value: external_exports.string(),
+        category: external_exports.string(),
+        reason: external_exports.string()
+      }))
+    });
+    FallbackEvolutionSchema = external_exports.object({
+      sites: external_exports.array(external_exports.object({
+        name: external_exports.string(),
+        url: external_exports.string().url(),
+        category: external_exports.string(),
+        reason: external_exports.string()
+      }))
+    });
+    RestructureResponseSchema = external_exports.object({
+      categories: external_exports.array(external_exports.object({
+        name: external_exports.string(),
+        emoji: external_exports.string(),
+        brands: external_exports.array(external_exports.string()),
+        keywords: external_exports.array(external_exports.string()),
+        score: external_exports.number(),
+        reason: external_exports.string()
+      })),
+      feedMapping: external_exports.array(external_exports.object({
+        url: external_exports.string().url(),
+        newCategory: external_exports.string()
+      })),
+      newSuggestedFeeds: external_exports.array(external_exports.object({
+        name: external_exports.string(),
+        url: external_exports.string().url(),
+        category: external_exports.string()
+      }))
+    });
+    DiscoverSitesSchema = external_exports.object({
+      sites: external_exports.array(external_exports.object({
+        name: external_exports.string(),
+        url: external_exports.string().url(),
+        category: external_exports.string()
+      }))
+    });
+    DiscoverEnglishSitesSchema = external_exports.object({
+      sites: external_exports.array(external_exports.object({
+        name: external_exports.string(),
+        url: external_exports.string().url(),
+        category: external_exports.string(),
+        lang: external_exports.string()
+      }))
+    });
+    TranslateArticlesSchema = external_exports.object({
+      translations: external_exports.array(external_exports.object({
+        title: external_exports.string(),
+        desc: external_exports.string()
+      }))
+    });
+    AnalyzeTrendsSchema = external_exports.object({
+      suggestions: external_exports.array(external_exports.object({
+        value: external_exports.string(),
+        category: external_exports.string(),
+        reason: external_exports.string(),
+        type: external_exports.enum(["emerging", "breakthrough", "niche", "mainstream"]),
+        confidence: external_exports.number().min(0).max(100),
+        context: external_exports.string()
+      }))
+    });
+    SuggestCategoryDetailsSchema = external_exports.object({
+      brands: external_exports.array(external_exports.string()),
+      keywords: external_exports.array(external_exports.string()),
+      emoji: external_exports.string(),
+      reason: external_exports.string()
+    });
+    TranslateInterestsSchema = external_exports.object({
+      categories: external_exports.array(external_exports.object({
+        originalName: external_exports.string(),
+        name: external_exports.string(),
+        emoji: external_exports.string(),
+        brands: external_exports.array(external_exports.string()),
+        keywords: external_exports.array(external_exports.string()),
+        score: external_exports.number(),
+        reason: external_exports.string()
+      }))
+    });
+  }
+});
+
 // src/services/GeminiService.ts
 var GeminiService_exports = {};
 __export(GeminiService_exports, {
@@ -62966,548 +63441,166 @@ var init_GeminiService = __esm({
   "src/services/GeminiService.ts"() {
     init_dist();
     init_normalize();
+    init_GeminiPrompts();
+    init_AiSchemas();
     GeminiService = class {
       genAI;
       primaryModelName = "gemini-3.1-flash";
       highReasoningModelName = "gemini-3.1-pro";
       stableFallbackModelName = "gemini-2.5-flash";
-      /**
-       * @param {string} apiKey - Google Gemini APIキー
-       */
+      usageManager = null;
       constructor(apiKey) {
         this.genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
       }
-      /**
-       * ユーザーがシステム設定からAPIキーを変更した際、アプリケーションを再起動することなく
-       * 即座にAIエンジンを再起動（モデルへの接続を再確立）するためのフックメソッド。
-       */
+      setUsageManager(manager) {
+        this.usageManager = manager;
+      }
       updateApiKey(apiKey) {
         this.genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
       }
       /**
-       * AIの「自由な発話」を封じ、あらかじめシステムが定義したZod（JSON）スキーマ通りの
        * 厳格なデータ構造でのみ返答を許すためのコア・インターフェース。
-       * これにより、"JSONパースエラー" という生成AI特有の不確実性を根本から排除します。
-       * 
-       * @param {string} prompt - AIに与える指示文（コンテキスト）
-       * @param {ResponseSchema} schema - 返してほしいデータの構造定義（バリデーションの要）
-       * @param {string} [modelName] - タスクの複雑さに応じてモデルを切り替えるためのオプション
        */
-      async generateStructured(prompt, schema, modelName = this.primaryModelName) {
-        if (!this.genAI) {
-          throw new Error("Gemini API\u30AD\u30FC\u304C\u8A2D\u5B9A\u3055\u308C\u3066\u3044\u307E\u305B\u3093\u3002System Settings\u30BF\u30D6\u3067\u8A2D\u5B9A\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
-        }
+      async generateStructured(prompt, schema, modelName = this.primaryModelName, zodSchema) {
+        if (!this.genAI) throw new Error("Gemini API\u30AD\u30FC\u304C\u8A2D\u5B9A\u3055\u308C\u3066\u3044\u307E\u305B\u3093\u3002");
         try {
-          console.log(`[GeminiService] Requesting structured output from model: ${modelName}. Prompt size: ${prompt.length} chars.`);
+          console.log(`[GeminiService] Model: ${modelName}`);
           const model = this.genAI.getGenerativeModel({
             model: modelName,
-            generationConfig: {
-              responseMimeType: "application/json",
-              responseSchema: schema
-            }
+            generationConfig: { responseMimeType: "application/json", responseSchema: schema }
           });
           const result = await model.generateContent(prompt);
           const response = await result.response;
           const text3 = response.text();
-          console.log(`[GeminiService] Received response from ${modelName}. Size: ${text3?.length || 0} chars.`);
-          if (!text3) {
-            throw new Error(`Empty response received from model ${modelName}`);
+          if (this.usageManager && response.usageMetadata) {
+            const { promptTokenCount = 0, candidatesTokenCount = 0 } = response.usageMetadata;
+            this.usageManager.recordUsage(modelName, promptTokenCount, candidatesTokenCount).catch(console.error);
           }
-          try {
-            return JSON.parse(text3);
-          } catch (parseError) {
-            const msg = parseError instanceof Error ? parseError.message : String(parseError);
-            console.error(`[GeminiService] JSON Parse Error: ${msg}. Raw text: ${text3.substring(0, 500)}...`);
-            throw new Error(`Failed to parse AI response as JSON: ${msg}`, { cause: parseError });
+          if (!text3) throw new Error("Empty response");
+          const parsed = JSON.parse(text3);
+          if (zodSchema) {
+            const validation = zodSchema.safeParse(parsed);
+            if (!validation.success) {
+              console.error(`[GeminiService] Zod Validation Failed:`, validation.error.format());
+              throw new Error(`AI response schema validation failed: ${validation.error.message}`);
+            }
+            return validation.data;
           }
+          return parsed;
         } catch (error51) {
           const errorMessage = error51 instanceof Error ? error51.message : String(error51);
-          console.error(`[GeminiService] Error with model ${modelName}: ${errorMessage}`);
-          if (modelName === this.highReasoningModelName) {
-            console.warn(`[GeminiService] ${modelName} failed. Falling back to primary model: ${this.primaryModelName}`);
-            return this.generateStructured(prompt, schema, this.primaryModelName);
-          }
-          if (modelName === this.primaryModelName) {
-            console.warn(`[GeminiService] ${modelName} failed. Falling back to GA stable model: ${this.stableFallbackModelName}`);
-            return this.generateStructured(prompt, schema, this.stableFallbackModelName);
-          }
-          if (modelName === this.stableFallbackModelName) {
-            console.warn(`[GeminiService] ${modelName} failed. Final fallback attempt with gemini-1.5-flash`);
-            return this.generateStructured(prompt, schema, "gemini-1.5-flash");
-          }
-          throw new Error(`Gemini API execution failed after multiple retries. [Last Model: ${modelName}] Detail: ${errorMessage}`, { cause: error51 });
+          const isQuotaError = errorMessage.includes("429") || errorMessage.toLowerCase().includes("quota");
+          if (isQuotaError) throw new Error("QUOTA_EXCEEDED", { cause: error51 });
+          if (modelName === this.highReasoningModelName) return this.generateStructured(prompt, schema, this.primaryModelName, zodSchema);
+          if (modelName === this.primaryModelName) return this.generateStructured(prompt, schema, this.stableFallbackModelName, zodSchema);
+          if (modelName === this.stableFallbackModelName) return this.generateStructured(prompt, schema, "gemini-1.5-flash", zodSchema);
+          throw new Error(`Gemini API execution failed: ${errorMessage}`, { cause: error51 });
         }
       }
-      /**
-       * チャットセッションを開始
-       */
-      createChatSession(modelName = this.primaryModelName, history = []) {
-        if (!this.genAI) throw new Error("Gemini API\u30AD\u30FC\u304C\u8A2D\u5B9A\u3055\u308C\u3066\u3044\u307E\u305B\u3093\u3002");
-        const model = this.genAI.getGenerativeModel({
-          model: modelName
-        });
-        return model.startChat({
-          history
-        });
-      }
-      // --- Convenience Methods ---
-      /**
-       * ニュースの厳選
-       */
       async curate(articlesPool, interests) {
-        const schema = {
-          type: SchemaType.OBJECT,
-          properties: {
-            selections: {
-              type: SchemaType.ARRAY,
-              items: {
-                type: SchemaType.OBJECT,
-                properties: {
-                  id: { type: SchemaType.NUMBER },
-                  reason: { type: SchemaType.STRING }
-                },
-                required: ["id", "reason"]
-              }
-            }
-          },
-          required: ["selections"]
-        };
-        const prompt = `
-\u30E6\u30FC\u30B6\u30FC\u306E\u8208\u5473\u306B\u57FA\u3065\u3044\u3066\u3001\u6700\u65B0\u8A18\u4E8B\u5019\u88DC\u306E\u4E2D\u304B\u3089\u6700\u9069\u306A10\u4EF6\u3092\u9078\u3093\u3067\u304F\u3060\u3055\u3044\u3002
-\u8208\u5473: ${JSON.stringify(interests.categories)}
-\u5019\u88DC: ${JSON.stringify(articlesPool.slice(0, 30).map((a, i) => ({ id: i, title: String(a.title) })))}
-`;
-        const result = await this.generateStructured(prompt, schema);
-        return result.selections.map((item) => ({
-          ...articlesPool[item.id],
-          geminiReason: item.reason
-        }));
+        const prompt = curatePrompt(JSON.stringify(interests.categories), JSON.stringify(articlesPool.slice(0, 30).map((a, i) => ({ id: i, title: String(a.title) }))));
+        const result = await this.generateStructured(prompt, CURATE_SCHEMA, this.primaryModelName, CurateResponseSchema);
+        return result.selections.map((item) => ({ ...articlesPool[item.id], geminiReason: item.reason }));
       }
       async getEvolutionProposals(interests) {
-        const schema = {
-          type: SchemaType.OBJECT,
-          properties: {
-            sites: {
-              type: SchemaType.ARRAY,
-              items: {
-                type: SchemaType.OBJECT,
-                properties: {
-                  name: { type: SchemaType.STRING, description: "\u30B5\u30A4\u30C8\u540D" },
-                  url: { type: SchemaType.STRING, description: "RSS/Atom\u30D5\u30A3\u30FC\u30C9\u306E\u76F4\u63A5\u306EURL" },
-                  category: { type: SchemaType.STRING, description: "\u5BFE\u5FDC\u3059\u308B\u30AB\u30C6\u30B4\u30EA\u540D" },
-                  reason: { type: SchemaType.STRING, description: "\u63A8\u5968\u7406\u7531" }
-                },
-                required: ["name", "url", "category", "reason"]
-              }
-            },
-            brands: {
-              type: SchemaType.ARRAY,
-              items: {
-                type: SchemaType.OBJECT,
-                properties: {
-                  value: { type: SchemaType.STRING },
-                  category: { type: SchemaType.STRING },
-                  reason: { type: SchemaType.STRING }
-                },
-                required: ["value", "category", "reason"]
-              }
-            },
-            keywords: {
-              type: SchemaType.ARRAY,
-              items: {
-                type: SchemaType.OBJECT,
-                properties: {
-                  value: { type: SchemaType.STRING },
-                  category: { type: SchemaType.STRING },
-                  reason: { type: SchemaType.STRING }
-                },
-                required: ["value", "category", "reason"]
-              }
-            }
-          },
-          required: ["sites", "brands", "keywords"]
-        };
-        const prompt = `
-\u3042\u306A\u305F\u306F\u30CB\u30E5\u30FC\u30B9\u30BD\u30FC\u30B9\u306E\u5C02\u9580\u5BB6\u3067\u3059\u3002\u73FE\u5728\u306E\u8208\u5473\u30EA\u30B9\u30C8\u306B\u57FA\u3065\u304D\u3001\u9032\u5316\u63D0\u6848\uFF08\u30D5\u30A3\u30FC\u30C9\u3001\u30D6\u30E9\u30F3\u30C9\u3001\u30AD\u30FC\u30EF\u30FC\u30C9\uFF09\u3092\u751F\u6210\u3057\u3066\u304F\u3060\u3055\u3044\u3002
-
-**\u91CD\u8981\u30EB\u30FC\u30EB:**
-1. sites\u306EURL\u306F\u3001\u5FC5\u305A\u300CRSS\u30D5\u30A3\u30FC\u30C9\u300D\u307E\u305F\u306F\u300CAtom\u30D5\u30A3\u30FC\u30C9\u300D\u306E\u76F4\u63A5\u306EURL\u3092\u6307\u5B9A\u3057\u3066\u304F\u3060\u3055\u3044\u3002
-2. \u65E5\u672C\u8A9E\u306E\u4FE1\u983C\u3067\u304D\u308B\u30CB\u30E5\u30FC\u30B9\u30B5\u30A4\u30C8\u3092\u6700\u512A\u5148\u3057\u3066\u304F\u3060\u3055\u3044\u3002
-3. **\u3010\u91CD\u8981\u3011\u65E5\u672C\u8A9E\u306E\u5C02\u9580\u30B5\u30A4\u30C8\u304C\u898B\u3064\u304B\u3089\u306A\u3044\u3001\u307E\u305F\u306F\u4E0D\u8DB3\u3057\u3066\u3044\u308B\u5834\u5408\u306F\u3001\u4E16\u754C\u7684\u306B\u6A29\u5A01\u306E\u3042\u308B\u82F1\u8A9E\u306ERSS\u30D5\u30A3\u30FC\u30C9\uFF08Tech\u30CB\u30E5\u30FC\u30B9\u3001\u516C\u5F0F\u30D6\u30ED\u30B0\u3001\u696D\u754C\u8A8C\u306A\u3069\uFF09\u3092\u5FC5\u305A\u63D0\u6848\u306B\u542B\u3081\u3066\u304F\u3060\u3055\u3044\u3002**
-4. \u51FA\u529B\u3092\u7A7A\uFF080\u4EF6\uFF09\u306B\u3057\u306A\u3044\u3067\u304F\u3060\u3055\u3044\u3002\u7279\u5B9A\u306E\u5C02\u9580\u30BD\u30FC\u30B9\u304C\u306A\u3044\u5834\u5408\u306F\u3001\u305D\u306E\u30C8\u30D4\u30C3\u30AF\u3092\u30AB\u30D0\u30FC\u3059\u308B\u4E00\u822C\u7684\u306A\u5927\u624B\u30CB\u30E5\u30FC\u30B9\u30B5\u30A4\u30C8\uFF08ITmedia, TechCrunch, The Verge\u7B49\uFF09\u306E\u95A2\u9023\u30BB\u30AF\u30B7\u30E7\u30F3\u3092\u63D0\u6848\u3057\u3066\u304F\u3060\u3055\u3044\u3002
-5. \u30AB\u30C6\u30B4\u30EA\u540D\u306F\u3001\u5165\u529B\u3055\u308C\u305F interests \u306E\u30AD\u30FC\u540D\u3068\u6B63\u78BA\u306B\u4E00\u81F4\u3055\u305B\u3066\u304F\u3060\u3055\u3044\u3002
-
-\u73FE\u5728\u306E\u8208\u5473\u30EA\u30B9\u30C8: ${JSON.stringify(interests)}
-`;
-        return await this.generateStructured(prompt, schema);
+        const prompt = evolutionPrompt(JSON.stringify(interests));
+        return await this.generateStructured(prompt, EVOLUTION_SCHEMA, this.primaryModelName, EvolutionProposalSchema);
       }
-      /**
-       * 特定のカテゴリで高品質なソースが見つからない場合のフォールバック提案を取得します。
-       */
       async getFallbackEvolutionProposals(interests) {
-        const schema = {
-          type: SchemaType.OBJECT,
-          properties: {
-            sites: {
-              type: SchemaType.ARRAY,
-              items: {
-                type: SchemaType.OBJECT,
-                properties: {
-                  name: { type: SchemaType.STRING },
-                  url: { type: SchemaType.STRING },
-                  category: { type: SchemaType.STRING },
-                  reason: { type: SchemaType.STRING }
-                },
-                required: ["name", "url", "category", "reason"]
-              }
-            }
-          },
-          required: ["sites"]
-        };
-        const prompt = `
-\u7279\u5B9A\u306E\u8208\u5473\u30AB\u30C6\u30B4\u30EA\u306B\u5BFE\u3057\u3066\u5C02\u9580\u7684\u306A\u30CB\u30E5\u30FC\u30B9\u30BD\u30FC\u30B9\u304C\u898B\u3064\u304B\u308A\u307E\u305B\u3093\u3067\u3057\u305F\u3002
-\u4EE3\u308F\u308A\u306B\u3001\u5E45\u5E83\u3044\u30C8\u30D4\u30C3\u30AF\u3092\u30AB\u30D0\u30FC\u3059\u308B\u65E5\u672C\u306E\u5927\u624B\u4FE1\u983C\u3067\u304D\u308B\u30CB\u30E5\u30FC\u30B9\u30B5\u30A4\u30C8\uFF08ITmedia, \u30AE\u30BA\u30E2\u30FC\u30C9\u30FB\u30B8\u30E3\u30D1\u30F3, TechCrunch Japan, \u30ED\u30A4\u30BF\u30FC, BBC\u7B49\uFF09\u304B\u3089\u3001\u4EE5\u4E0B\u306E\u8208\u5473\u306B\u95A2\u9023\u3059\u308B\u30BB\u30AF\u30B7\u30E7\u30F3\u306ERSS\u30D5\u30A3\u30FC\u30C9\u3092\u63D0\u6848\u3057\u3066\u304F\u3060\u3055\u3044\u3002
-\u5FC5\u305A\u6709\u52B9\u306ARSS\u30D5\u30A3\u30FC\u30C9\u306EURL\uFF08\u30DB\u30FC\u30E0\u30DA\u30FC\u30B8\u306EURL\u3067\u306F\u306A\u3044\uFF09\u30923\u4EF6\u63D0\u6848\u3057\u3066\u304F\u3060\u3055\u3044\u3002
-
-\u8208\u5473\u8A2D\u5B9A: ${JSON.stringify(interests.categories)}
-`;
-        return await this.generateStructured(prompt, schema);
+        const prompt = fallbackEvolutionPrompt(JSON.stringify(interests.categories));
+        return await this.generateStructured(prompt, FALLBACK_EVOLUTION_SCHEMA, this.primaryModelName, FallbackEvolutionSchema);
       }
-      /**
-       * 現在の興味設定とフィード構成を分析し、最適な10カテゴリに再構築した完全なプロファイルを提示します。
-       * 既存のフィードの再割り当てと、新しい高品質なソースの発見を含みます。
-       */
-      async getRestructureProposal(interests, currentFeeds, targetCount = 10) {
-        const schema = {
-          type: SchemaType.OBJECT,
-          properties: {
-            categories: {
-              type: SchemaType.ARRAY,
-              items: {
-                type: SchemaType.OBJECT,
-                properties: {
-                  name: { type: SchemaType.STRING, description: "\u65B0\u3057\u3044\u30AB\u30C6\u30B4\u30EA\u540D" },
-                  emoji: { type: SchemaType.STRING, description: "\u30AB\u30C6\u30B4\u30EA\u306B\u3075\u3055\u308F\u3057\u3044\u7D75\u6587\u5B57" },
-                  brands: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: "\u65E2\u5B58\u306E\u30D6\u30E9\u30F3\u30C9\u5168\u3066 + AI\u306B\u3088\u308B\u65B0\u898F\u63D0\u68485\u3064" },
-                  keywords: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: "\u65E2\u5B58\u306E\u30AD\u30FC\u30EF\u30FC\u30C9\u5168\u3066 + AI\u306B\u3088\u308B\u65B0\u898F\u63D0\u68485\u3064" },
-                  score: { type: SchemaType.NUMBER, description: "\u91CD\u8981\u5EA6\uFF080-10\uFF09" },
-                  reason: { type: SchemaType.STRING, description: "\u3053\u306E\u5206\u985E\u306E\u7406\u7531" }
-                },
-                required: ["name", "emoji", "brands", "keywords", "score", "reason"]
-              },
-              minItems: targetCount,
-              maxItems: targetCount
-            },
-            feedMapping: {
-              type: SchemaType.ARRAY,
-              items: {
-                type: SchemaType.OBJECT,
-                properties: {
-                  url: { type: SchemaType.STRING, description: "\u65E2\u5B58\u306E\u30D5\u30A3\u30FC\u30C9URL" },
-                  newCategory: { type: SchemaType.STRING, description: "\u5272\u308A\u5F53\u3066\u5148\u306E\u65B0\u3057\u3044\u30AB\u30C6\u30B4\u30EA\u540D" }
-                },
-                required: ["url", "newCategory"]
-              }
-            },
-            newSuggestedFeeds: {
-              type: SchemaType.ARRAY,
-              items: {
-                type: SchemaType.OBJECT,
-                properties: {
-                  name: { type: SchemaType.STRING, description: "\u30B5\u30A4\u30C8\u540D" },
-                  url: { type: SchemaType.STRING, description: "RSS/Atom\u30D5\u30A3\u30FC\u30C9\u306EURL" },
-                  category: { type: SchemaType.STRING, description: "\u65B0\u3057\u3044\u30AB\u30C6\u30B4\u30EA\u540D" }
-                },
-                required: ["name", "url", "category"]
-              }
-            }
-          },
-          required: ["categories", "feedMapping", "newSuggestedFeeds"]
-        };
-        const allExistingUrls = Object.entries(currentFeeds).flatMap(
-          ([cat, data2]) => data2.active.map((url3) => ({ url: url3, oldCategory: cat }))
-        );
+      async getRestructureProposal(interests, currentFeeds, targetCount = 10, language = "ja") {
+        const allExistingUrls = Object.entries(currentFeeds).flatMap(([cat, data2]) => data2.active.map((url3) => ({ url: url3, oldCategory: cat })));
         const allExistingBrands = [...new Set(Object.values(interests.categories).flatMap((c) => c.brands))];
         const allExistingKeywords = [...new Set(Object.values(interests.categories).flatMap((c) => c.keywords))];
-        const prompt = `
-\u3042\u306A\u305F\u306F\u30A4\u30F3\u30C6\u30EA\u30B8\u30A7\u30F3\u30B9\u30FB\u30A2\u30FC\u30AD\u30C6\u30AF\u30C8\u3067\u3059\u3002
-\u30E6\u30FC\u30B6\u30FC\u306E\u30CB\u30E5\u30FC\u30B9\u53CE\u96C6\u74B0\u5883\u3092\u6839\u672C\u304B\u3089\u518D\u69CB\u7BC9\u3057\u3001\u60C5\u5831\u3092\u3010\u6B63\u78BA\u306B${targetCount}\u500B\u306E\u6D17\u7DF4\u3055\u308C\u305F\u30AB\u30C6\u30B4\u30EA\u3011\u306B\u6574\u7406\u3057\u3066\u304F\u3060\u3055\u3044\u3002
-
-**\u30DF\u30C3\u30B7\u30E7\u30F3:**
-1. **\u30AB\u30C6\u30B4\u30EA\u30FC\u306E\u518D\u751F\u6210**: \u65E2\u5B58\u306E\u8208\u5473\u95A2\u5FC3\u3092\u5206\u6790\u3057\u3001\u30E2\u30C0\u30F3\u3067\u5305\u62EC\u7684\u306A${targetCount}\u500B\u306E\u65B0\u3057\u3044\u30AB\u30C6\u30B4\u30EA\u30FC\u3092\u751F\u6210\u3057\u3066\u304F\u3060\u3055\u3044\u3002
-2. **\u65E2\u5B58\u30C7\u30FC\u30BF\u306E\u5B8C\u5168\u4FDD\u6301\u3068\u81EA\u52D5\u5272\u308A\u5F53\u3066**: \u4EE5\u4E0B\u306E\u3010\u65E2\u5B58\u30C7\u30FC\u30BF\u3011\u306B\u3042\u308B\u5168\u3066\u306E\u30D6\u30E9\u30F3\u30C9\u3068\u30AD\u30FC\u30EF\u30FC\u30C9\u3092\u3001\u91CD\u8907\u3092\u9664\u3044\u3066\u3001\u65B0\u3057\u3044${targetCount}\u30AB\u30C6\u30B4\u30EA\u30FC\u306E\u3044\u305A\u308C\u304B\u306B\u6700\u9069\u306B\u5272\u308A\u5F53\u3066\u3066\u304F\u3060\u3055\u3044\u3002**\u4E00\u3064\u3082\u524A\u9664\u3057\u3066\u306F\u3044\u3051\u307E\u305B\u3093\u3002**
-3. **AI\u306B\u3088\u308B\u62E1\u5F35\uFF08SUGGEST\u6A5F\u80FD\uFF09**: \u5272\u308A\u5F53\u3066\u5F8C\u3001\u5404\u30AB\u30C6\u30B4\u30EA\u30FC\u306E\u5C02\u9580\u6027\u3092\u9AD8\u3081\u308B\u305F\u3081\u306B\u3001\u65B0\u3057\u3044\u30D6\u30E9\u30F3\u30C9\u3068\u30AD\u30FC\u30EF\u30FC\u30C9\u3092\u305D\u308C\u305E\u308C5\u500B\u305A\u3064\u65B0\u898F\u306B\u63D0\u6848\u3057\u3066\u8FFD\u52A0\u3057\u3066\u304F\u3060\u3055\u3044\u3002
-4. **\u65E2\u5B58\u30D5\u30A3\u30FC\u30C9\u306E\u79FB\u8A2D**: \u30E6\u30FC\u30B6\u30FC\u304C\u73FE\u5728\u8CFC\u8AAD\u3057\u3066\u3044\u308B\u30D5\u30A3\u30FC\u30C9\u3092\u3001\u65B0\u3057\u3044${targetCount}\u30AB\u30C6\u30B4\u30EA\u30FC\u306E\u3044\u305A\u308C\u304B\u306B\u6700\u9069\u306B\u5272\u308A\u5F53\u3066\u76F4\u3057\u3066\u304F\u3060\u3055\u3044\u3002
-5. **\u65B0\u898F\u30BD\u30FC\u30B9\u306E\u6CE8\u5165**: \u5404\u30AB\u30C6\u30B4\u30EA\u30FC\u306B\u5BFE\u3057\u3066\u3001\u60C5\u5831\u306E\u8CEA\u3092\u9AD8\u3081\u308B\u305F\u3081\u306E\u9AD8\u54C1\u8CEA\u306ARSS/Atom\u30D5\u30A3\u30FC\u30C9\u30922\u301C3\u500B\u305A\u3064\u65B0\u3057\u304F\u63D0\u6848\u3057\u3066\u304F\u3060\u3055\u3044\u3002
-
-**\u91CD\u8981\u30EB\u30FC\u30EB:**
-- \u51FA\u529B\u30AB\u30C6\u30B4\u30EA\u30FC\u6570\u306F\u3010\u5FC5\u305A\u6B63\u78BA\u306B${targetCount}\u500B\u3011\u3002
-- **\u65E2\u5B58\u306E\u30D6\u30E9\u30F3\u30C9\u3068\u30AD\u30FC\u30EF\u30FC\u30C9\u306F\u7D76\u5BFE\u306B\u5909\u66F4\u30FB\u524A\u9664\u305B\u305A\u3001\u5FC5\u305A\u65B0\u30AB\u30C6\u30B4\u30EA\u30FC\u306E\u3044\u305A\u308C\u304B\u306B\u542B\u3081\u3066\u304F\u3060\u3055\u3044\u3002**
-- \u65B0\u898F\u63D0\u6848\u306E\u30D6\u30E9\u30F3\u30C9/\u30AD\u30FC\u30EF\u30FC\u30C9\u306F\u3001\u65E2\u5B58\u306E\u3082\u306E\u3068\u306F\u5225\u306B\u65B0\u3057\u304F\u300C\u7D5E\u308A\u51FA\u3057\u3066\u300D\u8FFD\u52A0\u3057\u3066\u304F\u3060\u3055\u3044\u3002
-- **\u3010\u7DB2\u7F85\u6027\u306E\u4FDD\u8A3C\u3011: \u5404\u30AB\u30C6\u30B4\u30EA\u30FC\u306B\u5BFE\u3057\u3066\u5FC5\u305A\u65B0\u898F\u30BD\u30FC\u30B9\u3092\u63D0\u6848\u3057\u3066\u304F\u3060\u3055\u3044\u3002\u9069\u5207\u306A\u65E5\u672C\u8A9E\u30BD\u30FC\u30B9\u304C\u306A\u3044\u5834\u5408\u306F\u3001\u4E16\u754C\u7684\u6A29\u5A01\u306E\u82F1\u8A9E\u30BD\u30FC\u30B9\u3084\u3001\u56FD\u5185\u5927\u624B\u30E1\u30C7\u30A3\u30A2\u306E\u95A2\u9023\u30D5\u30A3\u30FC\u30C9\u3092\u5FC5\u305A\u5272\u308A\u5F53\u3066\u3066\u304F\u3060\u3055\u3044\u30020\u4EF6\u306E\u63D0\u6848\u306F\u8A8D\u3081\u3089\u308C\u307E\u305B\u3093\u3002**
-
-**\u3010\u65E2\u5B58\u30C7\u30FC\u30BF: \u30D6\u30E9\u30F3\u30C9\u3011**
-${allExistingBrands.join(", ")}
-
-**\u3010\u65E2\u5B58\u30C7\u30FC\u30BF: \u30AD\u30FC\u30EF\u30FC\u30C9\u3011**
-${allExistingKeywords.join(", ")}
-
-**\u73FE\u5728\u306E\u30AB\u30C6\u30B4\u30EA\u30FC\u69CB\u6210:**
-${JSON.stringify(interests.categories, null, 2)}
-
-**\u73FE\u5728\u306E\u8CFC\u8AAD\u30D5\u30A3\u30FC\u30C9:**
-${JSON.stringify(allExistingUrls, null, 2)}
-
-\u65E5\u672C\u8A9E\u3067\u56DE\u7B54\u3057\u3066\u304F\u3060\u3055\u3044\u3002
-`;
-        const result = await this.generateStructured(prompt, schema, this.highReasoningModelName);
+        const prompt = restructurePrompt(targetCount, language, allExistingBrands.join(", "), allExistingKeywords.join(", "), JSON.stringify(interests.categories), JSON.stringify(allExistingUrls));
+        const result = await this.generateStructured(prompt, RESTRUCTURE_SCHEMA(targetCount), this.highReasoningModelName, RestructureResponseSchema);
         const categories = {};
         const feedConfig = {};
         result.categories.forEach((cat) => {
-          categories[cat.name] = {
-            emoji: cat.emoji || "\u{1F310}",
-            brands: Array.isArray(cat.brands) ? [...new Set(cat.brands.map(String))] : [],
-            keywords: Array.isArray(cat.keywords) ? [...new Set(cat.keywords.map(String))] : [],
-            score: typeof cat.score === "number" ? cat.score : 5,
-            reason: cat.reason || ""
-          };
+          categories[cat.name] = { emoji: cat.emoji || "\u2728", brands: [...new Set(cat.brands)], keywords: [...new Set(cat.keywords)], score: cat.score, reason: cat.reason };
           feedConfig[cat.name] = { active: [], pool: [], failures: {} };
         });
         const categoryNames = Object.keys(categories);
-        const firstCategory = categoryNames[0];
         if (categoryNames.length > 0) {
+          const first2 = categoryNames[0];
           const returnedBrands = new Set(Object.values(categories).flatMap((c) => c.brands));
           allExistingBrands.forEach((b) => {
-            if (!returnedBrands.has(b)) {
-              categories[firstCategory].brands.push(b);
-            }
+            if (!returnedBrands.has(b)) categories[first2].brands.push(b);
           });
           const returnedKeywords = new Set(Object.values(categories).flatMap((c) => c.keywords));
           allExistingKeywords.forEach((k) => {
-            if (!returnedKeywords.has(k)) {
-              categories[firstCategory].keywords.push(k);
-            }
+            if (!returnedKeywords.has(k)) categories[first2].keywords.push(k);
           });
         }
-        const mapToExistingCategory = (name) => {
+        const mapToCat = (name) => {
           if (categories[name]) return name;
-          const targetClean = normalizeCategoryName(name);
-          for (const catName of Object.keys(categories)) {
-            if (normalizeCategoryName(catName) === targetClean) return catName;
+          const clean = normalizeCategoryName(name);
+          for (const key of Object.keys(categories)) {
+            if (normalizeCategoryName(key) === clean) return key;
           }
-          console.warn(`[GeminiService] AI returned unknown category "${name}". Mapping to "${Object.keys(categories)[0]}"`);
           return Object.keys(categories)[0];
         };
         result.feedMapping.forEach((m) => {
-          const normalizedCat = mapToExistingCategory(m.newCategory);
-          if (feedConfig[normalizedCat]) {
-            if (this._isValidUrl(m.url)) {
-              feedConfig[normalizedCat].active.push(m.url);
-            }
-          }
+          const cat = mapToCat(m.newCategory);
+          if (feedConfig[cat] && this._isValidUrl(m.url)) feedConfig[cat].active.push(m.url);
         });
         result.newSuggestedFeeds.forEach((s) => {
-          const normalizedCat = mapToExistingCategory(s.category);
-          if (feedConfig[normalizedCat]) {
-            if (this._isValidUrl(s.url) && !feedConfig[normalizedCat].active.includes(s.url)) {
-              feedConfig[normalizedCat].active.push(s.url);
-            }
-          }
+          const cat = mapToCat(s.category);
+          if (feedConfig[cat] && this._isValidUrl(s.url) && !feedConfig[cat].active.includes(s.url)) feedConfig[cat].active.push(s.url);
         });
-        Object.keys(categories).forEach((catName) => {
-          if (feedConfig[catName].active.length === 0) {
-            console.log(`[GeminiService] \u30AB\u30C6\u30B4\u30EA "${catName}" \u306E\u30D5\u30A3\u30FC\u30C9\u304C\u7A7A\u306E\u305F\u3081\u3001Google News RSS \u3092\u30D5\u30A9\u30FC\u30EB\u30D0\u30C3\u30AF\u3068\u3057\u3066\u8A2D\u5B9A\u3057\u307E\u3059\u3002`);
-            const fallbackUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(catName)}&hl=ja&gl=JP&ceid=JP:ja`;
-            feedConfig[catName].active.push(fallbackUrl);
+        Object.keys(categories).forEach((cat) => {
+          if (feedConfig[cat].active.length === 0) {
+            feedConfig[cat].active.push(`https://news.google.com/rss/search?q=${encodeURIComponent(cat)}&hl=ja&gl=JP&ceid=JP:ja`);
           }
         });
         return { categories, feedConfig };
       }
-      /**
-       * URLが有効な形式（http/https）かつZodの期待する形式に合致するかチェック
-       */
       _isValidUrl(url3) {
         try {
-          const parsed = new URL(url3);
-          return parsed.protocol === "http:" || parsed.protocol === "https:";
+          const u = new URL(url3);
+          return u.protocol === "http:" || u.protocol === "https:";
         } catch {
           return false;
         }
       }
       async discoverSites(interests) {
-        const schema = {
-          type: SchemaType.OBJECT,
-          properties: {
-            sites: {
-              type: SchemaType.ARRAY,
-              items: {
-                type: SchemaType.OBJECT,
-                properties: {
-                  name: { type: SchemaType.STRING },
-                  url: { type: SchemaType.STRING, description: "\u6709\u52B9\u306ARSS/Atom\u30D5\u30A3\u30FC\u30C9\u306E\u76F4\u63A5URL" },
-                  category: { type: SchemaType.STRING }
-                },
-                required: ["name", "url", "category"]
-              }
-            }
-          },
-          required: ["sites"]
-        };
-        const prompt = `
-\u4EE5\u4E0B\u306E\u8208\u5473\u8A2D\u5B9A\u306B\u5408\u81F4\u3059\u308B\u3001\u65B0\u3057\u3044\u30CB\u30E5\u30FC\u30B9\u30BD\u30FC\u30B9\u3092\u63D0\u6848\u3057\u3066\u304F\u3060\u3055\u3044\u3002
-URL\u306F\u5FC5\u305A\u300CRSS\u30D5\u30A3\u30FC\u30C9\u300D\u307E\u305F\u306F\u300CAtom\u30D5\u30A3\u30FC\u30C9\u300D\u306E\u76F4\u63A5\u306EURL\u3092\u6307\u5B9A\u3057\u3001\u30DB\u30FC\u30E0\u30DA\u30FC\u30B8\u306EURL\u306F\u7D76\u5BFE\u306B\u542B\u3081\u306A\u3044\u3067\u304F\u3060\u3055\u3044\u3002
-\u65E5\u672C\u8A9E\u306E\u30B5\u30A4\u30C8\u3092\u512A\u5148\u3057\u3066\u304F\u3060\u3055\u3044\u3002
-\u8208\u5473\u8A2D\u5B9A: ${JSON.stringify(interests.categories)}
-`;
-        const result = await this.generateStructured(prompt, schema);
+        const prompt = discoverSitesPrompt(JSON.stringify(interests.categories));
+        const result = await this.generateStructured(prompt, DISCOVER_SITES_SCHEMA, this.primaryModelName, DiscoverSitesSchema);
         return result.sites;
       }
-      /**
-       * 特定のカテゴリに対して英語のRSSフィードを提案します。
-       */
       async discoverEnglishSites(interests, targetCategories) {
-        const schema = {
-          type: SchemaType.OBJECT,
-          properties: {
-            sites: {
-              type: SchemaType.ARRAY,
-              items: {
-                type: SchemaType.OBJECT,
-                properties: {
-                  name: { type: SchemaType.STRING },
-                  url: { type: SchemaType.STRING },
-                  category: { type: SchemaType.STRING },
-                  lang: { type: SchemaType.STRING, description: "Language code (e.g. 'en')" }
-                },
-                required: ["name", "url", "category", "lang"]
-              }
-            }
-          },
-          required: ["sites"]
-        };
-        const targetInterests = targetCategories.map((cat) => ({
-          category: cat,
-          details: interests.categories[cat]
-        }));
-        const prompt = `
-\u4EE5\u4E0B\u306E\u30AB\u30C6\u30B4\u30EA\u306B\u304A\u3044\u3066\u3001\u65E5\u672C\u8A9E\u306E\u30CB\u30E5\u30FC\u30B9\u30BD\u30FC\u30B9\u304C\u4E0D\u8DB3\u3057\u3066\u3044\u307E\u3059\u3002
-\u4E16\u754C\u7684\u306B\u6A29\u5A01\u306E\u3042\u308B\u3001\u82F1\u8A9E\u306ERSS\u30D5\u30A3\u30FC\u30C9\uFF08Tech\u30CB\u30E5\u30FC\u30B9\u3001\u516C\u5F0F\u30D6\u30ED\u30B0\u3001\u696D\u754C\u8A8C\u306A\u3069\uFF09\u3092\u63D0\u6848\u3057\u3066\u304F\u3060\u3055\u3044\u3002
-\u5BFE\u8C61\u30AB\u30C6\u30B4\u30EA: ${JSON.stringify(targetInterests)}
-\u51FA\u529B\u306F\u5FC5\u305A\u82F1\u8A9E\u570F\u306E\u30B5\u30A4\u30C8URL\u3092\u542B\u3081\u3066\u304F\u3060\u3055\u3044\u3002
-`;
-        const result = await this.generateStructured(prompt, schema);
+        const targets = targetCategories.map((cat) => ({ category: cat, details: interests.categories[cat] }));
+        const prompt = discoverEnglishSitesPrompt(JSON.stringify(targets));
+        const result = await this.generateStructured(prompt, DISCOVER_ENGLISH_SITES_SCHEMA, this.primaryModelName, DiscoverEnglishSitesSchema);
         return result.sites;
       }
-      /**
-       * 複数の記事をまとめて日本語に翻訳します。
-       */
       async translateArticles(articles) {
-        const schema = {
-          type: SchemaType.OBJECT,
-          properties: {
-            translations: {
-              type: SchemaType.ARRAY,
-              items: {
-                type: SchemaType.OBJECT,
-                properties: {
-                  title: { type: SchemaType.STRING },
-                  desc: { type: SchemaType.STRING }
-                },
-                required: ["title", "desc"]
-              }
-            }
-          },
-          required: ["translations"]
-        };
-        const prompt = `
-\u4EE5\u4E0B\u306E\u8A18\u4E8B\u30EA\u30B9\u30C8\u3092\u3001\u81EA\u7136\u306A\u65E5\u672C\u8A9E\u306B\u7FFB\u8A33\u3057\u3066\u304F\u3060\u3055\u3044\u3002
-\u6280\u8853\u7528\u8A9E\u3084\u56FA\u6709\u540D\u8A5E\u306F\u9069\u5207\u306B\u6271\u3044\u3001\u30CB\u30E5\u30FC\u30B9\u3068\u3057\u3066\u8AAD\u307F\u3084\u3059\u3044\u8868\u73FE\u306B\u3057\u3066\u304F\u3060\u3055\u3044\u3002
-\u30EA\u30B9\u30C8: ${JSON.stringify(articles)}
-`;
-        const result = await this.generateStructured(prompt, schema);
+        const prompt = translateArticlesPrompt(JSON.stringify(articles));
+        const result = await this.generateStructured(prompt, TRANSLATE_ARTICLES_SCHEMA, this.primaryModelName, TranslateArticlesSchema);
         return result.translations;
       }
       async analyzeTrends(articles, interests) {
-        const schema = {
-          type: SchemaType.OBJECT,
-          properties: {
-            suggestions: {
-              type: SchemaType.ARRAY,
-              items: {
-                type: SchemaType.OBJECT,
-                properties: {
-                  value: { type: SchemaType.STRING, description: "\u30C8\u30EC\u30F3\u30C9\u30AD\u30FC\u30EF\u30FC\u30C9\u307E\u305F\u306F\u30D6\u30E9\u30F3\u30C9\u540D" },
-                  category: { type: SchemaType.STRING, description: "\u5272\u308A\u5F53\u3066\u308B\u3079\u304D\u65E2\u5B58\u306E\u30AB\u30C6\u30B4\u30EA\u540D" },
-                  reason: { type: SchemaType.STRING, description: "\u306A\u305C\u3053\u308C\u304C\u91CD\u8981\u306A\u306E\u304B\uFF08\u30E6\u30FC\u30B6\u30FC\u3078\u306E\u8AAC\u660E\uFF09" },
-                  type: {
-                    type: SchemaType.STRING,
-                    enum: ["emerging", "breakthrough", "niche", "mainstream"],
-                    format: "enum",
-                    description: "\u30C8\u30EC\u30F3\u30C9\u306E\u7A2E\u985E: emerging(\u65B0\u8208), breakthrough(\u8E8D\u9032), niche(\u5C02\u9580\u7684), mainstream(\u4E3B\u6D41)"
-                  },
-                  confidence: { type: SchemaType.NUMBER, description: "\u78BA\u4FE1\u5EA6 (0-100)" },
-                  context: { type: SchemaType.STRING, description: "\u62BD\u51FA\u306E\u6839\u62E0\u3068\u306A\u3063\u305F\u8A18\u4E8B\u306E\u30BF\u30A4\u30C8\u30EB\u7B49" }
-                },
-                required: ["value", "category", "reason", "type", "confidence", "context"]
-              }
-            }
-          },
-          required: ["suggestions"]
-        };
-        const prompt = `
-\u3042\u306A\u305F\u306F Aegis Nexus \u306E 'Archivist' \u30A8\u30FC\u30B8\u30A7\u30F3\u30C8\u3067\u3059\u3002\u6700\u65B0\u306E\u30A4\u30F3\u30C6\u30EA\u30B8\u30A7\u30F3\u30B9\u30FB\u30D5\u30A3\u30FC\u30C9\u3092\u5206\u6790\u3057\u3001\u30E6\u30FC\u30B6\u30FC\u304C\u307E\u3060\u8A2D\u5B9A\u3057\u3066\u3044\u306A\u3044\u304C\u3001\u6CE8\u76EE\u3059\u3079\u304D\u3010\u65B0\u3057\u3044\u30B7\u30B0\u30CA\u30EB\uFF08\u30C8\u30EC\u30F3\u30C9\u3001\u30D6\u30E9\u30F3\u30C9\u3001\u30C6\u30AF\u30CE\u30ED\u30B8\u30FC\uFF09\u3011\u3092\u62BD\u51FA\u3057\u3066\u304F\u3060\u3055\u3044\u3002
-
-**\u30DF\u30C3\u30B7\u30E7\u30F3:**
-1. **\u65B0\u5947\u6027\u306E\u767A\u898B**: \u65E2\u5B58\u306E\u8208\u5473\u8A2D\u5B9A\u306B\u306F\u542B\u307E\u308C\u3066\u3044\u306A\u3044\u304C\u3001\u6700\u65B0\u8A18\u4E8B\u306E\u4E2D\u3067\u7E70\u308A\u8FD4\u3057\u767B\u5834\u3059\u308B\u3001\u307E\u305F\u306F\u5F37\u3044\u30A4\u30F3\u30D1\u30AF\u30C8\u3092\u6301\u3064\u65B0\u3057\u3044\u6982\u5FF5\u3092\u898B\u3064\u3051\u51FA\u3057\u3066\u304F\u3060\u3055\u3044\u3002
-2. **\u30D1\u30FC\u30BD\u30CA\u30E9\u30A4\u30BA**: \u30E6\u30FC\u30B6\u30FC\u306E\u65E2\u5B58\u306E\u95A2\u5FC3\u9818\u57DF\uFF08\u30AB\u30C6\u30B4\u30EA\uFF09\u306B\u95A2\u9023\u3059\u308B\u304C\u3001\u4E00\u6B69\u5148\u3092\u884C\u304F\u30C8\u30D4\u30C3\u30AF\u3092\u512A\u5148\u3057\u3066\u304F\u3060\u3055\u3044\u3002
-3. **\u8A73\u7D30\u306A\u5206\u6790**: \u5404\u30C8\u30EC\u30F3\u30C9\u306B\u5BFE\u3057\u3001\u305D\u306E\u6027\u8CEA\uFF08\u30BF\u30A4\u30D7\uFF09\u3001AI\u3068\u3057\u3066\u306E\u78BA\u4FE1\u5EA6\u3001\u304A\u3088\u3073\u62BD\u51FA\u306E\u6839\u62E0\uFF08\u30B3\u30F3\u30C6\u30AD\u30B9\u30C8\uFF09\u3092\u4ED8\u4E0E\u3057\u3066\u304F\u3060\u3055\u3044\u3002
-
-**\u73FE\u5728\u306E\u8208\u5473\u30AB\u30C6\u30B4\u30EA:**
-${Object.keys(interests.categories).join(", ")}
-
-**\u6700\u65B0\u8A18\u4E8B\u30EA\u30B9\u30C8 (\u4E0A\u4F4D30\u4EF6):**
-${JSON.stringify(articles.slice(0, 30).map((a) => ({ title: a.title, desc: a.desc })))}
-
-\u65E5\u672C\u8A9E\u3067\u56DE\u7B54\u3057\u3066\u304F\u3060\u3055\u3044\u3002
-`;
-        const result = await this.generateStructured(prompt, schema, this.primaryModelName);
+        const prompt = analyzeTrendsPrompt(Object.keys(interests.categories).join(", "), JSON.stringify(articles.slice(0, 30).map((a) => ({ title: a.title, desc: a.desc }))));
+        const result = await this.generateStructured(prompt, ANALYZE_TRENDS_SCHEMA, this.primaryModelName, AnalyzeTrendsSchema);
         return result.suggestions;
       }
-      /**
-       * カテゴリ名からブランドとキーワードを提案します。
-       */
       async suggestCategoryDetails(categoryName) {
-        const schema = {
-          type: SchemaType.OBJECT,
-          properties: {
-            brands: {
-              type: SchemaType.ARRAY,
-              items: { type: SchemaType.STRING },
-              description: "\u95A2\u9023\u3059\u308B\u4E3B\u8981\u306A\u30D6\u30E9\u30F3\u30C9\u3092\u3010\u5FC5\u305A\u6B63\u78BA\u306B5\u3064\u3011",
-              minItems: 1,
-              maxItems: 10
-            },
-            keywords: {
-              type: SchemaType.ARRAY,
-              items: { type: SchemaType.STRING },
-              description: "\u95A2\u9023\u3059\u308B\u91CD\u8981\u306A\u30AD\u30FC\u30EF\u30FC\u30C9\u3092\u3010\u5FC5\u305A\u6B63\u78BA\u306B5\u3064\u3011",
-              minItems: 1,
-              maxItems: 10
-            },
-            emoji: { type: SchemaType.STRING, description: "\u30AB\u30C6\u30B4\u30EA\u30FC\u3092\u8C61\u5FB4\u3059\u308B\u7D75\u6587\u5B571\u3064" },
-            reason: { type: SchemaType.STRING, description: "\u3053\u306E\u63D0\u6848\u306E\u7406\u7531\uFF081\u6587\uFF09" }
-          },
-          required: ["brands", "keywords", "emoji", "reason"]
-        };
-        const prompt = `
-\u4EE5\u4E0B\u306E\u65B0\u3057\u3044\u30A4\u30F3\u30C6\u30EA\u30B8\u30A7\u30F3\u30B9\u30FB\u30AB\u30C6\u30B4\u30EA\u540D\u306B\u95A2\u9023\u3059\u308B\u3001\u4E3B\u8981\u306A\u30D6\u30E9\u30F3\u30C9\u3092\u3010\u5FC5\u305A5\u3064\u3011\u3001\u304A\u3088\u3073\u91CD\u8981\u306A\u30AD\u30FC\u30EF\u30FC\u30C9\u3092\u3010\u5FC5\u305A5\u3064\u3011\u63D0\u6848\u3057\u3066\u304F\u3060\u3055\u3044\u3002
-5\u3064\u672A\u6E80\u30845\u3064\u3092\u8D85\u3048\u308B\u63D0\u6848\u306F\u4E00\u5207\u8A8D\u3081\u3089\u308C\u307E\u305B\u3093\u3002\u5FC5\u305A\u6B63\u78BA\u306B5\u3064\u305A\u3064\u751F\u6210\u3057\u3066\u304F\u3060\u3055\u3044\u3002
-\u307E\u305F\u3001\u305D\u306E\u30AB\u30C6\u30B4\u30EA\u306B\u3075\u3055\u308F\u3057\u3044\u7D75\u6587\u5B57\u30921\u3064\u9078\u3093\u3067\u304F\u3060\u3055\u3044\u3002
-
-\u30AB\u30C6\u30B4\u30EA\u540D: "${categoryName}"
-\u65E5\u672C\u8A9E\u3067\u56DE\u7B54\u3057\u3066\u304F\u3060\u3055\u3044\u3002
-`;
-        return await this.generateStructured(prompt, schema);
+        const prompt = suggestCategoryDetailsPrompt(categoryName);
+        return await this.generateStructured(prompt, SUGGEST_CATEGORY_DETAILS_SCHEMA, this.primaryModelName, SuggestCategoryDetailsSchema);
+      }
+      async translateInterests(interests) {
+        const prompt = translateInterestsPrompt(JSON.stringify(interests.categories));
+        const result = await this.generateStructured(prompt, TRANSLATE_INTERESTS_SCHEMA, this.primaryModelName, TranslateInterestsSchema);
+        const translatedCategories = {};
+        const translatedFeedConfig = {};
+        for (const cat of result.categories) {
+          const { name, ...rest } = cat;
+          translatedCategories[name] = rest;
+          translatedFeedConfig[name] = { active: [], pool: [], failures: {} };
+        }
+        return { interests: { ...interests, categories: translatedCategories }, feedConfig: translatedFeedConfig };
       }
     };
   }
@@ -63518,124 +63611,92 @@ var FeedManager_exports = {};
 __export(FeedManager_exports, {
   FeedManager: () => FeedManager
 });
-var import_fs, import_promises3, FeedManager;
+var import_promises4, FeedManager;
 var init_FeedManager = __esm({
   "src/services/FeedManager.ts"() {
-    import_fs = __toESM(require("fs"), 1);
-    import_promises3 = __toESM(require("fs/promises"), 1);
-    init_Schemas();
+    import_promises4 = __toESM(require("fs/promises"), 1);
     FeedManager = class {
+      config = {};
       configPath;
-      config;
       constructor(configPath) {
         this.configPath = configPath;
-        this.config = this.loadConfig();
       }
-      loadConfig() {
+      /**
+       * 設定ファイルを非同期に読み込みます。
+       */
+      async loadConfig() {
         try {
-          const rawContent = import_fs.default.readFileSync(this.configPath, "utf8");
-          const raw = JSON.parse(rawContent);
-          const result = FeedConfigSchema.safeParse(raw);
-          if (!result.success) {
-            console.error("FeedManager Validation Errors:", JSON.stringify(result.error.issues, null, 2));
-            return raw;
-          }
-          return result.data;
-        } catch (e) {
-          const msg = e instanceof Error ? e.message : String(e);
-          console.error(`FeedManager: \u8A2D\u5B9A\u306E\u8AAD\u307F\u8FBC\u307F\u306B\u5931\u6557\u3057\u307E\u3057\u305F: ${msg}`);
-          return {};
+          const data2 = await import_promises4.default.readFile(this.configPath, "utf-8");
+          this.config = JSON.parse(data2);
+        } catch {
+          this.config = {};
+        }
+      }
+      async saveConfig() {
+        try {
+          await import_promises4.default.writeFile(this.configPath, JSON.stringify(this.config, null, 2), "utf-8");
+        } catch (err) {
+          console.error("[FeedManager] Failed to save config:", err);
         }
       }
       getActiveFeeds(category) {
         return this.config[category]?.active || [];
       }
       getAllActiveFeeds() {
-        return Object.entries(this.config).flatMap(
-          ([category, data2]) => data2.active.map((url3) => ({ category, url: url3 }))
-        );
-      }
-      async reportFailure(category, url3, fetcher) {
-        const catData = this.config[category];
-        if (!catData) return null;
-        catData.failures[url3] = (catData.failures[url3] || 0) + 1;
-        if (catData.failures[url3] >= 3 && catData.pool.length > 0) {
-          console.warn(`[FeedManager] Feed ${url3} has failed ${catData.failures[url3]} times. Attempting replacement...`);
-          while (catData.pool.length > 0) {
-            const nextUrl = catData.pool.shift();
-            if (!nextUrl) break;
-            if (fetcher) {
-              const check2 = await fetcher.validateFeed(nextUrl);
-              if (!check2.ok) {
-                console.warn(`[FeedManager] Pool feed ${nextUrl} is also invalid. Skipping...`);
-                continue;
-              }
-            }
-            console.log(`FeedManager: \u30D5\u30A3\u30FC\u30C9\u3092\u5DEE\u3057\u66FF\u3048\u307E\u3059 [${category}]: ${url3} -> ${nextUrl}`);
-            catData.active = catData.active.map((u) => u === url3 ? nextUrl : u);
-            delete catData.failures[url3];
-            await this.saveConfig();
-            return nextUrl;
-          }
-          console.error(`[FeedManager] No valid replacement found in pool for [${category}]`);
+        const all3 = [];
+        for (const [category, data2] of Object.entries(this.config)) {
+          data2.active.forEach((url3) => all3.push({ category, url: url3 }));
         }
-        return null;
+        return all3;
       }
-      reportSuccess(category, url3) {
-        const catData = this.config[category];
-        if (catData?.failures?.[url3]) {
-          delete catData.failures[url3];
-        }
-      }
-      async addFeed(category, url3, fetcher, name = "") {
+      async addFeed(category, url3, fetcher) {
         if (!this.config[category]) {
           this.config[category] = { active: [], pool: [], failures: {} };
         }
-        const catData = this.config[category];
-        const allUrls = [...catData.active, ...catData.pool];
-        if (allUrls.includes(url3)) return false;
-        const check2 = await fetcher.validateFeed(url3);
-        if (!check2.ok) {
-          console.warn(`[FeedManager] \u8FFD\u52A0\u62D2\u5426: \u30D5\u30A3\u30FC\u30C9\u304C\u4E0D\u901A\u307E\u305F\u306F\u7121\u52B9\u3067\u3059: ${url3}`);
+        const group = this.config[category];
+        if (group.active.includes(url3)) return false;
+        try {
+          const items = await fetcher.fetch(url3);
+          if (items && items.length > 0) {
+            group.active.push(url3);
+            await this.saveConfig();
+            return true;
+          }
+        } catch {
           return false;
         }
-        catData.pool.push(url3);
-        console.log(`[FeedManager] New valid feed added to pool [${category}]: ${name || url3}`);
-        await this.saveConfig();
-        return true;
+        return false;
+      }
+      async removeFeed(category, url3) {
+        if (this.config[category]) {
+          this.config[category].active = this.config[category].active.filter((u) => u !== url3);
+          await this.saveConfig();
+        }
+      }
+      async reportSuccess(category, url3) {
+        const group = this.config[category];
+        if (group && group.failures[url3]) {
+          delete group.failures[url3];
+          await this.saveConfig();
+        }
+      }
+      async reportFailure(category, url3) {
+        const group = this.config[category];
+        if (group) {
+          group.failures[url3] = (group.failures[url3] || 0) + 1;
+          if (group.failures[url3] >= 5) {
+            group.active = group.active.filter((u) => u !== url3);
+            if (!group.pool.includes(url3)) group.pool.push(url3);
+          }
+          await this.saveConfig();
+        }
       }
       async cleanConfig() {
         for (const cat in this.config) {
-          const data2 = this.config[cat];
-          data2.active = [...new Set(data2.active)];
-          data2.pool = [...new Set(data2.pool)];
-          data2.pool = data2.pool.filter((url3) => !data2.active.includes(url3));
+          this.config[cat].active = [...new Set(this.config[cat].active)];
+          this.config[cat].pool = [...new Set(this.config[cat].pool)];
         }
         await this.saveConfig();
-      }
-      savePromise = Promise.resolve();
-      async saveConfig() {
-        this.savePromise = this.savePromise.then(async () => {
-          const content = JSON.stringify(this.config, null, 2);
-          let retries = 3;
-          while (retries > 0) {
-            try {
-              await import_promises3.default.writeFile(this.configPath, content, "utf8");
-              return;
-            } catch (e) {
-              const error51 = e;
-              if (error51.code === "EBUSY" && retries > 1) {
-                console.warn(`[FeedManager] Resource busy, retrying... (${retries} left)`);
-                await new Promise((resolve) => setTimeout(resolve, 200));
-                retries--;
-                continue;
-              }
-              console.error("FeedManager: \u8A2D\u5B9A\u306E\u4FDD\u5B58\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002", error51.message);
-              break;
-            }
-          }
-        });
-        return this.savePromise;
       }
     };
   }
@@ -63659,6 +63720,19 @@ var init_DiscoveryService = __esm({
         this.feedManager = feedManager2;
       }
       /**
+       * AIによるカテゴリ再編の提案を取得します。
+       */
+      async getRestructureProposal(interests, targetCount = 10, language = "ja") {
+        const currentFeeds = this.feedManager.config;
+        return await this.geminiService.getRestructureProposal(interests, currentFeeds, targetCount, language);
+      }
+      /**
+       * カテゴリ設定を翻訳します。
+       */
+      async translateInterests(interests) {
+        return await this.geminiService.translateInterests(interests);
+      }
+      /**
        * APIキーを更新します。
        */
       updateApiKey(apiKey) {
@@ -63680,10 +63754,10 @@ var init_DiscoveryService = __esm({
             console.error("[DiscoveryService] \u82F1\u8A9E\u30B5\u30A4\u30C8\u306E\u63A2\u7D22\u306B\u5931\u6557\u3057\u307E\u3057\u305F:", err);
           }
         }
-        const validFeeds = [];
         const existingUrls = this.feedManager.getAllActiveFeeds().map((f) => f.url);
-        for (const site of suggestedSites) {
-          if (existingUrls.includes(site.url)) continue;
+        const sitesToValidate = suggestedSites.filter((s) => !existingUrls.includes(s.url));
+        const validFeeds = [];
+        await Promise.all(sitesToValidate.map(async (site) => {
           try {
             const items = await this.rssFetcher.fetch(site.url);
             if (items && items.length > 0) {
@@ -63693,10 +63767,10 @@ var init_DiscoveryService = __esm({
             const msg = e instanceof Error ? e.message : String(e);
             console.log(`[DiscoveryService] NG: ${site.name} - ${msg}`);
           }
-        }
+        }));
         if (validFeeds.length > 0) {
           for (const feed of validFeeds) {
-            await this.feedManager.addFeed(feed.category, feed.url, this.rssFetcher, feed.name);
+            await this.feedManager.addFeed(feed.category, feed.url, this.rssFetcher);
           }
           console.log(`[DiscoveryService] \u5B8C\u4E86: ${validFeeds.length} \u4EF6\u306E\u65B0\u3057\u3044\u30D5\u30A3\u30FC\u30C9\u3092\u767B\u9332\u3057\u307E\u3057\u305F\u3002`);
         }
@@ -118868,7 +118942,7 @@ var require_form_data2 = __commonJS({
     var http3 = require("http");
     var https2 = require("https");
     var parseUrl2 = require("url").parse;
-    var fs6 = require("fs");
+    var fs7 = require("fs");
     var Stream = require("stream").Stream;
     var crypto2 = require("crypto");
     var mime = require_mime_types();
@@ -118935,7 +119009,7 @@ var require_form_data2 = __commonJS({
         if (value.end != void 0 && value.end != Infinity && value.start != void 0) {
           callback(null, value.end + 1 - (value.start ? value.start : 0));
         } else {
-          fs6.stat(value.path, function(err, stat) {
+          fs7.stat(value.path, function(err, stat) {
             if (err) {
               callback(err);
               return;
@@ -124696,10 +124770,10 @@ var init_p_limit = __esm({
 });
 
 // src/services/ImageCacheManager.ts
-var import_promises4, import_path3, ImageCacheManager;
+var import_promises5, import_path3, ImageCacheManager;
 var init_ImageCacheManager = __esm({
   "src/services/ImageCacheManager.ts"() {
-    import_promises4 = __toESM(require("fs/promises"), 1);
+    import_promises5 = __toESM(require("fs/promises"), 1);
     import_path3 = __toESM(require("path"), 1);
     ImageCacheManager = class {
       cachePath;
@@ -124714,7 +124788,7 @@ var init_ImageCacheManager = __esm({
        */
       async init() {
         try {
-          const data2 = await import_promises4.default.readFile(this.cachePath, "utf-8");
+          const data2 = await import_promises5.default.readFile(this.cachePath, "utf-8");
           const parsed = JSON.parse(data2);
           this.cache = new Map(Object.entries(parsed));
           this.cleanup();
@@ -124762,7 +124836,7 @@ var init_ImageCacheManager = __esm({
       async save() {
         try {
           const obj = Object.fromEntries(this.cache.entries());
-          await import_promises4.default.writeFile(this.cachePath, JSON.stringify(obj, null, 2), "utf-8");
+          await import_promises5.default.writeFile(this.cachePath, JSON.stringify(obj, null, 2), "utf-8");
         } catch (error51) {
           console.error("[ImageCacheManager] Failed to save cache:", error51);
         }
@@ -131956,153 +132030,55 @@ __export(NexusRouter_exports, {
 var nexusRouter, NexusRouter_default;
 var init_NexusRouter = __esm({
   "src/api/server/NexusRouter.ts"() {
-    init_Schemas();
     nexusRouter = async (fastify2, options) => {
-      const { scraper: scraper2, evolution, orchestrator: orchestrator2, settingsManager: settingsManager2 } = options;
+      const { scraper: scraper2, settingsManager: settingsManager2 } = options;
       fastify2.get("/interests", async (_request, reply) => {
         try {
           return await settingsManager2.getInterests();
         } catch (error51) {
-          const msg = error51 instanceof Error ? error51.message : String(error51);
-          reply.status(500).send({ error: "Failed to retrieve interests", details: msg });
+          reply.status(500).send({ error: "Failed to retrieve interests", details: String(error51) });
         }
       });
       fastify2.get("/feeds", async (_request, reply) => {
         try {
           return await settingsManager2.getFeedConfig();
         } catch (error51) {
-          const msg = error51 instanceof Error ? error51.message : String(error51);
-          reply.status(500).send({ error: "Failed to retrieve feed configuration", details: msg });
+          reply.status(500).send({ error: "Failed to retrieve feed config", details: String(error51) });
         }
       });
       fastify2.post("/sync-settings", async (request, reply) => {
         try {
-          const validated = SyncSettingsSchema.parse(request.body);
-          const result = await settingsManager2.syncSettings(validated);
-          if (scraper2 && scraper2.feedManager) {
-            scraper2.feedManager.config = result.validatedFeedConfig;
-          }
+          const result = await settingsManager2.syncSettings(request.body);
           return result;
         } catch (error51) {
           console.error("[NexusRouter] Sync Settings Error:", error51);
-          if (error51 && typeof error51 === "object" && "name" in error51 && error51.name === "ZodError") {
-            const zodError = error51;
-            reply.status(400).send({ error: "Validation failed", issues: zodError.issues });
-            return;
-          }
-          const msg = error51 instanceof Error ? error51.message : String(error51);
-          reply.status(500).send({ error: "Failed to sync settings", details: msg });
-        }
-      });
-      fastify2.post("/suggest-category", async (request, reply) => {
-        const { categoryName } = request.body;
-        if (!categoryName) {
-          reply.status(400).send({ error: "Category name is required" });
-          return;
-        }
-        try {
-          const apiKey = await settingsManager2.getApiKey();
-          scraper2.updateApiKey(apiKey);
-          return await scraper2.geminiService.suggestCategoryDetails(categoryName);
-        } catch (error51) {
-          const msg = error51 instanceof Error ? error51.message : String(error51);
-          reply.status(500).send({ error: "Failed to generate suggestions", details: msg });
-        }
-      });
-      fastify2.get("/proposals", async (_request, reply) => {
-        try {
-          const apiKey = await settingsManager2.getApiKey();
-          evolution.updateApiKey(apiKey);
-          const interests = await settingsManager2.getInterests();
-          return await evolution.getProposals(interests);
-        } catch (error51) {
-          const msg = error51 instanceof Error ? error51.message : String(error51);
-          reply.status(500).send({ error: "Failed to get proposals", details: msg });
-        }
-      });
-      fastify2.post("/orchestrate", async (request, reply) => {
-        const { requirements } = request.body;
-        if (!requirements) {
-          reply.status(400).send({ error: "Requirements are required" });
-          return;
-        }
-        try {
-          const apiKey = await settingsManager2.getApiKey();
-          orchestrator2.updateApiKey(apiKey);
-          orchestrator2.runAutonomousLoop(requirements).catch((err) => {
-            console.error("[Orchestrator Loop Error]", err);
-          });
-          return { status: "accepted", message: "Autonomous loop started" };
-        } catch (error51) {
-          const msg = error51 instanceof Error ? error51.message : String(error51);
-          reply.status(500).send({ error: msg });
-        }
-      });
-      fastify2.post("/restructure-categories", async (_request, reply) => {
-        try {
-          const apiKey = await settingsManager2.getApiKey();
-          scraper2.updateApiKey(apiKey);
-          const currentInterests = await settingsManager2.getInterests();
-          const currentFeeds = await settingsManager2.getFeedConfig();
-          const restructured = await scraper2.geminiService.getRestructureProposal(currentInterests, currentFeeds);
-          const validationTasks = Object.entries(restructured.feedConfig).map(async ([catName, config2]) => {
-            const sitesToValidate = config2.active.map((url3) => ({ url: url3, name: "Suggested Feed", category: catName }));
-            const validatedSites = await evolution.validateSuggestedFeeds(sitesToValidate);
-            restructured.feedConfig[catName].active = validatedSites.map((s) => s.url);
-            if (restructured.feedConfig[catName].active.length === 0) {
-              console.log(`[NexusRouter] Category "${catName}" has no valid feeds after validation. Using Google News fallback.`);
-              const fallbackUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(catName)}&hl=ja&gl=JP&ceid=JP:ja`;
-              restructured.feedConfig[catName].active.push(fallbackUrl);
-            }
-          });
-          await Promise.all(validationTasks);
-          return restructured;
-        } catch (error51) {
-          const msg = error51 instanceof Error ? error51.message : String(error51);
-          reply.status(500).send({ error: "Failed to restructure categories", details: msg });
+          reply.status(500).send({ error: "Failed to sync settings", details: String(error51) });
         }
       });
       fastify2.post("/discover-trends", async (_request, reply) => {
         try {
-          const apiKey = await settingsManager2.getApiKey();
-          scraper2.updateApiKey(apiKey);
           const interests = await settingsManager2.getInterests();
           const suggestions = await scraper2.discoverTrends(interests);
           return { suggestions };
         } catch (error51) {
-          const msg = error51 instanceof Error ? error51.message : String(error51);
-          reply.status(500).send({ error: "Failed to discover trends", details: msg });
+          reply.status(500).send({ error: "Failed to discover trends", details: String(error51) });
         }
       });
-      fastify2.get("/window-state", async (_request, reply) => {
+      fastify2.post("/restructure-categories", async (_request, reply) => {
         try {
-          const state = await settingsManager2.getWindowState();
-          return state || { error: "Not Found" };
+          return { categories: {}, feedConfig: {} };
         } catch (error51) {
-          const msg = error51 instanceof Error ? error51.message : String(error51);
-          reply.status(500).send({ error: "Failed to retrieve window state", details: msg });
+          reply.status(500).send({ error: "Failed to restructure categories", details: String(error51) });
         }
       });
-      fastify2.get("/events", (request, reply) => {
-        const headers = {
-          "Content-Type": "text/event-stream",
-          "Cache-Control": "no-cache",
-          "Connection": "keep-alive",
-          "Access-Control-Allow-Origin": "*"
-        };
-        reply.raw.writeHead(200, headers);
-        reply.raw.write("\n");
-        orchestrator2.subscribe(reply);
-        const initialMsg = JSON.stringify({ status: "connected", message: "SSE Connection Established", timestamp: (/* @__PURE__ */ new Date()).toISOString() });
-        reply.raw.write(`data: ${initialMsg}
-
-`);
-        const keepAlive = setInterval(() => {
-          reply.raw.write(": heartbeat\n\n");
-        }, 3e4);
-        request.raw.on("close", () => {
-          clearInterval(keepAlive);
-        });
+      fastify2.get("/ui-settings", async () => {
+        return await settingsManager2.getUiSettings();
+      });
+      fastify2.post("/save-ui-settings", async (request) => {
+        return await settingsManager2.saveUiSettings(request.body);
+      });
+      fastify2.get("/usage-stats", async () => {
+        return await settingsManager2.getUsageStats();
       });
     };
     NexusRouter_default = nexusRouter;
@@ -132211,11 +132187,11 @@ var init_ScraperFacade = __esm({
        * @param feedsPath - フィード構成ファイルのパス
        * @param dataDir - データディレクトリ（オプション。EnrichmentServiceのキャッシュ等に使用）
        */
-      constructor(_interestsPath, feedsPath, dataDir) {
+      constructor(_interestsPath, feedsPath, dataDir2) {
         this.feedManager = new FeedManager(feedsPath);
         this.rssFetcher = new RSSFetcher(20);
         this.geminiService = new GeminiService(process.env.GEMINI_API_KEY);
-        this.enrichmentService = new EnrichmentService(this.geminiService, dataDir);
+        this.enrichmentService = new EnrichmentService(this.geminiService, dataDir2);
       }
       /**
        * APIキーを更新し、関連サービスに反映させます。
@@ -132276,11 +132252,8 @@ var init_ScraperFacade = __esm({
         for (const catName of categories) {
           const targetClean = normalizeCategoryName(catName);
           let filtered = articlesNormal.filter((a) => {
-            return normalizeCategoryName(a.category) === targetClean && a.language === "ja";
+            return normalizeCategoryName(a.category) === targetClean;
           });
-          if (filtered.length === 0) {
-            filtered = articlesNormal.filter((a) => normalizeCategoryName(a.category) === targetClean);
-          }
           if (filtered.length === 0) {
             if (!articlesExtended) {
               console.log(`[ScraperFacade] \u30AB\u30C6\u30B4\u30EA "${catName}" \u306E\u6700\u65B0\u8A18\u4E8B\u304C0\u4EF6\u306E\u305F\u3081\u3001\u671F\u9593\u5236\u9650\u3092\u89E3\u9664\u3057\u3066\u518D\u63A2\u7D22\u3057\u307E\u3059...`);
@@ -132759,9 +132732,9 @@ var init_NexusOrchestrator = __esm({
 });
 
 // electron/main.cjs
-var { app, BrowserWindow, ipcMain, globalShortcut, Tray, Menu } = require("electron");
+var { app, BrowserWindow, ipcMain, globalShortcut, Tray, Menu, shell } = require("electron");
 var path4 = require("path");
-var fs5 = require("fs");
+var fs6 = require("fs");
 var fastify = require_fastify();
 var cors = require_cors();
 app.setName("Aegis Nexus");
@@ -132776,36 +132749,57 @@ var { nexusRouter: nexusRouter2 } = (init_NexusRouter(), __toCommonJS(NexusRoute
 var { ScraperFacade: ScraperFacade2 } = (init_ScraperFacade(), __toCommonJS(ScraperFacade_exports));
 var { NexusOrchestrator: NexusOrchestrator2 } = (init_NexusOrchestrator(), __toCommonJS(NexusOrchestrator_exports));
 var mainWindow;
-var tray;
-var geminiService;
-var feedManager;
-var rssFetcher;
-var discoveryService;
-var enrichmentService;
 var settingsManager;
 var scraper;
+var discoveryService;
 var orchestrator;
-function getDataDir() {
-  if (!app.isPackaged) {
-    return path4.join(__dirname, "..", "data");
-  } else {
-    return path4.join(app.getPath("userData"), "data");
+var geminiService;
+var rssFetcher;
+var feedManager;
+var enrichmentService;
+var isDev = !app.isPackaged;
+function setupDataDirectory() {
+  const userDataPath = app.getPath("userData");
+  const dataDir2 = path4.join(userDataPath, "data");
+  if (!fs6.existsSync(dataDir2)) {
+    console.log("[Main] Creating data directory...");
+    fs6.mkdirSync(dataDir2, { recursive: true });
   }
+  const defaultDataDir = isDev ? path4.join(__dirname, "..", "data") : path4.join(process.resourcesPath, "default-data");
+  if (fs6.existsSync(defaultDataDir)) {
+    const requiredFiles = ["interests.json", "feed_config.json"];
+    for (const file2 of requiredFiles) {
+      const destPath = path4.join(dataDir2, file2);
+      const srcPath = path4.join(defaultDataDir, file2);
+      if (fs6.existsSync(srcPath) && (!fs6.existsSync(destPath) || fs6.statSync(destPath).size < 5)) {
+        fs6.copyFileSync(srcPath, destPath);
+        console.log(`[Main] Restored default ${file2} to user data directory.`);
+      }
+    }
+  }
+  return dataDir2;
 }
-async function startInternalServer(sm) {
-  const server = fastify({ logger: false });
-  await server.register(cors, { origin: ["http://localhost:5173", "http://127.0.0.1:5173"] });
-  const dataDir = getDataDir();
-  scraper = new ScraperFacade2(
-    path4.join(dataDir, "interests.json"),
-    path4.join(dataDir, "feed_config.json"),
-    dataDir
-  );
+var dataDir = setupDataDirectory();
+async function startBackend() {
+  console.log("[Main] Starting backend services...");
+  settingsManager = new ElectronSettingsManager2({ dataDir, isDev });
+  await settingsManager.init();
   const apiKey = await settingsManager.getApiKey();
-  if (apiKey) {
-    scraper.updateApiKey(apiKey);
-  }
+  geminiService = new GeminiService2(apiKey);
+  const feedConfigPath = path4.join(dataDir, "feed_config.json");
+  feedManager = new FeedManager2(feedConfigPath);
+  await feedManager.loadConfig();
+  rssFetcher = new RSSFetcher2();
+  discoveryService = new DiscoveryService2(geminiService, rssFetcher, feedManager);
+  enrichmentService = new EnrichmentService2(geminiService, dataDir);
+  scraper = new ScraperFacade2("", feedConfigPath, dataDir);
+  scraper.rssFetcher = rssFetcher;
+  scraper.geminiService = geminiService;
+  scraper.enrichmentService = enrichmentService;
+  scraper.feedManager = feedManager;
   orchestrator = new NexusOrchestrator2(geminiService);
+  const server = fastify({ logger: isDev });
+  await server.register(cors, { origin: "*" });
   await server.register(nexusRouter2, {
     prefix: "/api/v5",
     scraper,
@@ -132824,247 +132818,102 @@ async function startInternalServer(sm) {
     console.error("[Main] Failed to start internal Fastify server:", err);
   }
 }
-async function ensureDefaultData(dataDir) {
-  const interestsPath = path4.join(dataDir, "interests.json");
-  const feedConfigPath = path4.join(dataDir, "feed_config.json");
-  const isFileEmpty = (filePath) => {
-    if (!fs5.existsSync(filePath)) return true;
-    try {
-      const stats = fs5.statSync(filePath);
-      if (stats.size === 0) return true;
-      const content = fs5.readFileSync(filePath, "utf8").trim();
-      return content === "{}" || content === "";
-    } catch {
-      return true;
-    }
-  };
-  const needsInit = isFileEmpty(interestsPath) || isFileEmpty(feedConfigPath);
-  if (needsInit) {
-    console.log("[Main] Initializing data with defaults (missing or empty configuration detected)...");
-    const resourcesPath = app.isPackaged ? process.resourcesPath : path4.resolve(__dirname, "..");
-    const defaultDataDir = path4.join(resourcesPath, "default-data");
-    if (!fs5.existsSync(dataDir)) {
-      fs5.mkdirSync(dataDir, { recursive: true });
-    }
-    const files = ["interests.json", "feed_config.json"];
-    for (const file2 of files) {
-      const src = path4.join(defaultDataDir, file2);
-      const dest = path4.join(dataDir, file2);
-      if (fs5.existsSync(dest) && !isFileEmpty(dest)) {
-        console.log(`[Main] Skipping default copy for ${file2} (already has content).`);
-        continue;
-      }
-      if (fs5.existsSync(src)) {
-        try {
-          fs5.copyFileSync(src, dest);
-          console.log(`[Main] Copied default ${file2}`);
-        } catch (e) {
-          console.error(`[Main] Failed to copy default ${file2}:`, e);
-        }
-      }
-    }
-  }
-}
-async function initBackend() {
-  console.log("[Main] Backend services initializing...");
-  const dataDir = getDataDir();
-  await ensureDefaultData(dataDir);
-  settingsManager = new ElectronSettingsManager2({ dataDir });
-  await settingsManager.init();
-  const apiKey = await settingsManager.getApiKey();
-  geminiService = new GeminiService2(apiKey);
-  const feedConfigPath = path4.join(dataDir, "feed_config.json");
-  feedManager = new FeedManager2(feedConfigPath);
-  rssFetcher = new RSSFetcher2();
-  discoveryService = new DiscoveryService2(geminiService, rssFetcher, feedManager);
-  enrichmentService = new EnrichmentService2(geminiService, dataDir);
-  await startInternalServer(settingsManager);
-  console.log("[Main] Backend services ready.");
-}
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1440,
     height: 900,
-    minWidth: 800,
-    minHeight: 600,
-    show: false,
-    transparent: false,
+    minWidth: 1e3,
+    minHeight: 700,
     frame: false,
-    hasShadow: true,
-    resizable: true,
-    thickFrame: true,
-    titleBarStyle: "hidden",
-    backgroundMaterial: "acrylic",
-    icon: path4.join(__dirname, "../public/app-icon.png"),
+    // カスタムタイトルバーを使用
+    backgroundColor: "#0f172a",
     webPreferences: {
-      nodeIntegration: false,
+      preload: path4.join(__dirname, "preload.cjs"),
       contextIsolation: true,
-      preload: path4.join(__dirname, "preload.cjs")
+      nodeIntegration: false
     }
   });
-  mainWindow.on("close", (event) => {
-    if (!app.isQuitting) {
-      event.preventDefault();
-      mainWindow.hide();
-    }
-    return false;
+  if (orchestrator) {
+    orchestrator.setWebContents(mainWindow.webContents);
+  }
+  if (isDev) {
+    mainWindow.loadURL("http://localhost:5173");
+    mainWindow.webContents.openDevTools();
+  } else {
+    mainWindow.loadFile(path4.join(__dirname, "../dist/index.html"));
+  }
+  mainWindow.once("ready-to-show", () => {
+    mainWindow.show();
+    settingsManager.getInterests().then((interests) => {
+      scraper.fetchAndProcessArticlesWithFallback(interests).then((articles) => {
+        console.log(`[Main] Initial fetch completed: ${articles.length} articles.`);
+      });
+    });
   });
 }
-function createTray() {
-  const iconPath = path4.join(__dirname, "../public/app-icon.png");
-  if (!fs5.existsSync(iconPath)) return;
-  tray = new Tray(iconPath);
-  const contextMenu = Menu.buildFromTemplate([
-    { label: "Aegis Nexus \u8868\u793A", click: () => mainWindow.show() },
-    { type: "separator" },
-    { label: "\u7D42\u4E86", click: () => {
-      app.isQuitting = true;
-      app.quit();
-    } }
-  ]);
-  tray.setToolTip("Aegis AI Hub");
-  tray.setContextMenu(contextMenu);
-  tray.on("double-click", () => mainWindow.show());
-}
-function registerIpcHandlers() {
+function setupIpcHandlers() {
+  ipcMain.handle("get-articles", async () => {
+    const interests = await settingsManager.getInterests();
+    const dashboardData = await scraper.getDashboard(interests);
+    const allArticles = [];
+    Object.values(dashboardData).forEach((group) => {
+      if (group?.articles) allArticles.push(...group.articles);
+    });
+    return allArticles.sort((a, b) => b.score - a.score).slice(0, 500);
+  });
   ipcMain.handle("get-settings", async () => {
     const interests = await settingsManager.getInterests();
     const feedConfig = await settingsManager.getFeedConfig();
     return { interests, feedConfig };
   });
   ipcMain.handle("sync-settings", async (event, settings) => {
-    try {
-      const result = await settingsManager.syncSettings(settings, rssFetcher);
-      if (feedManager) feedManager.config = result.validatedFeedConfig;
-      if (scraper && scraper.feedManager) scraper.feedManager.config = result.validatedFeedConfig;
-      return result;
-    } catch (error51) {
-      console.error("Failed to sync settings:", error51);
-      throw error51;
-    }
+    const result = await settingsManager.syncSettings(settings, rssFetcher);
+    if (feedManager) feedManager.config = result.validatedFeedConfig;
+    return result;
   });
-  ipcMain.handle("get-articles", async (event, options) => {
-    console.log("[Main] IPC: get-articles invoked.");
-    try {
-      const interests = await settingsManager.getInterests();
-      const articles = await scraper.fetchAndProcessArticlesWithFallback(interests);
-      console.log(`[Main] IPC: Returning top 500 articles.`);
-      return articles.map((a) => a.toJSON()).sort((a, b) => b.score - a.score).slice(0, 500);
-    } catch (error51) {
-      console.error("[Main] IPC Error: get-articles failed:", error51);
-      return [];
+  ipcMain.handle("trigger-orchestration", async (event, requirements) => {
+    if (orchestrator) {
+      void orchestrator.runAutonomousLoop(requirements);
+      return { success: true, message: "Autonomous loop started" };
     }
+    return { success: false, message: "Orchestrator not initialized" };
   });
-  ipcMain.handle("trigger-orchestration", async () => {
-    try {
-      const interests = await settingsManager.getInterests();
-      const newFeeds = await discoveryService.run(interests);
-      return { success: true, newFeedsCount: newFeeds.length };
-    } catch (error51) {
-      console.error("Orchestration failed:", error51);
-      throw error51;
-    }
-  });
-  ipcMain.handle("suggest-category", async (event, categoryName) => {
-    try {
-      const apiKey = await settingsManager.getApiKey();
-      geminiService.updateApiKey(apiKey);
-      return await geminiService.suggestCategoryDetails(categoryName);
-    } catch (error51) {
-      console.error("Failed to suggest category:", error51);
-      throw error51;
-    }
-  });
-  ipcMain.handle("get-proposals", async () => {
-    try {
-      const interests = await settingsManager.getInterests();
-      return await discoveryService.getProposals(interests);
-    } catch (error51) {
-      console.error("Failed to get proposals:", error51);
-      throw error51;
-    }
-  });
-  ipcMain.handle("restructure-categories", async (event, count) => {
-    try {
-      const apiKey = await settingsManager.getApiKey();
-      geminiService.updateApiKey(apiKey);
-      const interests = await settingsManager.getInterests();
-      const currentFeeds = await settingsManager.getFeedConfig();
-      const targetCount = typeof count === "number" ? count : 10;
-      const restructured = await geminiService.getRestructureProposal(interests, currentFeeds, targetCount);
-      const validationTasks = Object.entries(restructured.feedConfig).map(async ([catName, config2]) => {
-        const sitesToValidate = config2.active.map((url3) => ({ url: url3, name: "Suggested Feed", category: catName }));
-        const validatedSites = await discoveryService.validateSuggestedFeeds(sitesToValidate);
-        restructured.feedConfig[catName].active = validatedSites.map((s) => s.url);
-        if (restructured.feedConfig[catName].active.length === 0) {
-          const fallbackUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(catName)}&hl=ja&gl=JP&ceid=JP:ja`;
-          restructured.feedConfig[catName].active.push(fallbackUrl);
-        }
-      });
-      await Promise.all(validationTasks);
-      return restructured;
-    } catch (error51) {
-      console.error("Failed to restructure categories:", error51);
-      throw error51;
-    }
+  ipcMain.handle("suggest-category", async (event, name) => {
+    return await geminiService.suggestCategoryDetails(name);
   });
   ipcMain.handle("discover-trends", async () => {
-    try {
-      const apiKey = await settingsManager.getApiKey();
-      scraper.updateApiKey(apiKey);
-      const interests = await settingsManager.getInterests();
-      const suggestions = await scraper.discoverTrends(interests);
-      return { suggestions };
-    } catch (error51) {
-      console.error("Failed to discover trends:", error51);
-      throw error51;
-    }
+    const interests = await settingsManager.getInterests();
+    const suggestions = await scraper.discoverTrends(interests);
+    return { suggestions };
+  });
+  ipcMain.handle("restructure-categories", async (event, count, language) => {
+    const interests = await settingsManager.getInterests();
+    return await discoveryService.getRestructureProposal(interests, count, language || "ja");
+  });
+  ipcMain.handle("translate-interests", async (event, settings) => {
+    return await discoveryService.translateInterests(settings);
   });
   ipcMain.handle("get-api-key", async () => {
     return await settingsManager.getApiKey();
   });
-  ipcMain.handle("save-api-key", async (event, apiKey) => {
-    try {
-      await settingsManager.saveApiKey(apiKey);
-      geminiService.updateApiKey(apiKey);
-      return { success: true };
-    } catch (error51) {
-      console.error("Failed to save API key:", error51);
-      throw error51;
-    }
-  });
-  ipcMain.handle("reset-to-defaults", async () => {
-    try {
-      const dataDir = getDataDir();
-      const resourcesPath = app.isPackaged ? process.resourcesPath : path4.resolve(__dirname, "..");
-      const defaultDataDir = path4.join(resourcesPath, "default-data");
-      const files = ["interests.json", "feed_config.json"];
-      for (const file2 of files) {
-        const src = path4.join(defaultDataDir, file2);
-        const dest = path4.join(dataDir, file2);
-        if (fs5.existsSync(src)) await fs5.promises.copyFile(src, dest);
-      }
-      await settingsManager.init();
-      const feedConfig = await settingsManager.getFeedConfig();
-      if (feedManager) feedManager.config = feedConfig;
-      if (scraper && scraper.feedManager) scraper.feedManager.config = feedConfig;
-      return { success: true };
-    } catch (error51) {
-      console.error("Failed to reset to defaults:", error51);
-      throw error51;
-    }
+  ipcMain.handle("save-api-key", async (event, key) => {
+    await settingsManager.saveApiKey(key);
+    geminiService.updateApiKey(key);
+    return { success: true };
   });
   ipcMain.handle("get-ui-settings", async () => {
     return await settingsManager.getUiSettings();
   });
   ipcMain.handle("save-ui-settings", async (event, settings) => {
-    try {
-      await settingsManager.saveUiSettings(settings);
-      return { success: true };
-    } catch (error51) {
-      console.error("Failed to save UI settings:", error51);
-      throw error51;
-    }
+    await settingsManager.saveUiSettings(settings);
+    return { success: true };
+  });
+  ipcMain.handle("get-usage-stats", async () => {
+    return await settingsManager.getUsageStats();
+  });
+  ipcMain.handle("reset-to-defaults", async (event, lang) => {
+    const success2 = await settingsManager.resetToDefaults(lang || "ja");
+    return { success: success2 };
   });
   ipcMain.on("window-control", (event, action) => {
     if (!mainWindow) return;
@@ -133073,65 +132922,33 @@ function registerIpcHandlers() {
         mainWindow.minimize();
         break;
       case "maximize":
-        if (mainWindow.isMaximized()) mainWindow.unmaximize();
-        else mainWindow.maximize();
+        mainWindow.isMaximized() ? mainWindow.unmaximize() : mainWindow.maximize();
         break;
       case "close":
         mainWindow.close();
         break;
+      case "quit":
+        app.quit();
+        break;
     }
+  });
+  ipcMain.on("open-external", (event, url3) => {
+    shell.openExternal(url3);
   });
 }
 app.whenReady().then(async () => {
-  try {
-    await initBackend();
-    registerIpcHandlers();
-    const isDev = process.env.NODE_ENV === "development" || !app.isPackaged;
-    const isHidden = process.argv.includes("--hidden");
-    createWindow();
-    createTray();
-    if (isDev) {
-      mainWindow.loadURL("http://localhost:5173");
-    } else {
-      mainWindow.loadFile(path4.join(__dirname, "../dist/index.html"));
-    }
-    if (scraper) {
-      console.log("[Main] Starting background initial fetch...");
-      settingsManager.getInterests().then((interests) => {
-        scraper.fetchAndProcessArticlesWithFallback(interests).then((articles) => {
-          console.log(`[Main] Initial fetch completed. ${articles.length} articles found.`);
-        }).catch((err) => {
-          console.error("[Main] Initial background fetch failed:", err);
-        });
-      });
-    }
-    if (!isDev) {
-      app.setLoginItemSettings({
-        openAtLogin: true,
-        path: app.getPath("exe"),
-        args: ["--hidden"]
-      });
-    }
-    if (isHidden && mainWindow) {
-      console.log("[Main] App started with --hidden. Keeping window hidden.");
-    } else if (mainWindow) {
-      mainWindow.once("ready-to-show", () => {
-        mainWindow.show();
-      });
-    }
-    globalShortcut.register("CommandOrControl+Q", () => {
-      app.isQuitting = true;
-      app.quit();
-    });
-  } catch (err) {
-    console.error("[Main] CRITICAL ERROR during startup:", err);
-  }
-});
-app.on("activate", () => {
-  if (BrowserWindow.getAllWindows().length === 0) createWindow();
+  await startBackend();
+  setupIpcHandlers();
+  createWindow();
+  globalShortcut.register("CommandOrControl+Shift+I", () => {
+    mainWindow?.webContents.toggleDevTools();
+  });
 });
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
+});
+app.on("activate", () => {
+  if (BrowserWindow.getAllWindows().length === 0) createWindow();
 });
 /*! Bundled license information:
 
