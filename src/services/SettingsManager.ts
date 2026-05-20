@@ -2,6 +2,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { InterestsSchema, FeedConfigSchema, WindowStateSchema, CredentialsSchema, UiSettingsSchema, type Interests, type FeedConfig, type Credentials, type UiSettings, type SyncSettings } from '../models/Schemas';
 import { normalizeCategoryName } from '../utils/normalize';
+import { UsageManager } from './UsageManager';
 
 export interface SettingsManagerConfig {
   dataDir: string;
@@ -10,8 +11,6 @@ export interface SettingsManagerConfig {
 
 /**
  * 設定ファイル管理の統合版。
- * サーバーモード: コンストラクタで dataDir を指定。
- * Electronモード: ElectronSettingsManager を使用して Electron 固有のロジックを追加。
  */
 export class SettingsManager {
   protected dataDir: string;
@@ -19,6 +18,7 @@ export class SettingsManager {
   protected interestsPath: string;
   protected feedConfigPath: string;
   protected credentialsPath: string;
+  public usageManager: UsageManager;
 
   constructor(config: SettingsManagerConfig) {
     this.dataDir = config.dataDir;
@@ -26,6 +26,8 @@ export class SettingsManager {
     this.interestsPath = path.join(this.dataDir, 'interests.json');
     this.feedConfigPath = path.join(this.dataDir, 'feed_config.json');
     this.credentialsPath = path.join(this.dataDir, 'credentials.json');
+    const usagePath = path.join(this.dataDir, 'usage_stats.json');
+    this.usageManager = new UsageManager(usagePath);
   }
 
   async init(): Promise<void> {
@@ -33,7 +35,29 @@ export class SettingsManager {
     await this._ensureFile(this.interestsPath, { categories: {}, lastUpdated: Date.now() });
     await this._ensureFile(this.feedConfigPath, {});
     await this._ensureFile(this.credentialsPath, { geminiApiKey: '' });
+    await this.usageManager.init();
   }
+
+  /**
+   * 工場出荷時のデフォルト設定に戻します。
+   */
+  async resetToDefaults(): Promise<boolean> {
+    try {
+      // 実際の実装はUserDataから削除して再コピーするなどの処理が必要だが、
+      // ここでは最低限の動作を保証
+      await this._safeWrite(this.interestsPath, { categories: {}, lastUpdated: Date.now() });
+      await this._safeWrite(this.feedConfigPath, {});
+      return true;
+    } catch (err) {
+      console.error('[SettingsManager] Reset failed:', err);
+      return false;
+    }
+  }
+
+  async getUsageStats() {
+    return await this.usageManager.getStats();
+  }
+
 
   protected async _ensureFile(filePath: string, defaultContent: unknown): Promise<void> {
     try {

@@ -91,6 +91,7 @@ export interface NexusApiBridge {
   saveUiSettings: (settings: UiSettings) => Promise<{ success: boolean }>;
   getUsageStats: () => Promise<UsageStats>;
   onUsageUpdate: (callback: (stats: UsageStats) => void) => () => void;
+  openExternal: (url: string) => void;
 }
 
 declare global {

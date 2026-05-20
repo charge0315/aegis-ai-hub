@@ -120,5 +120,5 @@ desktop.ini
 fix_ui*.py
 *.bak
 *.bak2
-dashboard/
-server/
+/dashboard/
+/server/

@@ -106,15 +106,10 @@ export class ScraperFacade {
         for (const catName of categories) {
             const targetClean = normalizeCategoryName(catName);
             
-            // 言語優先（日本語）かつカテゴリ一致
+            // 修正: カテゴリ一致する記事を優先的に取得（言語制限を解除）
             let filtered = articlesNormal.filter(a => {
-                return normalizeCategoryName(a.category) === targetClean && a.language === 'ja';
+                return normalizeCategoryName(a.category) === targetClean;
             });
-            
-            // 日本語がない場合は全言語からカテゴリ一致で検索
-            if (filtered.length === 0) {
-                filtered = articlesNormal.filter(a => normalizeCategoryName(a.category) === targetClean);
-            }
 
             // それでも0件の場合は期間制限を解除
             if (filtered.length === 0) {

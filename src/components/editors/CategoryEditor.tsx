@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { GlassPanel } from '../GlassPanel';
 import type { Interests } from '../../models/Schemas';
+import { useTranslation } from '../../hooks/useTranslationHook';
 
 interface CategoryEditorProps {
   draft: { interests: Interests };
@@ -49,6 +50,8 @@ export const CategoryEditor: React.FC<CategoryEditorProps> = ({
 }) => {
   const categoryKeys = Object.keys(draft.interests.categories);
 
+  const { t } = useTranslation();
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -59,7 +62,7 @@ export const CategoryEditor: React.FC<CategoryEditorProps> = ({
       {/* Category Sidebar */}
       <div className="lg:col-span-3 space-y-2">
         <div className="text-[10px] font-bold text-content-muted uppercase tracking-widest px-2 mb-3">
-          Intelligence Categories
+          {t.settings.intelligenceCategories}
         </div>
         
         <Reorder.Group 
