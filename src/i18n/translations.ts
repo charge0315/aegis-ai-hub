@@ -32,6 +32,13 @@ export const translations = {
         system: 'システム',
         insights: 'AIインサイト',
         usage: '利用統計'
+      },
+      intelligenceCategories: 'インテリジェンス・カテゴリ',
+      agents: {
+        architect: 'Architect',
+        curator: 'Curator',
+        discovery: 'Discovery',
+        archivist: 'Archivist'
       }
     },
     dialog: {
@@ -142,6 +149,13 @@ export const translations = {
         system: 'System',
         insights: 'AI Insights',
         usage: 'Usage'
+      },
+      intelligenceCategories: 'Intelligence Categories',
+      agents: {
+        architect: 'Architect',
+        curator: 'Curator',
+        discovery: 'Discovery',
+        archivist: 'Archivist'
       }
     },
     dialog: {
