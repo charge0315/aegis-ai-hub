@@ -1,10 +1,10 @@
-import type { 
-  InterestCategory as SchemaInterestCategory, 
-  Interests as SchemaInterests, 
-  FeedConfig as SchemaFeedConfig, 
-  Skill as SchemaSkill,
-  UiSettings as SchemaUiSettings,
-  UsageStats as SchemaUsageStats
+import { 
+  type InterestCategory as SchemaInterestCategory, 
+  type Interests as SchemaInterests, 
+  type FeedConfig as SchemaFeedConfig, 
+  type Skill as SchemaSkill,
+  type UiSettings as SchemaUiSettings,
+  type UsageStats as SchemaUsageStats
 } from '../models/Schemas';
 
 export interface Article {

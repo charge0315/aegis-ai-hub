@@ -158,7 +158,9 @@ export const nexusApi = {
   },
 
   windowControl(action: 'minimize' | 'maximize' | 'close' | 'quit'): void {
-    if (window.nexusApi?.windowControl && !isE2E()) window.nexusApi.windowControl(action as unknown as 'minimize' | 'maximize' | 'close');
+    if (window.nexusApi?.windowControl && !isE2E()) {
+      window.nexusApi.windowControl(action as unknown as 'minimize' | 'maximize' | 'close');
+    }
   }
 };
 
