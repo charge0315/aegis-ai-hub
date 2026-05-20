@@ -125,6 +125,9 @@ function createWindow() {
     frame: false, // カスタムタイトルバーを使用
     transparent: false, // FancyZones対応のため透明度はオフ
     backgroundColor: '#0f172a',
+    resizable: true, // 明示的に有効化
+    hasShadow: true,
+    thickFrame: true, // Windowsでのスナップ(FancyZones)対応に必須
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
@@ -161,6 +164,7 @@ function setupIpcHandlers() {
   ipcMain.handle('get-articles', async () => {
     const interests = await settingsManager.getInterests();
     const dashboardData = await scraper.getDashboard(interests);
+    // 既存の frontend 実装と互換性を持たせるため、フラットな配列として返す
     const allArticles = [];
     Object.values(dashboardData).forEach(group => {
       if (group?.articles) allArticles.push(...group.articles);
@@ -183,9 +187,9 @@ function setupIpcHandlers() {
   ipcMain.handle('trigger-orchestration', async (event, requirements) => {
     if (orchestrator) {
       void orchestrator.runAutonomousLoop(requirements);
-      return { success: true };
+      return { success: true, message: 'Autonomous loop started' };
     }
-    return { success: false };
+    return { success: false, message: 'Orchestrator not initialized' };
   });
 
   ipcMain.handle('suggest-category', async (event, name) => {
@@ -245,6 +249,7 @@ function setupIpcHandlers() {
     }
   });
 
+  // 外部リンクをブラウザで開く
   ipcMain.on('open-external', (event, url) => {
     shell.openExternal(url);
   });

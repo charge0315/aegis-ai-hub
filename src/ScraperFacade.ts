@@ -53,7 +53,8 @@ export class ScraperFacade {
             const candidates = this._sortAndSlice(allArticles, 30);
 
             if (candidates.length === 0) {
-                throw new Error("推薦用の記事候補が見つかりませんでした。");
+                console.warn("[ScraperFacade] No candidates for recommendations.");
+                return [];
             }
 
             console.log(`[ScraperFacade] AI推薦生成中 (${candidates.length}件)...`);
@@ -91,10 +92,12 @@ export class ScraperFacade {
      * パーソナライズされたダッシュボードデータを構築します。
      */
     async getDashboard(interests: Interests): Promise<Record<string, { emoji: string | null, articles: ReturnType<Article['toJSON']>[] }>> {
-        console.log(`[ScraperFacade] ダッシュボード構築中...`);
+        console.log(`[ScraperFacade] ダッシュボード構築を開始します...`);
         await this.enrichmentService.init();
 
         const articlesNormal = await this.fetchAndProcessArticles(interests, false);
+        console.log(`[ScraperFacade] 取得記事数 (通常): ${articlesNormal.length}`);
+        
         let articlesExtended: Article[] | null = null;
 
         const dashboard: Record<string, { emoji: string | null, articles: ReturnType<Article['toJSON']>[] }> = {};
@@ -113,6 +116,7 @@ export class ScraperFacade {
                 if (!articlesExtended) {
                     console.log(`[ScraperFacade] カテゴリ "${catName}" の最新記事が0件のため期間解除探索中...`);
                     articlesExtended = await this.fetchAndProcessArticles(interests, true);
+                    console.log(`[ScraperFacade] 取得記事数 (拡張): ${articlesExtended.length}`);
                 }
                 filtered = articlesExtended.filter(a => normalizeCategoryName(a.category) === targetClean);
             }
@@ -126,6 +130,7 @@ export class ScraperFacade {
             };
         }
 
+        console.log(`[ScraperFacade] ダッシュボード構築完了 (カテゴリ数: ${Object.keys(dashboard).length})`);
         return dashboard;
     }
 
@@ -171,14 +176,22 @@ export class ScraperFacade {
         const feeds = this.feedManager.getAllActiveFeeds();
         const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
 
+        if (feeds.length === 0) {
+            console.warn("[ScraperFacade] No active feeds found in FeedManager.");
+            return [];
+        }
+
         console.log(`[ScraperFacade] Fetching ${feeds.length} feeds...`);
 
         const results = await this.rssFetcher.fetchAll(feeds);
         const allArticles: Article[] = [];
 
         for (const res of results) {
-            if (!res.success || !res.items) {
-                if (!res.success) await this.feedManager.reportFailure(res.category, res.url);
+            if (!res.success || !res.items || res.items.length === 0) {
+                if (!res.success) {
+                    console.warn(`[ScraperFacade] Feed failed: ${res.url} - ${res.error}`);
+                    await this.feedManager.reportFailure(res.category, res.url);
+                }
                 continue;
             }
             
@@ -211,12 +224,13 @@ export class ScraperFacade {
                         img: this.enrichmentService.extractBasicImage(record),
                         language: language
                     }));
-                } catch {
+                } catch (err) {
                     continue;
                 }
             }
         }
 
+        console.log(`[ScraperFacade] Total articles processed: ${allArticles.length}`);
         return allArticles.sort((a, b) => b.score - a.score);
     }
 
