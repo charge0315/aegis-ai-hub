@@ -67,6 +67,10 @@ export class MockFactory {
       await route.fulfill({ json: {}, headers: { 'Access-Control-Allow-Origin': '*' } });
     });
 
+    await page.route(url => url.href.includes('/api/v5/sync-settings'), async (route) => {
+      await route.fulfill({ json: { lastUpdated: Date.now() }, headers: { 'Access-Control-Allow-Origin': '*' } });
+    });
+
     await page.addInitScript(() => {
       (window as unknown as { nexusApi: unknown }).nexusApi = {
         getApiKey: () => Promise.resolve('mock-api-key'),
