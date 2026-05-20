@@ -140,12 +140,12 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
       </aside>
 
       <main className="flex-1 flex flex-col min-w-0 bg-transparent relative">
-        <header className="h-20 flex items-center justify-between px-8 bg-black/10 backdrop-blur-md border-b border-white/5 z-30">
-          <div className="flex items-center gap-6">
+        <header className="h-20 flex items-center justify-between px-8 bg-black/10 backdrop-blur-md border-b border-white/5 z-30 drag">
+          <div className="flex items-center gap-6 no-drag">
             <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 bg-white/5 rounded-xl"><Menu size={20} /></button>
             <h2 className="text-xl font-bold">{currentView === 'settings' ? t.sidebar?.settings : t.sidebar?.feed}</h2>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 no-drag">
             {currentView === 'feed' && (
               <div className="relative group">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
