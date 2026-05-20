@@ -38,21 +38,25 @@ function setupDataDirectory() {
   const dataDir = path.join(userDataPath, 'data');
   
   if (!fs.existsSync(dataDir)) {
-    console.log('[Main] Initializing data directory for the first time...');
+    console.log('[Main] Creating data directory...');
     fs.mkdirSync(dataDir, { recursive: true });
-    
-    // パッケージ内のデフォルトデータをコピー
-    const defaultDataDir = isDev 
-      ? path.join(__dirname, '..', 'data')
-      : path.join(process.resourcesPath, 'default-data');
+  }
+
+  // パッケージ内のデフォルトデータを取得
+  const defaultDataDir = isDev 
+    ? path.join(__dirname, '..', 'data')
+    : path.join(process.resourcesPath, 'default-data');
+
+  if (fs.existsSync(defaultDataDir)) {
+    const requiredFiles = ['interests.json', 'feed_config.json'];
+    for (const file of requiredFiles) {
+      const destPath = path.join(dataDir, file);
+      const srcPath = path.join(defaultDataDir, file);
       
-    if (fs.existsSync(defaultDataDir)) {
-      const files = fs.readdirSync(defaultDataDir);
-      for (const file of files) {
-        if (file.endsWith('.json')) {
-          fs.copyFileSync(path.join(defaultDataDir, file), path.join(dataDir, file));
-          console.log(`[Main] Copied ${file} to user data directory.`);
-        }
+      // ファイルが存在しないか、サイズが極端に小さい（壊れている）場合のみコピー
+      if (fs.existsSync(srcPath) && (!fs.existsSync(destPath) || fs.statSync(destPath).size < 5)) {
+        fs.copyFileSync(srcPath, destPath);
+        console.log(`[Main] Restored default ${file} to user data directory.`);
       }
     }
   }
@@ -72,6 +76,8 @@ async function startBackend() {
   
   const feedConfigPath = path.join(dataDir, 'feed_config.json');
   feedManager = new FeedManager(feedConfigPath);
+  await feedManager.loadConfig(); // 重要: 設定を読み込む
+  
   rssFetcher = new RSSFetcher();
   
   discoveryService = new DiscoveryService(geminiService, rssFetcher, feedManager);
@@ -117,13 +123,22 @@ function createWindow() {
     minWidth: 1000,
     minHeight: 700,
     frame: false, // カスタムタイトルバーを使用
+    transparent: false, // FancyZones対応のため透明度はオフ
     backgroundColor: '#0f172a',
+    resizable: true, // 明示的に有効化
+    hasShadow: true,
+    thickFrame: true, // Windowsでのスナップ(FancyZones)対応に必須
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
       nodeIntegration: false
     }
   });
+
+  // OrchestratorにwebContentsをセット（IPC通知用）
+  if (orchestrator && typeof orchestrator.setWebContents === 'function') {
+    orchestrator.setWebContents(mainWindow.webContents);
+  }
 
   if (isDev) {
     mainWindow.loadURL('http://localhost:5173');
