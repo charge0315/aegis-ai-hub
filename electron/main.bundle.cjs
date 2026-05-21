@@ -132830,8 +132830,9 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1440,
     height: 900,
-    minWidth: 1e3,
-    minHeight: 700,
+    minWidth: 400,
+    minHeight: 300,
+    useContentSize: true,
     frame: false,
     // カスタムタイトルバーを使用
     transparent: false,

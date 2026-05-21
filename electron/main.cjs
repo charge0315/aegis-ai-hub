@@ -120,9 +120,11 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1440,
     height: 900,
-    minWidth: 1000,
-    minHeight: 700,
-    frame: false, // カスタムタイトルバーを使用
+    minWidth: 400,
+    minHeight: 300,
+    useContentSize: true,
+    frame: false,
+ // カスタムタイトルバーを使用
     transparent: false, // FancyZones対応のため透明度はオフ
     backgroundColor: '#0f172a',
     resizable: true, // 明示的に有効化
