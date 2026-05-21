@@ -5,7 +5,8 @@ import {
   Layout, 
   Command,
   Menu,
-  AlertTriangle
+  AlertTriangle,
+  Loader2
 } from 'lucide-react';
 
 import { ArticleCard } from './components/ArticleCard';
@@ -29,9 +30,10 @@ interface AppBodyProps {
   sync: (s: NexusSettings) => Promise<void>;
   refetch: () => Promise<void>;
   syncError: string | null;
+  isSyncing: boolean;
 }
 
-const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch, syncError }) => {
+const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch, syncError, isSyncing }) => {
   const {
     feedSize,
     showImages,
@@ -95,6 +97,26 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
     });
   }, [articles, searchQuery, isJapaneseOnly]);
 
+  const articlesByCategory = useMemo(() => {
+    const groups: Record<string, Article[]> = {};
+    
+    if (settings?.interests?.categories) {
+      Object.keys(settings.interests.categories).forEach(cat => {
+        groups[cat] = [];
+      });
+    }
+    
+    filteredArticles.forEach(a => {
+      const cat = a.category || 'Uncategorized';
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(a);
+    });
+
+    return Object.fromEntries(
+      Object.entries(groups).filter(([, items]) => items.length > 0)
+    );
+  }, [filteredArticles, settings]);
+
   return (
     <div className="flex h-screen bg-[#0a0b0c] text-slate-200 overflow-hidden font-sans">
       {dialog.isOpen && (
@@ -123,10 +145,10 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
         style={{ width: isSidebarOpen ? '280px' : '0px' }} 
         className="relative z-40 flex-shrink-0 bg-black/40 backdrop-blur-2xl border-r border-white/5 overflow-hidden flex flex-col transition-all duration-300"
       >
-        <div className="p-6 border-b border-white/5">
-          <h1 className="text-lg font-bold text-white tracking-widest">NEXUS</h1>
+        <div className="p-6 border-b border-white/5 drag">
+          <h1 className="text-lg font-bold text-white tracking-widest no-drag">NEXUS</h1>
         </div>
-        <nav className="flex-1 overflow-y-auto p-4 space-y-2">
+        <nav className="flex-1 overflow-y-auto p-4 space-y-2 no-drag">
           <button onClick={() => handleNavigate('feed')} data-testid="nav-feed" className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${currentView === 'feed' ? 'bg-primary text-white shadow-lg shadow-primary/20 font-bold' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}>
             <Layout size={20} />
             <span>{t.sidebar?.feed}</span>
@@ -136,14 +158,22 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
             <span>{t.sidebar?.settings}</span>
           </button>
         </nav>
-        <div className="p-4 border-t border-white/5"><AgentMonitor agents={agents} /></div>
+        <div className="p-4 border-t border-white/5 no-drag"><AgentMonitor agents={agents} /></div>
       </aside>
 
       <main className="flex-1 flex flex-col min-w-0 bg-transparent relative">
         <header className="h-20 flex items-center justify-between px-8 bg-black/10 backdrop-blur-md border-b border-white/5 z-30 drag">
           <div className="flex items-center gap-6 no-drag">
             <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 bg-white/5 rounded-xl"><Menu size={20} /></button>
-            <h2 className="text-xl font-bold">{currentView === 'settings' ? t.sidebar?.settings : t.sidebar?.feed}</h2>
+            <div className="flex flex-col">
+              <h2 className="text-xl font-bold">{currentView === 'settings' ? t.sidebar?.settings : t.sidebar?.feed}</h2>
+              {isSyncing && (
+                <div className="flex items-center gap-2 text-[10px] text-primary animate-pulse font-bold">
+                  <Loader2 size={10} className="animate-spin" />
+                  <span>SYNCHRONIZING...</span>
+                </div>
+              )}
+            </div>
           </div>
           <div className="flex items-center gap-4 no-drag">
             {currentView === 'feed' && (
@@ -157,7 +187,7 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-8 custom-scrollbar" data-testid="main-content">
+        <div className="flex-1 overflow-y-auto p-8 custom-scrollbar no-drag" data-testid="main-content">
           {syncError && (
             <div className="mb-6 p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl flex items-center gap-3 text-rose-400" data-testid="sync-error">
               <AlertTriangle size={20} />
@@ -166,9 +196,20 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
           )}
 
           {currentView === 'feed' ? (
-            <div className="max-w-[1600px] mx-auto grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {filteredArticles.map((article, idx) => (
-                <ArticleCard key={idx} article={article} index={idx} size={feedSize} showImages={showImages} />
+            <div className="max-w-[1600px] mx-auto space-y-12">
+              {Object.entries(articlesByCategory).map(([category, items]) => (
+                <div key={category} className="space-y-6">
+                  <div className="flex items-center gap-4">
+                    <h3 className="text-xl font-bold text-white uppercase tracking-wider">{category}</h3>
+                    <div className="h-px flex-1 bg-white/10"></div>
+                    <span className="text-xs font-medium text-slate-500">{items.length} Signals</span>
+                  </div>
+                  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    {items.map((article, idx) => (
+                      <ArticleCard key={`${category}-${idx}`} article={article} index={idx} size={feedSize} showImages={showImages} />
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           ) : (
@@ -196,11 +237,11 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
 
 const App: React.FC = () => {
   const ui = useUiSettingsSync();
-  const { settings, articles, sync, refetch, error: syncError } = useNexusSync();
+  const { settings, articles, sync, refetch, error: syncError, isSyncing } = useNexusSync();
 
   return (
     <LanguageProvider value={{ language: ui.language, setLanguage: ui.setLanguage }}>
-      <AppBody ui={ui} settings={settings} articles={articles} sync={sync} refetch={refetch} syncError={syncError} />
+      <AppBody ui={ui} settings={settings} articles={articles} sync={sync} refetch={refetch} syncError={syncError} isSyncing={isSyncing} />
     </LanguageProvider>
   );
 };

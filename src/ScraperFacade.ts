@@ -205,6 +205,7 @@ export class ScraperFacade {
         console.log(`[ScraperFacade] Fetching ${feeds.length} feeds...`);
         const results = await this.rssFetcher.fetchAll(feeds);
         const allArticles: Article[] = [];
+        const seenLinks = new Set<string>();
 
         for (const res of results) {
             if (!res.success || !res.items) {
@@ -217,6 +218,11 @@ export class ScraperFacade {
             for (const item of res.items) {
                 try {
                     const record = item as Record<string, unknown>;
+                    const link = String(record.link || '');
+                    
+                    if (!link || seenLinks.has(link)) continue;
+                    seenLinks.add(link);
+
                     const pubDateStr = String(record.isoDate || record.pubDate || '');
                     const pubDate = new Date(pubDateStr);
                     const isDateValid = !isNaN(pubDate.getTime());

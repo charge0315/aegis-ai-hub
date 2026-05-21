@@ -214,11 +214,14 @@ export function useNexusSync() {
   const [settings, setSettings] = useState<NexusSettings | null>(null);
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async (showLoading = true) => {
     try {
       if (showLoading) setLoading(true);
+      else setIsSyncing(true);
+
       const [s, a] = await Promise.all([
         nexusApi.getSettings(),
         nexusApi.getArticles()
@@ -231,6 +234,7 @@ export function useNexusSync() {
       setError(err instanceof Error ? err.message : 'Fetch error');
     } finally {
       setLoading(false);
+      setIsSyncing(false);
     }
   }, []);
 
@@ -244,20 +248,25 @@ export function useNexusSync() {
   }, [fetchData]);
 
   const sync = useCallback(async (newSettings: NexusSettings) => {
-    const result = await nexusApi.syncSettings(newSettings);
-    setSettings({ 
-      ...newSettings, 
-      interests: { 
-        ...newSettings.interests, 
-        lastUpdated: result.lastUpdated 
-      } 
-    });
-    // Refresh articles after sync
-    const a = await nexusApi.getArticles();
-    setArticles(a);
+    try {
+      setIsSyncing(true);
+      const result = await nexusApi.syncSettings(newSettings);
+      setSettings({ 
+        ...newSettings, 
+        interests: { 
+          ...newSettings.interests, 
+          lastUpdated: result.lastUpdated 
+        } 
+      });
+      // Refresh articles after sync
+      const a = await nexusApi.getArticles();
+      setArticles(a);
+    } finally {
+      setIsSyncing(false);
+    }
   }, []);
 
-  return { settings, articles, loading, error, sync, refetch: fetchData };
+  return { settings, articles, loading, isSyncing, error, sync, refetch: fetchData };
 }
 
 /**
