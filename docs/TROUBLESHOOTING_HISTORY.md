@@ -9,12 +9,13 @@
 - **実装内容**:
     - **型定義拡張**: `UiSettingsSchema` に `autoLaunch` フィールドを追加。
     - **UI実装**: `SystemSettings.tsx` に自動起動切り替えトグルを実装。
-    - **Electron統合**: `app.setLoginItemSettings` を用いたレジストリ操作ロジックを `main.cjs` に統合。保存時および起動時に設定を反映。
-    - **型安全性の修正**: ビルド時に発覚した `src/api/nexusApi.ts` の `getUiSettings` における戻り値の型不一致（`autoLaunch` 不足）を修正。
+    - **Electron統合**: `app.setLoginItemSettings` を用いたレジストリ操作ロジックを `main.cjs` に統合。
+    - **アイコン修正**: タスクバーアイコンの表示異常を、`nativeImage` による読み込みと、高解像度画像（8MB）から標準軽量画像（`app-icon-192.png`, 87KB）への切り替えにより解決。
+    - **型安全性の修正**: `src/api/nexusApi.ts` の型不一致を修正。
 - **検証**:
-    - `npm run dist` により、インストーラー `Aegis Nexus Setup 5.4.0.exe` の生成を確認。
-    - `npm run lint` および `npm run build:electron` にて構文上の健全性を確認。
-    - 開発モードでの安全ガード（`isPackaged` チェック）が機能することを確認。
+    - `npm run dist` により、修正を反映したインストーラー `Aegis Nexus Setup 5.4.0.exe` の生成を確認。
+- **ドキュメント**:
+    - `README.md`, `SPECIFICATION.md` 等を最新仕様（v5.4.0）に更新。
 
 ---
 
