@@ -10,6 +10,7 @@ export const useUiSettingsSync = () => {
   const [isInitialized, setIsInitialized] = useState<boolean | null>(null);
   const [theme, setTheme] = useState<UiSettings['theme']>('system');
   const [language, setLanguage] = useState<Language>('ja');
+  const [autoLaunch, setAutoLaunch] = useState(false);
 
   // Load UI settings
   useEffect(() => {
@@ -22,6 +23,7 @@ export const useUiSettingsSync = () => {
         setIsInitialized(saved.isInitialized);
         setTheme(saved.theme || 'system');
         setLanguage(saved.language || 'ja');
+        setAutoLaunch(saved.autoLaunch || false);
       } catch (err) {
         console.error("Failed to load UI settings:", err);
       }
@@ -41,7 +43,8 @@ export const useUiSettingsSync = () => {
             hideImages: !showImages,
             isInitialized,
             theme,
-            language
+            language,
+            autoLaunch
           });
         }
       } catch (err) {
@@ -50,7 +53,7 @@ export const useUiSettingsSync = () => {
     };
     const timeout = setTimeout(() => { void save(); }, 100);
     return () => clearTimeout(timeout);
-  }, [isJapaneseOnly, feedSize, showImages, isInitialized, theme, language]);
+  }, [isJapaneseOnly, feedSize, showImages, isInitialized, theme, language, autoLaunch]);
 
   return {
     feedSize, setFeedSize,
@@ -58,6 +61,7 @@ export const useUiSettingsSync = () => {
     isJapaneseOnly, setIsJapaneseOnly,
     isInitialized, setIsInitialized,
     theme, setTheme,
-    language, setLanguage
+    language, setLanguage,
+    autoLaunch, setAutoLaunch
   };
 };

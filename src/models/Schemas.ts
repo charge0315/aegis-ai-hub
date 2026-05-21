@@ -85,6 +85,7 @@ export const UiSettingsSchema = z.object({
   isInitialized: z.boolean().default(false),
   theme: z.enum(['light', 'dark', 'system']).default('system'),
   language: z.enum(['ja', 'en']).default('ja'),
+  autoLaunch: z.boolean().default(false),
 });
 
 export type UiSettings = z.infer<typeof UiSettingsSchema>;

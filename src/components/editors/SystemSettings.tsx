@@ -7,7 +7,8 @@ import {
   Sun,
   Moon,
   Monitor,
-  Sparkles
+  Sparkles,
+  Rocket
 } from 'lucide-react';
 import { GlassPanel } from '../GlassPanel';
 import type { UiSettings } from '../../types';
@@ -21,6 +22,8 @@ interface SystemSettingsProps {
   handleResetToDefaults: () => Promise<void>;
   theme: UiSettings['theme'];
   setTheme: (theme: UiSettings['theme']) => void;
+  autoLaunch: boolean;
+  setAutoLaunch: (enabled: boolean) => void;
 }
 
 export const SystemSettings: React.FC<SystemSettingsProps> = ({
@@ -31,7 +34,9 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
   handleSaveApiKey,
   handleResetToDefaults,
   theme,
-  setTheme
+  setTheme,
+  autoLaunch,
+  setAutoLaunch
 }) => {
   return (
     <motion.div
@@ -40,6 +45,38 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
       exit={{ opacity: 0, scale: 0.98 }}
       className="max-w-2xl mx-auto space-y-8"
     >
+      {/* System Behavior */}
+      <GlassPanel className="p-8 space-y-6">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-indigo-500/10 text-indigo-400 rounded-2xl">
+            <Rocket size={24} />
+          </div>
+          <div>
+            <h3 className="text-xl font-bold text-content-base">System Behavior</h3>
+            <p className="text-sm text-content-muted">Configure how the application interacts with your OS.</p>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
+          <div className="space-y-1">
+            <h4 className="text-sm font-bold text-content-base">Auto Launch on Startup</h4>
+            <p className="text-xs text-content-muted">Automatically start Aegis Nexus when you log into Windows.</p>
+          </div>
+          <button
+            onClick={() => setAutoLaunch(!autoLaunch)}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+              autoLaunch ? 'bg-primary' : 'bg-content-muted/20'
+            }`}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                autoLaunch ? 'translate-x-6' : 'translate-x-1'
+              }`}
+            />
+          </button>
+        </div>
+      </GlassPanel>
+
       {/* Theme Customization */}
       <GlassPanel className="p-8 space-y-6">
         <div className="flex items-center gap-4">

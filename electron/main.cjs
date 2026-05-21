@@ -124,6 +124,7 @@ function createWindow() {
     minHeight: 300,
     useContentSize: true,
     frame: false,
+    icon: path.join(__dirname, '../public/app-icon.png'),
  // カスタムタイトルバーを使用
     transparent: false, // FancyZones対応のため透明度はオフ
     backgroundColor: '#0f172a',
@@ -221,6 +222,15 @@ function setupIpcHandlers() {
 
   ipcMain.handle('save-ui-settings', async (event, settings) => {
     await settingsManager.saveUiSettings(settings);
+    
+    // 自動起動設定の反映
+    if (app.isPackaged) {
+      app.setLoginItemSettings({
+        openAtLogin: settings.autoLaunch,
+        path: app.getPath('exe')
+      });
+    }
+
     return { success: true };
   });
 
@@ -253,6 +263,16 @@ function setupIpcHandlers() {
 app.whenReady().then(async () => {
   await startBackend();
   setupIpcHandlers();
+
+  // 起動時に自動起動設定を反映
+  const uiSettings = await settingsManager.getUiSettings();
+  if (app.isPackaged) {
+    app.setLoginItemSettings({
+      openAtLogin: uiSettings.autoLaunch,
+      path: app.getPath('exe')
+    });
+  }
+
   createWindow();
 
   globalShortcut.register('CommandOrControl+Shift+I', () => {

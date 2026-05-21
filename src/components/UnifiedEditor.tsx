@@ -29,6 +29,8 @@ interface UnifiedEditorProps {
   prompt: (title: string, message: string, defaultValue?: string, placeholder?: string) => Promise<string | null>;
   theme: UiSettings['theme'];
   setTheme: (theme: UiSettings['theme']) => void;
+  autoLaunch: boolean;
+  setAutoLaunch: (enabled: boolean) => void;
 }
 
 type Tab = 'editor' | 'graph' | 'skills' | 'system' | 'insights' | 'usage';
@@ -40,7 +42,9 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
   confirm: customConfirm,
   prompt: customPrompt,
   theme,
-  setTheme
+  setTheme,
+  autoLaunch,
+  setAutoLaunch
 }) => {
   const [activeTab, setActiveTab] = useState<Tab>('editor');
   const { t } = useTranslation();
@@ -234,6 +238,8 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
               handleResetToDefaults={handleResetToDefaults}
               theme={theme}
               setTheme={setTheme}
+              autoLaunch={autoLaunch}
+              setAutoLaunch={setAutoLaunch}
             />
           )}
           {activeTab === 'usage' && (

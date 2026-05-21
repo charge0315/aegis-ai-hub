@@ -161,7 +161,7 @@ export const nexusApi = {
       const res = await fetch(url);
       return await res.json();
     } catch {
-      return { jaOnly: false, viewMode: 'grid', hideImages: false, isInitialized: true, theme: 'system', language: 'ja' };
+      return { jaOnly: false, viewMode: 'grid', hideImages: false, isInitialized: true, theme: 'system', language: 'ja', autoLaunch: false };
     }
   },
 

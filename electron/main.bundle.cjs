@@ -61660,7 +61660,8 @@ var init_Schemas = __esm({
       hideImages: external_exports.boolean().default(false),
       isInitialized: external_exports.boolean().default(false),
       theme: external_exports.enum(["light", "dark", "system"]).default("system"),
-      language: external_exports.enum(["ja", "en"]).default("ja")
+      language: external_exports.enum(["ja", "en"]).default("ja"),
+      autoLaunch: external_exports.boolean().default(false)
     });
     UsageStatsSchema = external_exports.record(
       external_exports.string(),
@@ -132915,6 +132916,12 @@ function setupIpcHandlers() {
   });
   ipcMain.handle("save-ui-settings", async (event, settings) => {
     await settingsManager.saveUiSettings(settings);
+    if (app.isPackaged) {
+      app.setLoginItemSettings({
+        openAtLogin: settings.autoLaunch,
+        path: app.getPath("exe")
+      });
+    }
     return { success: true };
   });
   ipcMain.handle("get-usage-stats", async () => {
@@ -132948,6 +132955,13 @@ function setupIpcHandlers() {
 app.whenReady().then(async () => {
   await startBackend();
   setupIpcHandlers();
+  const uiSettings = await settingsManager.getUiSettings();
+  if (app.isPackaged) {
+    app.setLoginItemSettings({
+      openAtLogin: uiSettings.autoLaunch,
+      path: app.getPath("exe")
+    });
+  }
   createWindow();
   globalShortcut.register("CommandOrControl+Shift+I", () => {
     mainWindow?.webContents.toggleDevTools();

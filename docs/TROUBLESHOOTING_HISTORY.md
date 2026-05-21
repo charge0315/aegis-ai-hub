@@ -4,6 +4,20 @@
 
 ---
 
+### #14 スタートアップ登録機能の実装とリリースビルド v5.4.0 (2026-05-21)
+- **概要**: アプリケーションを Windows ログイン時に自動起動する機能を追加し、製品版インストーラーを生成した。
+- **実装内容**:
+    - **型定義拡張**: `UiSettingsSchema` に `autoLaunch` フィールドを追加。
+    - **UI実装**: `SystemSettings.tsx` に自動起動切り替えトグルを実装。
+    - **Electron統合**: `app.setLoginItemSettings` を用いたレジストリ操作ロジックを `main.cjs` に統合。保存時および起動時に設定を反映。
+    - **型安全性の修正**: ビルド時に発覚した `src/api/nexusApi.ts` の `getUiSettings` における戻り値の型不一致（`autoLaunch` 不足）を修正。
+- **検証**:
+    - `npm run dist` により、インストーラー `Aegis Nexus Setup 5.4.0.exe` の生成を確認。
+    - `npm run lint` および `npm run build:electron` にて構文上の健全性を確認。
+    - 開発モードでの安全ガード（`isPackaged` チェック）が機能することを確認。
+
+---
+
 ### #13 マルチテーマ対応 (Aegis Chroma) の導入 (2026-05-11)
 - **概要**: ダークテーマのみだったUIを、ライトテーマおよびシステム設定同期に対応させた。
 - **実装内容**:
