@@ -132741,7 +132741,7 @@ var init_NexusOrchestrator = __esm({
 });
 
 // electron/main.cjs
-var { app, BrowserWindow, ipcMain, globalShortcut, Tray, Menu, shell } = require("electron");
+var { app, BrowserWindow, ipcMain, globalShortcut, Tray, Menu, shell, nativeImage } = require("electron");
 var path4 = require("path");
 var fs6 = require("fs");
 var fastify = require_fastify();
@@ -132828,6 +132828,8 @@ async function startBackend() {
   }
 }
 function createWindow() {
+  const iconPath = path4.join(__dirname, "../public/app-icon-192.png");
+  const icon = nativeImage.createFromPath(iconPath);
   mainWindow = new BrowserWindow({
     width: 1440,
     height: 900,
@@ -132835,7 +132837,7 @@ function createWindow() {
     minHeight: 300,
     useContentSize: true,
     frame: false,
-    icon: path4.join(__dirname, "../public/app-icon.png"),
+    icon,
     // カスタムタイトルバーを使用
     transparent: false,
     // FancyZones対応のため透明度はオフ

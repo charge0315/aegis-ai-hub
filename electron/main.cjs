@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, globalShortcut, Tray, Menu, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, globalShortcut, Tray, Menu, shell, nativeImage } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const fastify = require('fastify');
@@ -117,6 +117,9 @@ async function startBackend() {
 }
 
 function createWindow() {
+  const iconPath = path.join(__dirname, '../public/app-icon-192.png');
+  const icon = nativeImage.createFromPath(iconPath);
+
   mainWindow = new BrowserWindow({
     width: 1440,
     height: 900,
@@ -124,7 +127,7 @@ function createWindow() {
     minHeight: 300,
     useContentSize: true,
     frame: false,
-    icon: path.join(__dirname, '../public/app-icon.png'),
+    icon: icon,
  // カスタムタイトルバーを使用
     transparent: false, // FancyZones対応のため透明度はオフ
     backgroundColor: '#0f172a',
