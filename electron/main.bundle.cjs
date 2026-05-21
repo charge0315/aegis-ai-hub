@@ -132333,6 +132333,7 @@ var init_ScraperFacade = __esm({
         console.log(`[ScraperFacade] Fetching ${feeds.length} feeds...`);
         const results = await this.rssFetcher.fetchAll(feeds);
         const allArticles = [];
+        const seenLinks = /* @__PURE__ */ new Set();
         for (const res of results) {
           if (!res.success || !res.items) {
             if (!res.success) await this.feedManager.reportFailure(res.category, res.url);
@@ -132342,6 +132343,9 @@ var init_ScraperFacade = __esm({
           for (const item of res.items) {
             try {
               const record2 = item;
+              const link = String(record2.link || "");
+              if (!link || seenLinks.has(link)) continue;
+              seenLinks.add(link);
               const pubDateStr = String(record2.isoDate || record2.pubDate || "");
               const pubDate = new Date(pubDateStr);
               const isDateValid = !isNaN(pubDate.getTime());
