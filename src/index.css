@@ -81,7 +81,7 @@ body,
  */
 .window-base {
   background: var(--surface-base) !important;
-  opacity: 0.95; /* Allow slight transparency for Acrylic hint */
+  opacity: 1.0;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   min-height: 100vh;
