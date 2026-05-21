@@ -13,6 +13,21 @@
   
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
+  --font-cyber: 'Orbitron', sans-serif;
+}
+
+.font-cyber {
+  font-family: var(--font-cyber);
+}
+
+.neon-text-primary {
+  color: var(--color-primary);
+  text-shadow: 0 0 5px var(--color-primary), 0 0 10px var(--color-primary);
+}
+
+.neon-text-white {
+  color: #fff;
+  text-shadow: 0 0 5px rgba(255,255,255,0.5), 0 0 10px var(--color-primary);
 }
 
 :root {
@@ -103,6 +118,58 @@ body,
   background: var(--glass-bg);
   backdrop-filter: blur(8px);
   border: 1px solid var(--glass-border);
+}
+
+/* 
+ * Cyberpunk Aesthetic Animations
+ */
+@keyframes glitch {
+  0% { transform: translate(0); }
+  20% { transform: translate(-2px, 2px); }
+  40% { transform: translate(-2px, -2px); }
+  60% { transform: translate(2px, 2px); }
+  80% { transform: translate(2px, -2px); }
+  100% { transform: translate(0); }
+}
+
+@keyframes scanline {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+
+@keyframes flicker {
+  0%, 19.999%, 22%, 62.999%, 64%, 64.999%, 70%, 100% { opacity: 0.99; text-shadow: 0 0 10px var(--color-primary), 0 0 20px var(--color-primary); }
+  20%, 21.999%, 63%, 63.999%, 65%, 69.999% { opacity: 0.4; text-shadow: none; }
+}
+
+.cyber-glitch {
+  animation: glitch 0.3s cubic-bezier(.25, .46, .45, .94) both infinite;
+  text-shadow: 2px 0 #ff00ff, -2px 0 #00ffff;
+}
+
+.cyber-flicker {
+  animation: flicker 2s linear infinite;
+}
+
+.cyber-scanline {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to bottom, transparent, rgba(99, 102, 241, 0.1) 50%, transparent);
+  animation: scanline 4s linear infinite;
+  pointer-events: none;
+  z-index: 50;
+}
+
+@keyframes reverse-spin {
+  from { transform: rotate(360deg); }
+  to { transform: rotate(0deg); }
+}
+
+.animate-reverse-spin {
+  animation: reverse-spin 3s linear infinite;
 }
 
 /* Scrollbar styling */

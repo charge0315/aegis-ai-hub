@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Settings, 
   Search, 
   Layout, 
   Command,
   Menu,
-  AlertTriangle,
-  Loader2
+  AlertTriangle
 } from 'lucide-react';
 
 import { ArticleCard } from './components/ArticleCard';
@@ -146,7 +146,9 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
         className="relative z-40 flex-shrink-0 bg-black/40 backdrop-blur-2xl border-r border-white/5 overflow-hidden flex flex-col transition-all duration-300"
       >
         <div className="p-6 border-b border-white/5 drag">
-          <h1 className="text-lg font-bold text-white tracking-widest no-drag">NEXUS</h1>
+          <h1 className="text-xl font-black text-white tracking-[0.2em] font-cyber cyber-glitch no-drag">
+            <span className="text-primary">A</span>EGIS <span className="neon-text-primary">NEXUS</span>
+          </h1>
         </div>
         <nav className="flex-1 overflow-y-auto p-4 space-y-2 no-drag">
           <button onClick={() => handleNavigate('feed')} data-testid="nav-feed" className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${currentView === 'feed' ? 'bg-primary text-white shadow-lg shadow-primary/20 font-bold' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}>
@@ -166,13 +168,9 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
           <div className="flex items-center gap-6 no-drag">
             <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 bg-white/5 rounded-xl"><Menu size={20} /></button>
             <div className="flex flex-col">
-              <h2 className="text-xl font-bold">{currentView === 'settings' ? t.sidebar?.settings : t.sidebar?.feed}</h2>
-              {isSyncing && (
-                <div className="flex items-center gap-2 text-[10px] text-primary animate-pulse font-bold">
-                  <Loader2 size={10} className="animate-spin" />
-                  <span>SYNCHRONIZING...</span>
-                </div>
-              )}
+              <h2 className="text-lg font-black tracking-[0.15em] font-cyber neon-text-white uppercase">
+                {currentView === 'settings' ? t.sidebar?.settings : t.sidebar?.feed}
+              </h2>
             </div>
           </div>
           <div className="flex items-center gap-4 no-drag">
@@ -196,11 +194,56 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
           )}
 
           {currentView === 'feed' ? (
-            <div className="max-w-[1600px] mx-auto space-y-12">
+            <div className="max-w-[1600px] mx-auto space-y-12 relative">
+              <AnimatePresence>
+                {isSyncing && (
+                  <motion.div 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-background/60 backdrop-blur-xl pointer-events-none"
+                  >
+                    <div className="cyber-scanline"></div>
+                    <div className="flex flex-col items-center gap-6">
+                      <div className="relative">
+                        <motion.div 
+                          animate={{ 
+                            rotate: 360,
+                            scale: [1, 1.1, 1],
+                          }}
+                          transition={{ 
+                            rotate: { duration: 2, repeat: Infinity, ease: "linear" },
+                            scale: { duration: 1, repeat: Infinity }
+                          }}
+                          className="w-24 h-24 border-t-2 border-l-2 border-primary rounded-full shadow-[0_0_15px_var(--color-primary)]"
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="w-16 h-16 border-b-2 border-r-2 border-accent rounded-full animate-reverse-spin opacity-50 shadow-[0_0_10px_var(--color-accent)]" />
+                        </div>
+                      </div>
+                      
+                      <div className="text-center space-y-2">
+                        <h3 className="text-2xl font-black tracking-[0.3em] text-white cyber-glitch font-mono uppercase">
+                          Synchronizing
+                        </h3>
+                        <p className="text-[10px] tracking-[0.5em] text-primary cyber-flicker font-mono uppercase opacity-70">
+                          Establishing Neural Link...
+                        </p>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
               {Object.entries(articlesByCategory).map(([category, items]) => (
                 <div key={category} className="space-y-6">
                   <div className="flex items-center gap-4">
-                    <h3 className="text-xl font-bold text-white uppercase tracking-wider">{category}</h3>
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]">
+                        {settings?.interests?.categories[category]?.emoji || '🌐'}
+                      </span>
+                      <h3 className="text-xl font-bold text-white uppercase tracking-wider">{category}</h3>
+                    </div>
                     <div className="h-px flex-1 bg-white/10"></div>
                     <span className="text-xs font-medium text-slate-500">{items.length} Signals</span>
                   </div>
