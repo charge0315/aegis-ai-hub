@@ -266,6 +266,8 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
                   prompt={dialogPrompt} 
                   theme={theme} 
                   setTheme={setTheme} 
+                  autoLaunch={ui.autoLaunch}
+                  setAutoLaunch={ui.setAutoLaunch}
                 />
               </div>
             ) : (

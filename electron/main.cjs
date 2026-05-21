@@ -221,6 +221,15 @@ function setupIpcHandlers() {
 
   ipcMain.handle('save-ui-settings', async (event, settings) => {
     await settingsManager.saveUiSettings(settings);
+    
+    // 自動起動設定の反映
+    if (app.isPackaged) {
+      app.setLoginItemSettings({
+        openAtLogin: settings.autoLaunch,
+        path: app.getPath('exe')
+      });
+    }
+
     return { success: true };
   });
 
@@ -253,6 +262,16 @@ function setupIpcHandlers() {
 app.whenReady().then(async () => {
   await startBackend();
   setupIpcHandlers();
+
+  // 起動時に自動起動設定を反映
+  const uiSettings = await settingsManager.getUiSettings();
+  if (app.isPackaged) {
+    app.setLoginItemSettings({
+      openAtLogin: uiSettings.autoLaunch,
+      path: app.getPath('exe')
+    });
+  }
+
   createWindow();
 
   globalShortcut.register('CommandOrControl+Shift+I', () => {
