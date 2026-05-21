@@ -1,12 +1,12 @@
 # Backend Architecture Codemap
 
-**Last Updated:** 2026-05-11
-**Version:** v5.3.0 NEXUS
+**Last Updated:** 2026-05-21
+**Version:** v5.4.0 Aegis Chroma
 **Entry Point:** `electron/main.cjs` (App/Main Process)
 
 ## 概要
 バックエンドは、従来の独立した `server/` 構成を廃止し、**`src` 配下へ完全に統合**されました。これにより、Electron アプリケーション内で Fastify サーバーが内蔵される形式となり、単一のプロジェクト管理が可能になりました。
-v5.3.0 では、AI 再構築におけるデータの不整合を解消するための堅牢化ロジック、**`interests` と `feedConfig` の厳格な同期**、および **Gemini 3.1 Pro を活用した高度なトレンド分析エンジン**が導入されました。
+v5.4.0 では、OS との親和性を高める **Auto-Launch（自動起動）機能の統合**と、**マルチテーマ対応に伴う UI 設定永続化の強化**が行われました。
 
 ## システム・アーキテクチャ
 
@@ -18,6 +18,12 @@ v5.3.0 では、AI 再構築におけるデータの不整合を解消するた�
     - `/api/v5/`: 記事取得、設定同期、エージェント実行等の機能。
     - **`/api/v5/discover-trends`**: 最新の記事群から Gemini 3.1 Pro を用いて潜在的なトレンド、コンテキスト、信頼度を抽出する新エンドポイント。
 - **単一リポジトリ**: 全ての依存関係が `package.json` で管理されます。
+
+### 2. OS Integration (Auto-Launch)
+Windows のスタートアップへの自動登録をメインプロセスで直接制御します。
+- **`app.setLoginItemSettings`**: Electron ネイティブ API を使用し、OS のログイン項目に Aegis Nexus を追加/削除します。
+- **Dynamic Reflection**: `UiSettings` の変更を検知し、即座に OS 設定へ反映。
+- **Safety Guard**: `app.isPackaged` をチェックし、開発環境での意図しないレジストリ書き換えを防止します。
 
 ### 2. データ整合性とモデル統一 (Data Model Unification)
 システム全体の信頼性を担保するため、以下のデータ管理戦略を採用しています：
@@ -78,7 +84,7 @@ Electron メインプロセス (`electron/main.cjs`) では、Windows 11 の **A
 - **環境適応型パス解決**: `!app.isPackaged` を判定基準とし、開発時はワークスペース内の `data/` を、配布後は `%APPDATA%` を参照するよう自動分岐。
 
 ## 品質管理とテスト
-v5.3.0 では、システムの安定性を担保するためにユニットテストが導入されました。
+システムの安定性を担保するためにユニットテストと E2E テストが導入されています。
 
 ### 1. ユニットテスト (Vitest)
 - **コアロジックの検証**: `SettingsManager` の設定読み書き、バックアップローテーション、APIキー取得、設定同期（Sync）ロジック、およびカテゴリ正規化機能を Vitest でテスト。
@@ -90,7 +96,7 @@ v5.3.0 では、システムの安定性を担保するためにユニットテ�
 
 ## コア・サービス構成
 
-| サービス名 | 役割 | v5.3.0 における進化 |
+| サービス名 | 役割 | 進化の内容 |
 | :--- | :--- | :--- |
 | `ScraperFacade` | ワークフロー統合 | **`discoverTrends` (Gemini 3.1 Pro)** による能動的インテリジェンス探索の実装。 |
 | `Fastify Server` | API ホスティング | Electron 内蔵型への統合。新エンドポイント `/api/v5/discover-trends` の追加。 |

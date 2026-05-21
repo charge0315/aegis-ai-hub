@@ -1,4 +1,4 @@
-# Aegis Nexus 詳細外部仕様書 (v5.3.0)
+# Aegis Nexus 詳細外部仕様書 (v5.4.0)
 
 本ドキュメントは、Aegis Nexusの全仕様を定義したものです。他言語への移行や再実装の際のマスター設計図として使用します。
 
@@ -9,7 +9,7 @@ Aegis Nexusは、RSSフィードとGoogle Gemini 3.1 Proを統合し、ユーザ
 
 ### 1.1 コア・コンセプト
 - **Signal vs Noise**: 大量の情報（Noise）から、AIを用いて価値ある情報（Signal）のみを抽出する。
-- **Glassmorphism**: 透明感と深度を感じさせる、未来的かつ洗練されたユーザーインターフェース。
+- **Glassmorphism & OS Integration**: 透明感と深度を感じさせるUIと、Windows 11環境への高度な親和性。
 - **Autonomous Agents**: 専門性を持った複数のAIエージェントが協調して動作する。
 - **Comprehensiveness (網羅性の保証)**: AI探索において「提案0件」を排除し、常に有効な情報源を提供し続ける。
 
@@ -121,14 +121,19 @@ Aegis Nexusは、RSSフィードとGoogle Gemini 3.1 Proを統合し、ユーザ
 - **密結合な共有構造**: Electron メインプロセスが Fastify サーバーをインスタンス化して管理。両者は Node.js の同一プロセス空間で動作し、`SettingsManager` という単一のシングルトン・インスタンスを共有。
 - **Shared SettingsManager**: フロントエンドからの設定変更要求は、Fastify API または Electron IPC のいずれかを経由し、最終的にこの共有マネージャーが `settings.json` をアトミックに書き換える。これにより、メインプロセスのバックグラウンドジョブ（EvolutionJob 等）と Fastify の API 応答が常に最新かつ同一の設定を参照できる「単一の真実（Single Source of Truth）」を保証している。
 
-### 5.2 データモデル
-- **interests.json**: カテゴリ定義（ブランド、キーワード、絵文字、スコア、理由）および `learned_keywords`（AI学習バッファ）。
-- **feed_config.json**: カテゴリごとのRSSフィードURLリスト（active, pool, failures）。
-- **credentials.json**: 暗号化されたAPIキー（Electron環境では OS の安全なストレージを使用）。
+### 5.3 OS統合と利便性 (v5.4.0)
+- **自動起動機能 (Auto-Launch Integration)**:
+    - **仕組み**: `UiSettings` の `autoLaunch` フィールドが `true` の場合、Electron の `app.setLoginItemSettings` API を通じて Windows のスタートアップレジストリに登録される。
+    - **制御**: 設定画面（System Settings）のトグルスイッチにより、ユーザーが動的にオン/オフを切り替え可能。
+    - **堅牢性**: 開発環境（非パッケージ状態）ではレジストリ操作をスキップするガードを実装し、開発中の副作用を防止。
+- **タスクバー・ブランディング**:
+    - **アイコン設定**: `BrowserWindow` インスタンス化時に `icon` プロパティへ `public/app-icon.png` を明示的に指定。これにより、Windows タスクバー上での正しいアプリアイコン表示を保証。
+    - **インストーラー同期**: `electron-builder` の設定と同期させ、インストール後のショートカットから実行中のウィンドウまで一貫したブランディングを提供。
 
 ---
 
 ## 6. エラーハンドリング・ポリシー
+
 
 1.  **サイレントな失敗の禁止**: 常にユーザーへ通知（Alert）するか、コンソールに詳細なログを出力する。
 2.  **APIキー未設定**: AI機能を使用しようとした際、単なるエラーではなく「設定への誘導」を行う。

@@ -1,12 +1,12 @@
 # Automation & Quality Codemap
 
-**Last Updated:** 2026-05-11
-**Version:** v5.3.0 (Production Ready - Review 2 Completed)
+**Last Updated:** 2026-05-21
+**Version:** v5.4.0 Aegis Chroma (Production Ready)
 **Key Tools:** Playwright, esbuild, electron-builder, Vitest
 
 ## 概要
-Aegis AI Hub v5.3.0 では、対話型インストーラーの導入により配布時のユーザー体験を向上させ、ビルドパイプラインを最新の Gemini 3.1 構成に合わせて最適化しました。
-第2回レビュー指摘への対応として、**ユニットテストの網羅率向上**、**any 型の完全排除**、および AI によるインサイト抽出プロセスの自動検証を実現しました。
+Aegis AI Hub v5.4.0 では、対話型インストーラーによるスムーズな配布と、Windows OS への高度な統合（自動起動・タスクバーアイコン）を実現しました。
+ビルドパイプラインは、メインプロセスとレンダラープロセスを独立して最適化する二段構成となっており、`npm run dist` により即座にリリース可能な v5.4.0 バイナリが生成されます。
 
 ## 1. ビルド・パイプライン
 `package.json` に定義されたスクリプトにより、ビルド工程を自動化しています。
