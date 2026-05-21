@@ -132835,6 +132835,7 @@ function createWindow() {
     minHeight: 300,
     useContentSize: true,
     frame: false,
+    icon: path4.join(__dirname, "../public/app-icon.png"),
     // カスタムタイトルバーを使用
     transparent: false,
     // FancyZones対応のため透明度はオフ

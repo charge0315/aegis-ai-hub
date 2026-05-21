@@ -1,14 +1,18 @@
 # Aegis AI Hub - System Index
 
 **Project Status:** Production Ready (v5.4.0 Aegis Chroma)
-**Last Updated:** 2026-05-12
+**Last Updated:** 2026-05-21
 
 ## プロジェクト概要
 Aegis AI Hub は、Gemini 3.1 を中枢に据えた「自律学習型知的ダッシュボード」です。  
-v5.4.0 Aegis Chroma では、待望のマルチテーマ対応（Light/Dark/System）を導入し、CSS 変数体系の刷新により、あらゆるデスクトップ環境で最適な視認性と美しさを提供します。
+v5.4.0 Aegis Chroma では、マルチテーマ対応に加え、Windows 11 環境への高度な統合（自動起動・タスクバーアイコン最適化）を実現しました。
 
 ## 主要なアップデート (v5.4.0 Aegis Chroma)
 
+- **OS Integration & Auto-Launch**: 
+  - **Auto-Launch Logic**: `app.setLoginItemSettings` を用いた自動起動機能をメインプロセスに統合。
+  - **SystemSettings UI**: 設定画面から OS のスタートアップ登録を自在にコントロール可能。
+  - **Taskbar Branding**: 高解像度アイコンの適用により、タスクバーでの表示品質を向上。
 - **Aegis Chroma (Multi-Theme Architecture)**: 
   - **Dynamic Theme Engine**: Light, Dark, および System（OS設定同期）の3モードを搭載。
   - **CSS Variable System**: 全てのカラー・質感を CSS 変数 (`--surface-base`, `--text-base` 等) に抽出し、テーマ切り替え時のアトミックなスタイル更新を実現。

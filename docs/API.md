@@ -1,12 +1,12 @@
 # Aegis AI Hub - API & Technical Reference
 
 **Last Updated:** 2026-05-21
-**Version:** 5.3.0 NEXUS (Production Ready)
+**Version:** 5.4.0 Aegis Chroma (Production Ready)
 
-本ドキュメントでは、Aegis AI Hub v5.3.0 が提供する Fastify REST API および Electron IPC (Inter-Process Communication) の仕様について記述します。
+本ドキュメントでは、Aegis AI Hub v5.4.0 が提供する Fastify REST API および Electron IPC (Inter-Process Communication) の仕様について記述します。
 
 ## 1. Fastify REST API (Internal Server)
-v5.3.0 より、バックエンドロジックは Electron 内蔵の Fastify サーバーに完全に統合されました。
+v5.4.0 より、バックエンドロジックは Electron 内蔵の Fastify サーバーに完全に統合され、OS 統合機能（自動起動等）の制御も担います。
 
 ### 1.1 基本情報
 - **ホスト**: Electron メインプロセス内で起動
@@ -21,7 +21,7 @@ v5.3.0 より、バックエンドロジックは Electron 内蔵の Fastify サ
 - **`GET /api/dashboard`**: スコアリング済みの全記事を取得（ダッシュボード用）。
     - **フィルタリング**: 記事取得時に、90日以上前の記事は自動的に除外されます。
     - **画像エンリッチメント**: 上位記事に対して自動スクレイピングとキャッシュによる画像補完を実行。
-- **`POST /api/v5/discover-trends`**: **(New in v5.3.0)** 最新の記事群から Gemini 3.1 Pro を用いて潜在的なトレンドを抽出。
+- **`POST /api/v5/discover-trends`**: 最新の記事群から Gemini 3.1 Pro を用いて潜在的なトレンドを抽出。
     - **レスポンス**: `Confidence`, `Context`, `Type` を含むトレンドリスト。
 - **`POST /api/v5/suggest-category`**: 特定のカテゴリ名に基づき、AI によるブランド・キーワード提案を取得。
 - **`GET /api/v5/proposals`**: 情報源を分析し、新しいサイトやキーワードの進化提案を取得。
