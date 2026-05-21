@@ -146,7 +146,7 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
         className="relative z-40 flex-shrink-0 bg-black/40 backdrop-blur-2xl border-r border-white/5 overflow-hidden flex flex-col transition-all duration-300"
       >
         <div className="p-6 border-b border-white/5 drag">
-          <h1 className="text-xl font-black text-white tracking-[0.2em] font-cyber cyber-glitch no-drag">
+          <h1 className="text-xl font-black text-white tracking-[0.2em] font-cyber no-drag">
             <span className="text-primary">A</span>EGIS <span className="neon-text-primary">NEXUS</span>
           </h1>
         </div>
@@ -169,7 +169,7 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
             <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 bg-white/5 rounded-xl"><Menu size={20} /></button>
             <div className="flex flex-col">
               <h2 className="text-lg font-black tracking-[0.15em] font-cyber neon-text-white uppercase">
-                {currentView === 'settings' ? t.sidebar?.settings : t.sidebar?.feed}
+                {currentView === 'settings' ? t.sidebar?.settings : 'Intelligence Feeds'}
               </h2>
             </div>
           </div>
