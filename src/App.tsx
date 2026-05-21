@@ -35,7 +35,7 @@ interface AppBodyProps {
 
 const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch, syncError, isSyncing }) => {
   const {
-    feedSize,
+    feedSize, setFeedSize,
     showImages,
     isJapaneseOnly,
     isInitialized, setIsInitialized,
@@ -113,12 +113,12 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
     });
 
     return Object.fromEntries(
-      Object.entries(groups).filter(([, items]) => items.length > 0)
+      Object.entries(groups).filter(([_, items]) => items.length > 0)
     );
   }, [filteredArticles, settings]);
 
   return (
-    <div className="flex h-screen bg-[#0a0b0c] text-slate-200 overflow-hidden font-sans">
+    <div className="flex h-screen bg-[#0a0b0c] text-slate-200 overflow-hidden font-sans window-base">
       {dialog.isOpen && (
         <CustomDialog 
           isOpen={dialog.isOpen} 
@@ -266,6 +266,8 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
                   prompt={dialogPrompt} 
                   theme={theme} 
                   setTheme={setTheme} 
+                  feedSize={feedSize}
+                  setFeedSize={setFeedSize}
                 />
               </div>
             ) : (

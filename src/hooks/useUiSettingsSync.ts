@@ -3,8 +3,10 @@ import { nexusApi } from '../api/nexusApi';
 import type { UiSettings } from '../types';
 import type { Language } from '../i18n/translations';
 
+export type FeedSize = 'large' | 'medium' | 'small' | 'none';
+
 export const useUiSettingsSync = () => {
-  const [feedSize, setFeedSize] = useState<'small' | 'medium' | 'large'>('medium');
+  const [feedSize, setFeedSize] = useState<FeedSize>('medium');
   const [showImages, setShowImages] = useState(true);
   const [isJapaneseOnly, setIsJapaneseOnly] = useState(false);
   const [isInitialized, setIsInitialized] = useState<boolean | null>(null);
@@ -17,7 +19,7 @@ export const useUiSettingsSync = () => {
       try {
         const saved = await nexusApi.getUiSettings();
         setIsJapaneseOnly(saved.jaOnly);
-        setFeedSize(saved.viewMode === 'compact' ? 'small' : saved.viewMode === 'list' ? 'large' : 'medium');
+        setFeedSize(saved.viewMode || 'medium');
         setShowImages(!saved.hideImages);
         setIsInitialized(saved.isInitialized);
         setTheme(saved.theme || 'system');
@@ -34,11 +36,10 @@ export const useUiSettingsSync = () => {
     const save = async () => {
       try {
         if (isInitialized !== null) {
-          const viewMode = feedSize === 'small' ? 'compact' : feedSize === 'large' ? 'list' : 'grid';
-          await nexusApi.saveUiSettings({ 
-            jaOnly: isJapaneseOnly, 
-            viewMode: viewMode as UiSettings['viewMode'], 
-            hideImages: !showImages,
+          await nexusApi.saveUiSettings({
+            jaOnly: isJapaneseOnly,
+            viewMode: feedSize as UiSettings['viewMode'],
+            hideImages: !showImages || feedSize === 'none',
             isInitialized,
             theme,
             language

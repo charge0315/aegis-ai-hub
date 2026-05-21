@@ -80,7 +80,7 @@ export type SyncSettings = z.infer<typeof SyncSettingsSchema>;
  */
 export const UiSettingsSchema = z.object({
   jaOnly: z.boolean().default(false),
-  viewMode: z.enum(['grid', 'list', 'compact']).default('grid'),
+  viewMode: z.enum(['large', 'medium', 'small', 'none']).default('medium'),
   hideImages: z.boolean().default(false),
   isInitialized: z.boolean().default(false),
   theme: z.enum(['light', 'dark', 'system']).default('system'),

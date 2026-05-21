@@ -20,6 +20,7 @@ import { useUnifiedEditorHandlers } from '../hooks/useUnifiedEditorHandlers';
 import type { NexusSettings, UiSettings } from '../types';
 import type { DialogType } from './CustomDialog';
 import { useTranslation } from '../hooks/useTranslationHook';
+import type { FeedSize } from '../hooks/useUiSettingsSync';
 
 interface UnifiedEditorProps {
   currentSettings: NexusSettings;
@@ -29,6 +30,8 @@ interface UnifiedEditorProps {
   prompt: (title: string, message: string, defaultValue?: string, placeholder?: string) => Promise<string | null>;
   theme: UiSettings['theme'];
   setTheme: (theme: UiSettings['theme']) => void;
+  feedSize: FeedSize;
+  setFeedSize: (size: FeedSize) => void;
 }
 
 type Tab = 'editor' | 'graph' | 'skills' | 'system' | 'insights' | 'usage';
@@ -40,7 +43,9 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
   confirm: customConfirm,
   prompt: customPrompt,
   theme,
-  setTheme
+  setTheme,
+  feedSize,
+  setFeedSize
 }) => {
   const [activeTab, setActiveTab] = useState<Tab>('editor');
   const { t } = useTranslation();
@@ -87,7 +92,9 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
     customPrompt,
     setActiveTab,
     theme,
-    setTheme
+    setTheme,
+    feedSize,
+    setFeedSize
   });
 
   return (
@@ -98,7 +105,7 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
             <AlertCircle size={20} />
             <p className="text-sm font-medium">{t.settings?.apiKeyAlert}</p>
           </div>
-          <button 
+          <button
             onClick={() => setActiveTab('system')}
             className="px-4 py-1.5 bg-alert text-white text-xs font-bold uppercase rounded-lg shadow-lg shadow-alert/20"
           >
@@ -118,7 +125,7 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
           </h1>
           <p className="text-sm text-content-muted mt-1">{t.settings?.subtitle}</p>
         </div>
-        
+
         <div className="flex gap-3">
           <button
             onClick={handleRestructure}
@@ -181,7 +188,7 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
 
         <div className="relative">
           {activeTab === 'editor' && (
-            <CategoryEditor 
+            <CategoryEditor
               draft={draft}
               selectedCategory={selectedCategory}
               setSelectedCategory={setSelectedCategory}
@@ -200,8 +207,8 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
           )}
 
           {activeTab === 'graph' && (
-            <KnowledgeGraph 
-              settings={draft} 
+            <KnowledgeGraph
+              settings={draft}
               onKeywordToggle={handleKeywordToggle}
               onBrandToggle={handleBrandToggle}
             />
@@ -215,7 +222,7 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
             />
           )}
           {activeTab === 'insights' && (
-            <AIInsightsPanel 
+            <AIInsightsPanel
               draft={draft}
               isDiscovering={isDiscovering}
               handleDiscoverTrends={handleDiscoverTrends}
@@ -225,7 +232,7 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
           )}
 
           {activeTab === 'system' && (
-            <SystemSettings 
+            <SystemSettings
               apiKey={apiKey}
               setApiKey={setApiKey}
               isSavingApiKey={isSavingApiKey}
@@ -234,6 +241,8 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
               handleResetToDefaults={handleResetToDefaults}
               theme={theme}
               setTheme={setTheme}
+              feedSize={feedSize}
+              setFeedSize={setFeedSize}
             />
           )}
           {activeTab === 'usage' && (
@@ -258,8 +267,8 @@ const TabButton: React.FC<TabButtonProps> = ({ active, onClick, icon, label, 'da
     onClick={onClick}
     data-testid={testId}
     className={`flex items-center gap-2 py-4 border-b-2 transition-all font-semibold text-sm ${
-      active 
-        ? 'border-primary text-content-base' 
+      active
+        ? 'border-primary text-content-base'
         : 'border-transparent text-content-muted hover:text-content-base'
     }`}
   >

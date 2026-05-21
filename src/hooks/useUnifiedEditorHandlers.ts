@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import type { NexusSettings, Skill, UiSettings, EditorTab } from '../types';
 import type { DialogType } from '../components/CustomDialog';
 import { useTranslation } from './useTranslationHook';
+import type { FeedSize } from './useUiSettingsSync';
 
 // Sub-hooks
 import { useApiKeyManager } from './useApiKeyManager';
@@ -19,6 +20,8 @@ interface UseUnifiedEditorHandlersProps {
   setActiveTab: (tab: EditorTab) => void;
   theme: UiSettings['theme'];
   setTheme: (theme: UiSettings['theme']) => void;
+  feedSize: FeedSize;
+  setFeedSize: (size: FeedSize) => void;
 }
 
 export function useUnifiedEditorHandlers({
@@ -29,7 +32,9 @@ export function useUnifiedEditorHandlers({
   customPrompt,
   setActiveTab,
   theme,
-  setTheme
+  setTheme,
+  feedSize,
+  setFeedSize
 }: UseUnifiedEditorHandlersProps) {
   const { t } = useTranslation();
 
@@ -98,7 +103,7 @@ export function useUnifiedEditorHandlers({
     setApiKey: apiKeyManager.setApiKey,
     selectedCategory: categoryActions.selectedCategory,
     setSelectedCategory: categoryActions.setSelectedCategory,
-    
+
     // Status
     isSaving: profileActions.isSaving,
     isSuggesting: categoryActions.isSuggesting,
@@ -130,8 +135,9 @@ export function useUnifiedEditorHandlers({
     handleAISuggest: categoryActions.handleAISuggest,
     handleRestructure: profileActions.handleRestructure,
     handleResetToDefaults: profileActions.handleResetToDefaults,
-    
-    // Theme (Passthrough)
-    theme, setTheme
+
+    // Theme & Feed (Passthrough)
+    theme, setTheme,
+    feedSize, setFeedSize
   };
 }

@@ -7,10 +7,15 @@ import {
   Sun,
   Moon,
   Monitor,
-  Sparkles
+  Sparkles,
+  Maximize,
+  Grid,
+  List,
+  EyeOff
 } from 'lucide-react';
 import { GlassPanel } from '../GlassPanel';
 import type { UiSettings } from '../../types';
+import type { FeedSize } from '../../hooks/useUiSettingsSync';
 
 interface SystemSettingsProps {
   apiKey: string;
@@ -21,6 +26,8 @@ interface SystemSettingsProps {
   handleResetToDefaults: () => Promise<void>;
   theme: UiSettings['theme'];
   setTheme: (theme: UiSettings['theme']) => void;
+  feedSize: FeedSize;
+  setFeedSize: (size: FeedSize) => void;
 }
 
 export const SystemSettings: React.FC<SystemSettingsProps> = ({
@@ -31,7 +38,9 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
   handleSaveApiKey,
   handleResetToDefaults,
   theme,
-  setTheme
+  setTheme,
+  feedSize,
+  setFeedSize
 }) => {
   return (
     <motion.div
@@ -40,8 +49,8 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
       exit={{ opacity: 0, scale: 0.98 }}
       className="max-w-2xl mx-auto space-y-8"
     >
-      {/* Theme Customization */}
-      <GlassPanel className="p-8 space-y-6">
+      {/* Visual Experience Customization */}
+      <GlassPanel className="p-8 space-y-8">
         <div className="flex items-center gap-4">
           <div className="p-3 bg-accent/10 text-accent rounded-2xl">
             <Sparkles size={24} />
@@ -52,32 +61,71 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
           </div>
         </div>
 
-        <div className="space-y-4">
-          <label className="text-xs font-bold text-content-muted uppercase tracking-widest px-1">
-            Interface Theme
-          </label>
-          <div className="grid grid-cols-3 gap-4">
-            <ThemeOption 
-              active={theme === 'light'} 
-              onClick={() => setTheme('light')}
-              icon={<Sun size={20} />}
-              label="Light"
-            />
-            <ThemeOption 
-              active={theme === 'dark'} 
-              onClick={() => setTheme('dark')}
-              icon={<Moon size={20} />}
-              label="Dark"
-            />
-            <ThemeOption 
-              active={theme === 'system'} 
-              onClick={() => setTheme('system')}
-              icon={<Monitor size={20} />}
-              label="System"
-            />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Theme Section */}
+          <div className="space-y-4">
+            <label className="text-xs font-bold text-content-muted uppercase tracking-widest px-1">
+              Interface Theme
+            </label>
+            <div className="grid grid-cols-3 gap-3">
+              <VisualOption
+                active={theme === 'light'}
+                onClick={() => setTheme('light')}
+                icon={<Sun size={18} />}
+                label="Light"
+              />
+              <VisualOption
+                active={theme === 'dark'}
+                onClick={() => setTheme('dark')}
+                icon={<Moon size={18} />}
+                label="Dark"
+              />
+              <VisualOption
+                active={theme === 'system'}
+                onClick={() => setTheme('system')}
+                icon={<Monitor size={18} />}
+                label="Auto"
+              />
+            </div>
           </div>
-          <p className="text-[10px] text-content-muted/60 px-1">
-            "System" will automatically synchronize with your OS light/dark mode settings.
+
+          {/* Feed Size Section */}
+          <div className="space-y-4">
+            <label className="text-xs font-bold text-content-muted uppercase tracking-widest px-1">
+              Feed Intensity
+            </label>
+            <div className="grid grid-cols-4 gap-2">
+              <VisualOption
+                active={feedSize === 'large'}
+                onClick={() => setFeedSize('large')}
+                icon={<Maximize size={16} />}
+                label="Large"
+              />
+              <VisualOption
+                active={feedSize === 'medium'}
+                onClick={() => setFeedSize('medium')}
+                icon={<Grid size={16} />}
+                label="Mid"
+              />
+              <VisualOption
+                active={feedSize === 'small'}
+                onClick={() => setFeedSize('small')}
+                icon={<List size={16} />}
+                label="Small"
+              />
+              <VisualOption
+                active={feedSize === 'none'}
+                onClick={() => setFeedSize('none')}
+                icon={<EyeOff size={16} />}
+                label="None"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white/5 rounded-xl p-4 border border-white/5">
+          <p className="text-[10px] text-content-muted/60 leading-relaxed">
+            <span className="text-accent font-bold">Aesthetics Pro-Tip:</span> Use <span className="text-content-base font-bold">None</span> to hide images and maximize information density for deep signal analysis.
           </p>
         </div>
       </GlassPanel>
@@ -159,25 +207,25 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
   );
 };
 
-interface ThemeOptionProps {
+interface VisualOptionProps {
   active: boolean;
   onClick: () => void;
   icon: React.ReactNode;
   label: string;
 }
 
-const ThemeOption: React.FC<ThemeOptionProps> = ({ active, onClick, icon, label }) => (
+const VisualOption: React.FC<VisualOptionProps> = ({ active, onClick, icon, label }) => (
   <button
     onClick={onClick}
-    className={`flex flex-col items-center gap-3 p-4 rounded-2xl border-2 transition-all ${
-      active 
-        ? 'bg-primary/10 border-primary text-content-base shadow-lg shadow-primary/10' 
-        : 'bg-content-muted/10 border-content-muted/20 text-content-muted hover:border-content-muted/20 hover:text-content-base'
+    className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all ${
+      active
+        ? 'bg-primary/10 border-primary text-content-base shadow-lg shadow-primary/10'
+        : 'bg-content-muted/5 border-content-muted/10 text-content-muted hover:border-content-muted/20 hover:text-content-base'
     }`}
   >
     <div className={active ? 'text-primary' : 'text-content-muted'}>
       {icon}
     </div>
-    <span className="text-xs font-bold uppercase tracking-wider">{label}</span>
+    <span className="text-[10px] font-bold uppercase tracking-wider">{label}</span>
   </button>
 );

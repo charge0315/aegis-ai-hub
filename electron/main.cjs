@@ -36,14 +36,14 @@ const isDev = !app.isPackaged;
 function setupDataDirectory() {
   const userDataPath = app.getPath('userData');
   const dataDir = path.join(userDataPath, 'data');
-  
+
   if (!fs.existsSync(dataDir)) {
     console.log('[Main] Creating data directory...');
     fs.mkdirSync(dataDir, { recursive: true });
   }
 
   // パッケージ内のデフォルトデータを取得
-  const defaultDataDir = isDev 
+  const defaultDataDir = isDev
     ? path.join(__dirname, '..', 'data')
     : path.join(process.resourcesPath, 'default-data');
 
@@ -52,7 +52,7 @@ function setupDataDirectory() {
     for (const file of requiredFiles) {
       const destPath = path.join(dataDir, file);
       const srcPath = path.join(defaultDataDir, file);
-      
+
       // ファイルが存在しないか、サイズが極端に小さい（壊れている）場合のみコピー
       if (fs.existsSync(srcPath) && (!fs.existsSync(destPath) || fs.statSync(destPath).size < 5)) {
         fs.copyFileSync(srcPath, destPath);
@@ -67,19 +67,19 @@ const dataDir = setupDataDirectory();
 
 async function startBackend() {
   console.log('[Main] Starting backend services...');
-  
+
   settingsManager = new ElectronSettingsManager({ dataDir, isDev });
   await settingsManager.init();
 
   const apiKey = await settingsManager.getApiKey();
   geminiService = new GeminiService(apiKey);
-  
+
   const feedConfigPath = path.join(dataDir, 'feed_config.json');
   feedManager = new FeedManager(feedConfigPath);
   await feedManager.loadConfig(); // 重要: 設定を読み込む
-  
+
   rssFetcher = new RSSFetcher();
-  
+
   discoveryService = new DiscoveryService(geminiService, rssFetcher, feedManager);
   enrichmentService = new EnrichmentService(geminiService, dataDir);
   scraper = new ScraperFacade('', feedConfigPath, dataDir);
@@ -94,7 +94,7 @@ async function startBackend() {
   // 内部サーバー (Browser Fallback / SSE 用)
   const server = fastify({ logger: isDev });
   await server.register(cors, { origin: '*' });
-  
+
   await server.register(nexusRouter, {
     prefix: '/api/v5',
     scraper,
@@ -120,8 +120,8 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1440,
     height: 900,
-    minWidth: 1000,
-    minHeight: 700,
+    minWidth: 600, // 最小幅をさらに縮小 (1000 -> 600)
+    minHeight: 400, // 最小高さをさらに縮小 (700 -> 400)
     frame: false, // カスタムタイトルバーを使用
     transparent: false, // FancyZones対応のため透明度はオフ
     backgroundColor: '#0f172a',
@@ -149,7 +149,7 @@ function createWindow() {
 
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
-    
+
     // 初回フェッチ
     settingsManager.getInterests().then(interests => {
       scraper.fetchAndProcessArticlesWithFallback(interests).then(articles => {

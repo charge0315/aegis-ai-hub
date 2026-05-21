@@ -15,7 +15,7 @@ import type { Article } from '../types';
 interface ArticleCardProps {
   article: Article;
   index?: number;
-  size?: 'small' | 'medium' | 'large';
+  size?: 'small' | 'medium' | 'large' | 'none';
   showImages?: boolean;
 }
 
@@ -23,8 +23,9 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({ article, index = 0, si
   const [showReason, setShowReason] = useState(false);
   const [imageError, setImageError] = useState(false);
 
-  const isSmall = size === 'small';
+  const isSmall = size === 'small' || size === 'none';
   const isLarge = size === 'large';
+  const displayImages = showImages && size !== 'none';
 
   /**
    * カテゴリに応じたグラデーション生成（フォールバック用）
@@ -64,8 +65,8 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({ article, index = 0, si
       onClick={() => window.open(article.link, '_blank', 'noopener,noreferrer')}
     >
       {/* Image Section - 視覚的なフック（アンカー）の提供。
-          テキストモード（showImages=false）の場合は、情報密度を高めるために空間ごと省略されます。 */}
-      {showImages && (
+          テキストモード（displayImages=false）の場合は、情報密度を高めるために空間ごと省略されます。 */}
+      {displayImages && (
         <div className={`relative overflow-hidden bg-surface shrink-0 ${
           isSmall ? 'aspect-[4/3]' : 'aspect-video'
         }`}>
@@ -113,7 +114,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({ article, index = 0, si
 
       {/* Content Section - 記事のメタデータと本文。情報ヒエラルキーを明確にし、流し読みを容易にします */}
       <div className={`${isSmall ? 'p-2' : 'p-4'} flex-grow flex flex-col relative`}>
-        {!showImages && (
+        {!displayImages && (
           // テキストモード時のみ、画像上にあったバッジ類をこちらに配置して情報を補完
           <div className="absolute top-2 right-2 flex gap-2">
             {!isSmall && (
@@ -126,7 +127,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({ article, index = 0, si
             </div>
           </div>
         )}
-        <h3 className={`${isSmall ? 'text-[11px] leading-tight mb-1' : isLarge ? 'text-lg mb-2' : 'text-sm leading-tight mb-2'} font-semibold line-clamp-2 group-hover:text-primary transition-colors ${!showImages ? 'pr-20' : ''}`}>
+        <h3 className={`${isSmall ? 'text-[11px] leading-tight mb-1' : isLarge ? 'text-lg mb-2' : 'text-sm leading-tight mb-2'} font-semibold line-clamp-2 group-hover:text-primary transition-colors ${!displayImages ? 'pr-20' : ''}`}>
           {article.title}
         </h3>
         
