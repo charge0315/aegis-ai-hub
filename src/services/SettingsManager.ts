@@ -144,8 +144,20 @@ export class SettingsManager {
    * フィードの購読設定を取得します。
    */
   async getFeedConfig(): Promise<FeedConfig> {
-    const data = await fs.readFile(this.feedConfigPath, 'utf8');
-    return FeedConfigSchema.parse(JSON.parse(data));
+    try {
+      const data = await this._safeRead(this.feedConfigPath);
+      return FeedConfigSchema.parse(data);
+    } catch {
+      return {};
+    }
+  }
+
+  /**
+   * フィード購読設定を保存します。
+   */
+  async saveFeedConfig(config: FeedConfig): Promise<void> {
+    const validated = FeedConfigSchema.parse(config);
+    await this._safeWrite(this.feedConfigPath, validated);
   }
 
   /**

@@ -18,9 +18,19 @@ import type { RSSFetcher } from './RSSFetcher';
 export class FeedManager {
   public config: FeedConfig = {};
   private configPath: string;
+  private saveHandler?: (config: FeedConfig) => Promise<void>;
 
-  constructor(configPath: string) {
+  constructor(configPath: string, saveHandler?: (config: FeedConfig) => Promise<void>) {
     this.configPath = configPath;
+    this.saveHandler = saveHandler;
+  }
+
+  /**
+   * 保存用ハンドラをセットします。
+   * SettingsManagerなど、外部の安全な書き込み機構を利用する場合に使用します。
+   */
+  setSaveHandler(handler: (config: FeedConfig) => Promise<void>) {
+    this.saveHandler = handler;
   }
 
   /**
@@ -41,7 +51,11 @@ export class FeedManager {
    */
   async saveConfig(): Promise<void> {
     try {
-      await fs.writeFile(this.configPath, JSON.stringify(this.config, null, 2), 'utf-8');
+      if (this.saveHandler) {
+        await this.saveHandler(this.config);
+      } else {
+        await fs.writeFile(this.configPath, JSON.stringify(this.config, null, 2), 'utf-8');
+      }
     } catch (err) {
       console.error('[FeedManager] Failed to save config:', err);
     }

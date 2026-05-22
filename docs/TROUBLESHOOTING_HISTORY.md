@@ -4,6 +4,19 @@
 
 ---
 
+### #15 設定ファイルの破損による起動時エラー (Sync Error) (2026-05-23)
+- **事象**: 起動時に `Sync Error: Error invoking remote method 'get-settings': SyntaxError: Unexpected non-whitespace character after JSON at position 2721` が発生し、アプリが正常に起動しない。
+- **原因**: `feed_config.json` の末尾に古いデータの一部が残存しており、不正な JSON 形式になっていた。これは `FeedManager` (直接的な `fs.writeFile`) と `SettingsManager` (バックアップ世代管理付きの `_safeWrite`) が同じファイルに対して競合し、アトミックでない書き込みや回転処理中の干渉が発生したことが原因。
+- **対処**:
+    - **データ復旧**: `feed_config.json` を手動（スクリプト）で解析し、有効な JSON プレフィックスを抽出してファイルを修復。
+    - **書き込み処理の統一**: `SettingsManager` に `saveFeedConfig` メソッドを追加し、 `FeedManager` が保存時にこのメソッドをコールバックとして利用するように変更。これにより、全ての設定ファイル書き込みが `SettingsManager` の「バックアップ世代管理付き安全書き込みロジック」を介して行われるようになり、競合と破損を防止した。
+    - **バリデーション強化**: 保存前に Zod スキーマによる型チェックを強制。
+- **検証**:
+    - 手動での JSON 修復を確認。
+    - `SettingsManager.test.ts` に `saveFeedConfig` のテストを追加し、正常系およびバリデーションエラー系が正しく動作することを確認。
+
+---
+
 ### #14 スタートアップ登録機能の実装とリリースビルド v5.4.0 (2026-05-21)
 - **概要**: アプリケーションを Windows ログイン時に自動起動する機能を追加し、製品版インストーラーを生成した。
 - **実装内容**:

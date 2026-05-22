@@ -107,6 +107,10 @@ async function startBackend() {
   
   const feedConfigPath = path.join(dataDir, 'feed_config.json');
   feedManager = new FeedManager(feedConfigPath);
+  // SettingsManagerの安全な書き込み機能を共有する
+  feedManager.setSaveHandler(async (config) => {
+    await settingsManager.saveFeedConfig(config);
+  });
   await feedManager.loadConfig(); // 重要: 設定を読み込む
   
   rssFetcher = new RSSFetcher();
