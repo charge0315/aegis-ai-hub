@@ -5,6 +5,14 @@ import { GlassPanel } from './GlassPanel';
 import type { AgentStatus } from '../types';
 import { useTranslation } from '../hooks/useTranslationHook';
 
+/**
+ * AgentMonitor Component
+ * 
+ * バックグラウンドで自律動作するAIエージェント群（Agent Swarm）の稼働状態を
+ * リアルタイムに可視化するためのモニタリングコンポーネント。
+ * システムが「思考中」であることをユーザーに視覚的に伝え、安心感と期待感を提供します。
+ */
+
 interface AgentMonitorProps {
   agents: AgentStatus[];
   compact?: boolean;
@@ -22,6 +30,11 @@ export const AgentMonitor: React.FC<AgentMonitorProps> = ({ agents, compact }) =
     return fallback;
   };
 
+  /**
+   * コンパクトモード
+   * サイドバーやヘッダーなど、限られたスペースでもエージェントの生存確認（Liveness Check）
+   * が行えるよう、アイコンとインジケーターのみを表示します。
+   */
   if (compact) {
     return (
       <div className="flex flex-col items-center gap-4 py-2">
@@ -38,12 +51,14 @@ export const AgentMonitor: React.FC<AgentMonitorProps> = ({ agents, compact }) =
   }
 
   return (
+    // GlassPanel: 他のパネルと重なっても視認性を保ちつつ、未来的な質感を演出
     <GlassPanel className="p-4 flex flex-col gap-4">
       <div className="flex items-center justify-between border-b border-white/5 pb-2">
         <h2 className="text-xs font-bold uppercase tracking-widest text-slate-400 flex items-center gap-2">
           <Cpu size={14} />
           Agent Swarm
         </h2>
+        {/* 動的なパルスアニメーション: システムがアクティブに通信中であることを示す */}
         <div className="flex gap-1">
           <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
           <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse delay-75" />
@@ -58,8 +73,10 @@ export const AgentMonitor: React.FC<AgentMonitorProps> = ({ agents, compact }) =
               <span className="text-[11px] font-medium text-slate-300">{getAgentName(agent.id, agent.name)}</span>
               <StatusIcon status={agent.status} />
             </div>
+            
+            {/* プログレスバー: エージェントのタスク進行状況を視覚化 */}
             <div className="relative h-1 w-full bg-white/5 rounded-full overflow-hidden">
-
+              {/* スキャンアニメーション: 処理が進行しているという動的なフィードバック */}
               {agent.status === 'working' && (
                 <motion.div 
                   className="absolute inset-0 bg-primary/40"
@@ -77,6 +94,7 @@ export const AgentMonitor: React.FC<AgentMonitorProps> = ({ agents, compact }) =
                 )}
               />
             </div>
+            {/* 最終メッセージ: 現在の具体的な行動内容（ログ）を表示 */}
             <p className="text-[10px] text-slate-500 truncate italic">
               {agent.lastMessage || 'Waiting for instructions...'}
             </p>

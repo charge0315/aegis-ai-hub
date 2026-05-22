@@ -1,13 +1,30 @@
+/**
+ * Aegis Nexus - Electron Main Process
+ * 
+ * 役割:
+ * - アプリケーションのライフサイクル管理（起動、終了、OS統合）。
+ * - バックエンドサービス（Fastify, GeminiService, RSSFetcher等）の初期化と統括。
+ * - レンダラープロセス（Frontend）とのIPC通信の仲介。
+ * - ウィンドウ管理およびOSネイティブ機能（通知領域、自動起動等）の提供。
+ * 
+ * 設計思想:
+ * - ハイブリッド構成: Electronのメインプロセス内で軽量なFastifyサーバーを稼働させ、
+ *   REST APIとIPCの両面から堅牢なデータアクセスを提供。
+ * - OS統合の最適化: FancyZones対応のウィンドウ設定、ログイン時自動起動、カスタムタイトルバーの実装により、
+ *   デスクトップアプリとしてのネイティブな体験を追求。
+ * - 回復性: ユーザーデータディレクトリの自動初期化と、デフォルト設定の自動復元機能を搭載。
+ */
+
 const { app, BrowserWindow, ipcMain, globalShortcut, Tray, Menu, shell, nativeImage } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const fastify = require('fastify');
 const cors = require('@fastify/cors');
 
-// アプリケーションの基本設定
+// アプリケーションの表示名をOSレベルで設定
 app.setName('Aegis Nexus');
 
-// サービスを動的にインポート
+// サービスを動的にインポート（CommonJS環境）
 const { ElectronSettingsManager } = require('./ElectronSettingsManager');
 const { GeminiService } = require('../src/services/GeminiService');
 const { FeedManager } = require('../src/services/FeedManager');
@@ -32,7 +49,14 @@ let enrichmentService;
 
 const isDev = !app.isPackaged;
 
-// [ユーティリティ: データディレクトリの取得と初期化]
+/**
+ * [ユーティリティ: データディレクトリの取得と初期化]
+ * 
+ * 設計意図:
+ * - OSごとに異なる「ユーザーデータ保存場所」を抽象化。
+ * - 初回起動時や設定破損時に、パッケージ内のデフォルト設定(interests.json等)を自動コピーし、
+ *   アプリが常に正常な状態で起動できるようにする。
+ */
 function setupDataDirectory() {
   const userDataPath = app.getPath('userData');
   const dataDir = path.join(userDataPath, 'data');
@@ -65,6 +89,13 @@ function setupDataDirectory() {
 
 const dataDir = setupDataDirectory();
 
+/**
+ * バックエンドサービス群の初期化と内部APIサーバーの起動。
+ * 
+ * 背景:
+ * - フロントエンドからの重い処理要求（AI解析、大量フィード取得）を、
+ *   メインプロセスのバックグラウンドで効率的に処理するために、独立したサービスインスタンスを生成。
+ */
 async function startBackend() {
   console.log('[Main] Starting backend services...');
   
@@ -116,6 +147,14 @@ async function startBackend() {
   }
 }
 
+/**
+ * メインウィンドウの作成。
+ * 
+ * 設計意図:
+ * - `frame: false`: OS標準の枠を消し、独自のUIデザインを統一。
+ * - `thickFrame: true`: WindowsのFancyZonesやスナップレイアウトを有効化するための設定。
+ * - `backgroundColor`: 読み込み中のチラつきを防ぐため、テーマ色と一致させる。
+ */
 function createWindow() {
   const iconPath = path.join(__dirname, '../public/app-icon-192.png');
   const icon = nativeImage.createFromPath(iconPath);
@@ -128,7 +167,6 @@ function createWindow() {
     useContentSize: true,
     frame: false,
     icon: icon,
- // カスタムタイトルバーを使用
     transparent: false, // FancyZones対応のため透明度はオフ
     backgroundColor: '#0f172a',
     resizable: true, // 明示的に有効化
@@ -141,7 +179,7 @@ function createWindow() {
     }
   });
 
-  // OrchestratorにwebContentsをセット（IPC通知用）
+  // OrchestratorにwebContentsをセット（バックグラウンドからUIへの通知用）
   if (orchestrator && typeof orchestrator.setWebContents === 'function') {
     orchestrator.setWebContents(mainWindow.webContents);
   }
@@ -156,7 +194,7 @@ function createWindow() {
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
     
-    // 初回フェッチ
+    // 起動時の初期フェッチ（即座にコンテンツを表示）
     settingsManager.getInterests().then(interests => {
       scraper.fetchAndProcessArticlesWithFallback(interests).then(articles => {
         console.log(`[Main] Initial fetch completed: ${articles.length} articles.`);
@@ -165,12 +203,17 @@ function createWindow() {
   });
 }
 
-// [IPC ハンドラー]
+/**
+ * [IPC ハンドラー]
+ * 
+ * 設計思想:
+ * - プリロードスクリプトを介して、安全にフロントエンドへバックエンド機能（AI, 設定管理）を露出させる。
+ */
 function setupIpcHandlers() {
+  // 記事データの取得
   ipcMain.handle('get-articles', async () => {
     const interests = await settingsManager.getInterests();
     const dashboardData = await scraper.getDashboard(interests);
-    // 既存の frontend 実装と互換性を持たせるため、フラットな配列として返す
     const allArticles = [];
     Object.values(dashboardData).forEach(group => {
       if (group?.articles) allArticles.push(...group.articles);
@@ -178,6 +221,7 @@ function setupIpcHandlers() {
     return allArticles.sort((a, b) => b.score - a.score).slice(0, 500);
   });
 
+  // 設定情報の同期
   ipcMain.handle('get-settings', async () => {
     const interests = await settingsManager.getInterests();
     const feedConfig = await settingsManager.getFeedConfig();
@@ -190,25 +234,30 @@ function setupIpcHandlers() {
     return result;
   });
 
+  // AIによるカテゴリ詳細（ブランド、キーワード）の提案
   ipcMain.handle('suggest-category', async (event, name) => {
     return await geminiService.suggestCategoryDetails(name);
   });
 
+  // 最新記事からのトレンド発見
   ipcMain.handle('discover-trends', async () => {
     const interests = await settingsManager.getInterests();
     const suggestions = await scraper.discoverTrends(interests);
     return { suggestions };
   });
 
+  // カテゴリ再構築（大規模整理）
   ipcMain.handle('restructure-categories', async (event, count, language) => {
     const interests = await settingsManager.getInterests();
     return await discoveryService.getRestructureProposal(interests, count, language || 'ja');
   });
 
+  // 設定の全翻訳
   ipcMain.handle('translate-interests', async (event, settings) => {
     return await discoveryService.translateInterests(settings);
   });
 
+  // APIキー管理
   ipcMain.handle('get-api-key', async () => {
     return await settingsManager.getApiKey();
   });
@@ -219,6 +268,7 @@ function setupIpcHandlers() {
     return { success: true };
   });
 
+  // UI設定（テーマ、自動起動等）
   ipcMain.handle('get-ui-settings', async () => {
     return await settingsManager.getUiSettings();
   });
@@ -226,7 +276,7 @@ function setupIpcHandlers() {
   ipcMain.handle('save-ui-settings', async (event, settings) => {
     await settingsManager.saveUiSettings(settings);
     
-    // 自動起動設定の反映
+    // OSレベルでの自動起動設定の反映
     if (app.isPackaged) {
       app.setLoginItemSettings({
         openAtLogin: settings.autoLaunch,
@@ -237,15 +287,18 @@ function setupIpcHandlers() {
     return { success: true };
   });
 
+  // AI使用統計
   ipcMain.handle('get-usage-stats', async () => {
     return await settingsManager.getUsageStats();
   });
 
+  // 初期状態へのリセット
   ipcMain.handle('reset-to-defaults', async (event, lang) => {
     const success = await settingsManager.resetToDefaults(lang || 'ja');
     return { success };
   });
 
+  // カスタムタイトルバーからのウィンドウ操作
   ipcMain.on('window-control', (event, action) => {
     if (!mainWindow) return;
     switch (action) {
@@ -256,18 +309,20 @@ function setupIpcHandlers() {
     }
   });
 
-  // 外部リンクをブラウザで開く
+  // 外部リンクをデフォルトブラウザで開く
   ipcMain.on('open-external', (event, url) => {
     shell.openExternal(url);
   });
 }
 
-// [ライフサイクル]
+/**
+ * アプリケーションの起動ライフサイクル。
+ */
 app.whenReady().then(async () => {
   await startBackend();
   setupIpcHandlers();
 
-  // 起動時に自動起動設定を反映
+  // 起動時に最新の自動起動設定をOSに同期
   const uiSettings = await settingsManager.getUiSettings();
   if (app.isPackaged) {
     app.setLoginItemSettings({
@@ -278,15 +333,18 @@ app.whenReady().then(async () => {
 
   createWindow();
 
+  // 開発者用ショートカット
   globalShortcut.register('CommandOrControl+Shift+I', () => {
     mainWindow?.webContents.toggleDevTools();
   });
 });
 
 app.on('window-all-closed', () => {
+  // macOS以外ではウィンドウが閉じられたらアプリを終了
   if (process.platform !== 'darwin') app.quit();
 });
 
 app.on('activate', () => {
+  // macOSのドックアイコンクリック時の挙動
   if (BrowserWindow.getAllWindows().length === 0) createWindow();
 });

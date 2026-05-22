@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+/**
+ * Aegis Nexus デザインシステム定義
+ * 
+ * Tailwind CSS のカスタムテーマ設定と、グローバルなCSS変数を管理します。
+ * 本プロジェクトでは「モダン・サイバーパンク」をテーマに、ネオンカラーとガラス質感を基調としています。
+ */
+
 @theme {
   --color-primary: #6366f1;
   --color-background: var(--surface-base);
@@ -16,24 +23,30 @@
   --font-cyber: 'Orbitron', sans-serif;
 }
 
+/* サイバーパンク風のタイポグラフィ */
 .font-cyber {
   font-family: var(--font-cyber);
 }
 
+/* プライマリーカラーのネオンテキスト効果 */
 .neon-text-primary {
   color: var(--color-primary);
   text-shadow: 0 0 5px var(--color-primary), 0 0 10px var(--color-primary);
 }
 
+/* ホワイトとプライマリーを組み合わせた多重発光効果 */
 .neon-text-white {
   color: #fff;
   text-shadow: 0 0 5px rgba(255,255,255,0.5), 0 0 10px var(--color-primary);
 }
 
+/**
+ * テーマ変数定義
+ */
 :root {
   color-scheme: light dark;
   
-  /* Light Theme (Default) */
+  /* ライトテーマ: 明るい背景に控えめな透明感を付与 */
   --surface-base: #f8fafc;
   --surface-panel: rgba(255, 255, 255, 0.7);
   --text-base: #1e293b;
@@ -48,7 +61,7 @@
 [data-theme="dark"] {
   color-scheme: dark;
   
-  /* Dark Theme Overrides */
+  /* ダークテーマ: 深い紺色を基調に、高い透明度と発光感を強調 */
   --surface-base: #020617;
   --surface-panel: rgba(16, 17, 18, 0.8);
   --text-base: #e2e8f0;
@@ -61,7 +74,7 @@
 }
 
 /* 
- * Background Reset for Electron's Acrylic
+ * Electronのアクリル背景（透明度）を活かすための背景色リセット
  */
 html,
 body,
@@ -77,7 +90,7 @@ body,
 }
 
 /* 
- * Window Base - Moderated Transparency
+ * ウィンドウのベースレイヤー: 適度なブラー効果で可読性と透明感を両立
  */
 .window-base {
   background: var(--surface-base) !important;
@@ -88,7 +101,7 @@ body,
   display: flex;
 }
 
-/* Draggable regions for Electron frameless window */
+/* Electronのフレームレスウィンドウ用ドラッグ領域設定 */
 .drag {
   -webkit-app-region: drag;
 }
@@ -96,7 +109,7 @@ body,
   -webkit-app-region: no-drag;
 }
 
-/* Sidebar Glass - Balanced readability */
+/* サイドバー: 高い彩度とブラー値により、メインエリアとの境界を強調 */
 .sidebar-glass {
   background: var(--sidebar-bg); 
   backdrop-filter: blur(40px) saturate(120%);
@@ -104,7 +117,8 @@ body,
 }
 
 /* 
- * Solid-feeling Glassmorphism for Article Cards (High Visibility)
+ * 記事カード等の主要要素に使用する Glassmorphism
+ * 背後のコンテンツを適度に透過しつつ、浮き出し感を出すためのシャドウを設定
  */
 .glass {
   background: var(--card-bg);
@@ -114,15 +128,18 @@ body,
   box-shadow: 0 10px 40px -6px rgba(0, 0, 0, 0.3);
 }
 
+/* 控えめなブラー効果を持つ軽量なガラス質感 */
 .glass-light {
   background: var(--glass-bg);
   backdrop-filter: blur(8px);
   border: 1px solid var(--glass-border);
 }
 
-/* 
- * Cyberpunk Aesthetic Animations
+/**
+ * サイバーパンク風アニメーション
  */
+
+/* グリッチ効果: データの揺らぎを視覚的に表現 */
 @keyframes glitch {
   0% { transform: translate(0); }
   20% { transform: translate(-2px, 2px); }
@@ -132,11 +149,13 @@ body,
   100% { transform: translate(0); }
 }
 
+/* スキャンライン: モニター走査線のような演出 */
 @keyframes scanline {
   0% { transform: translateY(-100%); }
   100% { transform: translateY(100%); }
 }
 
+/* フリッカー: ネオン管の明滅のような不安定な発光 */
 @keyframes flicker {
   0%, 19.999%, 22%, 62.999%, 64%, 64.999%, 70%, 100% { opacity: 0.99; text-shadow: 0 0 10px var(--color-primary), 0 0 20px var(--color-primary); }
   20%, 21.999%, 63%, 63.999%, 65%, 69.999% { opacity: 0.4; text-shadow: none; }
@@ -172,7 +191,7 @@ body,
   animation: reverse-spin 3s linear infinite;
 }
 
-/* Scrollbar styling */
+/* スクロールバーのカスタマイズ: UI全体の質感に合わせ、細く控えめなデザインに */
 ::-webkit-scrollbar {
   width: 6px;
 }
@@ -182,7 +201,7 @@ body,
   border-radius: 3px;
 }
 
-/* Typography refinements */
+/* タイポグラフィの微調整: プロフェッショナルな印象を与えるためのカーニングと太さ設定 */
 h1, h2, h3, h4, h5, h6 {
   letter-spacing: -0.025em;
   font-weight: 600;

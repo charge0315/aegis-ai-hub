@@ -3,7 +3,17 @@ import type { FeedConfig } from '../models/Schemas';
 import type { RSSFetcher } from './RSSFetcher';
 
 /**
- * 購読フィードのリストと、その健康状態（フェッチ失敗回数等）を管理するクラス。
+ * FeedManager: 購読フィードのリストと、その健康状態（フェッチ成功・失敗履歴）を管理するクラス。
+ * 
+ * 役割:
+ * - `feed_config.json` の読み書きと、メモリ上でのフィードリストの保持。
+ * - 各フィードの生存確認（フェッチの成否）に基づいた自動的なリスト整理。
+ * - 重複したフィードURLのクリーニング。
+ * 
+ * 設計思想:
+ * - 自動修復（自己浄化）: 連続してフェッチに失敗するフィードを自動的に「アクティブ」から「プール」へ移動させ、
+ *   システムの全体的な収集効率と信頼性を維持する。
+ * - 永続化の保証: フィードの追加や削除、失敗回数のカウント更新のたびにファイルへ保存し、不測の終了に備える。
  */
 export class FeedManager {
   public config: FeedConfig = {};
@@ -15,6 +25,7 @@ export class FeedManager {
 
   /**
    * 設定ファイルを非同期に読み込みます。
+   * ファイルが存在しない、または破損している場合は空の設定で初期化します。
    */
   async loadConfig(): Promise<void> {
     try {
@@ -25,6 +36,9 @@ export class FeedManager {
     }
   }
 
+  /**
+   * 現在の設定状態をファイルへ保存します。
+   */
   async saveConfig(): Promise<void> {
     try {
       await fs.writeFile(this.configPath, JSON.stringify(this.config, null, 2), 'utf-8');
@@ -33,10 +47,16 @@ export class FeedManager {
     }
   }
 
+  /**
+   * 特定のカテゴリに属するアクティブなフィードURLリストを取得します。
+   */
   getActiveFeeds(category: string): string[] {
     return this.config[category]?.active || [];
   }
 
+  /**
+   * 全カテゴリのアクティブなフィードURLを、カテゴリ名と共にフラットなリストで取得します。
+   */
   getAllActiveFeeds(): { category: string; url: string }[] {
     const all: { category: string; url: string }[] = [];
     for (const [category, data] of Object.entries(this.config)) {
@@ -45,6 +65,10 @@ export class FeedManager {
     return all;
   }
 
+  /**
+   * 新しいフィードURLを検証した上で追加します。
+   * すでに存在する場合や、RSSとして正しく機能しない場合は追加されません。
+   */
   async addFeed(category: string, url: string, fetcher: RSSFetcher): Promise<boolean> {
     if (!this.config[category]) {
       this.config[category] = { active: [], pool: [], failures: {} };
@@ -53,7 +77,7 @@ export class FeedManager {
     const group = this.config[category];
     if (group.active.includes(url)) return false;
 
-    // 有効性チェック
+    // 有効性チェック: 実際にフェッチして1件以上記事が取れるか確認
     try {
       const items = await fetcher.fetch(url);
       if (items && items.length > 0) {
@@ -67,6 +91,9 @@ export class FeedManager {
     return false;
   }
 
+  /**
+   * フィードURLをリストから削除します。
+   */
   async removeFeed(category: string, url: string): Promise<void> {
     if (this.config[category]) {
       this.config[category].active = this.config[category].active.filter(u => u !== url);
@@ -74,6 +101,9 @@ export class FeedManager {
     }
   }
 
+  /**
+   * フェッチ成功を記録し、そのURLの失敗カウントをリセットします。
+   */
   async reportSuccess(category: string, url: string): Promise<void> {
     const group = this.config[category];
     if (group && group.failures[url]) {
@@ -82,11 +112,17 @@ export class FeedManager {
     }
   }
 
+  /**
+   * フェッチ失敗を記録し、失敗回数が閾値を超えた場合は自動的にリストから除外します。
+   * 
+   * 設計意図:
+   * - 一時的なネットワークエラーによる除外を防ぎつつ、完全に死んでいるソースを排除する。
+   */
   async reportFailure(category: string, url: string): Promise<void> {
     const group = this.config[category];
     if (group) {
       group.failures[url] = (group.failures[url] || 0) + 1;
-      // 5回以上失敗したらアクティブから外す
+      // 5回連続で失敗したフィードはアクティブから外し、予備の「プール」へ移動
       if (group.failures[url] >= 5) {
         group.active = group.active.filter(u => u !== url);
         if (!group.pool.includes(url)) group.pool.push(url);
@@ -95,6 +131,9 @@ export class FeedManager {
     }
   }
 
+  /**
+   * 全てのフィードリストから重複を排除し、最新の状態に最適化します。
+   */
   async cleanConfig(): Promise<void> {
     for (const cat in this.config) {
       this.config[cat].active = [...new Set(this.config[cat].active)];

@@ -10,6 +10,14 @@ export interface CurationResult {
 
 /**
  * CuratorAgent: コンテンツの厳選とフィルタリングを担当。
+ * 
+ * 役割:
+ * - 大量の記事プールから、ユーザーの現在の興味設定に最も合致する「読むべき記事」を抽出する。
+ * - 単なるキーワードマッチングではなく、記事の文脈や価値を推論して評価。
+ * 
+ * 設計思想:
+ * - 価値の審美眼: ノイズ（広告、低品質なまとめ記事、無関係なトピック）を排除し、情報の真偽や重要度を評価。
+ * - パーソナライズ: ユーザーの興味関心を「コンテキスト」として深く理解し、それに寄り添った選択を行う。
  */
 export class CuratorAgent extends BaseAgent {
   constructor(geminiService: GeminiService) {
@@ -25,14 +33,17 @@ export class CuratorAgent extends BaseAgent {
   }
 
   /**
-   * 記事リストをキュレーションする
+   * 記事リストをキュレーション（厳選）する。
+   * 
+   * @param {Record<string, unknown>[]} articles 収集された生の記事データリスト
+   * @param {Interests} interests ユーザーの現在の興味・関心設定
    */
   async curate(articles: Record<string, unknown>[], interests: Interests): Promise<CurationResult> {
     const schema: ResponseSchema = {
       type: SchemaType.OBJECT,
       properties: {
         selected_ids: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
-        reasoning: { 
+        reasoning: {
           type: SchemaType.OBJECT,
           additionalProperties: { type: SchemaType.STRING }
         } as unknown as ResponseSchema

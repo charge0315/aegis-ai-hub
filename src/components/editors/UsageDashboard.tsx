@@ -23,6 +23,15 @@ import { nexusApi } from '../../api/nexusApi';
 import type { UsageStats } from '../../types';
 import { useTranslation } from '../../hooks/useTranslationHook';
 
+/**
+ * UsageDashboard Component
+ * 
+ * Google Gemini API のトークン消費量やコール回数を詳細に可視化するためのダッシュボード。
+ * AIリソースの使用状況を透明化（Observability）することで、
+ * ユーザーがシステム負荷を把握し、賢くAIを活用するための判断材料を提供します。
+ * グラフには Recharts を採用し、直感的な時系列分析を可能にしています。
+ */
+
 const COLORS = ['#6366f1', '#a855f7', '#ec4899', '#f43f5e', '#ef4444'];
 
 export const UsageDashboard: React.FC = () => {
@@ -44,12 +53,17 @@ export const UsageDashboard: React.FC = () => {
 
     void loadStats();
 
+    // リアルタイム更新の購読
     const unsubscribe = nexusApi.onUsageUpdate((newStats: UsageStats) => {
       setStats(newStats);
     });
     return () => unsubscribe();
   }, []);
 
+  /**
+   * メトリクスの集計ロジック
+   * 累積トークン数、アクティブ日数、総APIコール数を計算し、概況カードに反映します。
+   */
   const totalTokens = useMemo(() => {
     let total = 0;
     Object.values(stats).forEach(day => {
@@ -72,6 +86,7 @@ export const UsageDashboard: React.FC = () => {
     return total;
   }, [stats]);
 
+  // 棒グラフ用データ: 過去7日間のトークン消費推移
   const barData = useMemo(() => {
     return Object.entries(stats).map(([date, models]) => {
       let dailyTotal = 0;
@@ -80,6 +95,7 @@ export const UsageDashboard: React.FC = () => {
     }).sort((a, b) => a.date.localeCompare(b.date)).slice(-7);
   }, [stats]);
 
+  // 円グラフ用データ: モデル別のトークン消費比率
   const pieData = useMemo(() => {
     const modelTotals: Record<string, number> = {};
     Object.values(stats).forEach(day => {
@@ -94,15 +110,16 @@ export const UsageDashboard: React.FC = () => {
 
   return (
     <div className="space-y-8 pb-12">
-      {/* Overview Cards */}
+      {/* Overview Cards: 重要指標を最上部に配置 */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <StatCard icon={<Zap className="text-primary" />} label={t.usage.totalTokens} value={totalTokens.toLocaleString()} />
         <StatCard icon={<Activity className="text-purple-400" />} label={t.usage.activeDays} value={activeDays.toString()} />
         <StatCard icon={<Database className="text-pink-400" />} label={t.usage.apiCalls} value={apiCalls.toLocaleString()} />
       </div>
 
-      {/* Charts Section */}
+      {/* Charts Section: 視覚的な分析エリア */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* トークン消費履歴（棒グラフ） */}
         <div className="bg-surface-dark/30 border border-white/5 p-6 rounded-3xl backdrop-blur-xl">
           <div className="flex items-center gap-3 mb-8">
             <History className="text-primary" size={20} />
@@ -124,6 +141,7 @@ export const UsageDashboard: React.FC = () => {
           </div>
         </div>
 
+        {/* モデル別分布（円グラフ） */}
         <div className="bg-surface-dark/30 border border-white/5 p-6 rounded-3xl backdrop-blur-xl">
           <div className="flex items-center gap-3 mb-8">
             <Zap className="text-purple-400" size={20} />
@@ -145,7 +163,7 @@ export const UsageDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Model Note */}
+      {/* Model Note: 技術的な補足情報の提示 */}
       <div className="bg-primary/5 border border-primary/10 p-4 rounded-2xl flex gap-4">
         <div className="p-2 bg-primary/20 rounded-xl h-fit"><Info className="text-primary" size={20} /></div>
         <div className="space-y-1">
@@ -157,6 +175,11 @@ export const UsageDashboard: React.FC = () => {
   );
 };
 
+/**
+ * StatCard Sub-component
+ * 指標一つ一つを美しく提示するための小型パネル。
+ * ホバー時のスケールアニメーションにより、インタラクティブ性を高めています。
+ */
 const StatCard: React.FC<{ icon: React.ReactNode; label: string; value: string }> = ({ icon, label, value }) => (
   <div className="bg-surface-dark/30 border border-white/5 p-6 rounded-3xl backdrop-blur-xl group hover:border-primary/20 transition-all duration-300">
     <div className="flex items-center gap-4">

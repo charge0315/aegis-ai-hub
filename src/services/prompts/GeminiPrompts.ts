@@ -1,10 +1,18 @@
 import { type ResponseSchema, SchemaType } from "@google/generative-ai";
 
 /**
- * Schemas and Prompts for GeminiService
+ * GeminiPrompts: GeminiServiceで使用されるプロンプトおよびレスポンススキーマの定義。
+ * 
+ * 設計思想:
+ * - 構造化出力の徹底: AIからのレスポンスを常にJSON形式で受け取るため、詳細なResponseSchemaを定義。
+ * - 専門家としての役割付与: AIに対して「専門家(Expert)」などの役割を明示し、出力の質を高める。
+ * - 柔軟なパラメータ化: 各プロンプトは関数として定義され、アプリケーションの状態（興味、記事プール等）を動的に注入可能。
  */
 
-// 1. Curation
+// 1. Curation (キュレーション)
+/**
+ * 大量の記事から、ユーザーの興味に最も合致する10件を抽出するためのスキーマとプロンプト。
+ */
 export const CURATE_SCHEMA: ResponseSchema = {
   type: SchemaType.OBJECT,
   properties: {
@@ -29,7 +37,10 @@ export const curatePrompt = (interests: string, pool: string) => `
 候補: ${pool}
 `;
 
-// 2. Evolution Proposals
+// 2. Evolution Proposals (自律的な興味の進化)
+/**
+ * システムが自律的に新しいソースやキーワードを提案するためのスキーマ。
+ */
 export const EVOLUTION_SCHEMA: ResponseSchema = {
   type: SchemaType.OBJECT,
   properties: {
@@ -80,7 +91,10 @@ export const evolutionPrompt = (interests: string) => `
 現在の興味リスト: ${interests}
 `;
 
-// 3. Fallback Evolution
+// 3. Fallback Evolution (フォールバック提案)
+/**
+ * 専門的なソースが見つからない場合に、一般的なニュースサイトのセクションを提案。
+ */
 export const FALLBACK_EVOLUTION_SCHEMA: ResponseSchema = {
   type: SchemaType.OBJECT,
   properties: {
@@ -106,7 +120,10 @@ export const fallbackEvolutionPrompt = (categories: string) => `
 興味設定: ${categories}
 `;
 
-// 4. Restructure
+// 4. Restructure (構成の再構築)
+/**
+ * カテゴリの統合、分割、リネーミングを伴う大規模な環境整理のためのスキーマ。
+ */
 export const RESTRUCTURE_SCHEMA = (targetCount: number): ResponseSchema => ({
   type: SchemaType.OBJECT,
   properties: {
@@ -163,7 +180,7 @@ export const restructurePrompt = (targetCount: number, language: string, brands:
 現在のフィード: ${feeds}
 `;
 
-// 5. Discover Sites
+// 5. Discover Sites (サイト探索)
 export const DISCOVER_SITES_SCHEMA: ResponseSchema = {
   type: SchemaType.OBJECT,
   properties: {
@@ -188,7 +205,7 @@ export const discoverSitesPrompt = (interests: string) => `
 興味設定: ${interests}
 `;
 
-// 6. Discover English Sites
+// 6. Discover English Sites (英語サイト探索)
 export const DISCOVER_ENGLISH_SITES_SCHEMA: ResponseSchema = {
   type: SchemaType.OBJECT,
   properties: {
@@ -213,7 +230,7 @@ export const discoverEnglishSitesPrompt = (targetInterests: string) => `
 以下のカテゴリにおいて、英語のRSSフィードを提案してください。対象カテゴリ: ${targetInterests}
 `;
 
-// 7. Translate Articles
+// 7. Translate Articles (記事翻訳)
 export const TRANSLATE_ARTICLES_SCHEMA: ResponseSchema = {
   type: SchemaType.OBJECT,
   properties: {
@@ -237,7 +254,10 @@ export const translateArticlesPrompt = (articles: string) => `
 リスト: ${articles}
 `;
 
-// 8. Analyze Trends
+// 8. Analyze Trends (トレンド分析)
+/**
+ * 収集した記事の中から、まだカテゴリ化されていないがユーザーの興味を惹く可能性のある要素を抽出。
+ */
 export const ANALYZE_TRENDS_SCHEMA: ResponseSchema = {
   type: SchemaType.OBJECT,
   properties: {
@@ -266,7 +286,7 @@ export const analyzeTrendsPrompt = (categories: string, articles: string) => `
 最新記事: ${articles}
 `;
 
-// 9. Suggest Category Details
+// 9. Suggest Category Details (カテゴリ詳細の提案)
 export const SUGGEST_CATEGORY_DETAILS_SCHEMA: ResponseSchema = {
   type: SchemaType.OBJECT,
   properties: {
@@ -282,7 +302,7 @@ export const suggestCategoryDetailsPrompt = (categoryName: string) => `
 カテゴリ「${categoryName}」に関連するブランド(5つ)とキーワード(5つ)を提案してください。
 `;
 
-// 10. Translate Interests
+// 10. Translate Interests (興味設定の翻訳)
 export const TRANSLATE_INTERESTS_SCHEMA: ResponseSchema = {
   type: SchemaType.OBJECT,
   properties: {

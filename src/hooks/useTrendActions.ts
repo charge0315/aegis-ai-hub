@@ -12,6 +12,23 @@ interface UseTrendActionsProps {
   setActiveTab: (tab: EditorTab) => void;
 }
 
+/**
+ * AIによるトレンド発見（Discover Trends）と、提案されたキーワードの管理（昇格・却下）を担当するカスタムフック。
+ * 
+ * 【設計思想】
+ * - 外部の関心事（トレンド）を検出し、それを内部の設定（興味カテゴリ）へと昇華させる「発見から習得」の
+ *   ワークフローをカプセル化します。
+ * - 発見されたキーワードを「learned_keywords」として一時的に保持し、ユーザーの明示的な操作（Promote）
+ *   によって本採用されるプロセスを管理します。
+ * 
+ * 【実装の意図】
+ * - `handleDiscoverTrends` では、実行前にAPIキーの存在を確認し、不足していればシステム設定への
+ *   誘導を行うことで、エラー体験の最小化を図っています。
+ * - 発見されたトレンドは、既に習得済みのキーワードと重複しないようにチェックした上で、
+ *   検出日時（detectedAt）などのメタデータと共に保存されます。
+ * - `handlePromoteKeyword` では、単にカテゴリにキーワードを追加するだけでなく、
+ *   習得済みリストからの削除までを一貫して行い、データの二重管理を防止しています。
+ */
 export function useTrendActions({
   setDraft,
   customAlert,

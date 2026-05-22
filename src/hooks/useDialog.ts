@@ -12,6 +12,20 @@ interface DialogState {
   placeholder?: string;
 }
 
+/**
+ * カスタムダイアログの表示状態と、Promiseベースの命令的呼び出しを管理するカスタムフック。
+ * 
+ * 【設計思想】
+ * - ダイアログの「表示」というUI操作を、関数呼び出しの結果を待機する Promise として抽象化します。
+ * - これにより、ビジネスロジック内で `if (await confirm(...)) { ... }` のような同期的な記述が可能になり、
+ *   コールバック地獄やフラグ管理の煩雑さを解消します。
+ * 
+ * 【実装の意図】
+ * - `alert`, `confirm`, `prompt` の各関数は、`showDialog` を内部で呼び出し、ユーザーの応答（onConfirm/onCancel）
+ *   によって Promise を resolve します。
+ * - `hideDialog` を実行した後に resolve することで、ダイアログが閉じるアニメーションとロジックの実行タイミングを
+ *   適切に制御しています。
+ */
 export function useDialog() {
   const [dialog, setDialog] = useState<DialogState>({
     isOpen: false,

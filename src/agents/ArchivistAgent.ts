@@ -14,6 +14,14 @@ export interface ArchiveResult {
 
 /**
  * ArchivistAgent: データの保存、構造化、要約を担当。
+ * 
+ * 役割:
+ * - 収集された情報を体系的に整理し、長期保存に適した形式で構造化する。
+ * - 記事の要約、主要なポイントの抽出、メタデータ（感情分析、重要度）の付与を行う。
+ * 
+ * 設計思想:
+ * - 知識の永続化: 単なるデータの蓄積ではなく、後から再利用しやすい「知識（ナレッジ）」へと変換する。
+ * - コンテキストの保持: 過去のデータとの関連付けや、その時の世相を反映したタグ付けを得意とする。
  */
 export class ArchivistAgent extends BaseAgent {
   constructor(geminiService: GeminiService) {
@@ -24,12 +32,14 @@ export class ArchivistAgent extends BaseAgent {
     return `
 あなたは Aegis Nexus の 'Archivist' エージェントです。
 収集された情報を体系的に整理し、長期保存に適した形式で構造化します。
-情報の要約、メタデータの付与、および過去のデータとの関連付けを得意とします。
+情報の要約、メタデータの付与、および過去のデータとの関連付けを得意としています。
 `;
   }
 
   /**
-   * コンテンツを要約し、構造化データを生成する
+   * コンテンツを要約し、構造化データを生成する。
+   * 
+   * @param {string} content 要約・分析対象となる記事の本文または概要
    */
   async summarizeAndArchive(content: string): Promise<ArchiveResult> {
     const schema: ResponseSchema = {

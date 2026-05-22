@@ -1,3 +1,15 @@
+/**
+ * Aegis Nexus メインアプリケーションコンポーネント
+ * 
+ * このコンポーネントは、アプリケーションの全体構造、ナビゲーション、
+ * およびグローバルな状態（設定、記事データ、UI設定）を管理します。
+ * 
+ * デザイン思想:
+ * - サイドバーとメインコンテンツエリアの分離による直感的な操作感。
+ * - Backdrop-blur（アクリル質感）を多用したモダンで洗練されたUI。
+ * - Framer Motion を使用したスムーズなアニメーション遷移。
+ */
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -33,6 +45,9 @@ interface AppBodyProps {
   isSyncing: boolean;
 }
 
+/**
+ * アプリケーションの主要な表示ロジックを担当する内部コンポーネント
+ */
 const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch, syncError, isSyncing }) => {
   const {
     feedSize,
@@ -42,22 +57,29 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
     theme, setTheme
   } = ui;
 
+  // UIの状態管理: 表示中のビュー、検索クエリ、パレットの開閉、サイドバーの状態
   const [currentView, setCurrentView] = useState<'feed' | 'settings'>('feed');
   const [searchQuery, setSearchQuery] = useState('');
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 1024);
   const { t } = useTranslation();
 
+  // カスタムフックによるグローバル機能の注入
   useTheme(theme);
   useKeyboardShortcuts(useMemo(() => ({
     toggleCommandPalette: () => setIsCommandPaletteOpen(prev => !prev)
   }), []));
 
+  /**
+   * ナビゲーション処理
+   * 指定されたビュー（フィードまたは設定）へ遷移し、必要に応じて検索クエリ（カテゴリ）を設定します。
+   */
   const handleNavigate = useCallback((view: 'feed' | 'settings', category?: string) => {
     setCurrentView(view);
     if (category) setSearchQuery(category);
   }, []);
 
+  // 画面リサイズに応じたサイドバーの自動開閉
   useEffect(() => {
     const handleResize = () => setIsSidebarOpen(window.innerWidth >= 1024);
     window.addEventListener('resize', handleResize);
@@ -66,6 +88,7 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
 
   const { dialog, alert: dialogAlert, confirm: dialogConfirm, prompt: dialogPrompt } = useDialog();
 
+  // 初回起動時の初期化フラグ管理
   useEffect(() => {
     if (isInitialized === false) {
       setIsInitialized(true);
@@ -73,8 +96,16 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
     }
   }, [isInitialized, setIsInitialized]);
 
+  // AIエージェントのイベント監視（データ更新時に再取得）
   const agents = useAgentEvents(refetch);
 
+  /**
+   * 記事データのフィルタリングとソート
+   * - 90日以内の記事に限定
+   * - 検索キーワードによるフィルタリング
+   * - 日本語のみ表示設定の適用
+   * - 日本語記事を優先し、スコア順にソート
+   */
   const filteredArticles = useMemo(() => {
     let result = [...articles];
     const limitDate = new Date();
@@ -97,6 +128,9 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
     });
   }, [articles, searchQuery, isJapaneseOnly]);
 
+  /**
+   * 記事をカテゴリごとにグループ化
+   */
   const articlesByCategory = useMemo(() => {
     const groups: Record<string, Article[]> = {};
     
@@ -119,6 +153,7 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
 
   return (
     <div className="flex h-screen bg-[#0a0b0c] text-slate-200 overflow-hidden font-sans">
+      {/* カスタムダイアログ: 全体で統一されたデザインの確認・警告・入力インターフェース */}
       {dialog.isOpen && (
         <CustomDialog 
           isOpen={dialog.isOpen} 
@@ -132,6 +167,7 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
         />
       )}
 
+      {/* コマンドパレット: キーボード中心の操作を提供するパワーユーザー向けインターフェース */}
       <CommandPalette 
         isOpen={isCommandPaletteOpen} 
         onClose={() => setIsCommandPaletteOpen(false)} 
@@ -141,6 +177,7 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
         onTriggerOrchestration={async (req) => { await nexusApi.triggerOrchestration(req); }}
       />
 
+      {/* サイドバー: アクリル質感を活用したナビゲーションエリア */}
       <aside 
         style={{ width: isSidebarOpen ? '280px' : '0px' }} 
         className="relative z-40 flex-shrink-0 bg-black/40 backdrop-blur-2xl border-r border-white/5 overflow-hidden flex flex-col transition-all duration-300"
@@ -160,9 +197,11 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
             <span>{t.sidebar?.settings}</span>
           </button>
         </nav>
+        {/* エージェントモニター: 背後で動作するAIエージェントの活動状況を可視化 */}
         <div className="p-4 border-t border-white/5 no-drag"><AgentMonitor agents={agents} /></div>
       </aside>
 
+      {/* メインコンテンツ: 記事フィードまたは設定画面を動的に切り替え */}
       <main className="flex-1 flex flex-col min-w-0 bg-transparent relative">
         <header className="h-20 flex items-center justify-between px-8 bg-black/10 backdrop-blur-md border-b border-white/5 z-30 drag">
           <div className="flex items-center gap-6 no-drag">
@@ -195,6 +234,7 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
 
           {currentView === 'feed' ? (
             <div className="max-w-[1600px] mx-auto space-y-12 relative">
+              {/* 同期中アニメーション: データの鮮度を保つためのAIエージェントの活動を演出 */}
               <AnimatePresence>
                 {isSyncing && (
                   <motion.div 
@@ -235,6 +275,7 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
                 )}
               </AnimatePresence>
 
+              {/* カテゴリ別の記事レンダリング */}
               {Object.entries(articlesByCategory).map(([category, items]) => (
                 <div key={category} className="space-y-6">
                   <div className="flex items-center gap-4">
@@ -257,6 +298,7 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
             </div>
           ) : (
             settings ? (
+              /* 設定エディタ: 統合された高度な設定インターフェース */
               <div data-testid="unified-editor-container">
                 <UnifiedEditor 
                   currentSettings={settings} 
@@ -280,6 +322,9 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
   );
 };
 
+/**
+ * 外部ラッパーコンポーネント: 言語設定等のプロバイダーを適用
+ */
 const App: React.FC = () => {
   const ui = useUiSettingsSync();
   const { settings, articles, sync, refetch, error: syncError, isSyncing } = useNexusSync();

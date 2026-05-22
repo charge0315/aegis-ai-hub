@@ -21,6 +21,15 @@ import type { NexusSettings, UiSettings } from '../types';
 import type { DialogType } from './CustomDialog';
 import { useTranslation } from '../hooks/useTranslationHook';
 
+/**
+ * UnifiedEditor Component
+ * 
+ * Aegis Nexus の「神経中枢」とも言える統合エディタ。
+ * 興味関心の定義、AIエージェントの能力調整、システム設定を一箇所で管理できます。
+ * 単なるフォームではなく、AIによる構造最適化（Restructure）やトレンド発見など、
+ * AIと人間が協力して「情報フィルタリングの定義」を磨き上げるためのハブとして設計されています。
+ */
+
 interface UnifiedEditorProps {
   currentSettings: NexusSettings;
   onSave: (newSettings: NexusSettings) => Promise<void>;
@@ -49,6 +58,7 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
   const [activeTab, setActiveTab] = useState<Tab>('editor');
   const { t } = useTranslation();
 
+  // ロジック層（Hook）との分離により、UI表現に集中
   const {
     draft,
     apiKey,
@@ -96,6 +106,7 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* 警告バナー: APIキー未設定時など、システムの根幹に関わる欠落をユーザーに通知 */}
       {!apiKey && activeTab !== 'system' && (
         <div className="bg-alert/10 border border-alert/20 rounded-2xl p-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 text-alert">
@@ -123,6 +134,7 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
           <p className="text-sm text-content-muted mt-1">{t.settings?.subtitle}</p>
         </div>
         
+        {/* AI Restructure: AIによるカテゴリ構造の最適化を提案する、本アプリの核心的機能の一つ */}
         <div className="flex gap-3">
           <button
             onClick={handleRestructure}
@@ -156,7 +168,7 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
         </div>
       </div>
 
-      {/* Tabs */}
+      {/* Tabs: 設定項目の論理的な分離 */}
       <div className="flex border-b border-content-muted/20 gap-8">
          <TabButton active={activeTab === 'editor'} onClick={() => setActiveTab('editor')} icon={<Edit3 size={18} />} label={t.settings?.tabs?.editor} data-testid="tab-editor" />
          <TabButton active={activeTab === 'graph'} onClick={() => setActiveTab('graph')} icon={<Network size={18} />} label={t.settings?.tabs?.graph} data-testid="tab-graph" />
@@ -166,8 +178,9 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
          <TabButton active={activeTab === 'usage'} onClick={() => setActiveTab('usage')} icon={<LayoutTemplate size={18} />} label={t.settings?.tabs?.usage} data-testid="tab-usage" />
       </div>
 
-      {/* Tab Content */}
+      {/* Tab Content Area */}
       <div className="min-h-[600px] relative">
+        {/* AI思考中オーバーレイ: 再構築などの重いAI処理中、システムが「真剣に検討している」ことを演出 */}
         {restructureStep && (
           <div className="absolute inset-0 z-50 bg-[#0a0b0c]/80 backdrop-blur-md rounded-3xl border border-white/10 shadow-2xl">
             <div className="sticky top-[40vh] p-10 flex flex-col items-center justify-center gap-6 text-center">

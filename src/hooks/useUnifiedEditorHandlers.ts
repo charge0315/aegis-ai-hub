@@ -21,6 +21,23 @@ interface UseUnifiedEditorHandlersProps {
   setTheme: (theme: UiSettings['theme']) => void;
 }
 
+/**
+ * 統合エディタにおける全カテゴリ・スキル・プロファイル操作を統括するオーケストレーターフック。
+ * 
+ * 【設計思想】
+ * - 巨大になりがちなエディタコンポーネントのロジックを、機能単位の「サブフック」に分割し、
+ *   このフックでそれらを一つの統合インターフェースとして再構築します。
+ * - 状態（draft）をこの親フックで集中管理し、各サブフックに setter や getter を委譲することで、
+ *   コンポーネント間のデータ整合性と、単一責任の原則を両立します。
+ * 
+ * 【実装の意図】
+ * - `useMemo` を使用して、言語設定に応じたデフォルトスキルセット（DEFAULT_SKILLS）を定義し、
+ *   不要な再計算を抑えつつ、翻訳の切り替えに追従するようにしています。
+ * - `isDirty` を算出することで、保存ボタンの有効・無効状態などのUI制御に必要な情報を一元化しています。
+ * - 各サブフック（useTrendActions, useCategoryActions等）を組み合わせ、
+ *   一つの巨大な「ハンドラセット」としてエクスポートすることで、UI側はビジネスロジックを意識せずに
+ *   関数をバインドするだけで済むように設計されています。
+ */
 export function useUnifiedEditorHandlers({
   currentSettings,
   onSave,

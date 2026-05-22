@@ -61665,10 +61665,10 @@ var init_Schemas = __esm({
     });
     UsageStatsSchema = external_exports.record(
       external_exports.string(),
-      // YYYY-MM-DD
+      // キーは YYYY-MM-DD 形式の日付文字列
       external_exports.record(
         external_exports.string(),
-        // model name
+        // キーはモデル名（例: gemini-3.1-pro）
         external_exports.object({
           promptTokens: external_exports.number(),
           candidatesTokens: external_exports.number(),
@@ -61705,6 +61705,11 @@ var init_UsageManager = __esm({
       constructor(statsPath) {
         this.statsPath = statsPath;
       }
+      /**
+       * 統計ファイルを読み込み、メモリ上に展開します。
+       * Zodスキーマ（UsageStatsSchema）を使用してパースすることで、
+       * 手動編集などによるデータの破損からアプリケーションを保護します。
+       */
       async init() {
         try {
           const data2 = await import_promises.default.readFile(this.statsPath, "utf-8");
@@ -61713,6 +61718,11 @@ var init_UsageManager = __esm({
           this.stats = {};
         }
       }
+      /**
+       * 特定のモデルの利用実績を記録します。
+       * 入力（prompt）と出力（candidates）を分けて記録することで、
+       * モデルごとの料金体系に合わせた正確なコスト計算を将来的に可能にします。
+       */
       async recordUsage(model, promptTokens, candidatesTokens) {
         const today = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
         if (!this.stats[today]) this.stats[today] = {};
@@ -61726,9 +61736,18 @@ var init_UsageManager = __esm({
         s.callCount += 1;
         await this.save();
       }
+      /**
+       * 現在保持している全期間の統計データを取得します。
+       * ダッシュボード表示などのフロントエンド機能での利用を想定しています。
+       */
       async getStats() {
         return this.stats;
       }
+      /**
+       * 統計データをJSONファイルに書き出します。
+       * 保存失敗時の副作用（メモリ上のデータとファイル間の不一致）を最小限にするため、
+       * エラーはキャッチしてログ出力に留めます。
+       */
       async save() {
         try {
           await import_promises.default.writeFile(this.statsPath, JSON.stringify(this.stats, null, 2), "utf-8");
@@ -61765,6 +61784,9 @@ var init_SettingsManager = __esm({
         const usagePath = import_path.default.join(this.dataDir, "usage_stats.json");
         this.usageManager = new UsageManager(usagePath);
       }
+      /**
+       * 必要なディレクトリとファイルの初期化を確認・実行します。
+       */
       async init() {
         await import_promises2.default.mkdir(this.dataDir, { recursive: true });
         await this._ensureFile(this.interestsPath, { categories: {}, lastUpdated: Date.now() });
@@ -61774,6 +61796,7 @@ var init_SettingsManager = __esm({
       }
       /**
        * 工場出荷時のデフォルト設定に戻します。
+       * 現在の設定をクリアし、最小限の構造で初期化します。
        */
       async resetToDefaults() {
         try {
@@ -61785,6 +61808,9 @@ var init_SettingsManager = __esm({
           return false;
         }
       }
+      /**
+       * AIモデルごとの使用量統計（トークン数）を取得します。
+       */
       async getUsageStats() {
         return await this.usageManager.getStats();
       }
@@ -61796,7 +61822,7 @@ var init_SettingsManager = __esm({
         }
       }
       /**
-       * UI表示設定を取得します。
+       * UI表示設定（ダークモード、自動起動、言語設定等）を取得します。
        */
       async getUiSettings() {
         const filePath = import_path.default.join(this.dataDir, "ui_settings.json");
@@ -61815,6 +61841,10 @@ var init_SettingsManager = __esm({
         const validated = UiSettingsSchema.parse(settings);
         await this._safeWrite(filePath, validated);
       }
+      /**
+       * 保存されているGemini APIキーを取得します。
+       * 開発環境では環境変数からの取得もサポート。
+       */
       async getApiKey() {
         try {
           const data2 = await import_promises2.default.readFile(this.credentialsPath, "utf8");
@@ -61829,20 +61859,36 @@ var init_SettingsManager = __esm({
           return this.isDev ? process.env.GEMINI_API_KEY || "" : "";
         }
       }
+      /**
+       * Gemini APIキーを安全に保存します。
+       */
       async saveApiKey(apiKey) {
         const creds = { geminiApiKey: apiKey };
         await this._safeWrite(this.credentialsPath, creds);
       }
+      /**
+       * ユーザーの興味関心設定を取得します。
+       */
       async getInterests() {
         const data2 = await import_promises2.default.readFile(this.interestsPath, "utf8");
         return InterestsSchema.parse(JSON.parse(data2));
       }
+      /**
+       * フィードの購読設定を取得します。
+       */
       async getFeedConfig() {
         const data2 = await import_promises2.default.readFile(this.feedConfigPath, "utf8");
         return FeedConfigSchema.parse(JSON.parse(data2));
       }
       /**
-       * クラウド（またはインポート）からの設定を同期します。
+       * 設定データの同期（外部からの上書き保存）を行います。
+       * 
+       * 処理内容:
+       * 1. データの型バリデーション。
+       * 2. カテゴリ名やフィード構成の正規化（表記揺れや名寄せ）。
+       * 3. タイムスタンプによるコンフリクト確認（デバイス上の設定が新しい場合は拒否）。
+       * 4. 新規追加されるフィードの有効性チェック（オプション）。
+       * 5. 安全な永続化とバックアップ。
        */
       async syncSettings(settings, fetcher) {
         const { interests, feedConfig, windowState, lastUpdated } = settings || {};
@@ -61917,6 +61963,9 @@ var init_SettingsManager = __esm({
           validatedFeedConfig
         };
       }
+      /**
+       * 前回の終了時のウィンドウ位置やサイズを取得します。
+       */
       async getWindowState() {
         const windowStatePath = import_path.default.join(this.dataDir, "window_state.json");
         try {
@@ -61934,6 +61983,11 @@ var init_SettingsManager = __esm({
           throw new Error(`Read failed: ${filePath}`);
         }
       }
+      /**
+       * ファイルへの安全な書き込み処理。
+       * 既存ファイルがある場合、最大3世代のバックアップ(.bak, .bak2, .bak3)を自動作成し、
+       * 書き込み失敗時のデータ全ロスを防止します。
+       */
       async _safeWrite(filePath, data2) {
         const content = JSON.stringify(data2, null, 2);
         try {
@@ -61983,9 +62037,10 @@ var init_ElectronSettingsManager = __esm({
     init_Schemas();
     ElectronSettingsManager = class extends SettingsManager {
       /**
-       * 構造化された設定管理クラスのコンストラクタ
+       * コンストラクタ
        * 
-       * 意図: 親クラスの SettingsManager を初期化し、共通の設定管理機能を継承するためです。
+       * 意図: 親クラスのファイルパス管理機能を活用しつつ、
+       * Electronメインプロセスからのみ利用可能なAPIへの依存をカプセル化します。
        */
       constructor(config2) {
         super(config2);
@@ -61993,8 +62048,9 @@ var init_ElectronSettingsManager = __esm({
       /**
        * 保存されているAPIキーを取得します。
        * 
-       * 意図: ファイルから設定を読み込み、暗号化されている場合は復号して
-       * アプリケーションが直接利用可能な形式の文字列を返すためです。
+       * 意図: ファイルから設定を読み込み、暗号化されている場合は復号します。
+       * これにより、万が一設定ファイルが第三者に渡っても、OSのログイン認証がない限り
+       * APIキーが生テキストで漏洩することを防ぎます。
        */
       async getApiKey() {
         try {
@@ -62019,8 +62075,8 @@ var init_ElectronSettingsManager = __esm({
       /**
        * APIキーをセキュアに保存します。
        * 
-       * 意図: 設定ファイルへの書き出し前に、機密情報を暗号化して
-       * セキュリティレベルを高めるためです。
+       * 意図: 機密情報をディスクに書き出す前にOSレベルで暗号化し、
+       * セキュリティのベストプラクティスを遵守します。
        */
       async saveApiKey(apiKey) {
         let keyToSave = apiKey;
@@ -63453,14 +63509,25 @@ var init_GeminiService = __esm({
       constructor(apiKey) {
         this.genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
       }
+      /**
+       * 使用量統計を記録するためのマネージャーを設定。
+       */
       setUsageManager(manager) {
         this.usageManager = manager;
       }
+      /**
+       * APIキーを動的に更新（設定画面からの変更に対応）。
+       */
       updateApiKey(apiKey) {
         this.genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
       }
       /**
        * 厳格なデータ構造でのみ返答を許すためのコア・インターフェース。
+       * 
+       * 設計意図:
+       * - GeminiのJSONモード(responseMimeType: "application/json")を活用。
+       * - フォールバック処理: 特定のモデルでエラー（特にクォータ不足や一時的な不調）が発生した場合、
+       *   自動的に下位モデルへリクエストをリトライし、ユーザー体験を損なわないようにする。
        */
       async generateStructured(prompt, schema, modelName = this.primaryModelName, zodSchema) {
         if (!this.genAI) throw new Error("Gemini API\u30AD\u30FC\u304C\u8A2D\u5B9A\u3055\u308C\u3066\u3044\u307E\u305B\u3093\u3002");
@@ -63498,19 +63565,34 @@ var init_GeminiService = __esm({
           throw new Error(`Gemini API execution failed: ${errorMessage}`, { cause: error51 });
         }
       }
+      /**
+       * 収集された記事プールから、ユーザーの興味に合致するものを厳選。
+       * 「なぜこの記事を選んだのか」という推論理由（geminiReason）を含めて返す。
+       */
       async curate(articlesPool, interests) {
         const prompt = curatePrompt(JSON.stringify(interests.categories), JSON.stringify(articlesPool.slice(0, 30).map((a, i) => ({ id: i, title: String(a.title) }))));
         const result = await this.generateStructured(prompt, CURATE_SCHEMA, this.primaryModelName, CurateResponseSchema);
         return result.selections.map((item) => ({ ...articlesPool[item.id], geminiReason: item.reason }));
       }
+      /**
+       * 自律進化のための提案を取得。
+       * 新しいニュースソース、注視すべきブランド、関連キーワードをAIに考察させる。
+       */
       async getEvolutionProposals(interests) {
         const prompt = evolutionPrompt(JSON.stringify(interests));
         return await this.generateStructured(prompt, EVOLUTION_SCHEMA, this.primaryModelName, EvolutionProposalSchema);
       }
+      /**
+       * 通常の進化提案に失敗した場合や、リソースが見つからない場合のフォールバック提案。
+       */
       async getFallbackEvolutionProposals(interests) {
         const prompt = fallbackEvolutionPrompt(JSON.stringify(interests.categories));
         return await this.generateStructured(prompt, FALLBACK_EVOLUTION_SCHEMA, this.primaryModelName, FallbackEvolutionSchema);
       }
+      /**
+       * 大規模な興味・フィード構成の再構築（整理整頓）。
+       * 重複を排除し、現在の興味関心に合わせてカテゴリを最適化する。
+       */
       async getRestructureProposal(interests, currentFeeds, targetCount = 10, language = "ja") {
         const allExistingUrls = Object.entries(currentFeeds).flatMap(([cat, data2]) => data2.active.map((url3) => ({ url: url3, oldCategory: cat })));
         const allExistingBrands = [...new Set(Object.values(interests.categories).flatMap((c) => c.brands))];
@@ -63566,31 +63648,49 @@ var init_GeminiService = __esm({
           return false;
         }
       }
+      /**
+       * 興味に沿った新しいRSS/Atomサイトの探索。
+       */
       async discoverSites(interests) {
         const prompt = discoverSitesPrompt(JSON.stringify(interests.categories));
         const result = await this.generateStructured(prompt, DISCOVER_SITES_SCHEMA, this.primaryModelName, DiscoverSitesSchema);
         return result.sites;
       }
+      /**
+       * グローバル展開のための英語圏ソースの探索。
+       */
       async discoverEnglishSites(interests, targetCategories) {
         const targets = targetCategories.map((cat) => ({ category: cat, details: interests.categories[cat] }));
         const prompt = discoverEnglishSitesPrompt(JSON.stringify(targets));
         const result = await this.generateStructured(prompt, DISCOVER_ENGLISH_SITES_SCHEMA, this.primaryModelName, DiscoverEnglishSitesSchema);
         return result.sites;
       }
+      /**
+       * 多言語対応: 英語記事のタイトルと概要を日本語に翻訳。
+       */
       async translateArticles(articles) {
         const prompt = translateArticlesPrompt(JSON.stringify(articles));
         const result = await this.generateStructured(prompt, TRANSLATE_ARTICLES_SCHEMA, this.primaryModelName, TranslateArticlesSchema);
         return result.translations;
       }
+      /**
+       * トレンド分析: 流れてきた最新ニュースから、新しい関心事の兆候を検知。
+       */
       async analyzeTrends(articles, interests) {
         const prompt = analyzeTrendsPrompt(Object.keys(interests.categories).join(", "), JSON.stringify(articles.slice(0, 30).map((a) => ({ title: a.title, desc: a.desc }))));
         const result = await this.generateStructured(prompt, ANALYZE_TRENDS_SCHEMA, this.primaryModelName, AnalyzeTrendsSchema);
         return result.suggestions;
       }
+      /**
+       * 指定したカテゴリ名に基づき、ふさわしいブランド、キーワード、絵文字を自動補完。
+       */
       async suggestCategoryDetails(categoryName) {
         const prompt = suggestCategoryDetailsPrompt(categoryName);
         return await this.generateStructured(prompt, SUGGEST_CATEGORY_DETAILS_SCHEMA, this.primaryModelName, SuggestCategoryDetailsSchema);
       }
+      /**
+       * 既存設定の全翻訳。主に英語設定への移行時に使用。
+       */
       async translateInterests(interests) {
         const prompt = translateInterestsPrompt(JSON.stringify(interests.categories));
         const result = await this.generateStructured(prompt, TRANSLATE_INTERESTS_SCHEMA, this.primaryModelName, TranslateInterestsSchema);
@@ -63624,6 +63724,7 @@ var init_FeedManager = __esm({
       }
       /**
        * 設定ファイルを非同期に読み込みます。
+       * ファイルが存在しない、または破損している場合は空の設定で初期化します。
        */
       async loadConfig() {
         try {
@@ -63633,6 +63734,9 @@ var init_FeedManager = __esm({
           this.config = {};
         }
       }
+      /**
+       * 現在の設定状態をファイルへ保存します。
+       */
       async saveConfig() {
         try {
           await import_promises4.default.writeFile(this.configPath, JSON.stringify(this.config, null, 2), "utf-8");
@@ -63640,9 +63744,15 @@ var init_FeedManager = __esm({
           console.error("[FeedManager] Failed to save config:", err);
         }
       }
+      /**
+       * 特定のカテゴリに属するアクティブなフィードURLリストを取得します。
+       */
       getActiveFeeds(category) {
         return this.config[category]?.active || [];
       }
+      /**
+       * 全カテゴリのアクティブなフィードURLを、カテゴリ名と共にフラットなリストで取得します。
+       */
       getAllActiveFeeds() {
         const all3 = [];
         for (const [category, data2] of Object.entries(this.config)) {
@@ -63650,6 +63760,10 @@ var init_FeedManager = __esm({
         }
         return all3;
       }
+      /**
+       * 新しいフィードURLを検証した上で追加します。
+       * すでに存在する場合や、RSSとして正しく機能しない場合は追加されません。
+       */
       async addFeed(category, url3, fetcher) {
         if (!this.config[category]) {
           this.config[category] = { active: [], pool: [], failures: {} };
@@ -63668,12 +63782,18 @@ var init_FeedManager = __esm({
         }
         return false;
       }
+      /**
+       * フィードURLをリストから削除します。
+       */
       async removeFeed(category, url3) {
         if (this.config[category]) {
           this.config[category].active = this.config[category].active.filter((u) => u !== url3);
           await this.saveConfig();
         }
       }
+      /**
+       * フェッチ成功を記録し、そのURLの失敗カウントをリセットします。
+       */
       async reportSuccess(category, url3) {
         const group = this.config[category];
         if (group && group.failures[url3]) {
@@ -63681,6 +63801,12 @@ var init_FeedManager = __esm({
           await this.saveConfig();
         }
       }
+      /**
+       * フェッチ失敗を記録し、失敗回数が閾値を超えた場合は自動的にリストから除外します。
+       * 
+       * 設計意図:
+       * - 一時的なネットワークエラーによる除外を防ぎつつ、完全に死んでいるソースを排除する。
+       */
       async reportFailure(category, url3) {
         const group = this.config[category];
         if (group) {
@@ -63692,6 +63818,9 @@ var init_FeedManager = __esm({
           await this.saveConfig();
         }
       }
+      /**
+       * 全てのフィードリストから重複を排除し、最新の状態に最適化します。
+       */
       async cleanConfig() {
         for (const cat in this.config) {
           this.config[cat].active = [...new Set(this.config[cat].active)];
@@ -63722,13 +63851,14 @@ var init_DiscoveryService = __esm({
       }
       /**
        * AIによるカテゴリ再編の提案を取得します。
+       * カテゴリの統合、リネーミング、およびフィードの再割り当てをAIに考案させます。
        */
       async getRestructureProposal(interests, targetCount = 10, language = "ja") {
         const currentFeeds = this.feedManager.config;
         return await this.geminiService.getRestructureProposal(interests, currentFeeds, targetCount, language);
       }
       /**
-       * カテゴリ設定を翻訳します。
+       * カテゴリ名や説明など、興味設定全体の多言語翻訳を行います。
        */
       async translateInterests(interests) {
         return await this.geminiService.translateInterests(interests);
@@ -63739,6 +63869,9 @@ var init_DiscoveryService = __esm({
       updateApiKey(apiKey) {
         this.geminiService.updateApiKey(apiKey);
       }
+      /**
+       * 新しいサイトの探索サイクルを実行します。
+       */
       async run(interests) {
         console.log("[DiscoveryService] \u30B5\u30A4\u30C8\u63A2\u7D22\u30D7\u30ED\u30BB\u30B9\u3092\u958B\u59CB\u3057\u307E\u3059...");
         let suggestedSites = await this.geminiService.discoverSites(interests);
@@ -63794,6 +63927,9 @@ var init_DiscoveryService = __esm({
         }));
         return validatedSites;
       }
+      /**
+       * 進化提案（サイト、ブランド、キーワード）の一括取得と検証。
+       */
       async getProposals(interests) {
         const result = await this.geminiService.getEvolutionProposals(interests);
         const validatedSites = [];
@@ -124779,13 +124915,19 @@ var init_ImageCacheManager = __esm({
     ImageCacheManager = class {
       cachePath;
       cache = /* @__PURE__ */ new Map();
+      /**
+       * キャッシュの有効期限 (TTL)。
+       * 7日間としている理由は、ニュース記事の鮮度が概ね1週間で低下し、
+       * 参照されなくなった古いキャッシュを自動破棄してストレージを節約するためです。
+       */
       TTL = 7 * 24 * 60 * 60 * 1e3;
-      // 7日間
       constructor(cacheDir) {
         this.cachePath = import_path3.default.join(cacheDir, "image_cache.json");
       }
       /**
        * キャッシュファイルを読み込み、メモリ上に展開します。
+       * 起動時に一度だけ実行され、同時に期限切れデータのクリーンアップを行うことで
+       * メモリ使用量の肥大化を抑制します。
        */
       async init() {
         try {
@@ -124799,7 +124941,8 @@ var init_ImageCacheManager = __esm({
       }
       /**
        * 指定されたURLに対応する画像URLをキャッシュから取得します。
-       * TTLを過ぎている場合はnullを返します。
+       * TTLを過ぎている場合は、古い情報を返してユーザーを混乱させるよりも
+       * 再取得を促すために null を返して削除します。
        */
       get(url3) {
         const entry = this.cache.get(url3);
@@ -124812,6 +124955,7 @@ var init_ImageCacheManager = __esm({
       }
       /**
        * 記事URLと画像URLのペアをキャッシュに保存し、ファイルに書き出します。
+       * 書き出しを毎回行うことで、不意なクラッシュ時のデータ損失を最小限に抑えます。
        */
       async set(url3, img) {
         this.cache.set(url3, {
@@ -124822,6 +124966,7 @@ var init_ImageCacheManager = __esm({
       }
       /**
        * 有効期限切れのキャッシュを削除します。
+       * この処理は、メモリとディスクの両方から不要なデータを除去するために不可欠です。
        */
       cleanup() {
         const now = Date.now();
@@ -124833,6 +124978,7 @@ var init_ImageCacheManager = __esm({
       }
       /**
        * 現在のキャッシュ状態をJSONファイルに保存します。
+       * JSON.stringify のインデント設定は、デバッグ時の可読性を確保するための意図的なものです。
        */
       async save() {
         try {
@@ -124867,7 +125013,7 @@ var init_EnrichmentService = __esm({
       geminiService = null;
       cacheManager;
       limit = pLimit(5);
-      // 同時実行数を5に制限
+      // 同時実行数を5に制限し、ネットワーク/API負荷をコントロール
       constructor(geminiService2, cacheDir) {
         this.geminiService = geminiService2 || null;
         const finalCacheDir = cacheDir || import_path4.default.resolve(_dirname, "../../data");
@@ -124881,7 +125027,7 @@ var init_EnrichmentService = __esm({
         };
       }
       /**
-       * キャッシュマネージャーの初期化
+       * キャッシュマネージャーの初期化（ファイルシステムへのアクセス準備）
        */
       async init() {
         await this.cacheManager.init();
@@ -124936,6 +125082,7 @@ var init_EnrichmentService = __esm({
       }
       /**
        * 記事URLから最適な画像を抽出します。
+       * OGP(Open Graph Protocol)タグを優先し、見つからない場合は本文内の主要な画像を探索します。
        */
       async scrapeImage(url3) {
         try {
@@ -124977,19 +125124,20 @@ var init_EnrichmentService = __esm({
       }
       /**
        * テキストが翻訳対象（非日本語）であるかを判定します。
+       * 日本語の文字範囲が含まれていない場合に翻訳が必要とみなします。
        */
       isNotJapanese(text3) {
         const jpRegex = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF]/;
         return !jpRegex.test(text3);
       }
       /**
-       * 画像が一切見つからなかった記事に対して、システムが提供するデフォルトの「顔」。
+       * 画像が一切見つからなかった記事に対して、システムが提供するデフォルトの画像URLを取得します。
        */
       getPlaceholder(category) {
         return this.placeholders[category] || "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400";
       }
       /**
-       * RSSフィードの初期取得時に、付帯情報から最も軽量・高速に画像URLを引き出すための第一次フィルター。
+       * RSSフィードの初期取得時に、メタデータ（media:content等）から高速に画像URLを引き出すための第一次フィルター。
        */
       extractBasicImage(item) {
         const mediaContent = item.mediaContent;
@@ -131835,12 +131983,13 @@ var init_RSSFetcher = __esm({
         this.limit = pLimit(concurrency);
         this.parser = new import_rss_parser.default({
           timeout: 2e4,
-          // 20秒に延長
+          // ネットワーク遅延を考慮し20秒に設定
           headers: {
-            // モダンなブラウザの User-Agent を設定してブロックを回避
+            // サーバー側でのブロックを回避するためのヘッダー設定
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
             "Accept": "application/rss+xml, application/xml, text/xml, */*"
           },
+          // 標準外のメタデータ（画像、本文詳細、iTunesタグなど）を明示的にマッピング
           customFields: {
             item: [
               ["content:encoded", "contentEncoded"],
@@ -131854,7 +132003,8 @@ var init_RSSFetcher = __esm({
         });
       }
       /**
-       * 単一のフィードを取得します。リトライロジック付き。
+       * 単一のフィードを取得します。
+       * ネットワークエラー時には自動的にリトライを実施します。
        */
       async fetch(url3, retries = 2) {
         return this.limit(async () => {
@@ -131882,6 +132032,7 @@ var init_RSSFetcher = __esm({
       }
       /**
        * フィードの有効性を検証します。
+       * 主に設定画面での「フィード追加」時の事前チェックに使用。
        */
       async validateFeed(url3) {
         return this.limit(async () => {
@@ -131898,7 +132049,7 @@ var init_RSSFetcher = __esm({
         });
       }
       /**
-       * 複数のフィードを並列で取得します。
+       * リストに含まれる全てのフィードを並列で取得します。
        */
       async fetchAll(feedConfigs) {
         const tasks = feedConfigs.map(
@@ -131965,9 +132116,10 @@ var init_ScoringService = __esm({
       }
       /**
        * 記事のタイトルと要約から、最も関連性の高い内部カテゴリを推論します。
+       * 
        * @param title - 記事タイトル
        * @param desc - 記事要約
-       * @param originalCategory - RSSフィードが提供する元カテゴリ
+       * @param originalCategory - RSSフィードが提供する元カテゴリ（ジャンル）
        * @returns 判定されたカテゴリ名
        */
       detectCategory(title, desc, originalCategory) {
@@ -131983,10 +132135,11 @@ var init_ScoringService = __esm({
       }
       /**
        * ユーザー設定のブランド一致(+10点)とキーワード一致(+8点)に基づき、記事の重要度スコアを算出します。
+       * 
        * @param title - 記事タイトル
        * @param desc - 記事要約
        * @param category - 判定済みカテゴリ
-       * @returns 算出されたスコア
+       * @returns 算出されたスコア（大きいほどユーザーにとって重要）
        */
       calculateScore(title, desc, category) {
         let score = 5;
@@ -132001,10 +132154,11 @@ var init_ScoringService = __esm({
         return score;
       }
       /**
-       * 記事タイトルからブランド名（固有名詞）を抽出します。
+       * 記事タイトルから象徴的なブランド名（固有名詞）を抽出します。
        * ユーザー設定を優先し、その後一般的なブランドリストから検索します。
+       * 
        * @param title - 記事タイトル
-       * @returns 抽出されたブランド名（見つからない場合は 'News'）
+       * @returns 抽出されたブランド名（見つからない場合は一般名称としての 'News'）
        */
       extractBrand(title) {
         const lowerTitle = title.toLowerCase();
@@ -132092,15 +132246,25 @@ var init_Article = __esm({
   "src/models/Article.ts"() {
     init_zod();
     ArticleSchema = external_exports.object({
+      /** 記事のタイトル。空文字は許容せず、取得失敗時は "Untitled" を設定 */
       title: external_exports.string().min(1).default("Untitled"),
+      /** 記事のパーマリンクURL。 */
       link: external_exports.string().url().default(""),
+      /** 記事の概要・説明文。 */
       desc: external_exports.string().default(""),
+      /** 配信元のブランド名（例: TechCrunch, GitHub Blogなど）。 */
       brand: external_exports.string().default("News"),
+      /** ユーザーの興味関心に基づいた重要度スコア（1-10）。 */
       score: external_exports.number().int().default(5),
+      /** アイキャッチ画像のURL。存在しない場合はnull。 */
       img: external_exports.string().nullable().default(null),
+      /** 記事の公開日時。ISO 8601形式。 */
       date: external_exports.string().datetime({ offset: true }).or(external_exports.string()).default(() => (/* @__PURE__ */ new Date()).toISOString()),
+      /** 記事が分類されるカテゴリ名。 */
       category: external_exports.string().default("\u672A\u5206\u985E"),
+      /** AI（Gemini）がこの記事を推薦した理由。 */
       geminiReason: external_exports.string().optional(),
+      /** 記事の言語。多言語フィルタリングや翻訳処理の判定に使用。 */
       language: external_exports.enum(["ja", "en", "other"]).default("en")
     });
     Article = class {
@@ -132115,7 +132279,10 @@ var init_Article = __esm({
       geminiReason;
       language;
       /**
-       * @param data - バリデーション前の生記事データ
+       * 新しいArticleインスタンスを生成する。
+       * 入力データが不完全な場合でも、スキーマ定義に基づき安全なデフォルト値が適用される。
+       * 
+       * @param {unknown} data - RSSやスクレイパーから取得したバリデーション前の生データ
        */
       constructor(data2) {
         const validated = ArticleSchema.parse(data2);
@@ -132132,9 +132299,12 @@ var init_Article = __esm({
         this.desc = this._sanitizeDescription(this.desc);
       }
       /**
-       * 説明文からHTMLタグを除去し、指定文字数でトリミングします。
-       * @param text - サニタイズ対象の文字列
-       * @returns クリーンな要約テキスト
+       * 説明文（description）の正規化処理。
+       * 1. RSSに含まれるHTMLタグを除去し、純粋なテキストのみを抽出。
+       * 2. UIのカード表示を最適化するため、最大文字数で切り詰めを行う。
+       * 
+       * @param {string} text - 処理対象の生文字列
+       * @returns {string} クリーンアップされた要約テキスト
        * @private
        */
       _sanitizeDescription(text3) {
@@ -132143,7 +132313,10 @@ var init_Article = __esm({
         return cleanText.length > 150 ? cleanText.slice(0, 150) + "..." : cleanText;
       }
       /**
-       * シリアライズ用の単純なオブジェクトを返します。
+       * インスタンスをプレーンなJavaScriptオブジェクトに変換する。
+       * JSON.stringify() で呼び出されるほか、ReduxやProps等でデータを渡す際に使用。
+       * 
+       * @returns {ArticleType} バリデーション済みの純粋なデータオブジェクト
        */
       toJSON() {
         return {
@@ -132184,9 +132357,9 @@ var init_ScraperFacade = __esm({
       enrichmentService;
       geminiService;
       /**
-       * @param _interestsPath - 未使用
+       * @param _interestsPath - 未使用（将来の拡張用）
        * @param feedsPath - フィード構成ファイルのパス
-       * @param dataDir - データディレクトリ
+       * @param dataDir - 画像キャッシュなどのデータ保存先
        */
       constructor(_interestsPath, feedsPath, dataDir2) {
         this.feedManager = new FeedManager(feedsPath);
@@ -132195,13 +132368,17 @@ var init_ScraperFacade = __esm({
         this.enrichmentService = new EnrichmentService(this.geminiService, dataDir2);
       }
       /**
-       * APIキーを更新します。
+       * AIサービス（Gemini）のAPIキーを更新します。
+       * 設定変更時に即座に反映させるためのホットスワップを可能にします。
        */
       updateApiKey(apiKey) {
         this.geminiService.updateApiKey(apiKey);
       }
       /**
-       * AIによるおすすめ記事10選を生成。
+       * AIによる「おすすめ記事」のキュレーションを実行します。
+       * 
+       * 意図: 単なる新着順ではなく、ユーザーの興味関心（Interests）に基づき、
+       * Gemini が文脈を理解した上で選定した「価値の高い情報」を提供します。
        */
       async getRecommendations(interests) {
         try {
@@ -132241,17 +132418,18 @@ var init_ScraperFacade = __esm({
         }
       }
       /**
-       * 最新のダッシュボードデータを構築。
+       * カテゴリごとに整理されたダッシュボード用データを構築します。
+       * 
+       * 意図: ユーザーが設定した各カテゴリに対し、十分な鮮度の記事が届くように
+       * 「直近90日」と「全期間」の二段構えでフェッチを試みます。
        */
       async getDashboard(interests) {
         console.log(`[ScraperFacade] \u30C0\u30C3\u30B7\u30E5\u30DC\u30FC\u30C9\u69CB\u7BC9\u3092\u958B\u59CB...`);
         await this.enrichmentService.init();
         const articlesNormal = await this.fetchAndProcessArticles(interests, false);
-        console.log(`[ScraperFacade] \u53D6\u5F97\u8A18\u4E8B\u6570 (\u901A\u5E38): ${articlesNormal.length}`);
         let articlesExtended = null;
         const dashboard = {};
         const categories = Object.keys(interests.categories);
-        const uncategorizedArticles = [];
         const seenLinks = /* @__PURE__ */ new Set();
         for (const catName of categories) {
           const targetClean = normalizeCategoryName(catName);
@@ -132278,6 +132456,7 @@ var init_ScraperFacade = __esm({
             articles: topArticles.map((a) => a.toJSON())
           };
         }
+        const uncategorizedArticles = [];
         articlesNormal.forEach((a) => {
           if (!seenLinks.has(a.link)) uncategorizedArticles.push(a);
         });
@@ -132289,11 +132468,11 @@ var init_ScraperFacade = __esm({
             articles: topUncategorized.map((a) => a.toJSON())
           };
         }
-        console.log(`[ScraperFacade] \u30C0\u30C3\u30B7\u30E5\u30DC\u30FC\u30C9\u69CB\u7BC9\u5B8C\u4E86 (\u30AB\u30C6\u30B4\u30EA\u6570: ${Object.keys(dashboard).length})`);
+        console.log(`[ScraperFacade] \u30C0\u30C3\u30B7\u30E5\u30DC\u30FC\u30C9\u69CB\u7BC9\u5B8C\u4E86`);
         return dashboard;
       }
       /**
-       * トレンド探索。
+       * 全記事のメタデータから共通のパターンを見つけ、新しいトレンドとして提案します。
        */
       async discoverTrends(interests) {
         try {
@@ -132307,21 +132486,17 @@ var init_ScraperFacade = __esm({
           return [];
         }
       }
+      /**
+       * 記事をスコア順（同一スコアなら日付順）でソートし、指定件数抽出します。
+       */
       _sortAndSlice(articles, count) {
         return articles.sort((a, b) => b.score - a.score || new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, count);
       }
       /**
-       * フォールバック付き取得。
-       */
-      async fetchAndProcessArticlesWithFallback(interests) {
-        let articles = await this.fetchAndProcessArticles(interests, false);
-        if (articles.length === 0) {
-          articles = await this.fetchAndProcessArticles(interests, true);
-        }
-        return articles;
-      }
-      /**
-       * 各フィードから記事を並列取得。
+       * 各フィードから記事を並列取得し、スコアリングとカテゴリ判定を行います。
+       * 
+       * 意図: 大量のフィードを効率よく取得しつつ、ScoringService を利用して
+       * ユーザーにとっての価値（スコア）を数値化します。
        */
       async fetchAndProcessArticles(interests, ignoreDateLimit = false) {
         const scorer = new ScoringService(interests);
@@ -132376,6 +132551,10 @@ var init_ScraperFacade = __esm({
         console.log(`[ScraperFacade] Processed ${allArticles.length} articles.`);
         return allArticles.sort((a, b) => b.score - a.score);
       }
+      /**
+       * 言語判定ロジック。
+       * 日本語と英語を区別し、UIでの表示最適化やAI解析のヒントとして利用します。
+       */
       _detectLanguage(title, snippet) {
         const text3 = title + snippet;
         const hasKana = /[\u3040-\u309F\u30A0-\u30FF]/.test(text3);
@@ -132404,22 +132583,25 @@ var init_BaseAgent = __esm({
         this.geminiService = geminiService2;
       }
       /**
-       * APIキーを更新します。
+       * APIキーを更新（ユーザー設定の変更を反映）。
        */
       updateApiKey(apiKey) {
         this.geminiService.updateApiKey(apiKey);
       }
       /**
-       * エージェントのアイデンティティを定義するシステムプロンプト
+       * エージェントのアイデンティティを定義するシステムプロンプト。
+       * サブクラスで具体的な役割（設計、収集、分析など）を定義。
        * @returns {string}
        */
       getSystemPrompt() {
         return `You are ${this.name}, a specialized AI agent in the Aegis Nexus system.`;
       }
       /**
-       * 基本的な思考プロセスを実行
-       * @param {string} prompt 
-       * @param {ResponseSchema} schema 
+       * 基本的な思考プロセスを実行。
+       * 指定されたスキーマに従って構造化された結果を返す。
+       * 
+       * @param {string} prompt タスクの具体的な指示内容
+       * @param {ResponseSchema} schema AIからのレスポンスを検証するためのスキーマ定義
        */
       async think(prompt, schema) {
         const fullPrompt = `${this.getSystemPrompt()}
@@ -132444,13 +132626,14 @@ var init_ArchitectAgent = __esm({
       getSystemPrompt() {
         return `
 \u3042\u306A\u305F\u306F Aegis Nexus \u306E 'Architect' \u30A8\u30FC\u30B8\u30A7\u30F3\u30C8\u3067\u3059\u3002
-\u30B7\u30B9\u30C6\u30E0\u306E\u69CB\u9020\u8A2D\u8A08\u3001\u30AB\u30C6\u30B4\u30EA\u30FC\u306E\u6574\u7406\u3001\u304A\u3088\u3073\u4ED6\u306E\u30A8\u30FC\u30B8\u30A7\u30F3\u30C8\u3078\u306E\u6307\u4EE4\uFF08\u30D7\u30E9\u30F3\u30CB\u30F3\u30B0\uFF09\u3092\u62C5\u5F53\u3057\u307E\u3059\u3002
+\u30B7\u30B9\u30C6\u30E0\u306E\u74B0\u5883\u8A2D\u8A08\u3001\u30AB\u30C6\u30B4\u30EA\u30FC\u306E\u6574\u7406\u3001\u304A\u3088\u3073\u4ED6\u306E\u30A8\u30FC\u30B8\u30A7\u30F3\u30C8\u3078\u306E\u6307\u793A\uFF08\u30D7\u30E9\u30F3\u30CB\u30F3\u30B0\uFF09\u3092\u62C5\u5F53\u3057\u307E\u3059\u3002
 \u8AD6\u7406\u7684\u3067\u69CB\u9020\u5316\u3055\u308C\u305F\u601D\u8003\u3092\u597D\u307F\u3001\u30E6\u30FC\u30B6\u30FC\u306E\u8208\u5473\u95A2\u5FC3\u3092\u6700\u9069\u306A\u30CA\u30EC\u30C3\u30B8\u30B0\u30E9\u30D5\u306B\u5909\u63DB\u3057\u307E\u3059\u3002
 `;
       }
       /**
-       * ユーザーの要求から実行プランを策定する
-       * @param {string} requirements 
+       * ユーザーの要求から実行プランを策定する。
+       * 
+       * @param {string} requirements ユーザーの要望（例：「AIニュースをもっと多角的かつ深く知りたい」）
        */
       async plan(requirements) {
         const schema = {
@@ -132492,12 +132675,14 @@ var init_DiscoveryAgent = __esm({
       getSystemPrompt() {
         return `
 \u3042\u306A\u305F\u306F Aegis Nexus \u306E 'Discovery' \u30A8\u30FC\u30B8\u30A7\u30F3\u30C8\u3067\u3059\u3002
-Web\u3092\u63A2\u7D22\u3057\u3001\u30E6\u30FC\u30B6\u30FC\u304C\u307E\u3060\u77E5\u3089\u306A\u3044\u65B0\u3057\u3044\u60C5\u5831\u6E90\uFF08RSS\u30D5\u30A3\u30FC\u30C9\u3001\u30D6\u30ED\u30B0\u7B49\uFF09\u3084\u3001\u6025\u4E0A\u6607\u4E2D\u306E\u30C8\u30EC\u30F3\u30C9\u3092\u767A\u898B\u3057\u307E\u3059\u3002
-\u597D\u5947\u5FC3\u65FA\u76DB\u3067\u3001\u672A\u77E5\u306E\u9818\u57DF\u3092\u63A2\u7D22\u3059\u308B\u3053\u3068\u3092\u5F97\u610F\u3068\u3057\u307E\u3059\u3002
+Web\u3092\u63A2\u7D22\u3057\u3001\u30E6\u30FC\u30B6\u30FC\u304C\u307E\u3060\u77E5\u3089\u306A\u3044\u65B0\u3057\u3044\u60C5\u5831\u6E90\uFF08RSS\u30D5\u30A3\u30FC\u30C9\u3001\u30D6\u30ED\u30B0\u7B49\uFF09\u3084\u3001\u696D\u754C\u3067\u6CE8\u76EE\u4E2D\u306E\u30C8\u30EC\u30F3\u30C9\u3092\u767A\u898B\u3057\u307E\u3059\u3002
+\u597D\u5947\u5FC3\u65FA\u76DB\u3067\u3001\u672A\u77E5\u306E\u9818\u57DF\u3092\u63A2\u7D22\u3059\u308B\u3053\u3068\u3092\u5F97\u610F\u3068\u3057\u3066\u3044\u307E\u3059\u3002
 `;
       }
       /**
-       * 新しい情報源を提案する
+       * ユーザーの興味に基づき、新しい情報源を提案する。
+       * 
+       * @param {Interests} currentInterests ユーザーの現在の興味設定
        */
       async discoverSources(currentInterests) {
         const schema = {
@@ -132540,11 +132725,13 @@ var init_ArchivistAgent = __esm({
         return `
 \u3042\u306A\u305F\u306F Aegis Nexus \u306E 'Archivist' \u30A8\u30FC\u30B8\u30A7\u30F3\u30C8\u3067\u3059\u3002
 \u53CE\u96C6\u3055\u308C\u305F\u60C5\u5831\u3092\u4F53\u7CFB\u7684\u306B\u6574\u7406\u3057\u3001\u9577\u671F\u4FDD\u5B58\u306B\u9069\u3057\u305F\u5F62\u5F0F\u3067\u69CB\u9020\u5316\u3057\u307E\u3059\u3002
-\u60C5\u5831\u306E\u8981\u7D04\u3001\u30E1\u30BF\u30C7\u30FC\u30BF\u306E\u4ED8\u4E0E\u3001\u304A\u3088\u3073\u904E\u53BB\u306E\u30C7\u30FC\u30BF\u3068\u306E\u95A2\u9023\u4ED8\u3051\u3092\u5F97\u610F\u3068\u3057\u307E\u3059\u3002
+\u60C5\u5831\u306E\u8981\u7D04\u3001\u30E1\u30BF\u30C7\u30FC\u30BF\u306E\u4ED8\u4E0E\u3001\u304A\u3088\u3073\u904E\u53BB\u306E\u30C7\u30FC\u30BF\u3068\u306E\u95A2\u9023\u4ED8\u3051\u3092\u5F97\u610F\u3068\u3057\u3066\u3044\u307E\u3059\u3002
 `;
       }
       /**
-       * コンテンツを要約し、構造化データを生成する
+       * コンテンツを要約し、構造化データを生成する。
+       * 
+       * @param {string} content 要約・分析対象となる記事の本文または概要
        */
       async summarizeAndArchive(content) {
         const schema = {
@@ -132587,7 +132774,10 @@ var init_CuratorAgent = __esm({
 `;
       }
       /**
-       * 記事リストをキュレーションする
+       * 記事リストをキュレーション（厳選）する。
+       * 
+       * @param {Record<string, unknown>[]} articles 収集された生の記事データリスト
+       * @param {Interests} interests ユーザーの現在の興味・関心設定
        */
       async curate(articles, interests) {
         const schema = {
@@ -132631,10 +132821,21 @@ var init_NexusOrchestrator = __esm({
       curator;
       discovery;
       archivist;
+      /**
+       * SSE(Server-Sent Events)によるリアルタイム通知の購読者リスト。
+       * クライアントとの接続状態を管理し、一斉送信を可能にする。
+       */
       subscribers = /* @__PURE__ */ new Set();
+      /**
+       * 多重実行を防止するための排他制御フラグ。
+       * ワークフローのステートは一つのみであることを保証する。
+       */
       isRunning = false;
       /**
-       * @param {GeminiService} geminiService - Geminiサービスインスタンス
+       * Orchestratorの初期化。
+       * 各種エージェントを生成し、共通のLLM基盤（GeminiService）を注入する。
+       * 
+       * @param {GeminiService} geminiService - Geminiサービスインスタンス（依存性の注入）
        */
       constructor(geminiService2) {
         this.architect = new ArchitectAgent(geminiService2);
@@ -132643,7 +132844,10 @@ var init_NexusOrchestrator = __esm({
         this.archivist = new ArchivistAgent(geminiService2);
       }
       /**
-       * APIキーを更新し、各エージェントに反映させます。
+       * APIキーを更新し、全ての子エージェントに伝播させる。
+       * 設定変更がシステム全体へ即座に反映されることを保証する。
+       * 
+       * @param {string} apiKey - 新しいGemini APIキー
        */
       updateApiKey(apiKey) {
         this.architect.updateApiKey(apiKey);
@@ -132652,8 +132856,11 @@ var init_NexusOrchestrator = __esm({
         this.curator.updateApiKey(apiKey);
       }
       /**
-       * フロントエンドへの通知を購読するためのSSEハンドラ登録。
-       * FastifyのSSE方式に合わせて調整が必要。
+       * クライアントからのSSE接続を購読者リストに登録する。
+       * Fastifyのライフサイクルイベント（close, error）をリッスンし、
+       * 切断時にはリストから除去することでメモリリークを確実に防ぐ。
+       * 
+       * @param {FastifyReply} res - Fastifyのレスポンスオブジェクト
        */
       subscribe(res) {
         this.subscribers.add(res);
@@ -132663,7 +132870,9 @@ var init_NexusOrchestrator = __esm({
         }
       }
       /**
-       * 全購読者へステータスを通知。
+       * 現在接続中の全購読者（クライアント）へ、システムの状態変更やタスク進捗を通知する。
+       * 
+       * @param {OrchestratorNotification} data - 送信する通知ペイロード
        */
       notify(data2) {
         if (!data2.timestamp) data2.timestamp = (/* @__PURE__ */ new Date()).toISOString();
@@ -132682,8 +132891,11 @@ var init_NexusOrchestrator = __esm({
         }
       }
       /**
-       * 自律ワークフローを実行。
-       * @param {string} requirements - ユーザーからの目標・要件
+       * ユーザー要件に基づく自律的なワークフロー（エージェント間の協調処理）を開始する。
+       * 排他制御により、同時に複数のワークフローが実行されないことを保証する。
+       * 
+       * @param {string} requirements - ユーザーが入力したプロンプト・要件
+       * @returns {Promise<void>}
        */
       async runAutonomousLoop(requirements) {
         if (this.isRunning) {
@@ -132838,7 +133050,6 @@ function createWindow() {
     useContentSize: true,
     frame: false,
     icon,
-    // カスタムタイトルバーを使用
     transparent: false,
     // FancyZones対応のため透明度はオフ
     backgroundColor: "#0f172a",
