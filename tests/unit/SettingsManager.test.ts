@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { SettingsManager } from '../../src/services/SettingsManager';
 import fs from 'fs/promises';
+import { FeedConfig } from '../../src/models/Schemas';
 
 vi.mock('fs/promises');
 
@@ -86,6 +87,26 @@ describe('SettingsManager', () => {
             };
 
             await expect(manager.syncSettings(newSettings as unknown as NexusSettings)).rejects.toThrow('CONFLICT');
+        });
+    });
+
+    describe('saveFeedConfig', () => {
+        it('should validate and save feed configuration', async () => {
+            const config = {
+                'Category A': { active: ['https://example.com/rss'], pool: [], failures: {} }
+            };
+            await manager.saveFeedConfig(config);
+            expect(fs.writeFile).toHaveBeenCalled();
+            const lastCallArgs = vi.mocked(fs.writeFile).mock.calls.at(-1);
+            const savedData = JSON.parse(lastCallArgs?.[1] as string);
+            expect(savedData['Category A']).toBeDefined();
+        });
+
+        it('should throw error if configuration is invalid', async () => {
+            const invalidConfig = {
+                'Category A': { active: 'not-an-array' }
+            };
+            await expect(manager.saveFeedConfig(invalidConfig as unknown as FeedConfig)).rejects.toThrow();
         });
     });
 });
