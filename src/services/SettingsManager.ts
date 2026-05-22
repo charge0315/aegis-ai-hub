@@ -10,7 +10,18 @@ export interface SettingsManagerConfig {
 }
 
 /**
- * 設定ファイル管理の統合版。
+ * SettingsManager: アプリケーションの設定ファイル群（興味関心、フィード構成、認証情報等）を統合管理するサービス。
+ * 
+ * 役割:
+ * - 各設定ファイルの読み書き、初期化、バリデーション。
+ * - APIキーやUI設定（テーマ、自動起動等）の管理。
+ * - 設定の同期（インポート/エクスポート）と、その際のデータ整合性（名寄せ、有効性確認）の確保。
+ * - AI使用量統計（UsageManager）の統括。
+ * 
+ * 設計思想:
+ * - 安全第一: 書き込み時のバックアップ自動生成（世代管理）により、予期せぬ電源断などによるファイル破損リスクを軽減。
+ * - 型の保証: Zodスキーマによる厳格なバリデーションを実施し、不正な設定データによるシステムクラッシュを未然に防止。
+ * - コンフリクト解消: `lastUpdated` タイムスタンプを用いた単純かつ堅牢な同期ロジックを実装。
  */
 export class SettingsManager {
   protected dataDir: string;
@@ -30,6 +41,9 @@ export class SettingsManager {
     this.usageManager = new UsageManager(usagePath);
   }
 
+  /**
+   * 必要なディレクトリとファイルの初期化を確認・実行します。
+   */
   async init(): Promise<void> {
     await fs.mkdir(this.dataDir, { recursive: true });
     await this._ensureFile(this.interestsPath, { categories: {}, lastUpdated: Date.now() });
@@ -40,11 +54,10 @@ export class SettingsManager {
 
   /**
    * 工場出荷時のデフォルト設定に戻します。
+   * 現在の設定をクリアし、最小限の構造で初期化します。
    */
   async resetToDefaults(): Promise<boolean> {
     try {
-      // 実際の実装はUserDataから削除して再コピーするなどの処理が必要だが、
-      // ここでは最低限の動作を保証
       await this._safeWrite(this.interestsPath, { categories: {}, lastUpdated: Date.now() });
       await this._safeWrite(this.feedConfigPath, {});
       return true;
@@ -54,6 +67,9 @@ export class SettingsManager {
     }
   }
 
+  /**
+   * AIモデルごとの使用量統計（トークン数）を取得します。
+   */
   async getUsageStats() {
     return await this.usageManager.getStats();
   }
@@ -68,7 +84,7 @@ export class SettingsManager {
   }
 
   /**
-   * UI表示設定を取得します。
+   * UI表示設定（ダークモード、自動起動、言語設定等）を取得します。
    */
   async getUiSettings(): Promise<UiSettings> {
     const filePath = path.join(this.dataDir, 'ui_settings.json');
@@ -89,6 +105,10 @@ export class SettingsManager {
     await this._safeWrite(filePath, validated);
   }
 
+  /**
+   * 保存されているGemini APIキーを取得します。
+   * 開発環境では環境変数からの取得もサポート。
+   */
   async getApiKey(): Promise<string> {
     try {
       const data = await fs.readFile(this.credentialsPath, 'utf8');
@@ -104,23 +124,39 @@ export class SettingsManager {
     }
   }
 
+  /**
+   * Gemini APIキーを安全に保存します。
+   */
   async saveApiKey(apiKey: string): Promise<void> {
     const creds: Credentials = { geminiApiKey: apiKey };
     await this._safeWrite(this.credentialsPath, creds);
   }
 
+  /**
+   * ユーザーの興味関心設定を取得します。
+   */
   async getInterests(): Promise<Interests> {
     const data = await fs.readFile(this.interestsPath, 'utf8');
     return InterestsSchema.parse(JSON.parse(data));
   }
 
+  /**
+   * フィードの購読設定を取得します。
+   */
   async getFeedConfig(): Promise<FeedConfig> {
     const data = await fs.readFile(this.feedConfigPath, 'utf8');
     return FeedConfigSchema.parse(JSON.parse(data));
   }
 
   /**
-   * クラウド（またはインポート）からの設定を同期します。
+   * 設定データの同期（外部からの上書き保存）を行います。
+   * 
+   * 処理内容:
+   * 1. データの型バリデーション。
+   * 2. カテゴリ名やフィード構成の正規化（表記揺れや名寄せ）。
+   * 3. タイムスタンプによるコンフリクト確認（デバイス上の設定が新しい場合は拒否）。
+   * 4. 新規追加されるフィードの有効性チェック（オプション）。
+   * 5. 安全な永続化とバックアップ。
    */
   async syncSettings(settings: Partial<SyncSettings>, fetcher?: { validateFeed: (url: string) => Promise<{ ok: boolean; status: number | string }> }): Promise<{ success: boolean, timestamp: string, lastUpdated: number, validatedInterests: Interests, validatedFeedConfig: FeedConfig }> {
     const { interests, feedConfig, windowState, lastUpdated } = settings || {};
@@ -133,7 +169,7 @@ export class SettingsManager {
     const validatedInterests = InterestsSchema.parse(interests);
     const validatedWindowState = windowState ? WindowStateSchema.parse(windowState) : null;
     
-    // カテゴリ名の正規化（Mojibakeや表記揺れの吸収）
+    // カテゴリ名の正規化（Mojibakeや表記揺れの吸収、interestsとの紐付け強化）
     const normalizedFeedConfig: FeedConfig = {};
     const categoriesObj = validatedInterests.categories || {};
     const interestCats = Object.keys(categoriesObj);
@@ -157,7 +193,7 @@ export class SettingsManager {
     }
     const validatedFeedConfig = normalizedFeedConfig;
 
-    // Conflict Resolution
+    // コンフリクトの解決: デバイス上のデータがより新しい場合は、データの喪失を防ぐためエラーを投げる
     const currentInterests = await this.getInterests();
     const serverLastUpdated = currentInterests.lastUpdated || 0;
 
@@ -165,7 +201,7 @@ export class SettingsManager {
       throw new Error('CONFLICT: Settings on device are newer.');
     }
 
-    // New Feed Health Check
+    // 新規フィードのヘルスチェック: 同期対象に含まれる未知のURLが正しく機能するか確認
     if (fetcher) {
       const currentFeedConfig = (await this.getFeedConfig()) || {};
       const currentUrls = new Set(
@@ -187,7 +223,7 @@ export class SettingsManager {
       }
 
       if (newUrls.length > 0) {
-        // 並列で検証を実行
+        // 並列で検証を実行し、1つでも失敗すれば同期を中断（安全策）
         await Promise.all(newUrls.map(async (item) => {
           try {
             const check = await fetcher.validateFeed(item.url);
@@ -223,6 +259,9 @@ export class SettingsManager {
     };
   }
 
+  /**
+   * 前回の終了時のウィンドウ位置やサイズを取得します。
+   */
   async getWindowState(): Promise<unknown | null> {
     const windowStatePath = path.join(this.dataDir, 'window_state.json');
     try {
@@ -242,12 +281,17 @@ export class SettingsManager {
     }
   }
 
+  /**
+   * ファイルへの安全な書き込み処理。
+   * 既存ファイルがある場合、最大3世代のバックアップ(.bak, .bak2, .bak3)を自動作成し、
+   * 書き込み失敗時のデータ全ロスを防止します。
+   */
   protected async _safeWrite(filePath: string, data: unknown): Promise<void> {
     const content = JSON.stringify(data, null, 2);
     try {
       const exists = await fs.access(filePath).then(() => true).catch(() => false);
       if (exists) {
-        // バックアップの世代管理 (最大3世代: .bak, .bak2, .bak3)
+        // バックアップの世代管理
         for (let i = 3; i >= 1; i--) {
           const oldBak = i === 1 ? filePath : `${filePath}.bak${i - 1 === 1 ? '' : i - 1}`;
           const newBak = `${filePath}.bak${i === 1 ? '' : i}`;
@@ -255,7 +299,7 @@ export class SettingsManager {
           const bakExists = await fs.access(oldBak).then(() => true).catch(() => false);
           if (bakExists) {
             if (i === 3) {
-              // 最古の世代を削除
+              // 最古の第3世代を削除
               await fs.unlink(newBak).catch(() => {});
             }
             if (i === 1) {

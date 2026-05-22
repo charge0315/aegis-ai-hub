@@ -15,6 +15,19 @@ interface UseCategoryActionsProps {
   setActiveTab: (tab: EditorTab) => void;
 }
 
+/**
+ * 興味カテゴリの操作（追加、編集、削除、AI提案）に関するビジネスロジックを管理するカスタムフック。
+ * 
+ * 【設計思想】
+ * - コンポーネントから複雑な設定更新ロジックを切り離し、再利用可能な操作セットを提供します。
+ * - カテゴリの状態変更を `draft`（一時保存状態）に対して行い、UIへの即時反映と原子性を両立します。
+ * 
+ * 【実装の意図】
+ * - `useCallback` の依存配列には、最新の設定値（draft.interests.categories）や翻訳データ（t）を含め、
+ *   ユーザー入力に応じた正確な検証とフィードバックが行われるようにしています。
+ * - `isSuggesting` 系の状態を個別に管理することで、AI提案中のUI（ローディング表示など）を
+ *   フィールド単位で制御できるようにしています。
+ */
 export function useCategoryActions({
   draft,
   setDraft,

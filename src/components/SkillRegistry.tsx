@@ -3,6 +3,15 @@ import { motion } from 'framer-motion';
 import { Terminal, Shield, Zap, BookOpen, CheckCircle2, Circle, Plus } from 'lucide-react';
 import type { Skill } from '../types';
 
+/**
+ * SkillRegistry Component
+ * 
+ * エージェントが実行可能な個別の機能（スキル）を管理・表示するためのコンポーネント。
+ * AIシステムがどのようなロジック（RSS取得、意味解析、エンティティ抽出など）で
+ * 動いているかをユーザーに明示（透明性の確保）し、必要に応じて機能を
+ * 個別にオン/オフできる制御権を提供します。
+ */
+
 interface SkillRegistryProps {
   skills?: Skill[];
   onToggleSkill?: (skillId: string) => void;
@@ -31,6 +40,7 @@ export const SkillRegistry: React.FC<SkillRegistryProps> = ({
           <p className="text-content-muted text-sm">Capabilities currently deployed in the Aegis cluster.</p>
         </div>
         <div className="flex gap-2">
+          {/* スキルの拡張性: 将来的に新しいAIロジックを追加できる可能性を示唆 */}
           <button
             onClick={onAddSkill}
             className="flex items-center gap-2 px-4 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-full text-xs font-bold uppercase transition-all"
@@ -52,6 +62,7 @@ export const SkillRegistry: React.FC<SkillRegistryProps> = ({
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: idx * 0.05 }}
             onClick={() => onToggleSkill?.(skill.id)}
+            // スキルの有効/無効に応じた視覚的な変化（グレースケール、透明度）
             className={`p-5 border rounded-2xl transition-all cursor-pointer group ${
               skill.enabled 
                 ? 'bg-surface-panel/10 border-content-muted/20 hover:border-primary/50' 
@@ -59,6 +70,7 @@ export const SkillRegistry: React.FC<SkillRegistryProps> = ({
             }`}
           >
             <div className="flex items-start gap-4">
+              {/* アイコン: スキルの種類（ツール、アクション、ロジック）を直感的に識別 */}
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 ${
                 skill.enabled ? 'bg-surface text-primary' : 'bg-surface/50 text-content-muted'
               }`}>
@@ -70,6 +82,7 @@ export const SkillRegistry: React.FC<SkillRegistryProps> = ({
                 <div className="flex items-center justify-between mb-1">
                   <h4 className={`font-bold ${skill.enabled ? 'text-content-base' : 'text-content-muted'}`}>{skill.name}</h4>
                   <div className="flex items-center gap-2">
+                    {/* 所属エージェントのタグ表示 */}
                     <span className="text-[10px] px-2 py-0.5 bg-surface text-content-muted rounded-full uppercase font-mono border border-content-muted/10">
                       {skill.agent}
                     </span>
@@ -95,6 +108,7 @@ export const SkillRegistry: React.FC<SkillRegistryProps> = ({
         ))}
       </div>
 
+      {/* フッター情報: ユーザーへの操作ガイド */}
       <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl flex items-center gap-4">
         <div className="text-primary"><BookOpen size={20} /></div>
         <div className="text-xs text-content-muted">

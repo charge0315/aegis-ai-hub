@@ -13,6 +13,14 @@ import {
 import { GlassPanel } from '../GlassPanel';
 import type { UiSettings } from '../../types';
 
+/**
+ * SystemSettings Component
+ * 
+ * アプリケーションの動作基盤と、視覚的なユーザー体験をカスタマイズするためのパネル。
+ * セキュリティが重要なAPIキーの管理から、デスクトップに馴染むテーマ選択、
+ * OS連携の設定までを一貫したインターフェースで提供します。
+ */
+
 interface SystemSettingsProps {
   apiKey: string;
   setApiKey: (key: string) => void;
@@ -45,7 +53,7 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
       exit={{ opacity: 0, scale: 0.98 }}
       className="max-w-2xl mx-auto space-y-8"
     >
-      {/* System Behavior */}
+      {/* System Behavior: OSとの連携設定 */}
       <GlassPanel className="p-8 space-y-6">
         <div className="flex items-center gap-4">
           <div className="p-3 bg-indigo-500/10 text-indigo-400 rounded-2xl">
@@ -62,6 +70,7 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
             <h4 className="text-sm font-bold text-content-base">Auto Launch on Startup</h4>
             <p className="text-xs text-content-muted">Automatically start Aegis Nexus when you log into Windows.</p>
           </div>
+          {/* カスタムトグルスイッチ: 操作感の良さを重視したアニメーションを適用 */}
           <button
             onClick={() => setAutoLaunch(!autoLaunch)}
             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
@@ -77,7 +86,7 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
         </div>
       </GlassPanel>
 
-      {/* Theme Customization */}
+      {/* Theme Customization: 視覚体験のパーソナライズ */}
       <GlassPanel className="p-8 space-y-6">
         <div className="flex items-center gap-4">
           <div className="p-3 bg-accent/10 text-accent rounded-2xl">
@@ -119,6 +128,7 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
         </div>
       </GlassPanel>
 
+      {/* API Key Management: セキュリティと透明性 */}
       <GlassPanel className="p-8 space-y-6">
         <div className="flex items-center gap-4">
           <div className="p-3 bg-primary/10 text-primary rounded-2xl">
@@ -135,6 +145,7 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
             Gemini API Key
           </label>
           <div className="relative group">
+            {/* パスワード入力形式: APIキーを隠蔽しつつ、編集を可能に */}
             <input
               type="password"
               value={apiKey}
@@ -163,7 +174,7 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
         </div>
       </GlassPanel>
 
-      {/* Advanced System Actions */}
+      {/* Advanced System Actions: 重大な操作への注意喚起 */}
       <GlassPanel className="p-8 border-alert/20 bg-alert/5">
         <div className="flex items-start gap-4">
           <div className="p-3 bg-alert/10 text-alert rounded-2xl">
@@ -186,6 +197,7 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
         </div>
       </GlassPanel>
 
+      {/* 外部リンクと補足情報 */}
       <div className="p-6 bg-background/50 border border-content-muted/20 rounded-2xl">
         <h4 className="text-sm font-bold text-content-base mb-2">Usage Note</h4>
         <p className="text-xs text-content-muted leading-relaxed">

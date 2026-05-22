@@ -2,6 +2,15 @@ import React, { useEffect, useRef } from 'react';
 import * as d3 from 'd3';
 import type { NexusSettings } from '../types';
 
+/**
+ * KnowledgeGraph Component
+ * 
+ * ユーザーの関心事（カテゴリ、ブランド、キーワード）の相関関係を
+ * インタラクティブな力学モデル（Force-Directed Graph）で視覚化するコンポーネント。
+ * 複雑な知識構造を直感的に把握し、ノードのクリック操作で重み付けを
+ * 直接制御できる「情報の地図」としての役割を担います。
+ */
+
 interface KnowledgeGraphProps {
   settings: NexusSettings | null;
   onKeywordToggle: (category: string, keyword: string, enabled: boolean) => void;
@@ -30,6 +39,10 @@ export const KnowledgeGraph: React.FC<KnowledgeGraphProps> = ({ settings, onKeyw
     const width = svgRef.current.clientWidth || 800;
     const height = 600;
 
+    /**
+     * データ構造の平坦化
+     * 設定オブジェクトからD3.jsが解釈可能なノードとリンクのリストを生成します。
+     */
     const nodes: Node[] = [{ id: 'nexus', name: 'Nexus', type: 'root' }];
     const links: Link[] = [];
 
@@ -55,6 +68,11 @@ export const KnowledgeGraph: React.FC<KnowledgeGraphProps> = ({ settings, onKeyw
 
     const g = svg.append("g");
 
+    /**
+     * 力学シミュレーションの設定
+     * ノード同士の反発力、中心への引力、リンクの距離を調整し、
+     * 重なりが少なく、美しいレイアウトを自動生成します。
+     */
     const simulation = d3.forceSimulation<Node>(nodes)
       .force("link", d3.forceLink<Node, Link>(links).id(d => d.id).distance(80))
       .force("charge", d3.forceManyBody().strength(-200))
@@ -81,6 +99,7 @@ export const KnowledgeGraph: React.FC<KnowledgeGraphProps> = ({ settings, onKeyw
         }
       });
 
+    // ドラッグ＆ドロップによる動的なレイアウト変更
     node.call(d3.drag<SVGGElement, Node>()
         .on("start", (event: d3.D3DragEvent<SVGGElement, Node, Node>, d) => {
           if (!event.active) simulation.alphaTarget(0.3).restart();
@@ -97,7 +116,11 @@ export const KnowledgeGraph: React.FC<KnowledgeGraphProps> = ({ settings, onKeyw
           d.fy = null;
         }));
 
-    // Node circles with gradients/glow
+    /**
+     * 視覚効果の適用
+     * 発光エフェクト（Glow）を使用し、重要度に応じたノードサイズの変化を設けることで、
+     * 「生きているデータ」の質感を強調します。
+     */
     const defs = svg.append("defs");
     const glow = defs.append("filter")
         .attr("id", "glow")
@@ -144,7 +167,7 @@ export const KnowledgeGraph: React.FC<KnowledgeGraphProps> = ({ settings, onKeyw
         .attr("transform", d => `translate(${d.x ?? 0},${d.y ?? 0})`);
     });
 
-    // Zoom support
+    // ズームとパンのサポート: 巨大な知識ネットワークでも迷子にならない操作性を提供
     const zoom = d3.zoom<SVGSVGElement, unknown>()
       .scaleExtent([0.5, 3])
       .on("zoom", (event: d3.D3ZoomEvent<SVGSVGElement, unknown>) => {
@@ -157,6 +180,7 @@ export const KnowledgeGraph: React.FC<KnowledgeGraphProps> = ({ settings, onKeyw
 
   return (
     <div className="w-full h-[600px] bg-surface/40 backdrop-blur-md rounded-2xl border border-content-muted/20 overflow-hidden relative shadow-inner">
+      {/* 凡例とステータス表示 */}
       <div className="absolute top-6 left-6 z-10">
         <h3 className="text-content-base font-bold flex items-center gap-2 text-lg">
           Intelligence Knowledge Graph

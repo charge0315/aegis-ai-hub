@@ -1,10 +1,17 @@
 /**
- * Translation resources for Aegis Nexus
+ * Aegis Nexus 翻訳リソース定義
+ * 
+ * アプリケーション内で使用されるすべてのテキストを多言語（日本語・英語）で一元管理します。
+ * 新しいUIパーツを追加する際は、ここにキーを追加することで、
+ * LanguageContext を通じて動的な言語切り替えが可能になります。
  */
 
 export type Language = 'ja' | 'en';
 
 export const translations = {
+  /**
+   * 日本語リソース
+   */
   ja: {
     sidebar: {
       feed: '統合フィード',
@@ -122,6 +129,9 @@ export const translations = {
       reasoningGen: { name: 'Reasoning Gen', description: 'なぜこの記事が選ばれたのかの推論根拠を生成する' }
     }
   },
+  /**
+   * 英語リソース
+   */
   en: {
     sidebar: {
       feed: 'Unified Feed',
@@ -242,7 +252,8 @@ export const translations = {
 };
 
 /**
- * Proxy to prevent crashes when accessing missing keys
+ * 安全な翻訳データの取得
+ * 指定された言語のリソースを返します。万が一存在しない場合は日本語をフォールバックとして使用します。
  */
 export const getSafeTranslation = (lang: Language = 'ja') => {
   const base = translations[lang] || translations['ja'];

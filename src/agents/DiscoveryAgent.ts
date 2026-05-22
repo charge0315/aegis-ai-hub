@@ -16,6 +16,14 @@ export interface DiscoveryResult {
 
 /**
  * DiscoveryAgent: 新しい情報源やトレンドの発見を担当。
+ * 
+ * 役割:
+ * - インターネット（Web）上の広大な情報から、ユーザーがまだ知らない有益なニュースソース（RSS、ブログ等）を見つけ出す。
+ * - 現在の興味設定を補完するような「未知の領域」を探索し、システムの進化を促す。
+ * 
+ * 設計思想:
+ * - 知的好奇心: 既存の枠組みにとらわれず、関連性の高い新しいサイトを能動的にスカウトする。
+ * - 妥当性の検証: 発見したソースがなぜ有益なのかという理由（reason）を明確にし、導入の根拠を提供。
  */
 export class DiscoveryAgent extends BaseAgent {
   constructor(geminiService: GeminiService) {
@@ -25,13 +33,15 @@ export class DiscoveryAgent extends BaseAgent {
   public override getSystemPrompt(): string {
     return `
 あなたは Aegis Nexus の 'Discovery' エージェントです。
-Webを探索し、ユーザーがまだ知らない新しい情報源（RSSフィード、ブログ等）や、急上昇中のトレンドを発見します。
-好奇心旺盛で、未知の領域を探索することを得意とします。
+Webを探索し、ユーザーがまだ知らない新しい情報源（RSSフィード、ブログ等）や、業界で注目中のトレンドを発見します。
+好奇心旺盛で、未知の領域を探索することを得意としています。
 `;
   }
 
   /**
-   * 新しい情報源を提案する
+   * ユーザーの興味に基づき、新しい情報源を提案する。
+   * 
+   * @param {Interests} currentInterests ユーザーの現在の興味設定
    */
   async discoverSources(currentInterests: Interests): Promise<DiscoveryResult> {
     const schema: ResponseSchema = {

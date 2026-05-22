@@ -15,6 +15,14 @@ import { GlassPanel } from '../GlassPanel';
 import type { Interests } from '../../models/Schemas';
 import { useTranslation } from '../../hooks/useTranslationHook';
 
+/**
+ * CategoryEditor Component
+ * 
+ * ユーザーの興味関心を「カテゴリ」「ブランド」「キーワード」の3層構造で定義するためのエディタ。
+ * 直感的なドラッグ＆ドロップによる並び替えや、AIによるキーワード・ブランドの自動提案機能を備え、
+ * ユーザーが自身の「情報フィルタリングの定義」をストレスなく精緻化できる環境を提供します。
+ */
+
 interface CategoryEditorProps {
   draft: { interests: Interests };
   selectedCategory: string | null;
@@ -59,12 +67,13 @@ export const CategoryEditor: React.FC<CategoryEditorProps> = ({
       exit={{ opacity: 0, y: -10 }}
       className="grid grid-cols-1 lg:grid-cols-12 gap-6"
     >
-      {/* Category Sidebar */}
+      {/* Category Sidebar: カテゴリ一覧と並び替え */}
       <div className="lg:col-span-3 space-y-2">
         <div className="text-[10px] font-bold text-content-muted uppercase tracking-widest px-2 mb-3">
           {t.settings.intelligenceCategories}
         </div>
         
+        {/* Reorder.Group: Framer Motionによる直感的なドラッグ＆ドロップ体験 */}
         <Reorder.Group 
           axis="y" 
           values={categoryKeys} 
@@ -132,12 +141,12 @@ export const CategoryEditor: React.FC<CategoryEditorProps> = ({
         </button>
       </div>
 
-      {/* Editor Area */}
+      {/* Editor Area: カテゴリごとの詳細設定 */}
       <div className="lg:col-span-9 space-y-6">
         {selectedCategory && draft.interests.categories[selectedCategory] ? (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Brands Section */}
+              {/* Brands Section: 追跡対象のブランド設定 */}
               <GlassPanel className="p-6">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="font-bold flex items-center gap-2 text-content-base">
@@ -145,6 +154,7 @@ export const CategoryEditor: React.FC<CategoryEditorProps> = ({
                     Target Brands
                   </h3>
                   <div className="flex items-center gap-3">
+                    {/* AI Suggest: AIがカテゴリ名に基づき、関連ブランドを自動提案 */}
                     <button
                       onClick={() => handleAISuggest('brands')}
                       disabled={isSuggestingBrands}
@@ -163,6 +173,7 @@ export const CategoryEditor: React.FC<CategoryEditorProps> = ({
                     </span>
                   </div>
                 </div>
+                {/* タグクラウド形式の入力・編集UI */}
                 <div className="flex flex-wrap gap-2">
                   {draft.interests.categories[selectedCategory].brands.map((brand, idx) => (
                     <div 
@@ -215,7 +226,7 @@ export const CategoryEditor: React.FC<CategoryEditorProps> = ({
                 </div>
               </GlassPanel>
 
-              {/* Keywords Section */}
+              {/* Keywords Section: フィルタリング用のキーワード設定 */}
               <GlassPanel className="p-6">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="font-bold flex items-center gap-2 text-content-base">
@@ -294,6 +305,7 @@ export const CategoryEditor: React.FC<CategoryEditorProps> = ({
               </GlassPanel>
             </div>
 
+            {/* AI Reasoning: なぜこのカテゴリが提案・設定されたかの背景を提示 */}
             <div className="p-6 bg-primary/5 border border-primary/20 rounded-2xl">
               <h4 className="text-xs font-bold text-primary uppercase tracking-widest mb-2">AI Reasoning Overlay</h4>
               <p className="text-sm text-content-muted italic">

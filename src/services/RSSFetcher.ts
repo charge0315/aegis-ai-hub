@@ -15,22 +15,32 @@ export interface FetchResult {
 }
 
 /**
- * RSSフィードの取得とパースを専門に行うサービス。
- * 通信の並列数を制限しつつ高速に処理します。
+ * RSSFetcher: RSS/Atomフィードの取得とパースを専門に行うサービス。
+ * 
+ * 役割:
+ * - 外部のニュースソース（URL）からコンテンツをダウンロードし、JSONオブジェクトに変換。
+ * - 多様なRSSフォーマット（RSS 2.0, Atom, Dublin Core, media:content等）への対応。
+ * - ネットワークリクエストの並列数制御とリトライ処理。
+ * 
+ * 設計思想:
+ * - 高スループットと負荷制限の両立: 大量のフィードを短時間で取得するため並列数を高めに設定しつつ、p-limitによる過度な負荷を防止。
+ * - ブロック回避: モダンなブラウザのUser-Agentを模倣し、アンチクローラー対策を回避。
+ * - 回復性: ネットワークの一時的な瞬断やタイムアウトに対しては、指数バックオフを伴うリトライを自動実行。
  */
 export class RSSFetcher {
   private limit: <T>(fn: () => Promise<T>) => Promise<T>;
   private parser: Parser;
 
-  constructor(concurrency = 20) { // 大量取得のため並列数を20に増加
+  constructor(concurrency = 20) { // 大量取得のため並列数を20に設定
     this.limit = pLimit(concurrency);
     this.parser = new Parser({
-      timeout: 20000, // 20秒に延長
+      timeout: 20000, // ネットワーク遅延を考慮し20秒に設定
       headers: {
-        // モダンなブラウザの User-Agent を設定してブロックを回避
+        // サーバー側でのブロックを回避するためのヘッダー設定
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
         'Accept': 'application/rss+xml, application/xml, text/xml, */*'
       },
+      // 標準外のメタデータ（画像、本文詳細、iTunesタグなど）を明示的にマッピング
       customFields: {
         item: [
           ['content:encoded', 'contentEncoded'],
@@ -45,7 +55,8 @@ export class RSSFetcher {
   }
 
   /**
-   * 単一のフィードを取得します。リトライロジック付き。
+   * 単一のフィードを取得します。
+   * ネットワークエラー時には自動的にリトライを実施します。
    */
   async fetch(url: string, retries = 2): Promise<unknown[]> {
     return this.limit(async () => {
@@ -58,7 +69,7 @@ export class RSSFetcher {
           lastError = e;
           const msg = e instanceof Error ? e.message : String(e);
 
-          // ネットワーク一時不通やタイムアウトの場合はリトライ
+          // リトライすべきエラーかどうかの判定（DNS名前解決失敗、タイムアウト、429/503エラーなど）
           const isRetryable = 
             msg.includes('ENOTFOUND') || 
             msg.includes('ECONNREFUSED') || 
@@ -84,6 +95,7 @@ export class RSSFetcher {
 
   /**
    * フィードの有効性を検証します。
+   * 主に設定画面での「フィード追加」時の事前チェックに使用。
    */
   async validateFeed(url: string): Promise<{ ok: boolean; status: number | string; error?: string }> {
     return this.limit(async () => {
@@ -101,7 +113,7 @@ export class RSSFetcher {
   }
 
   /**
-   * 複数のフィードを並列で取得します。
+   * リストに含まれる全てのフィードを並列で取得します。
    */
   async fetchAll(feedConfigs: FeedConfigItem[]): Promise<FetchResult[]> {
     const tasks = feedConfigs.map(config =>

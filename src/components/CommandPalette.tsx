@@ -13,6 +13,14 @@ import {
 } from 'lucide-react';
 import type { NexusSettings } from '../types';
 
+/**
+ * CommandPalette Component
+ * 
+ * アプリケーション全体の操作をキーボードのみで完結させるための、パワーユーザー向けコマンドセンター。
+ * コンテキストスイッチのコストを最小化し、検索・ナビゲーション・AI命令を
+ * 統一されたインターフェースで提供します。
+ */
+
 interface CommandPaletteProps {
   isOpen: boolean;
   onClose: () => void;
@@ -45,6 +53,11 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
 
   const categories = settings ? Object.keys(settings.interests.categories) : [];
 
+  /**
+   * 利用可能なコマンドの定義
+   * ナビゲーション（画面遷移）、アクション（即時実行）、カテゴリ（フィルタリング）
+   * の3つの層でコマンドを構成し、ユーザーの意図をカバーします。
+   */
   const commands: CommandItem[] = [
     {
       id: 'go-feed',
@@ -103,6 +116,11 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     }
   }, [isOpen]);
 
+  /**
+   * キーボードナビゲーションの制御
+   * 矢印キーでの選択、Enterでの実行、Escでのキャンセルという、
+   * 標準的なコマンドパレットの操作体系を実装しています。
+   */
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!isOpen) return;
@@ -132,6 +150,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     <AnimatePresence>
       {isOpen && (
         <>
+          {/* 背景のオーバーレイ: コンテンツへの集中を促すためのぼかし効果 */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -141,6 +160,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
             className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[100]"
           />
           <div className="fixed inset-0 flex items-start justify-center pt-24 z-[101] pointer-events-none">
+            {/* 本体パネル: Glassmorphismを適用し、浮遊感のある未来的な質感を演出 */}
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: -20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -148,6 +168,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
               data-testid="command-palette"
               className="w-full max-w-2xl bg-background/95 backdrop-blur-2xl border border-content-muted/20 rounded-2xl shadow-2xl overflow-hidden pointer-events-auto"
             >
+              {/* 入力エリア */}
               <div className="p-4 border-b border-content-muted/10 flex items-center gap-3">
                 <Search size={20} className="text-content-muted" />
                 <input
@@ -163,6 +184,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                 </div>
               </div>
 
+              {/* 検索結果リスト */}
               <div className="max-h-[400px] overflow-y-auto p-2 custom-scrollbar">
                 {filteredCommands.length > 0 ? (
                   <div className="space-y-1">
@@ -191,6 +213,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                             {cmd.subtitle}
                           </div>
                         </div>
+                        {/* 選択中のインジケーターアニメーション */}
                         {idx === selectedIndex && (
                           <motion.div layoutId="arrow" initial={{ x: -5 }} animate={{ x: 0 }}>
                             <ChevronRight size={18} className="text-primary" />
@@ -206,6 +229,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                 )}
               </div>
 
+              {/* フッター: 操作のヒントを表示 */}
               <div className="p-3 bg-content-muted/5 border-t border-content-muted/10 flex items-center justify-between text-[10px] text-content-muted font-medium tracking-wider uppercase">
                 <div className="flex items-center gap-4">
                   <span className="flex items-center gap-1.5"><ArrowRight size={10} className="rotate-90" /> Select</span>

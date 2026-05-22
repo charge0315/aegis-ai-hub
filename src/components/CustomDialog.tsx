@@ -3,6 +3,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { AlertCircle, CheckCircle2, Info, XCircle, Sparkles, Loader2 } from 'lucide-react';
 import { GlassPanel } from './GlassPanel';
 
+/**
+ * CustomDialog Component
+ * 
+ * ユーザーへの重要な通知、確認事項、または入力を促すためのモーダルダイアログ。
+ * 背景を透過・ぼかすGlassmorphismを採用することで、現在のコンテキストを維持しつつ、
+ * ユーザーの注意を確実に最前面のダイアログへ引きつけます。
+ */
+
 export type DialogType = 'alert' | 'confirm' | 'prompt' | 'info' | 'warning' | 'success' | 'error' | 'loading';
 
 interface CustomDialogProps {
@@ -37,6 +45,11 @@ export const CustomDialog: React.FC<CustomDialogProps> = ({
     }
   }, [isOpen, defaultValue]);
 
+  /**
+   * 状態に応じたアイコングラフィックの選択
+   * 成功、エラー、警告などのコンテキストを瞬時に伝えるため、
+   * 意味に基づいた色とアイコンのセットを選択します。
+   */
   const getIcon = () => {
     switch (type) {
       case 'success': return <CheckCircle2 size={32} className="text-emerald-400" />;
@@ -52,7 +65,7 @@ export const CustomDialog: React.FC<CustomDialogProps> = ({
     <AnimatePresence>
       {isOpen && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" data-testid="custom-dialog">
-          {/* Backdrop */}
+          {/* Backdrop: 全画面を暗くし、背後のコンテンツをぼかして情報の階層を明確化 */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -61,13 +74,14 @@ export const CustomDialog: React.FC<CustomDialogProps> = ({
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
           />
 
-          {/* Dialog Body */}
+          {/* Dialog Body: 浮遊感を出すためのスケールと移動のアニメーション */}
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             className="relative w-full max-w-md"
           >
+            {/* GlassPanel を基盤とすることで、洗練された「未来感」を維持 */}
             <GlassPanel className="p-8 space-y-6 overflow-hidden border-white/10 shadow-2xl">
               <div className="flex flex-col items-center text-center space-y-4">
                 <div className="p-3 bg-white/5 rounded-2xl">
@@ -79,6 +93,7 @@ export const CustomDialog: React.FC<CustomDialogProps> = ({
                 </div>
               </div>
 
+              {/* Promptモード時のみ入力フィールドを表示 */}
               {type === 'prompt' && (
                 <div className="space-y-2">
                   <input
@@ -97,6 +112,7 @@ export const CustomDialog: React.FC<CustomDialogProps> = ({
                 </div>
               )}
 
+              {/* アクションボタン群 */}
               {type !== 'loading' && (
                 <div className="flex gap-3 pt-2">
                   {onCancel && (

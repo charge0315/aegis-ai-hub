@@ -3,6 +3,20 @@ import { nexusApi } from '../api/nexusApi';
 import type { UiSettings } from '../types';
 import type { Language } from '../i18n/translations';
 
+/**
+ * UIの表示設定（フィードサイズ、画像表示、言語、テーマ等）をバックエンドと同期し、永続化するためのカスタムフック。
+ * 
+ * 【設計思想】
+ * - ユーザーの好みに応じた表示状態をアプリケーション全体で共有し、セッションを超えて維持します。
+ * - UIの操作（トグル等）に対して即座に状態を更新しつつ、バックエンドへの保存は効率的に行う同期メカニズムを提供します。
+ * 
+ * 【実装の意図】
+ * - コンポーネントのマウント時に `nexusApi.getUiSettings()` を呼び出し、ローカルステートを初期化します。
+ *   `isInitialized` を用いて、初期化が終わるまで保存処理が走らないように制御しています。
+ * - 保存処理には 100ms のデバウンス（setTimeout/clearTimeout）を導入しており、
+ *   ユーザーが連続して設定を変更した場合（スライダー操作など）でも、APIコールを最小限に抑え
+ *   パフォーマンスを維持しています。
+ */
 export const useUiSettingsSync = () => {
   const [feedSize, setFeedSize] = useState<'small' | 'medium' | 'large'>('medium');
   const [showImages, setShowImages] = useState(true);

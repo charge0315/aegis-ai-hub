@@ -1,6 +1,20 @@
+/**
+ * @file nexusApi.ts
+ * @description フロントエンドからバックエンド（Electron IPC または HTTP API）へアクセスするための統合APIクライアント。
+ * 環境（デスクトップアプリ版、Webブラウザ版、E2Eテスト環境）に応じて通信手段を自動的に切り替え、
+ * UIコンポーネントに透過的なデータアクセスを提供する。
+ * @dependencies
+ * - React Hooks (useState, useEffect, useCallback)
+ * - ../types: 共有型定義
+ */
+
 import { useState, useEffect, useCallback } from 'react';
 import type { Article, NexusSettings, AgentStatus, InterestCategory, FeedConfig, UiSettings, TrendSuggestion, Interests, UsageStats } from '../types';
 
+/** 
+ * ウィンドウの座標とサイズ情報を保持するインターフェース。
+ * 永続化されたウィンドウ状態の復元に使用。
+ */
 export interface WindowState {
   width: number;
   height: number;
@@ -8,18 +22,30 @@ export interface WindowState {
   y: number;
 }
 
+/** 
+ * E2Eテスト環境下であるかどうかを判定する内部関数。
+ * テスト時はベースURLを空にし、モックサーバーへのリクエストを容易にする。
+ */
 const isE2E = () => (typeof window !== 'undefined' && (window as unknown as { isE2ETest?: boolean }).isE2ETest === true);
 
 /**
- * Aegis Nexus API Client
- * Provides a unified interface for both Electron IPC and Browser (via HTTP proxy)
+ * nexusApiオブジェクト
+ * 
+ * 全てのAPI呼び出しを集約するシングルトンライクなオブジェクト。
+ * ElectronのIPCブリッジ (window.nexusApi) が利用可能な場合はそれを優先し、
+ * 利用不可（ブラウザ単体起動など）な場合は標準のfetch APIによるHTTP通信にフォールバックする。
  */
 export const nexusApi = {
+  /** 接続先バックエンドのベースURLを取得。開発環境ではFastifyのポート(3005)を指す。 */
   getBackendUrl(): string {
     // In dev mode, we use the Vite proxy or direct Fastify port
     return isE2E() ? '' : 'http://localhost:3005';
   },
 
+  /** 
+   * 最新の記事リストを取得。
+   * HTTP経由の場合はカテゴリごとにグループ化されたデータを平坦化し、重要度（score）順にソートして返す。
+   */
   async getArticles(): Promise<Article[]> {
     // 1. Electron IPC (Preferred)
     if (window.nexusApi?.getArticles && !isE2E()) {
@@ -42,6 +68,7 @@ export const nexusApi = {
     }
   },
 
+  /** 興味関心設定とフィード構成を同時に取得する。 */
   async getSettings(): Promise<NexusSettings> {
     if (window.nexusApi?.getSettings && !isE2E()) {
       return await window.nexusApi.getSettings();
@@ -58,6 +85,7 @@ export const nexusApi = {
     }
   },
 
+  /** 設定内容をバックエンドに保存・同期する。 */
   async syncSettings(settings: NexusSettings): Promise<{ lastUpdated: number }> {
     if (window.nexusApi?.syncSettings && !isE2E()) {
       return await window.nexusApi.syncSettings(settings);
@@ -70,6 +98,7 @@ export const nexusApi = {
     return await res.json();
   },
 
+  /** AIエージェントによる自律的なワークフロー（オーケストレーション）を起動する。 */
   async triggerOrchestration(requirements?: string): Promise<{ success: boolean; newFeedsCount: number }> {
     if (window.nexusApi?.triggerOrchestration && !isE2E()) {
       return await window.nexusApi.triggerOrchestration(requirements);
@@ -82,6 +111,7 @@ export const nexusApi = {
     return await res.json();
   },
 
+  /** 指定されたカテゴリ名に関連するブランドやキーワード、絵文字をAIに提案させる。 */
   async suggestCategory(categoryName: string): Promise<{ brands: string[], keywords: string[], emoji: string, reason: string }> {
     if (window.nexusApi?.suggestCategory && !isE2E()) {
       return await window.nexusApi.suggestCategory(categoryName);
@@ -94,6 +124,7 @@ export const nexusApi = {
     return await res.json();
   },
 
+  /** カテゴリ構造全体の再編成（インテリジェント・リファクタリング）をAIに依頼する。 */
   async restructureCategories(count?: number, language: string = 'ja'): Promise<{ categories: Record<string, InterestCategory>, feedConfig: FeedConfig }> {
     if (window.nexusApi?.restructureCategories && !isE2E()) {
       return await window.nexusApi.restructureCategories(count, language);
@@ -106,6 +137,7 @@ export const nexusApi = {
     return await res.json();
   },
 
+  /** 現在のニュースデータから最新のトレンドを分析・抽出する。 */
   async discoverTrends(): Promise<{ suggestions: TrendSuggestion[] }> {
     if (window.nexusApi?.discoverTrends && !isE2E()) {
       return await window.nexusApi.discoverTrends();
@@ -114,6 +146,7 @@ export const nexusApi = {
     return await res.json();
   },
 
+  /** 既存の設定（興味関心）を別の言語へ変換・翻訳する。 */
   async translateInterests(settings: NexusSettings): Promise<{ interests: Interests, feedConfig: FeedConfig }> {
     if (window.nexusApi?.translateInterests && !isE2E()) {
       return await window.nexusApi.translateInterests(settings);
@@ -126,6 +159,7 @@ export const nexusApi = {
     return await res.json();
   },
 
+  /** プロファイルをデフォルト状態にリセットする。 */
   async resetToDefaults(language: string = 'ja'): Promise<{ success: boolean }> {
     if (window.nexusApi?.resetToDefaults && !isE2E()) {
       return await window.nexusApi.resetToDefaults(language);
@@ -138,6 +172,7 @@ export const nexusApi = {
     return await res.json();
   },
 
+  /** APIキーをセキュアに取得する（Electron環境のみ推奨）。 */
   async getApiKey(): Promise<string> {
     if (window.nexusApi?.getApiKey && !isE2E()) {
       return await window.nexusApi.getApiKey();
@@ -145,6 +180,7 @@ export const nexusApi = {
     return '';
   },
 
+  /** APIキーをバックエンドに安全に保存する。 */
   async saveApiKey(apiKey: string): Promise<{ success: boolean }> {
     if (window.nexusApi?.saveApiKey && !isE2E()) {
       return await window.nexusApi.saveApiKey(apiKey);
@@ -152,6 +188,7 @@ export const nexusApi = {
     return { success: true };
   },
 
+  /** UI固有の設定（表示モード、テーマ等）を取得する。 */
   async getUiSettings(): Promise<UiSettings> {
     if (window.nexusApi?.getUiSettings && !isE2E()) {
       return await window.nexusApi.getUiSettings();
@@ -161,10 +198,12 @@ export const nexusApi = {
       const res = await fetch(url);
       return await res.json();
     } catch {
+      // エラー時のフォールバック。初期化状態の不整合を防ぐためデフォルト値を返す。
       return { jaOnly: false, viewMode: 'grid', hideImages: false, isInitialized: true, theme: 'system', language: 'ja', autoLaunch: false };
     }
   },
 
+  /** UI設定を永続化する。 */
   async saveUiSettings(settings: UiSettings): Promise<{ success: boolean }> {
     if (window.nexusApi?.saveUiSettings && !isE2E()) {
       return await window.nexusApi.saveUiSettings(settings);
@@ -172,6 +211,7 @@ export const nexusApi = {
     return { success: true };
   },
 
+  /** AIの使用量統計が更新された際のイベント購読。 */
   onUsageUpdate(callback: (stats: UsageStats) => void): () => void {
     if (window.nexusApi?.onUsageUpdate && !isE2E()) {
       return window.nexusApi.onUsageUpdate(callback);
@@ -179,6 +219,7 @@ export const nexusApi = {
     return () => {};
   },
 
+  /** トークン消費量などの利用統計を取得する。 */
   async getUsageStats(): Promise<UsageStats> {
     if (window.nexusApi?.getUsageStats && !isE2E()) {
       return await window.nexusApi.getUsageStats();
@@ -192,12 +233,14 @@ export const nexusApi = {
     }
   },
 
+  /** ウィンドウの制御（最小化・最大化・閉じる）。 */
   windowControl(action: 'minimize' | 'maximize' | 'close' | 'quit'): void {
     if (window.nexusApi?.windowControl && !isE2E()) {
       window.nexusApi.windowControl(action as unknown as 'minimize' | 'maximize' | 'close');
     }
   },
   
+  /** 外部URLをシステムのデフォルトブラウザで安全に開く。 */
   openExternal(url: string): void {
     if (window.nexusApi?.openExternal && !isE2E()) {
       window.nexusApi.openExternal(url);
@@ -208,7 +251,11 @@ export const nexusApi = {
 };
 
 /**
- * Hook to synchronize Nexus settings and articles
+ * useNexusSync カスタムフック
+ * 
+ * アプリケーション全体のデータ（記事リストと設定）の同期状態を管理する。
+ * 初回ロード時のデータ取得、ポーリング、および設定更新後の再取得を一元化し、
+ * ローディング状態やエラーハンドリングを抽象化して提供する。
  */
 export function useNexusSync() {
   const [settings, setSettings] = useState<NexusSettings | null>(null);
@@ -217,6 +264,7 @@ export function useNexusSync() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  /** バックエンドから最新データをフェッチする共通ロジック。 */
   const fetchData = useCallback(async (showLoading = true) => {
     try {
       if (showLoading) setLoading(true);
@@ -238,6 +286,7 @@ export function useNexusSync() {
     }
   }, []);
 
+  /** コンポーネントのマウント時に初回データを取得する。 */
   useEffect(() => {
     let active = true;
     const load = async () => {
@@ -247,6 +296,7 @@ export function useNexusSync() {
     return () => { active = false; };
   }, [fetchData]);
 
+  /** 設定の保存と、それに伴う記事データの自動リフレッシュを行う。 */
   const sync = useCallback(async (newSettings: NexusSettings) => {
     try {
       setIsSyncing(true);
@@ -258,7 +308,7 @@ export function useNexusSync() {
           lastUpdated: result.lastUpdated 
         } 
       });
-      // Refresh articles after sync
+      // 設定変更後に記事の内容が変化する可能性があるため、即座にリフレッシュ。
       const a = await nexusApi.getArticles();
       setArticles(a);
     } finally {
@@ -270,7 +320,13 @@ export function useNexusSync() {
 }
 
 /**
- * Hook to monitor Agent swarm events
+ * useAgentEvents カスタムフック
+ * 
+ * バックエンドから送出されるAIエージェントの活動イベントをリッスンする。
+ * ブラウザ環境では SSE (Server-Sent Events) を、Electron環境では IPC イベントを使用し、
+ * エージェントのステータス更新やデータリフレッシュ要求をリアクティブにUIへ反映する。
+ * 
+ * @param {Function} onRefresh - バックエンドからリフレッシュ要求があった際のコールバック
  */
 export function useAgentEvents(onRefresh?: () => void) {
   const [events, setEvents] = useState<AgentStatus[]>([
@@ -282,7 +338,7 @@ export function useAgentEvents(onRefresh?: () => void) {
 
   useEffect(() => {
     const backendUrl = isE2E() ? '' : 'http://localhost:3005';
-    // If not in Electron or specifically in E2E mode, use SSE
+    // ブラウザ版またはE2E環境では SSE (Server-Sent Events) でイベントを受信する。
     if (!window.nexusApi || isE2E()) {
       const eventSource = new EventSource(`${backendUrl}/api/v5/events`);
       eventSource.onmessage = (e) => {
@@ -300,7 +356,7 @@ export function useAgentEvents(onRefresh?: () => void) {
       return () => eventSource.close();
     }
     
-    // Electron IPC Event Listener
+    // Electron環境では IPC (Inter-Process Communication) を介してイベントを受信する。
     window.nexusApi.onAgentEvent((data) => {
       if (data.status === 'refresh') {
         onRefresh?.();
@@ -310,6 +366,7 @@ export function useAgentEvents(onRefresh?: () => void) {
     });
     
     return () => { 
+      // クリーンアップ処理：リスナーの解除
       window.nexusApi?.removeAgentEventListener?.(); 
     };
   }, [onRefresh]);

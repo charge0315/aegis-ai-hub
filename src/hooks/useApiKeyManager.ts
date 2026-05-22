@@ -1,3 +1,10 @@
+/**
+ * Gemini APIキー管理用カスタムフック
+ * 
+ * 設定画面におけるAPIキーの取得、ローカルステートでの保持、
+ * およびサーバー（Electronバックエンド）への保存処理を担当します。
+ */
+
 import { useState, useEffect, useCallback } from 'react';
 import { nexusApi } from '../api/nexusApi';
 import { useTranslation } from './useTranslationHook';
@@ -12,10 +19,14 @@ export function useApiKeyManager({ customAlert }: UseApiKeyManagerProps) {
   const [apiKey, setApiKey] = useState<string>('');
   const [isSavingApiKey, setIsSavingApiKey] = useState(false);
 
+  // コンポーネントマウント時に保存されているAPIキーを読み込む
   useEffect(() => {
     nexusApi.getApiKey().then(setApiKey);
   }, []);
 
+  /**
+   * APIキーをバックエンドに保存し、結果をダイアログで通知します
+   */
   const handleSaveApiKey = useCallback(async () => {
     setIsSavingApiKey(true);
     try {

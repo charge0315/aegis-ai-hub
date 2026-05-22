@@ -11,6 +11,15 @@ import {
 import { GlassPanel } from '../GlassPanel';
 import type { Interests } from '../../models/Schemas';
 
+/**
+ * AIInsightsPanel Component
+ * 
+ * エージェントがニュースフィードから自律的に抽出した「新しいトレンド」や「未知のキーワード」を
+ * ユーザーに提示し、知識ベースへの取り込みを促すためのパネル。
+ * AIの推論（Reasoning）と信頼度（Confidence）を可視化することで、
+ * ユーザーがAIの提案を妥当かどうか判断しやすくするプロセスを支援します。
+ */
+
 interface AIInsightsPanelProps {
   draft: { interests: Interests };
   isDiscovering: boolean;
@@ -36,6 +45,7 @@ export const AIInsightsPanel: React.FC<AIInsightsPanelProps> = ({
           </h3>
           <p className="text-content-muted text-sm mt-1">Autonomous agents analyzing signals for emerging patterns and breakthrough concepts.</p>
         </div>
+        {/* トレンド発見ボタン: アーキビストエージェントに命令を下すためのアクション */}
         <button
           onClick={handleDiscoverTrends}
           disabled={isDiscovering}
@@ -60,6 +70,7 @@ export const AIInsightsPanel: React.FC<AIInsightsPanelProps> = ({
         </button>
       </div>
 
+      {/* 空状態のプレースホルダー: ユーザーに次のアクション（スキャン実行）を促す設計 */}
       {!draft.interests.learned_keywords || Object.keys(draft.interests.learned_keywords).length === 0 ? (
         <div className="py-32 flex flex-col items-center justify-center border-2 border-dashed border-content-muted/10 rounded-[2.5rem] bg-surface-panel/5">
           <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-6 text-primary animate-pulse">
@@ -73,11 +84,13 @@ export const AIInsightsPanel: React.FC<AIInsightsPanelProps> = ({
       ) : (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           {Object.entries(draft.interests.learned_keywords).map(([kw, data]) => (
+            // トレンドカード: AIが発見した知見を一つの独立したシグナルとして提示
             <GlassPanel key={kw} className="p-0 overflow-hidden group hover:border-primary/40 transition-all duration-500">
               <div className="p-6 space-y-5">
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
+                      {/* トレンドの分類（Breakthrough / Emerging / Niche）による色分け */}
                       <span className={`px-2 py-0.5 text-[10px] font-bold uppercase rounded-md tracking-wider ${
                         data.type === 'breakthrough' ? 'bg-orange-500/20 text-orange-400' :
                         data.type === 'emerging' ? 'bg-emerald-500/20 text-emerald-400' :
@@ -101,10 +114,12 @@ export const AIInsightsPanel: React.FC<AIInsightsPanelProps> = ({
                   </div>
                 </div>
 
+                {/* AIの推論: なぜこのキーワードが重要だと判断されたかの説明文 */}
                 <p className="text-sm text-content-muted leading-relaxed border-l-2 border-primary/20 pl-4 py-1">
                   {data.reason}
                 </p>
 
+                {/* 証拠となる文脈（Context）: 信頼性を高めるための引用 */}
                 {data.context && (
                   <div className="p-3 bg-content-muted/5 rounded-xl text-[11px] text-content-muted italic leading-relaxed border border-content-muted/5">
                     <BarChart3 size={14} className="mb-1 opacity-50" />
@@ -112,6 +127,7 @@ export const AIInsightsPanel: React.FC<AIInsightsPanelProps> = ({
                   </div>
                 )}
 
+                {/* アクションボタン: 昇格（Promote）または却下（Dismiss） */}
                 <div className="flex gap-3 pt-2">
                   <button
                     onClick={() => handlePromoteKeyword(kw, data.category)}
@@ -130,6 +146,7 @@ export const AIInsightsPanel: React.FC<AIInsightsPanelProps> = ({
                 </div>
               </div>
               
+              {/* 下部の信頼度バー: 直感的にAIの確信度を伝える視覚的インジケーター */}
               <div className="h-1 w-full bg-surface-panel/10 relative overflow-hidden">
                 <div 
                   style={{ width: `${data.confidence || 85}%` }}
@@ -145,6 +162,7 @@ export const AIInsightsPanel: React.FC<AIInsightsPanelProps> = ({
         </div>
       )}
 
+      {/* フッター解説: 継続的学習エンジンの仕組みをユーザーに説明 */}
       <div className="p-6 bg-primary/5 border border-primary/20 rounded-[2rem] flex items-start gap-4">
         <div className="p-2 bg-primary/10 text-primary rounded-xl"><Sparkles size={24} /></div>
         <div className="space-y-1">
