@@ -4,6 +4,30 @@
 
 ---
 
+### #18 設定画面のタブヘッダーが日本語表記時に折り返される問題の修正 (2026-06-03)
+- **事象**: 設定画面のタブヘッダー（「エディタ」「ナレッジグラフ」など）が、日本語表記の際、画面幅や要素の圧縮によって途中で不格好に折り返され（例：「エディ\nタ」）、アイコンの下にテキストが配置されてしまう。
+- **原因**: タブボタンにテキスト折り返し防止の `whitespace-nowrap` や縮小防止の `flex-shrink-0` が指定されておらず、またコンテナ側で画面が狭くなった際のはみ出しスクロール（`overflow-x-auto`）が考慮されていなかったため。
+- **対処**:
+    - [UnifiedEditor.tsx](file:///c:/Users/charg/myWorkspace/aegis-ai-hub/src/components/UnifiedEditor.tsx) 内の `TabButton` に `flex-shrink-0 whitespace-nowrap` のスタイルクラスを追加。
+    - タブコンテナに `overflow-x-auto` と `scrollbar-none` を追加し、狭い画面幅でもレイアウトが崩れずスクロールできるように改善。
+- **検証**:
+    - ユニットテスト、E2Eテストがすべて正常に通過することを確認。
+
+---
+
+### #17 Discover Trends Now が機能せず、「トレンドなし」と表示される不具合の修正 (2026-06-03)
+- **事象**: 「Discover Trends Now」を実行した際に、最新のニュースがあるはずなのに「トレンドなし」と表示される。
+- **原因**:
+    - **メソッドの誤削除**: 過去のコミット（`94f681a`）で行われたコード整理の際、`src/ScraperFacade.ts` から `fetchAndProcessArticlesWithFallback` メソッドが誤って削除されていた。
+    - **初期フェッチのクラッシュ**: このため、`electron/main.cjs` の起動イベント（`ready-to-show`）内で呼び出されている `scraper.fetchAndProcessArticlesWithFallback` で `TypeError` が発生し、起動時の記事初期フェッチ処理がクラッシュしていた。
+    - **分析対象の不足**: 記事が1件も取得されない（0件の）状態でトレンド分析機能が呼び出されるため、AIに入力される記事が常に空となり、結果として「トレンドなし」が表示される事象に繋がっていた。
+- **対処**:
+    - **メソッドの復旧**: [ScraperFacade.ts](file:///c:/Users/charg/myWorkspace/aegis-ai-hub/src/ScraperFacade.ts) に、期間制限解除のフォールバック処理を行う `fetchAndProcessArticlesWithFallback` メソッドを再実装して追加した。
+- **検証**:
+    - デバッグ用スクリプト（`category_diag.cjs`）の実行確認、および `npm run test:e2e -- --project=chromium` 等のすべてのユニットテスト・E2Eテストが正常に通過することを確認。
+
+---
+
 ### #16 利用統計（Usage Stats）が記録されず、リアルタイムに更新・表示されない問題の修正 (2026-06-03)
 - **事象**: 設定画面の「利用統計」タブにアクセスしても、統計データ（トークン消費量、APIコール数など）が全く記録されず、空（もしくは更新されない）状態のままになる。また、リアルタイムに画面へ反映されない。
 - **原因**:

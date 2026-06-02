@@ -197,6 +197,17 @@ export class ScraperFacade {
     }
 
     /**
+     * 記事が0件の場合に期間制限を解除するフォールバック機能付きの取得メソッド。
+     */
+    async fetchAndProcessArticlesWithFallback(interests: Interests): Promise<Article[]> {
+        let articles = await this.fetchAndProcessArticles(interests, false);
+        if (articles.length === 0) {
+            articles = await this.fetchAndProcessArticles(interests, true);
+        }
+        return articles;
+    }
+
+    /**
      * 各フィードから記事を並列取得し、スコアリングとカテゴリ判定を行います。
      * 
      * 意図: 大量のフィードを効率よく取得しつつ、ScoringService を利用して
