@@ -12,6 +12,8 @@ import { UsageStatsSchema, type UsageStats } from '../models/Schemas';
 export class UsageManager {
   private statsPath: string;
   private stats: UsageStats = {};
+  public onUpdate?: (stats: UsageStats) => void;
+  private savePromise: Promise<void> = Promise.resolve();
 
   constructor(statsPath: string) {
     this.statsPath = statsPath;
@@ -68,10 +70,16 @@ export class UsageManager {
    * エラーはキャッチしてログ出力に留めます。
    */
   private async save(): Promise<void> {
-    try {
-      await fs.writeFile(this.statsPath, JSON.stringify(this.stats, null, 2), 'utf-8');
-    } catch (err) {
-      console.error('[UsageManager] Save failed:', err);
-    }
+    this.savePromise = this.savePromise.then(async () => {
+      try {
+        await fs.writeFile(this.statsPath, JSON.stringify(this.stats, null, 2), 'utf-8');
+        if (this.onUpdate) {
+          this.onUpdate(this.stats);
+        }
+      } catch (err) {
+        console.error('[UsageManager] Save failed:', err);
+      }
+    });
+    return this.savePromise;
   }
 }

@@ -61702,6 +61702,8 @@ var init_UsageManager = __esm({
     UsageManager = class {
       statsPath;
       stats = {};
+      onUpdate;
+      savePromise = Promise.resolve();
       constructor(statsPath) {
         this.statsPath = statsPath;
       }
@@ -61749,11 +61751,17 @@ var init_UsageManager = __esm({
        * エラーはキャッチしてログ出力に留めます。
        */
       async save() {
-        try {
-          await import_promises.default.writeFile(this.statsPath, JSON.stringify(this.stats, null, 2), "utf-8");
-        } catch (err) {
-          console.error("[UsageManager] Save failed:", err);
-        }
+        this.savePromise = this.savePromise.then(async () => {
+          try {
+            await import_promises.default.writeFile(this.statsPath, JSON.stringify(this.stats, null, 2), "utf-8");
+            if (this.onUpdate) {
+              this.onUpdate(this.stats);
+            }
+          } catch (err) {
+            console.error("[UsageManager] Save failed:", err);
+          }
+        });
+        return this.savePromise;
       }
     };
   }
@@ -61877,8 +61885,19 @@ var init_SettingsManager = __esm({
        * フィードの購読設定を取得します。
        */
       async getFeedConfig() {
-        const data2 = await import_promises2.default.readFile(this.feedConfigPath, "utf8");
-        return FeedConfigSchema.parse(JSON.parse(data2));
+        try {
+          const data2 = await this._safeRead(this.feedConfigPath);
+          return FeedConfigSchema.parse(data2);
+        } catch {
+          return {};
+        }
+      }
+      /**
+       * フィード購読設定を保存します。
+       */
+      async saveFeedConfig(config2) {
+        const validated = FeedConfigSchema.parse(config2);
+        await this._safeWrite(this.feedConfigPath, validated);
       }
       /**
        * 設定データの同期（外部からの上書き保存）を行います。
@@ -63719,8 +63738,17 @@ var init_FeedManager = __esm({
     FeedManager = class {
       config = {};
       configPath;
-      constructor(configPath) {
+      saveHandler;
+      constructor(configPath, saveHandler) {
         this.configPath = configPath;
+        this.saveHandler = saveHandler;
+      }
+      /**
+       * 保存用ハンドラをセットします。
+       * SettingsManagerなど、外部の安全な書き込み機構を利用する場合に使用します。
+       */
+      setSaveHandler(handler) {
+        this.saveHandler = handler;
       }
       /**
        * 設定ファイルを非同期に読み込みます。
@@ -63739,7 +63767,11 @@ var init_FeedManager = __esm({
        */
       async saveConfig() {
         try {
-          await import_promises4.default.writeFile(this.configPath, JSON.stringify(this.config, null, 2), "utf-8");
+          if (this.saveHandler) {
+            await this.saveHandler(this.config);
+          } else {
+            await import_promises4.default.writeFile(this.configPath, JSON.stringify(this.config, null, 2), "utf-8");
+          }
         } catch (err) {
           console.error("[FeedManager] Failed to save config:", err);
         }
@@ -133005,10 +133037,18 @@ async function startBackend() {
   console.log("[Main] Starting backend services...");
   settingsManager = new ElectronSettingsManager2({ dataDir, isDev });
   await settingsManager.init();
+  settingsManager.usageManager.onUpdate = (stats) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send("usage-update", stats);
+    }
+  };
   const apiKey = await settingsManager.getApiKey();
   geminiService = new GeminiService2(apiKey);
   const feedConfigPath = path4.join(dataDir, "feed_config.json");
   feedManager = new FeedManager2(feedConfigPath);
+  feedManager.setSaveHandler(async (config2) => {
+    await settingsManager.saveFeedConfig(config2);
+  });
   await feedManager.loadConfig();
   rssFetcher = new RSSFetcher2();
   discoveryService = new DiscoveryService2(geminiService, rssFetcher, feedManager);

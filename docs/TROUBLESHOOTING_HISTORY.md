@@ -4,6 +4,21 @@
 
 ---
 
+### #16 利用統計（Usage Stats）がリアルタイムに更新・表示されない問題の修正 (2026-06-03)
+- **事象**: 設定画面の「利用統計」タブにアクセスしても、AIのトークン消費量やコール回数などの統計データが更新されず、リアルタイムに反映されない。
+- **原因**:
+    - `electron/preload.cjs` で `getUsageStats` および `onUsageUpdate` が公開されていなかったため、フロントエンド（レンダラープロセス）がデスクトップアプリ（Electron）環境で IPC を利用できず、使用量データの取得や変更の購読が機能していなかった。
+    - `UsageManager` でデータ保存完了時にメインプロセスからレンダラープロセスへ `usage-update` イベントを通知する仕組みが欠落していた。
+    - `UsageManager.ts` の非同期書き込み `fs.writeFile` がほぼ同時に複数回呼ばれた場合に、ファイルの書き込み競合（競合状態）が発生する懸念があった。
+- **対処**:
+    - **Preload API の露出**: `preload.cjs` 内で `getUsageStats` と `onUsageUpdate` を `contextBridge.exposeInMainWorld` に追加。`onUsageUpdate` ではリスナーを登録し、返り値として購読解除関数を返すようにしてメモリリークを防止。
+    - **イベント通知の実装**: `UsageManager.ts` に `onUpdate` コールバックプロパティを追加し、`main.cjs` 側でそのコールバックをフック。更新時に `mainWindow.webContents.send('usage-update', stats)` でレンダラーに通知するようにした。
+    - **競合状態の排除**: `UsageManager.ts` の `save()` 時に、Promise チェーンによるシリアル化ロックを導入し、複数の書き込みが順序よく安全に行われるよう改善。
+- **検証**:
+    - ユニットテスト (`vitest`) および E2Eテスト (`playwright`) を実行し、全テスト（7件）が正常に通過することを確認。
+
+---
+
 ### #15 設定ファイルの破損による起動時エラー (Sync Error) (2026-05-23)
 - **事象**: 起動時に `Sync Error: Error invoking remote method 'get-settings': SyntaxError: Unexpected non-whitespace character after JSON at position 2721` が発生し、アプリが正常に起動しない。
 - **原因**: `feed_config.json` の末尾に古いデータの一部が残存しており、不正な JSON 形式になっていた。これは `FeedManager` (直接的な `fs.writeFile`) と `SettingsManager` (バックアップ世代管理付きの `_safeWrite`) が同じファイルに対して競合し、アトミックでない書き込みや回転処理中の干渉が発生したことが原因。
