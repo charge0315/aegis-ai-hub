@@ -4,13 +4,15 @@
 
 ---
 
-### #16 利用統計（Usage Stats）がリアルタイムに更新・表示されない問題の修正 (2026-06-03)
-- **事象**: 設定画面の「利用統計」タブにアクセスしても、AIのトークン消費量やコール回数などの統計データが更新されず、リアルタイムに反映されない。
+### #16 利用統計（Usage Stats）が記録されず、リアルタイムに更新・表示されない問題の修正 (2026-06-03)
+- **事象**: 設定画面の「利用統計」タブにアクセスしても、統計データ（トークン消費量、APIコール数など）が全く記録されず、空（もしくは更新されない）状態のままになる。また、リアルタイムに画面へ反映されない。
 - **原因**:
-    - `electron/preload.cjs` で `getUsageStats` および `onUsageUpdate` が公開されていなかったため、フロントエンド（レンダラープロセス）がデスクトップアプリ（Electron）環境で IPC を利用できず、使用量データの取得や変更の購読が機能していなかった。
-    - `UsageManager` でデータ保存完了時にメインプロセスからレンダラープロセスへ `usage-update` イベントを通知する仕組みが欠落していた。
-    - `UsageManager.ts` の非同期書き込み `fs.writeFile` がほぼ同時に複数回呼ばれた場合に、ファイルの書き込み競合（競合状態）が発生する懸念があった。
+    - **インスタンス紐付け漏れ**: `electron/main.cjs` 内で `GeminiService` をインスタンス化する際、`settingsManager.usageManager` を `geminiService.setUsageManager(...)` で設定し忘れていた。このため、Gemini API コール完了後に `usageManager.recordUsage()` が一切呼び出されておらず、利用統計データそのものが記録されていなかった。
+    - **Preload API 露出不足**: `electron/preload.cjs` で `getUsageStats` および `onUsageUpdate` が公開されていなかったため、レンダラープロセスがデスクトップアプリ（Electron）環境で IPC を利用できず、使用量データの取得や変更の購読が機能していなかった。
+    - **イベント通知の欠落**: `UsageManager` でデータ保存完了時にメインプロセスからレンダラープロセスへ `usage-update` イベントを通知する仕組みがなかった。
+    - **書き込み競合リスク**: `UsageManager.ts` の非同期書き込み `fs.writeFile` がほぼ同時に複数回呼ばれた場合に、ファイルの書き込み競合（競合状態）が発生する懸念があった。
 - **対処**:
+    - **インスタンス紐付け**: `main.cjs` にて `geminiService.setUsageManager(settingsManager.usageManager)` の呼び出しを追加し、Gemini APIコール時のトークン消費量を正しく記録するようにした。
     - **Preload API の露出**: `preload.cjs` 内で `getUsageStats` と `onUsageUpdate` を `contextBridge.exposeInMainWorld` に追加。`onUsageUpdate` ではリスナーを登録し、返り値として購読解除関数を返すようにしてメモリリークを防止。
     - **イベント通知の実装**: `UsageManager.ts` に `onUpdate` コールバックプロパティを追加し、`main.cjs` 側でそのコールバックをフック。更新時に `mainWindow.webContents.send('usage-update', stats)` でレンダラーに通知するようにした。
     - **競合状態の排除**: `UsageManager.ts` の `save()` 時に、Promise チェーンによるシリアル化ロックを導入し、複数の書き込みが順序よく安全に行われるよう改善。

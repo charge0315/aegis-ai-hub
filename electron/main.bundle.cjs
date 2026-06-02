@@ -133044,6 +133044,7 @@ async function startBackend() {
   };
   const apiKey = await settingsManager.getApiKey();
   geminiService = new GeminiService2(apiKey);
+  geminiService.setUsageManager(settingsManager.usageManager);
   const feedConfigPath = path4.join(dataDir, "feed_config.json");
   feedManager = new FeedManager2(feedConfigPath);
   feedManager.setSaveHandler(async (config2) => {

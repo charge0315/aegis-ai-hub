@@ -111,6 +111,7 @@ async function startBackend() {
 
   const apiKey = await settingsManager.getApiKey();
   geminiService = new GeminiService(apiKey);
+  geminiService.setUsageManager(settingsManager.usageManager);
   
   const feedConfigPath = path.join(dataDir, 'feed_config.json');
   feedManager = new FeedManager(feedConfigPath);
