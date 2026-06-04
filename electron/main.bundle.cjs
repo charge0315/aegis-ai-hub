@@ -61702,6 +61702,8 @@ var init_UsageManager = __esm({
     UsageManager = class {
       statsPath;
       stats = {};
+      onUpdate;
+      savePromise = Promise.resolve();
       constructor(statsPath) {
         this.statsPath = statsPath;
       }
@@ -61749,11 +61751,17 @@ var init_UsageManager = __esm({
        * エラーはキャッチしてログ出力に留めます。
        */
       async save() {
-        try {
-          await import_promises.default.writeFile(this.statsPath, JSON.stringify(this.stats, null, 2), "utf-8");
-        } catch (err) {
-          console.error("[UsageManager] Save failed:", err);
-        }
+        this.savePromise = this.savePromise.then(async () => {
+          try {
+            await import_promises.default.writeFile(this.statsPath, JSON.stringify(this.stats, null, 2), "utf-8");
+            if (this.onUpdate) {
+              this.onUpdate(this.stats);
+            }
+          } catch (err) {
+            console.error("[UsageManager] Save failed:", err);
+          }
+        });
+        return this.savePromise;
       }
     };
   }
@@ -61877,8 +61885,19 @@ var init_SettingsManager = __esm({
        * フィードの購読設定を取得します。
        */
       async getFeedConfig() {
-        const data2 = await import_promises2.default.readFile(this.feedConfigPath, "utf8");
-        return FeedConfigSchema.parse(JSON.parse(data2));
+        try {
+          const data2 = await this._safeRead(this.feedConfigPath);
+          return FeedConfigSchema.parse(data2);
+        } catch {
+          return {};
+        }
+      }
+      /**
+       * フィード購読設定を保存します。
+       */
+      async saveFeedConfig(config2) {
+        const validated = FeedConfigSchema.parse(config2);
+        await this._safeWrite(this.feedConfigPath, validated);
       }
       /**
        * 設定データの同期（外部からの上書き保存）を行います。
@@ -63719,8 +63738,17 @@ var init_FeedManager = __esm({
     FeedManager = class {
       config = {};
       configPath;
-      constructor(configPath) {
+      saveHandler;
+      constructor(configPath, saveHandler) {
         this.configPath = configPath;
+        this.saveHandler = saveHandler;
+      }
+      /**
+       * 保存用ハンドラをセットします。
+       * SettingsManagerなど、外部の安全な書き込み機構を利用する場合に使用します。
+       */
+      setSaveHandler(handler) {
+        this.saveHandler = handler;
       }
       /**
        * 設定ファイルを非同期に読み込みます。
@@ -63739,7 +63767,11 @@ var init_FeedManager = __esm({
        */
       async saveConfig() {
         try {
-          await import_promises4.default.writeFile(this.configPath, JSON.stringify(this.config, null, 2), "utf-8");
+          if (this.saveHandler) {
+            await this.saveHandler(this.config);
+          } else {
+            await import_promises4.default.writeFile(this.configPath, JSON.stringify(this.config, null, 2), "utf-8");
+          }
         } catch (err) {
           console.error("[FeedManager] Failed to save config:", err);
         }
@@ -125045,40 +125077,44 @@ var init_EnrichmentService = __esm({
        * 特に、アイキャッチ画像の確保（視覚的魅力の維持）と、母国語へのローカライズ（可読性の確保）を担います。
        */
       async enrich(article) {
-        if (!article.img) {
-          const cachedImg = this.cacheManager.get(article.link);
+        let enriched = { ...article };
+        if (!enriched.img) {
+          const cachedImg = this.cacheManager.get(enriched.link);
           if (cachedImg) {
-            article.img = cachedImg;
+            enriched = { ...enriched, img: cachedImg };
           } else {
             try {
-              const foundImg = await this.scrapeImage(article.link);
+              const foundImg = await this.scrapeImage(enriched.link);
               if (foundImg) {
-                article.img = foundImg;
-                await this.cacheManager.set(article.link, foundImg);
+                enriched = { ...enriched, img: foundImg };
+                await this.cacheManager.set(enriched.link, foundImg);
               } else {
-                article.img = this.getPlaceholder(article.category);
+                enriched = { ...enriched, img: this.getPlaceholder(enriched.category) };
               }
             } catch (e) {
-              console.error(`[EnrichmentService] Failed to scrape image for ${article.link}:`, e);
-              article.img = this.getPlaceholder(article.category);
+              console.error(`[EnrichmentService] Failed to scrape image for ${enriched.link}:`, e);
+              enriched = { ...enriched, img: this.getPlaceholder(enriched.category) };
             }
           }
         }
-        if (this.geminiService && this.isNotJapanese(article.title)) {
+        if (this.geminiService && this.isNotJapanese(enriched.title)) {
           try {
             const translations = await this.geminiService.translateArticles([{
-              title: article.title,
-              desc: article.desc || ""
+              title: enriched.title,
+              desc: enriched.desc || ""
             }]);
             if (translations && translations.length > 0) {
-              article.title = `[JP] ${translations[0].title}`;
-              article.desc = translations[0].desc;
+              enriched = {
+                ...enriched,
+                title: `[JP] ${translations[0].title}`,
+                desc: translations[0].desc
+              };
             }
           } catch (err) {
             console.error("[EnrichmentService] \u7FFB\u8A33\u306B\u5931\u6557\u3057\u307E\u3057\u305F:", err);
           }
         }
-        return article;
+        return enriched;
       }
       /**
        * 記事URLから最適な画像を抽出します。
@@ -132061,7 +132097,7 @@ var init_RSSFetcher = __esm({
           })).catch((error51) => ({
             category: config2.category,
             url: config2.url,
-            error: error51.message,
+            error: error51 instanceof Error ? error51.message : String(error51),
             success: false
           }))
         );
@@ -132394,8 +132430,10 @@ var init_ScraperFacade = __esm({
           const recommendedArticles = recommendations.map((r) => {
             const matched = candidates.find((c) => c.link === r.url);
             if (matched) {
-              matched.geminiReason = r.geminiReason;
-              return matched;
+              return new Article({
+                ...matched.toJSON(),
+                geminiReason: r.geminiReason
+              });
             }
             return new Article({
               title: r.title,
@@ -132410,8 +132448,8 @@ var init_ScraperFacade = __esm({
               geminiReason: r.geminiReason
             });
           });
-          await this.enrichmentService.enrichAll(recommendedArticles);
-          return recommendedArticles;
+          const enrichedData = await this.enrichmentService.enrichAll(recommendedArticles);
+          return enrichedData.map((d) => new Article(d));
         } catch (e) {
           console.error(`[ScraperFacade] Recommendations Error: ${String(e)}`);
           return [];
@@ -132450,10 +132488,10 @@ var init_ScraperFacade = __esm({
             });
           }
           const topArticles = this._sortAndSlice(filtered, 15);
-          await this.enrichmentService.enrichAll(topArticles);
+          const enrichedTop = await this.enrichmentService.enrichAll(topArticles);
           dashboard[catName] = {
             emoji: interests.categories[catName].emoji || null,
-            articles: topArticles.map((a) => a.toJSON())
+            articles: enrichedTop.map((a) => new Article(a).toJSON())
           };
         }
         const uncategorizedArticles = [];
@@ -132462,10 +132500,10 @@ var init_ScraperFacade = __esm({
         });
         if (uncategorizedArticles.length > 0) {
           const topUncategorized = this._sortAndSlice(uncategorizedArticles, 15);
-          await this.enrichmentService.enrichAll(topUncategorized);
+          const enrichedUncategorized = await this.enrichmentService.enrichAll(topUncategorized);
           dashboard["Uncategorized"] = {
             emoji: "\u{1F310}",
-            articles: topUncategorized.map((a) => a.toJSON())
+            articles: enrichedUncategorized.map((a) => new Article(a).toJSON())
           };
         }
         console.log(`[ScraperFacade] \u30C0\u30C3\u30B7\u30E5\u30DC\u30FC\u30C9\u69CB\u7BC9\u5B8C\u4E86`);
@@ -132493,6 +132531,16 @@ var init_ScraperFacade = __esm({
         return articles.sort((a, b) => b.score - a.score || new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, count);
       }
       /**
+       * 記事が0件の場合に期間制限を解除するフォールバック機能付きの取得メソッド。
+       */
+      async fetchAndProcessArticlesWithFallback(interests) {
+        let articles = await this.fetchAndProcessArticles(interests, false);
+        if (articles.length === 0) {
+          articles = await this.fetchAndProcessArticles(interests, true);
+        }
+        return articles;
+      }
+      /**
        * 各フィードから記事を並列取得し、スコアリングとカテゴリ判定を行います。
        * 
        * 意図: 大量のフィードを効率よく取得しつつ、ScoringService を利用して
@@ -132515,7 +132563,7 @@ var init_ScraperFacade = __esm({
             if (!res.success) await this.feedManager.reportFailure(res.category, res.url);
             continue;
           }
-          this.feedManager.reportSuccess(res.category, res.url);
+          await this.feedManager.reportSuccess(res.category, res.url);
           for (const item of res.items) {
             try {
               const record2 = item;
@@ -133005,10 +133053,19 @@ async function startBackend() {
   console.log("[Main] Starting backend services...");
   settingsManager = new ElectronSettingsManager2({ dataDir, isDev });
   await settingsManager.init();
+  settingsManager.usageManager.onUpdate = (stats) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send("usage-update", stats);
+    }
+  };
   const apiKey = await settingsManager.getApiKey();
   geminiService = new GeminiService2(apiKey);
+  geminiService.setUsageManager(settingsManager.usageManager);
   const feedConfigPath = path4.join(dataDir, "feed_config.json");
   feedManager = new FeedManager2(feedConfigPath);
+  feedManager.setSaveHandler(async (config2) => {
+    await settingsManager.saveFeedConfig(config2);
+  });
   await feedManager.loadConfig();
   rssFetcher = new RSSFetcher2();
   discoveryService = new DiscoveryService2(geminiService, rssFetcher, feedManager);

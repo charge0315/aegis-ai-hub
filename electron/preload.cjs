@@ -84,6 +84,23 @@ contextBridge.exposeInMainWorld('nexusApi', {
   saveUiSettings: (settings) => ipcRenderer.invoke('save-ui-settings', settings),
 
   /**
+   * AIモデルごとの使用量統計（トークン数）を取得します。
+   */
+  getUsageStats: () => ipcRenderer.invoke('get-usage-stats'),
+
+  /**
+   * AIの使用量統計が更新された際のイベントを購読します。
+   * 返り値の関数を呼び出すことで、安全に購読を解除（メモリリーク防止）できます。
+   */
+  onUsageUpdate: (callback) => {
+    const subscription = (event, data) => callback(data);
+    ipcRenderer.on('usage-update', subscription);
+    return () => {
+      ipcRenderer.removeListener('usage-update', subscription);
+    };
+  },
+
+  /**
    * 最小化・最大化・閉じるなどのカスタムウィンドウ操作をメインプロセスに要求します。
    */
   windowControl: (action) => ipcRenderer.send('window-control', action)

@@ -102,8 +102,16 @@ async function startBackend() {
   settingsManager = new ElectronSettingsManager({ dataDir, isDev });
   await settingsManager.init();
 
+  // 利用統計が更新されたらレンダラーへイベントを送信する
+  settingsManager.usageManager.onUpdate = (stats) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('usage-update', stats);
+    }
+  };
+
   const apiKey = await settingsManager.getApiKey();
   geminiService = new GeminiService(apiKey);
+  geminiService.setUsageManager(settingsManager.usageManager);
   
   const feedConfigPath = path.join(dataDir, 'feed_config.json');
   feedManager = new FeedManager(feedConfigPath);

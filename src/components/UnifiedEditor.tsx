@@ -169,7 +169,7 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
       </div>
 
       {/* Tabs: 設定項目の論理的な分離 */}
-      <div className="flex border-b border-content-muted/20 gap-8">
+      <div className="flex border-b border-content-muted/20 gap-6 md:gap-8 overflow-x-auto scrollbar-none">
          <TabButton active={activeTab === 'editor'} onClick={() => setActiveTab('editor')} icon={<Edit3 size={18} />} label={t.settings?.tabs?.editor} data-testid="tab-editor" />
          <TabButton active={activeTab === 'graph'} onClick={() => setActiveTab('graph')} icon={<Network size={18} />} label={t.settings?.tabs?.graph} data-testid="tab-graph" />
          <TabButton active={activeTab === 'skills'} onClick={() => setActiveTab('skills')} icon={<Cpu size={18} />} label={t.settings?.tabs?.skills} data-testid="tab-skills" />
@@ -276,7 +276,7 @@ const TabButton: React.FC<TabButtonProps> = ({ active, onClick, icon, label, 'da
   <button
     onClick={onClick}
     data-testid={testId}
-    className={`flex items-center gap-2 py-4 border-b-2 transition-all font-semibold text-sm ${
+    className={`flex items-center gap-2 py-4 border-b-2 transition-all font-semibold text-sm flex-shrink-0 whitespace-nowrap ${
       active 
         ? 'border-primary text-content-base' 
         : 'border-transparent text-content-muted hover:text-content-base'
