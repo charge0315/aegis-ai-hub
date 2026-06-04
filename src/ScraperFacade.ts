@@ -74,8 +74,11 @@ export class ScraperFacade {
             const recommendedArticles = recommendations.map(r => {
                 const matched = candidates.find(c => c.link === r.url);
                 if (matched) {
-                    matched.geminiReason = r.geminiReason;
-                    return matched;
+                    // イミュータブルな操作: 新しいArticleインスタンスとして返す
+                    return new Article({
+                        ...matched.toJSON(),
+                        geminiReason: r.geminiReason
+                    });
                 }
                 // AIが新しいリンクを提案した場合などのフォールバック
                 return new Article({
@@ -93,8 +96,8 @@ export class ScraperFacade {
             });
 
             // 最終候補に対して画像等のメタデータを補完（遅延実行による効率化）
-            await this.enrichmentService.enrichAll(recommendedArticles);
-            return recommendedArticles;
+            const enrichedData = await this.enrichmentService.enrichAll(recommendedArticles);
+            return enrichedData.map(d => new Article(d));
         } catch (e: unknown) {
             console.error(`[ScraperFacade] Recommendations Error: ${String(e)}`);
             return [];
@@ -142,11 +145,11 @@ export class ScraperFacade {
             }
 
             const topArticles = this._sortAndSlice(filtered, 15);
-            await this.enrichmentService.enrichAll(topArticles);
+            const enrichedTop = await this.enrichmentService.enrichAll(topArticles);
 
             dashboard[catName] = {
                 emoji: interests.categories[catName].emoji || null,
-                articles: topArticles.map(a => a.toJSON())
+                articles: enrichedTop.map(a => new Article(a).toJSON())
             };
         }
 
@@ -158,10 +161,10 @@ export class ScraperFacade {
 
         if (uncategorizedArticles.length > 0) {
             const topUncategorized = this._sortAndSlice(uncategorizedArticles, 15);
-            await this.enrichmentService.enrichAll(topUncategorized);
+            const enrichedUncategorized = await this.enrichmentService.enrichAll(topUncategorized);
             dashboard['Uncategorized'] = {
                 emoji: '🌐',
-                articles: topUncategorized.map(a => a.toJSON())
+                articles: enrichedUncategorized.map(a => new Article(a).toJSON())
             };
         }
 
@@ -235,7 +238,7 @@ export class ScraperFacade {
                 continue;
             }
             
-            this.feedManager.reportSuccess(res.category, res.url);
+            await this.feedManager.reportSuccess(res.category, res.url);
 
             for (const item of res.items) {
                 try {

@@ -4,6 +4,27 @@
 
 ---
 
+### #19 コードレビュー: Immutability 違反・型安全性・テストカバレッジ向上 (2026-06-05)
+- **事象**: 総合コードレビューにより、複数のクラスでオブジェクトの直接変更（Immutability 違反）、型安全性の問題、および主要サービスのユニットテスト欠落が発見された。
+- **原因**:
+    - **`EnrichmentService.enrich()`**: `article.img = ...` や `article.title = ...` のように、引数で受け取った `ArticleType` オブジェクトを直接変更しており、Immutability 原則に違反していた。呼び出し元が同じ参照を保持している場合に予期しない副作用が生じるリスクがあった。
+    - **`ScraperFacade.getRecommendations()`**: `matched.geminiReason = r.geminiReason` で `Article` クラスのインスタンスを直接変更していた。また、`enrichAll()` の戻り値ではなく変更前の配列を `return` しており、`enrich()` の修正後に正しく動作しない問題があった。加えて `reportSuccess()` が `await` なしで呼び出されており、失敗時のエラーが握りつぶされるリスクがあった。
+    - **`RSSFetcher.fetchAll()`**: `.catch((error: Error) => ...)` と明示的に型付けしており、TypeScript の `catch` 節は `unknown` 型のみ受け付けるという仕様に違反していた（実際は `any` にキャストされる）。`error.message` の安全でないアクセスになっていた。
+    - **`SettingsManager.test.ts`**: `NexusSettings` というプロジェクト内に存在しない型を使用しており、型エラーを引き起こす可能性があった。正しくは `SyncSettings` （`Schemas.ts` で定義）を使用すべきだった。
+    - **テストカバレッジ**: `FeedManager`（フィードライフサイクル管理の中核）と `UsageManager`（利用統計の永続化）のユニットテストが存在しておらず、重要なロジックが無検証状態だった。
+- **対処**:
+    - **`EnrichmentService.ts`**: `enrich()` メソッド内でスプレッド構文 (`{ ...enriched }`) を使用してイミュータブルに更新し、`let enriched = { ...article }` から始まる関数型スタイルに変更。
+    - **`ScraperFacade.ts`**: `getRecommendations()` 内で `new Article({ ...matched.toJSON(), geminiReason })` により新しいインスタンスを生成するよう変更。`enrichAll()` の戻り値 `enrichedArticles` を正しく `return` するよう修正。`reportSuccess()` に `await` を追加。
+    - **`RSSFetcher.ts`**: `.catch((error: unknown) => ...)` に変更し、`error instanceof Error ? error.message : String(error)` で安全にメッセージを取得するよう修正。
+    - **`SettingsManager.test.ts`**: `NexusSettings` を `SyncSettings` にインポートを含めて修正。
+    - **テスト追加**: `tests/unit/FeedManager.test.ts` を新規作成（18テスト: addFeed, removeFeed, reportSuccess, reportFailure, cleanConfig, getActiveFeeds の正常系・異常系をカバー）。`tests/unit/UsageManager.test.ts` を新規作成（9テスト: init, recordUsage, getStats の正常系・異常系をカバー）。
+- **検証**:
+    - `npm run lint` : エラー・警告 0件を確認。
+    - `npm run test` : 7テストファイル、57テスト全て通過（修正前は5ファイル30テスト）。
+    - `npm run test:e2e -- --project=chromium` : E2Eテスト7件全て通過を確認。
+
+---
+
 ### #18 設定画面のタブヘッダーが日本語表記時に折り返される問題の修正 (2026-06-03)
 - **事象**: 設定画面のタブヘッダー（「エディタ」「ナレッジグラフ」など）が、日本語表記の際、画面幅や要素の圧縮によって途中で不格好に折り返され（例：「エディ\nタ」）、アイコンの下にテキストが配置されてしまう。
 - **原因**: タブボタンにテキスト折り返し防止の `whitespace-nowrap` や縮小防止の `flex-shrink-0` が指定されておらず、またコンテナ側で画面が狭くなった際のはみ出しスクロール（`overflow-x-auto`）が考慮されていなかったため。

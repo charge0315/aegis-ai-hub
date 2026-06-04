@@ -69,50 +69,56 @@ export class EnrichmentService {
      * 特に、アイキャッチ画像の確保（視覚的魅力の維持）と、母国語へのローカライズ（可読性の確保）を担います。
      */
     async enrich(article: ArticleType): Promise<ArticleType> {
+        // イミュータブルな処理のため、入力オブジェクトのコピーを作成
+        let enriched: ArticleType = { ...article };
+
         // --- 視覚的メタデータの補完フェーズ ---
-        if (!article.img) {
+        if (!enriched.img) {
             // 1. キャッシュを確認（再起動後のパフォーマンス向上）
-            const cachedImg = this.cacheManager.get(article.link);
+            const cachedImg = this.cacheManager.get(enriched.link);
             if (cachedImg) {
-                article.img = cachedImg;
+                enriched = { ...enriched, img: cachedImg };
             } else {
                 try {
                     // 2. スクレイピングによる抽出（OGPタグなどから直接取得を試みる）
-                    const foundImg = await this.scrapeImage(article.link);
+                    const foundImg = await this.scrapeImage(enriched.link);
                     
                     if (foundImg) {
-                        article.img = foundImg;
-                        await this.cacheManager.set(article.link, foundImg);
+                        enriched = { ...enriched, img: foundImg };
+                        await this.cacheManager.set(enriched.link, foundImg);
                     } else {
                         // 最終防衛線：カテゴリ別プレースホルダー
-                        article.img = this.getPlaceholder(article.category);
+                        enriched = { ...enriched, img: this.getPlaceholder(enriched.category) };
                     }
                 } catch (e) {
-                    console.error(`[EnrichmentService] Failed to scrape image for ${article.link}:`, e);
-                    article.img = this.getPlaceholder(article.category);
+                    console.error(`[EnrichmentService] Failed to scrape image for ${enriched.link}:`, e);
+                    enriched = { ...enriched, img: this.getPlaceholder(enriched.category) };
                 }
             }
         }
 
         // --- 言語のローカライズフェーズ ---
         // AIサービスが利用可能、かつタイトルが日本語でない場合に自動翻訳を実行
-        if (this.geminiService && this.isNotJapanese(article.title)) {
+        if (this.geminiService && this.isNotJapanese(enriched.title)) {
             try {
                 const translations = await this.geminiService.translateArticles([{
-                    title: article.title,
-                    desc: article.desc || ''
+                    title: enriched.title,
+                    desc: enriched.desc || ''
                 }]);
                 
                 if (translations && translations.length > 0) {
-                    article.title = `[JP] ${translations[0].title}`;
-                    article.desc = translations[0].desc;
+                    enriched = {
+                        ...enriched,
+                        title: `[JP] ${translations[0].title}`,
+                        desc: translations[0].desc,
+                    };
                 }
             } catch (err) {
                 console.error("[EnrichmentService] 翻訳に失敗しました:", err);
             }
         }
 
-        return article;
+        return enriched;
     }
 
     /**

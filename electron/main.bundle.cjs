@@ -125077,40 +125077,44 @@ var init_EnrichmentService = __esm({
        * 特に、アイキャッチ画像の確保（視覚的魅力の維持）と、母国語へのローカライズ（可読性の確保）を担います。
        */
       async enrich(article) {
-        if (!article.img) {
-          const cachedImg = this.cacheManager.get(article.link);
+        let enriched = { ...article };
+        if (!enriched.img) {
+          const cachedImg = this.cacheManager.get(enriched.link);
           if (cachedImg) {
-            article.img = cachedImg;
+            enriched = { ...enriched, img: cachedImg };
           } else {
             try {
-              const foundImg = await this.scrapeImage(article.link);
+              const foundImg = await this.scrapeImage(enriched.link);
               if (foundImg) {
-                article.img = foundImg;
-                await this.cacheManager.set(article.link, foundImg);
+                enriched = { ...enriched, img: foundImg };
+                await this.cacheManager.set(enriched.link, foundImg);
               } else {
-                article.img = this.getPlaceholder(article.category);
+                enriched = { ...enriched, img: this.getPlaceholder(enriched.category) };
               }
             } catch (e) {
-              console.error(`[EnrichmentService] Failed to scrape image for ${article.link}:`, e);
-              article.img = this.getPlaceholder(article.category);
+              console.error(`[EnrichmentService] Failed to scrape image for ${enriched.link}:`, e);
+              enriched = { ...enriched, img: this.getPlaceholder(enriched.category) };
             }
           }
         }
-        if (this.geminiService && this.isNotJapanese(article.title)) {
+        if (this.geminiService && this.isNotJapanese(enriched.title)) {
           try {
             const translations = await this.geminiService.translateArticles([{
-              title: article.title,
-              desc: article.desc || ""
+              title: enriched.title,
+              desc: enriched.desc || ""
             }]);
             if (translations && translations.length > 0) {
-              article.title = `[JP] ${translations[0].title}`;
-              article.desc = translations[0].desc;
+              enriched = {
+                ...enriched,
+                title: `[JP] ${translations[0].title}`,
+                desc: translations[0].desc
+              };
             }
           } catch (err) {
             console.error("[EnrichmentService] \u7FFB\u8A33\u306B\u5931\u6557\u3057\u307E\u3057\u305F:", err);
           }
         }
-        return article;
+        return enriched;
       }
       /**
        * 記事URLから最適な画像を抽出します。
@@ -132093,7 +132097,7 @@ var init_RSSFetcher = __esm({
           })).catch((error51) => ({
             category: config2.category,
             url: config2.url,
-            error: error51.message,
+            error: error51 instanceof Error ? error51.message : String(error51),
             success: false
           }))
         );
@@ -132426,8 +132430,10 @@ var init_ScraperFacade = __esm({
           const recommendedArticles = recommendations.map((r) => {
             const matched = candidates.find((c) => c.link === r.url);
             if (matched) {
-              matched.geminiReason = r.geminiReason;
-              return matched;
+              return new Article({
+                ...matched.toJSON(),
+                geminiReason: r.geminiReason
+              });
             }
             return new Article({
               title: r.title,
@@ -132442,8 +132448,8 @@ var init_ScraperFacade = __esm({
               geminiReason: r.geminiReason
             });
           });
-          await this.enrichmentService.enrichAll(recommendedArticles);
-          return recommendedArticles;
+          const enrichedData = await this.enrichmentService.enrichAll(recommendedArticles);
+          return enrichedData.map((d) => new Article(d));
         } catch (e) {
           console.error(`[ScraperFacade] Recommendations Error: ${String(e)}`);
           return [];
@@ -132482,10 +132488,10 @@ var init_ScraperFacade = __esm({
             });
           }
           const topArticles = this._sortAndSlice(filtered, 15);
-          await this.enrichmentService.enrichAll(topArticles);
+          const enrichedTop = await this.enrichmentService.enrichAll(topArticles);
           dashboard[catName] = {
             emoji: interests.categories[catName].emoji || null,
-            articles: topArticles.map((a) => a.toJSON())
+            articles: enrichedTop.map((a) => new Article(a).toJSON())
           };
         }
         const uncategorizedArticles = [];
@@ -132494,10 +132500,10 @@ var init_ScraperFacade = __esm({
         });
         if (uncategorizedArticles.length > 0) {
           const topUncategorized = this._sortAndSlice(uncategorizedArticles, 15);
-          await this.enrichmentService.enrichAll(topUncategorized);
+          const enrichedUncategorized = await this.enrichmentService.enrichAll(topUncategorized);
           dashboard["Uncategorized"] = {
             emoji: "\u{1F310}",
-            articles: topUncategorized.map((a) => a.toJSON())
+            articles: enrichedUncategorized.map((a) => new Article(a).toJSON())
           };
         }
         console.log(`[ScraperFacade] \u30C0\u30C3\u30B7\u30E5\u30DC\u30FC\u30C9\u69CB\u7BC9\u5B8C\u4E86`);
@@ -132557,7 +132563,7 @@ var init_ScraperFacade = __esm({
             if (!res.success) await this.feedManager.reportFailure(res.category, res.url);
             continue;
           }
-          this.feedManager.reportSuccess(res.category, res.url);
+          await this.feedManager.reportSuccess(res.category, res.url);
           for (const item of res.items) {
             try {
               const record2 = item;

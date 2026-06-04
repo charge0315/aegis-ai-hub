@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { SettingsManager } from '../../src/services/SettingsManager';
 import fs from 'fs/promises';
-import { FeedConfig } from '../../src/models/Schemas';
+import { FeedConfig, SyncSettings } from '../../src/models/Schemas';
 
 vi.mock('fs/promises');
 
@@ -68,7 +68,7 @@ describe('SettingsManager', () => {
                 lastUpdated: 200
             };
 
-            const result = await manager.syncSettings(newSettings as unknown as NexusSettings);
+            const result = await manager.syncSettings(newSettings as unknown as SyncSettings);
             expect(result.success).toBe(true);
             expect(result.validatedFeedConfig['AI & ML']).toBeDefined();
             expect(result.validatedFeedConfig['AI & ML'].active).toContain('http://example.com/rss');
@@ -86,7 +86,7 @@ describe('SettingsManager', () => {
                 lastUpdated: 500
             };
 
-            await expect(manager.syncSettings(newSettings as unknown as NexusSettings)).rejects.toThrow('CONFLICT');
+            await expect(manager.syncSettings(newSettings as unknown as SyncSettings)).rejects.toThrow('CONFLICT');
         });
     });
 

@@ -124,10 +124,10 @@ export class RSSFetcher {
             items, 
             success: true 
         }))
-        .catch((error: Error) => ({ 
+        .catch((error: unknown) => ({ 
             category: config.category, 
             url: config.url, 
-            error: error.message, 
+            error: error instanceof Error ? error.message : String(error), 
             success: false 
         }))
     );
