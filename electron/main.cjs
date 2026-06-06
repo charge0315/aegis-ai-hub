@@ -196,6 +196,28 @@ function createWindow() {
     orchestrator.setWebContents(mainWindow.webContents);
   }
 
+  // 子ウィンドウ（window.open で開かれた記事詳細画面など）が作成された際の処理
+  mainWindow.webContents.on('did-create-window', (childWindow) => {
+    const childMenu = Menu.buildFromTemplate([
+      {
+        label: 'Window',
+        submenu: [
+          {
+            label: 'Close',
+            accelerator: 'CmdOrCtrl+W',
+            role: 'close'
+          }
+        ]
+      }
+    ]);
+    childWindow.setMenu(childMenu);
+    
+    // Windows/Linuxではメニューバーを非表示にする
+    if (process.platform !== 'darwin') {
+      childWindow.setMenuBarVisibility(false);
+    }
+  });
+
   if (isDev) {
     mainWindow.loadURL('http://localhost:5173');
     mainWindow.webContents.openDevTools();

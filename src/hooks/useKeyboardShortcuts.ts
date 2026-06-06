@@ -28,6 +28,11 @@ export const useKeyboardShortcuts = (actions: {
         e.preventDefault();
         nexusApi?.windowControl?.('quit');
       }
+      // F5 キーまたは Ctrl+R (Mac では Cmd+R) による画面リフレッシュ（リロード）の有効化
+      if (e.key === 'F5' || (e.key === 'r' && (e.metaKey || e.ctrlKey))) {
+        e.preventDefault();
+        window.location.reload();
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
