@@ -80,6 +80,9 @@ export const CustomDialog: React.FC<CustomDialogProps> = ({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             className="relative w-full max-w-md"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="dialog-title"
           >
             {/* GlassPanel を基盤とすることで、洗練された「未来感」を維持 */}
             <GlassPanel className="p-8 space-y-6 overflow-hidden border-white/10 shadow-2xl">
@@ -87,7 +90,7 @@ export const CustomDialog: React.FC<CustomDialogProps> = ({
                 <div className="p-3 bg-white/5 rounded-2xl">
                   {getIcon()}
                 </div>
-                <h2 className="text-xl font-bold text-white tracking-tight" data-testid="dialog-title">{title}</h2>
+                <h2 className="text-xl font-bold text-white tracking-tight" id="dialog-title" data-testid="dialog-title">{title}</h2>
                 <div className="text-slate-400 text-sm leading-relaxed max-h-[200px] overflow-y-auto w-full px-2" data-testid="dialog-message">
                   {message}
                 </div>

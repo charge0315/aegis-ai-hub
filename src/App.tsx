@@ -11,17 +11,16 @@
  */
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Settings, 
   Search, 
   Layout, 
   Command,
   Menu,
-  AlertTriangle
+  AlertTriangle,
+  Tag
 } from 'lucide-react';
 
-import { ArticleCard } from './components/ArticleCard';
 import { AgentMonitor } from './components/AgentMonitor';
 import { UnifiedEditor } from './components/UnifiedEditor';
 import { CommandPalette } from './components/CommandPalette';
@@ -34,6 +33,13 @@ import { useUiSettingsSync } from './hooks/useUiSettingsSync';
 import { LanguageProvider } from './hooks/LanguageProvider';
 import { useTranslation } from './hooks/useTranslationHook';
 import type { NexusSettings, Article } from './types';
+
+// 新規コンポーネントとカスタムフックのインポート
+import { FeedStatsHeader } from './components/FeedStatsHeader';
+import { EmptyFeedState } from './components/EmptyFeedState';
+import { StatusBar } from './components/StatusBar';
+import { FeedView } from './components/FeedView';
+import { useArticleFilter } from './hooks/useArticleFilter';
 
 interface AppBodyProps {
   ui: ReturnType<typeof useUiSettingsSync>;
@@ -99,60 +105,35 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
   // AIエージェントのイベント監視（データ更新時に再取得）
   const agents = useAgentEvents(refetch);
 
+  // カスタムフックを使用して記事のフィルタリング、ソート、グループ化、統計計算を実行
+  const {
+    filteredArticles,
+    articlesByCategory,
+    totalCount,
+    japaneseRatio,
+    categoryCount
+  } = useArticleFilter({
+    articles,
+    searchQuery,
+    isJapaneseOnly,
+    settings
+  });
+
   /**
-   * 記事データのフィルタリングとソート
-   * - 90日以内の記事に限定
-   * - 検索キーワードによるフィルタリング
-   * - 日本語のみ表示設定の適用
-   * - 日本語記事を優先し、スコア順にソート
+   * 特定のカテゴリに属し、日付と言語の基本条件を満たす記事件数を計算するヘルパー
    */
-  const filteredArticles = useMemo(() => {
-    let result = [...articles];
+  const getCategoryCount = useCallback((catName: string) => {
     const limitDate = new Date();
     limitDate.setDate(limitDate.getDate() - 90);
-    result = result.filter(a => new Date(a.date) > limitDate);
-
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      result = result.filter(a => 
-        a.category?.toLowerCase().includes(q) || 
-        a.title.toLowerCase().includes(q)
-      );
-    }
-    if (isJapaneseOnly) result = result.filter(a => a.language === 'ja');
-    
-    return result.sort((a, b) => {
-      if (a.language === 'ja' && b.language !== 'ja') return -1;
-      if (a.language !== 'ja' && b.language === 'ja') return 1;
-      return (b.score || 0) - (a.score || 0);
-    });
-  }, [articles, searchQuery, isJapaneseOnly]);
-
-  /**
-   * 記事をカテゴリごとにグループ化
-   */
-  const articlesByCategory = useMemo(() => {
-    const groups: Record<string, Article[]> = {};
-    
-    if (settings?.interests?.categories) {
-      Object.keys(settings.interests.categories).forEach(cat => {
-        groups[cat] = [];
-      });
-    }
-    
-    filteredArticles.forEach(a => {
-      const cat = a.category || 'Uncategorized';
-      if (!groups[cat]) groups[cat] = [];
-      groups[cat].push(a);
-    });
-
-    return Object.fromEntries(
-      Object.entries(groups).filter(([, items]) => items.length > 0)
-    );
-  }, [filteredArticles, settings]);
+    return articles.filter(a => 
+      a.category === catName && 
+      new Date(a.date) > limitDate && 
+      (!isJapaneseOnly || a.language === 'ja')
+    ).length;
+  }, [articles, isJapaneseOnly]);
 
   return (
-    <div className="flex h-screen bg-[#0a0b0c] text-slate-200 overflow-hidden font-sans">
+    <div className="flex h-screen bg-[#0a0b0c] text-slate-200 overflow-hidden font-sans pb-[28px]">
       {/* カスタムダイアログ: 全体で統一されたデザインの確認・警告・入力インターフェース */}
       {dialog.isOpen && (
         <CustomDialog 
@@ -187,15 +168,75 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
             <span className="text-primary">A</span>EGIS <span className="neon-text-primary">NEXUS</span>
           </h1>
         </div>
-        <nav className="flex-1 overflow-y-auto p-4 space-y-2 no-drag">
-          <button onClick={() => handleNavigate('feed')} data-testid="nav-feed" className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${currentView === 'feed' ? 'bg-primary text-white shadow-lg shadow-primary/20 font-bold' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}>
+        <nav role="navigation" aria-label="Main Navigation" className="flex-1 overflow-y-auto p-4 space-y-2 no-drag">
+          <button 
+            onClick={() => handleNavigate('feed')} 
+            data-testid="nav-feed" 
+            aria-current={currentView === 'feed' ? 'page' : undefined}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${currentView === 'feed' ? 'bg-primary text-white shadow-lg shadow-primary/20 font-bold' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}
+          >
             <Layout size={20} />
             <span>{t.sidebar?.feed}</span>
           </button>
-          <button onClick={() => handleNavigate('settings')} data-testid="nav-settings" className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${currentView === 'settings' ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20 font-bold' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}>
+          <button 
+            onClick={() => handleNavigate('settings')} 
+            data-testid="nav-settings" 
+            aria-current={currentView === 'settings' ? 'page' : undefined}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${currentView === 'settings' ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20 font-bold' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}
+          >
             <Settings size={20} />
             <span>{t.sidebar?.settings}</span>
           </button>
+
+          {/* カテゴリクイックフィルター */}
+          {currentView === 'feed' && settings?.interests?.categories && (
+            <div className="pt-4 border-t border-white/5 space-y-1">
+              <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-3 py-1.5 flex items-center gap-2">
+                <Tag size={10} />
+                <span>Categories</span>
+              </div>
+              
+              <button
+                onClick={() => setSearchQuery('')}
+                className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs transition-all ${
+                  searchQuery === '' 
+                    ? 'bg-primary/20 text-white font-bold' 
+                    : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                }`}
+              >
+                <span>All Signals</span>
+                <span className="px-1.5 py-0.5 text-[10px] bg-white/5 text-slate-400 rounded-md">
+                  {articles.length}
+                </span>
+              </button>
+
+              {Object.entries(settings.interests.categories).map(([catName, catConfig]) => {
+                const count = getCategoryCount(catName);
+                const isActive = searchQuery.toLowerCase() === catName.toLowerCase();
+                return (
+                  <button
+                    key={catName}
+                    onClick={() => setSearchQuery(catName)}
+                    className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs transition-all ${
+                      isActive 
+                        ? 'bg-primary/20 text-white font-bold' 
+                        : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 truncate pr-2">
+                      <span>{catConfig.emoji || '🌐'}</span>
+                      <span className="truncate">{catName}</span>
+                    </div>
+                    <span className={`px-1.5 py-0.5 text-[10px] rounded-md shrink-0 ${
+                      isActive ? 'bg-primary text-white' : 'bg-white/5 text-slate-400'
+                    }`}>
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </nav>
         {/* エージェントモニター: 背後で動作するAIエージェントの活動状況を可視化 */}
         <div className="p-4 border-t border-white/5 no-drag"><AgentMonitor agents={agents} /></div>
@@ -205,7 +246,13 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
       <main className="flex-1 flex flex-col min-w-0 bg-transparent relative">
         <header className="h-20 flex items-center justify-between px-8 bg-black/10 backdrop-blur-md border-b border-white/5 z-30 drag">
           <div className="flex items-center gap-6 no-drag">
-            <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 bg-white/5 rounded-xl"><Menu size={20} /></button>
+            <button 
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)} 
+              aria-label="Toggle sidebar"
+              className="p-2 bg-white/5 rounded-xl"
+            >
+              <Menu size={20} />
+            </button>
             <div className="flex flex-col">
               <h2 className="text-lg font-black tracking-[0.15em] font-cyber neon-text-white uppercase">
                 {currentView === 'settings' ? t.sidebar?.settings : 'Intelligence Feeds'}
@@ -216,11 +263,22 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
             {currentView === 'feed' && (
               <div className="relative group">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
-                <input type="text" placeholder={t.header?.search || 'Search...'} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-64 bg-white/5 border border-white/10 rounded-2xl pl-12 pr-4 py-2 text-sm text-white focus:outline-none focus:border-primary/50 transition-all" />
+                <input 
+                  type="text" 
+                  placeholder={t.header?.search || 'Search...'} 
+                  value={searchQuery} 
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-64 bg-white/5 border border-white/10 rounded-2xl pl-12 pr-4 py-2 text-sm text-white focus:outline-none focus:border-primary/50 transition-all" 
+                />
               </div>
             )}
-            <button onClick={() => setIsCommandPaletteOpen(true)} className="p-2 bg-white/5 rounded-xl"><Command size={20} /></button>
+            <button 
+              onClick={() => setIsCommandPaletteOpen(true)} 
+              aria-label="Open command palette"
+              className="p-2 bg-white/5 rounded-xl"
+            >
+              <Command size={20} />
+            </button>
           </div>
         </header>
 
@@ -233,68 +291,32 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
           )}
 
           {currentView === 'feed' ? (
-            <div className="max-w-[1600px] mx-auto space-y-12 relative">
-              {/* 同期中アニメーション: データの鮮度を保つためのAIエージェントの活動を演出 */}
-              <AnimatePresence>
-                {isSyncing && (
-                  <motion.div 
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-background/60 backdrop-blur-xl pointer-events-none"
-                  >
-                    <div className="cyber-scanline"></div>
-                    <div className="flex flex-col items-center gap-6">
-                      <div className="relative">
-                        <motion.div 
-                          animate={{ 
-                            rotate: 360,
-                            scale: [1, 1.1, 1],
-                          }}
-                          transition={{ 
-                            rotate: { duration: 2, repeat: Infinity, ease: "linear" },
-                            scale: { duration: 1, repeat: Infinity }
-                          }}
-                          className="w-24 h-24 border-t-2 border-l-2 border-primary rounded-full shadow-[0_0_15px_var(--color-primary)]"
-                        />
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="w-16 h-16 border-b-2 border-r-2 border-accent rounded-full animate-reverse-spin opacity-50 shadow-[0_0_10px_var(--color-accent)]" />
-                        </div>
-                      </div>
-                      
-                      <div className="text-center space-y-2">
-                        <h3 className="text-2xl font-black tracking-[0.3em] text-white cyber-glitch font-mono uppercase">
-                          Synchronizing
-                        </h3>
-                        <p className="text-[10px] tracking-[0.5em] text-primary cyber-flicker font-mono uppercase opacity-70">
-                          Establishing Neural Link...
-                        </p>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+            <div className="max-w-[1600px] mx-auto space-y-8 relative">
+              {/* 統計ヘッダー */}
+              <FeedStatsHeader 
+                totalArticles={totalCount}
+                categoryCount={categoryCount}
+                japaneseRatio={japaneseRatio}
+                lastUpdated={settings?.lastUpdated ? new Date(settings.lastUpdated) : null}
+                onRefresh={refetch}
+                isSyncing={isSyncing}
+              />
 
-              {/* カテゴリ別の記事レンダリング */}
-              {Object.entries(articlesByCategory).map(([category, items]) => (
-                <div key={category} className="space-y-6">
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-3">
-                      <span className="text-2xl drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]">
-                        {settings?.interests?.categories[category]?.emoji || '🌐'}
-                      </span>
-                      <h3 className="text-xl font-bold text-white uppercase tracking-wider">{category}</h3>
-                    </div>
-                    <div className="h-px flex-1 bg-white/10"></div>
-                    <span className="text-xs font-medium text-slate-500">{items.length} Signals</span>
-                  </div>
-                  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                    {items.map((article, idx) => (
-                      <ArticleCard key={`${category}-${idx}`} article={article} index={idx} size={feedSize} showImages={showImages} />
-                    ))}
-                  </div>
-                </div>
-              ))}
+              {/* 空状態または記事フィード表示 */}
+              {filteredArticles.length === 0 ? (
+                <EmptyFeedState 
+                  hasSearchQuery={!!searchQuery}
+                  onNavigateToSettings={() => handleNavigate('settings')}
+                />
+              ) : (
+                <FeedView 
+                  articlesByCategory={articlesByCategory}
+                  settings={settings}
+                  feedSize={feedSize}
+                  showImages={showImages}
+                  isSyncing={isSyncing}
+                />
+              )}
             </div>
           ) : (
             settings ? (
@@ -318,6 +340,14 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
           )}
         </div>
       </main>
+
+      {/* システムステータスバー */}
+      <StatusBar 
+        version="v5.4.0"
+        connectionStatus={isSyncing ? 'syncing' : syncError ? 'disconnected' : 'connected'}
+        lastSyncTime={settings?.lastUpdated ? new Date(settings.lastUpdated) : null}
+        agentCount={agents.length}
+      />
     </div>
   );
 };
