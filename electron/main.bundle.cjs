@@ -133124,6 +133124,24 @@ function createWindow() {
   if (orchestrator && typeof orchestrator.setWebContents === "function") {
     orchestrator.setWebContents(mainWindow.webContents);
   }
+  mainWindow.webContents.on("did-create-window", (childWindow) => {
+    const childMenu = Menu.buildFromTemplate([
+      {
+        label: "Window",
+        submenu: [
+          {
+            label: "Close",
+            accelerator: "CmdOrCtrl+W",
+            role: "close"
+          }
+        ]
+      }
+    ]);
+    childWindow.setMenu(childMenu);
+    if (process.platform !== "darwin") {
+      childWindow.setMenuBarVisibility(false);
+    }
+  });
   if (isDev) {
     mainWindow.loadURL("http://localhost:5173");
     mainWindow.webContents.openDevTools();

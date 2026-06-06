@@ -4,6 +4,29 @@
 
 ---
 
+### #22 記事閲覧用子ウィンドウが Ctrl+W (Cmd+W) で閉じられない不具合の修正 (2026-06-06)
+- **事象**: ダッシュボードでフィード記事をクリックした際に起動するWebView（別ウィンドウ）が、キーボードの `Ctrl+W`（Macでは `Cmd+W`）を押下しても閉じることができない。
+- **原因**: Electronで `window.open` を使用して開かれた子ウィンドウに対して、標準のメニューが適用されておらず、またウィンドウを閉じるためのキーボードショートカットやアクセラレータが設定されていないため。
+- **対処**:
+    - [main.cjs](file:///C:/Users/charg/myWorkspace/aegis-ai-hub/electron/main.cjs) にて、`mainWindow.webContents` の `did-create-window` イベントリスナーを追加。
+    - 生成された子ウィンドウに対して、`role: 'close'` （閉じるアクション）およびアクセラレータ `CmdOrCtrl+W` を割り当てた簡易的なメニューを設定し、さらに `setMenuBarVisibility(false)` によってメニューバー自体は非表示にしつつショートカットが機能するように実装。
+- **検証**:
+    - `npm run build:electron` にてメインプロセスがエラーなくコンパイル・ビルドできることを確認。
+    - ユニットテストおよびE2Eテストがすべて正常に通過することを確認。
+
+---
+
+### #21 Refreshキー押下時に画面がリフレッシュ（リロード）されない不具合の修正 (2026-06-06)
+- **事象**: キーボードの `F5` キーや `Ctrl+R`（Macでは `Cmd+R`）を押下しても、画面がリフレッシュ（再読み込み）されない。
+- **原因**: アプリケーションは Electron で `frame: false`（フレームレスウィンドウ）として動作しているため、ブラウザやOS標準のメニューショートカットが無効化されている。また、フロントエンドおよびメインプロセスにおいてリフレッシュキーのキーボードイベントがリスニングされていなかった。
+- **対処**:
+    - [useKeyboardShortcuts.ts](file:///C:/Users/charg/myWorkspace/aegis-ai-hub/src/hooks/useKeyboardShortcuts.ts) 内に、`F5` キーおよび `Ctrl+R` / `Cmd+R` キーの押下イベントを検知し、`window.location.reload()` を呼び出して画面を再読み込み（リロード）する処理を追加。
+- **検証**:
+    - `npm run lint` および `npm run build` にてビルドエラーおよび警告が発生しないことを確認。
+    - `npm run test` （ユニットテスト 57件）および `npm run test:e2e -- --project=chromium` （E2Eテスト 12件）がすべて正常に通過することを確認。
+
+---
+
 ### #20 並列サブエージェント実行時のGemini APIクォータ超過障害 (2026-06-06)
 - **事象**: UI改善およびリファクタリングを並列サブエージェント（UI Component Developer / Refactoring & Accessibility Engineer）で実行しようとした際、Gemini APIのクォータ上限に達し、`RESOURCE_EXHAUSTED (code 429)` エラーによりサブエージェントが起動失敗・異常終了した。
 - **原因**: 同時並列での大量のAPIリクエストが、設定された上限クォータを瞬間的または累積的に超過したため。
