@@ -53,6 +53,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({ article, index = 0, si
   return (
     // GlassPanel: 背景の透過とブラー効果を利用し、重層的でリッチなUI（Glassmorphism）を実現するベース基盤
     <GlassPanel 
+      role="article"
       className={`group relative flex flex-col h-full hover:border-primary/50 transition-colors duration-300 article-card cursor-pointer ${
         isSmall ? 'rounded-xl' : 'rounded-3xl'
       }`}
@@ -152,6 +153,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({ article, index = 0, si
                 data-testid="reasoning-toggle"
                 className="p-1.5 rounded-full hover:bg-surface-panel/10 text-primary transition-colors"
                 title="AI Reasoning"
+                aria-label="Show AI reasoning"
               >
                 <Sparkles size={14} />
               </button>
@@ -162,6 +164,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({ article, index = 0, si
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
               className={`${isSmall ? 'p-1' : 'p-1.5'} rounded-full hover:bg-surface-panel/10 text-content-muted hover:text-content-base transition-colors`}
+              aria-label="Open article in browser"
             >
               <ExternalLink size={isSmall ? 12 : 14} />
             </a>

@@ -166,6 +166,9 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: -20 }}
               data-testid="command-palette"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Command palette"
               className="w-full max-w-2xl bg-background/95 backdrop-blur-2xl border border-content-muted/20 rounded-2xl shadow-2xl overflow-hidden pointer-events-auto"
             >
               {/* 入力エリア */}
@@ -177,6 +180,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="What would you like to do?"
                   data-testid="command-palette-input"
+                  aria-label="Search commands"
                   className="bg-transparent border-none outline-none text-content-base text-lg w-full placeholder:text-content-muted/50"
                 />
                 <div className="px-2 py-1 bg-surface-panel/10 rounded text-[10px] font-bold text-content-muted border border-content-muted/10">
@@ -185,7 +189,11 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
               </div>
 
               {/* 検索結果リスト */}
-              <div className="max-h-[400px] overflow-y-auto p-2 custom-scrollbar">
+              <div 
+                role="listbox"
+                aria-label="Commands"
+                className="max-h-[400px] overflow-y-auto p-2 custom-scrollbar"
+              >
                 {filteredCommands.length > 0 ? (
                   <div className="space-y-1">
                     {filteredCommands.map((cmd, idx) => (
@@ -196,6 +204,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                           cmd.action();
                           onClose();
                         }}
+                        role="option"
+                        aria-selected={idx === selectedIndex}
                         className={`w-full flex items-center gap-4 p-3 rounded-xl transition-all ${
                           idx === selectedIndex 
                             ? 'bg-primary/20 text-content-base shadow-lg ring-1 ring-primary/30' 

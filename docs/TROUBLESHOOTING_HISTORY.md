@@ -4,6 +4,19 @@
 
 ---
 
+### #20 並列サブエージェント実行時のGemini APIクォータ超過障害 (2026-06-06)
+- **事象**: UI改善およびリファクタリングを並列サブエージェント（UI Component Developer / Refactoring & Accessibility Engineer）で実行しようとした際、Gemini APIのクォータ上限に達し、`RESOURCE_EXHAUSTED (code 429)` エラーによりサブエージェントが起動失敗・異常終了した。
+- **原因**: 同時並列での大量のAPIリクエストが、設定された上限クォータを瞬間的または累積的に超過したため。
+- **対処**:
+    - すべてのアクティブなサブエージェントを `kill_all` で安全に終了。
+    - サブエージェントの担当タスク（新規コンポーネント `FeedStatsHeader`, `EmptyFeedState`, `StatusBar`, `FeedView`、カスタムフック `useArticleFilter`、および `App.tsx` 等のアクセシビリティ改善）を親エージェントが直接引き継ぎ、一括で実装・適用。
+- **検証**:
+    - `npx tsc --noEmit` にて型チェックが正常に通過（エラー0）することを確認。
+    - `tests/e2e/ui_improvements.test.ts` を新規作成し、追加されたUI機能とアクセシビリティ（role, aria-label）を網羅。
+    - `npm run test:e2e -- --project=chromium` により、新規テストを含む全12件のE2Eテストがすべてパス（12 passed）したことを確認。
+
+---
+
 ### #19 コードレビュー: Immutability 違反・型安全性・テストカバレッジ向上 (2026-06-05)
 - **事象**: 総合コードレビューにより、複数のクラスでオブジェクトの直接変更（Immutability 違反）、型安全性の問題、および主要サービスのユニットテスト欠落が発見された。
 - **原因**:
