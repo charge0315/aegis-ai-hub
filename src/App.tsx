@@ -49,12 +49,13 @@ interface AppBodyProps {
   refetch: () => Promise<void>;
   syncError: string | null;
   isSyncing: boolean;
+  lastRefreshed: Date | null;
 }
 
 /**
- * アプリケーションの主要な表示ロジックを担当する内部コンポーネント
+ * アプリケーションの主要な表示ロジックを担当する内部コンポーモント
  */
-const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch, syncError, isSyncing }) => {
+const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch, syncError, isSyncing, lastRefreshed }) => {
   const {
     feedSize,
     showImages,
@@ -297,7 +298,7 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
                 totalArticles={totalCount}
                 categoryCount={categoryCount}
                 japaneseRatio={japaneseRatio}
-                lastUpdated={settings?.lastUpdated ? new Date(settings.lastUpdated) : null}
+                lastUpdated={lastRefreshed}
                 onRefresh={refetch}
                 isSyncing={isSyncing}
               />
@@ -345,7 +346,7 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
       <StatusBar 
         version="v5.4.0"
         connectionStatus={isSyncing ? 'syncing' : syncError ? 'disconnected' : 'connected'}
-        lastSyncTime={settings?.lastUpdated ? new Date(settings.lastUpdated) : null}
+        lastSyncTime={lastRefreshed}
         agentCount={agents.length}
       />
     </div>
@@ -357,11 +358,11 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
  */
 const App: React.FC = () => {
   const ui = useUiSettingsSync();
-  const { settings, articles, sync, refetch, error: syncError, isSyncing } = useNexusSync();
+  const { settings, articles, sync, refetch, error: syncError, isSyncing, lastRefreshed } = useNexusSync();
 
   return (
     <LanguageProvider value={{ language: ui.language, setLanguage: ui.setLanguage }}>
-      <AppBody ui={ui} settings={settings} articles={articles} sync={sync} refetch={refetch} syncError={syncError} isSyncing={isSyncing} />
+      <AppBody ui={ui} settings={settings} articles={articles} sync={sync} refetch={refetch} syncError={syncError} isSyncing={isSyncing} lastRefreshed={lastRefreshed} />
     </LanguageProvider>
   );
 };

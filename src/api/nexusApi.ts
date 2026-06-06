@@ -263,9 +263,10 @@ export function useNexusSync() {
   const [loading, setLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
 
   /** バックエンドから最新データをフェッチする共通ロジック。 */
-  const fetchData = useCallback(async (showLoading = true) => {
+  const fetchData = useCallback(async (showLoading = false) => {
     try {
       if (showLoading) setLoading(true);
       else setIsSyncing(true);
@@ -276,6 +277,7 @@ export function useNexusSync() {
       ]);
       setSettings(s);
       setArticles(a);
+      setLastRefreshed(new Date());
       setError(null);
     } catch (err: unknown) {
       console.error('[useNexusSync] Fetch failed:', err);
@@ -290,7 +292,7 @@ export function useNexusSync() {
   useEffect(() => {
     let active = true;
     const load = async () => {
-      if (active) await fetchData(false);
+      if (active) await fetchData(true); // 初回ロード時は画面全体ローディングを表示
     };
     void load();
     return () => { active = false; };
@@ -311,12 +313,13 @@ export function useNexusSync() {
       // 設定変更後に記事の内容が変化する可能性があるため、即座にリフレッシュ。
       const a = await nexusApi.getArticles();
       setArticles(a);
+      setLastRefreshed(new Date());
     } finally {
       setIsSyncing(false);
     }
   }, []);
 
-  return { settings, articles, loading, isSyncing, error, sync, refetch: fetchData };
+  return { settings, articles, loading, isSyncing, error, sync, refetch: fetchData, lastRefreshed };
 }
 
 /**
