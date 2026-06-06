@@ -4,6 +4,20 @@
 
 ---
 
+### #23 ダッシュボードの「Refresh」ボタン押下時にスピナーが回らず最終更新日時も更新されない不具合の修正 (2026-06-06)
+- **事象**: ダッシュボードの統計ヘッダー内の「Refresh」ボタンをクリックしても、ローディングスピナー（「Syncing...」）が表示されず、最終更新日時（Last Updated）も `--` のまま更新されない。
+- **原因**:
+    - `useNexusSync` フック内の `refetch`（`fetchData`）を引数なしで実行した際、内部の `showLoading` がデフォルトの `true` になり、`setLoading(true)` のみが実行されて `setIsSyncing(true)` が呼び出されていなかった。また、フロントエンド側で `loading` フラグによるスピナー制御が行われていなかった。
+    - 「最終更新日時」がバックエンドの設定スキーマ `settings.lastUpdated` を参照していたが、バックエンドから返される `NexusSettings` オブジェクトには直下の `lastUpdated` プロパティが含まれておらず、常に `undefined` となって表示が更新されなかった。
+- **対処**:
+    - [nexusApi.ts](file:///C:/Users/charg/myWorkspace/aegis-ai-hub/src/api/nexusApi.ts) にて、データ取得成功の基準となるローカルの更新日時 `lastRefreshed` ステートを追加。手動更新時にスピナーが回転するよう、`fetchData` の引数 `showLoading` のデフォルト値を `false`（バックグラウンド同期ステータス優先）に修正。
+    - [App.tsx](file:///C:/Users/charg/myWorkspace/aegis-ai-hub/src/App.tsx) を修正し、`lastRefreshed` ステートを `FeedStatsHeader` および `StatusBar` の `lastUpdated` プロパティへ伝播させて表示されるように修正。
+- **検証**:
+    - `npm run lint` & `npm run build` にてビルドチェックを確認。
+    - `npm run test`（全57件）および `npm run test:e2e -- --project=chromium`（全12件）がすべてパスすることを確認。
+
+---
+
 ### #22 記事閲覧用子ウィンドウが Ctrl+W (Cmd+W) で閉じられない不具合の修正 (2026-06-06)
 - **事象**: ダッシュボードでフィード記事をクリックした際に起動するWebView（別ウィンドウ）が、キーボードの `Ctrl+W`（Macでは `Cmd+W`）を押下しても閉じることができない。
 - **原因**: Electronで `window.open` を使用して開かれた子ウィンドウに対して、標準のメニューが適用されておらず、またウィンドウを閉じるためのキーボードショートカットやアクセラレータが設定されていないため。
