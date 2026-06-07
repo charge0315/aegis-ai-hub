@@ -132,7 +132,7 @@ export const FeedStatsHeader: React.FC<FeedStatsHeaderProps> = ({
 
       {/* 更新ボタン */}
       <button
-        onClick={onRefresh}
+        onClick={() => onRefresh()}
         disabled={isSyncing}
         aria-label="Refresh feeds"
         className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 active:bg-white/15 text-slate-300 hover:text-white rounded-xl transition-all border border-white/10 font-medium text-xs disabled:opacity-50"

@@ -4,6 +4,28 @@
 
 ---
 
+### #24 ダッシュボードの「Refresh」ボタン押下時に「Syncing...」やスピナーが動作しない不具合の修正と、AIオーケストレーションハンドラーの欠落修正 (2026-06-07)
+- **事象**: 
+    1. ダッシュボードの統計ヘッダー内の「Refresh」ボタンをクリックしても、ローディングスピナー（「Syncing...」）が表示されず、ボタンも無効化（disabled）されない。
+    2. コマンドパレットなどからAIオーケストレーションを起動した際（またはWeb API経由時）、IPCハンドラーやAPIルートが存在しないため、機能が呼び出せない（エラーになる）。
+- **原因**:
+    1. 前回の修正（#23）で `showLoading` のデフォルト値を `false` に変更したが、Reactの `button` の `onClick` に直接 `refetch` (＝ `fetchData`) を渡していたため、クリック時にブラウザから `React.MouseEvent` オブジェクトが引数として渡されてしまっていた。JavaScriptの動的型付けにより `showLoading` が真値（オブジェクト）として評価され、`setLoading(true)` のみが実行されて `setIsSyncing(true)` がスキップされてしまっていた。
+    2. `electron/preload.cjs` で `triggerOrchestration` は定義されていたが、メインプロセス `electron/main.cjs` 側に `trigger-orchestration` の IPC ハンドラーが実装されていなかった。また、`preload.cjs` の実装でも `requirements` 引数を受け取っておらず、かつ Webフォールバック用の `src/api/server/NexusRouter.ts` でも `/orchestrate` エンドポイントの実装が漏れていた。
+- **対処**:
+    - **Refreshボタンの修正**:
+        - [nexusApi.ts](file:///C:/Users/charg/myWorkspace/aegis-ai-hub/src/api/nexusApi.ts) にて、`fetchData` の引数 `showLoading` が厳密に boolean の `true` である場合のみ `setLoading(true)` を呼び出すように変更し、意図しないオブジェクト（MouseEvent等）が渡された場合は `setIsSyncing(true)` が実行されるようにガードを強化。
+        - [App.tsx](file:///C:/Users/charg/myWorkspace/aegis-ai-hub/src/App.tsx) の `FeedStatsHeader` 呼び出し箇所において、`onRefresh={() => refetch()}` のアロー関数にラップし、引数が伝播しないように修正。
+        - [FeedStatsHeader.tsx](file:///C:/Users/charg/myWorkspace/aegis-ai-hub/src/components/FeedStatsHeader.tsx) 内の更新ボタンの `onClick` についても `onClick={() => onRefresh()}` にラップしてガードを二重化。
+    - **Orchestratorハンドラーの追加**:
+        - [main.cjs](file:///C:/Users/charg/myWorkspace/aegis-ai-hub/electron/main.cjs) に `trigger-orchestration` の IPC ハンドラーを追加し、非同期で `orchestrator.runAutonomousLoop` を実行して即座に応答を返すように実装。
+        - [preload.cjs](file:///C:/Users/charg/myWorkspace/aegis-ai-hub/electron/preload.cjs) の `triggerOrchestration` が引数 `requirements` を受け取ってメインプロセスに転送するように修正。
+        - [NexusRouter.ts](file:///C:/Users/charg/myWorkspace/aegis-ai-hub/src/api/server/NexusRouter.ts) に `POST /orchestrate` エンドポイントを追加し、Web版でのAIオーケストレーション起動をサポート。
+- **検証**:
+    - `npm run build` によるビルドの成功を確認。
+    - `npm run test:e2e -- --project=chromium` を実行し、既存テストおよび追加したルート定義の整合性が保たれ、すべてのテストがパスすることを確認。
+
+---
+
 ### #23 ダッシュボードの「Refresh」ボタン押下時にスピナーが回らず最終更新日時も更新されない不具合の修正 (2026-06-06)
 - **事象**: ダッシュボードの統計ヘッダー内の「Refresh」ボタンをクリックしても、ローディングスピナー（「Syncing...」）が表示されず、最終更新日時（Last Updated）も `--` のまま更新されない。
 - **原因**:

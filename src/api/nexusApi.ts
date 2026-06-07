@@ -266,9 +266,10 @@ export function useNexusSync() {
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
 
   /** バックエンドから最新データをフェッチする共通ロジック。 */
-  const fetchData = useCallback(async (showLoading = false) => {
+  const fetchData = useCallback(async (showLoading: boolean | unknown = false) => {
+    const shouldShowLoading = showLoading === true;
     try {
-      if (showLoading) setLoading(true);
+      if (shouldShowLoading) setLoading(true);
       else setIsSyncing(true);
 
       const [s, a] = await Promise.all([
