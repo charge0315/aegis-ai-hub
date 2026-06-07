@@ -299,7 +299,7 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
                 categoryCount={categoryCount}
                 japaneseRatio={japaneseRatio}
                 lastUpdated={lastRefreshed}
-                onRefresh={refetch}
+                onRefresh={() => refetch()}
                 isSyncing={isSyncing}
               />
 

@@ -20,7 +20,7 @@ import type { FastifyInstance, FastifyPluginOptions } from 'fastify';
  * @param {FastifyPluginOptions} options - scraper, settingsManager などの依存インスタンスを含むオプション
  */
 export const nexusRouter = async (fastify: FastifyInstance, options: FastifyPluginOptions) => {
-  const { scraper, settingsManager } = options;
+  const { scraper, settingsManager, orchestrator } = options;
 
   /**
    * GET /interests
@@ -57,6 +57,24 @@ export const nexusRouter = async (fastify: FastifyInstance, options: FastifyPlug
     } catch (error) {
       console.error('[NexusRouter] Sync Settings Error:', error);
       reply.status(500).send({ error: 'Failed to sync settings', details: String(error) });
+    }
+  });
+
+  /**
+   * POST /orchestrate
+   * AIエージェントによる自律的なワークフロー（オーケストレーション）を手動で起動する。
+   */
+  fastify.post('/orchestrate', async (request, reply) => {
+    try {
+      const { requirements } = request.body as { requirements?: string };
+      if (orchestrator) {
+        void orchestrator.runAutonomousLoop(requirements || '');
+        return { success: true, newFeedsCount: 0 };
+      }
+      return { success: false, newFeedsCount: 0 };
+    } catch (error) {
+      console.error('[NexusRouter] Orchestrate Error:', error);
+      reply.status(500).send({ error: 'Failed to trigger orchestration', details: String(error) });
     }
   });
 

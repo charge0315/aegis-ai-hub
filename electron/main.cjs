@@ -268,6 +268,17 @@ function setupIpcHandlers() {
     return result;
   });
 
+  // AIによる自律ワークフロー（オーケストレーション）のトリガー
+  ipcMain.handle('trigger-orchestration', async (event, requirements) => {
+    try {
+      void orchestrator.runAutonomousLoop(requirements || '');
+      return { success: true, newFeedsCount: 0 };
+    } catch (err) {
+      console.error('[Main] Trigger orchestration failed:', err);
+      return { success: false, error: String(err) };
+    }
+  });
+
   // AIによるカテゴリ詳細（ブランド、キーワード）の提案
   ipcMain.handle('suggest-category', async (event, name) => {
     return await geminiService.suggestCategoryDetails(name);

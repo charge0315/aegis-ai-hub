@@ -30,7 +30,7 @@ contextBridge.exposeInMainWorld('nexusApi', {
   /**
    * AIによる情報の収集・分析プロセス（オーケストレーション）を手動で起動します。
    */
-  triggerOrchestration: () => ipcRenderer.invoke('trigger-orchestration'),
+  triggerOrchestration: (requirements) => ipcRenderer.invoke('trigger-orchestration', requirements),
 
   /**
    * メインプロセスで動作するAIエージェントの進捗状況（イベント）をフロントエンドへ中継します。
