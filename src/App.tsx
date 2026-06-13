@@ -138,7 +138,7 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
   }, [articles, isJapaneseOnly]);
 
   return (
-    <div className="flex h-screen bg-[#0a0b0c] text-slate-200 overflow-hidden font-sans pb-[28px]">
+    <div className="window-base flex h-screen text-slate-200 overflow-hidden font-sans pb-[28px]">
       {/* カスタムダイアログ: 全体で統一されたデザインの確認・警告・入力インターフェース */}
       {dialog.isOpen && (
         <CustomDialog 

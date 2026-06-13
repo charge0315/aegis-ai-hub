@@ -180,7 +180,8 @@ function createWindow() {
     frame: false,
     icon: icon,
     transparent: false, // FancyZones対応のため透明度はオフ
-    backgroundColor: '#0f172a',
+    backgroundMaterial: 'acrylic', // Windows 11 アクリル透過を有効化
+    backgroundColor: '#00000000', // アクリル効果を活かすため完全に透明に設定
     resizable: true, // 明示的に有効化
     hasShadow: true,
     thickFrame: true, // Windowsでのスナップ(FancyZones)対応に必須

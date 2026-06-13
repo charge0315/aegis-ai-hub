@@ -47,7 +47,7 @@
   color-scheme: light dark;
   
   /* ライトテーマ: 明るい背景に控えめな透明感を付与 */
-  --surface-base: #f8fafc;
+  --surface-base: rgba(248, 250, 252, 0.7);
   --surface-panel: rgba(255, 255, 255, 0.7);
   --text-base: #1e293b;
   --text-muted: #64748b;
@@ -62,7 +62,7 @@
   color-scheme: dark;
   
   /* ダークテーマ: 深い紺色を基調に、高い透明度と発光感を強調 */
-  --surface-base: #020617;
+  --surface-base: rgba(2, 6, 23, 0.75);
   --surface-panel: rgba(16, 17, 18, 0.8);
   --text-base: #e2e8f0;
   --text-muted: #94a3b8;
