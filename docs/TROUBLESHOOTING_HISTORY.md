@@ -4,6 +4,29 @@
 
 ---
 
+### #25 起動直後の表示画面制御不具合の修正と Electron アクリル背景透過の実装 (2026-06-13)
+- **事象**: 
+    1. アプリ起動直後のデータ同期中（`loading` が `true` のとき）、記事がまだ取得されていないため、同期中画面（`Synchronizing`）ではなく「`No Signals Detected`」画面が先に表示されてしまう。
+    2. 同期中画面の背景の不透明度とブラー効果が強く、背後のダッシュボードやコンテンツが完全に隠れてしまっている。
+    3. Electron でフレームレスウィンドウを使用しているが、アプリ全体で背景が透過されておらず、デスクトップ背面が透けて見えない。
+- **原因**:
+    1. `App.tsx` の条件分岐において、単に `filteredArticles.length === 0` という条件のみで `EmptyFeedState` を表示していたため。起動時は `loading` ステートが `true` であるにも関わらず、`isSyncing` （手動更新のみ）のみを判定しており、`EmptyFeedState` が優先して描画され、`FeedView` 内に実装されている同期オーバーレイが表示されていなかった。
+    2. `FeedView.tsx` の同期中オーバーレイのCSSクラスが `bg-background/40` になっており、CSS変数に依存しているため透過しなくなっていた。
+    3. `electron/main.cjs` の `BrowserWindow` オプションにて、Windows 11 のアクリル背景指定（`backgroundMaterial: 'acrylic'`）が設定されておらず、かつ CSS (`App.tsx` / `index.css`) 側でも背景色が完全に不透明（`bg-[#0a0b0c]` および `#020617`）で塗りつぶされていたため。
+- **対処**:
+    - **起動画面制御の修正**:
+        - [App.tsx](file:///C:/Users/charg/myWorkspace/aegis-ai-hub/src/App.tsx) 内で `useNexusSync` から `loading` ステートを取得し、`isSyncing || loading` を統合した `showSyncOverlay` を定義。同期および初期ロード中は `FeedView`（オーバーレイ）を描画し、完了後に記事数が0件であれば `EmptyFeedState` を表示するよう条件を修正。
+    - **背景透過バグの解消**:
+        - [FeedView.tsx](file:///C:/Users/charg/myWorkspace/aegis-ai-hub/src/components/FeedView.tsx) の同期オーバーレイ背景色に、CSS変数に依存しない標準Tailwindカラー `bg-white/40 dark:bg-black/40` を適用。
+    - **Electron アクリル背景透過の実装**:
+        - [main.cjs](file:///C:/Users/charg/myWorkspace/aegis-ai-hub/electron/main.cjs) にて、`backgroundMaterial: 'acrylic'` を追加し、`backgroundColor: '#00000000'` に設定。
+        - [index.css](file:///C:/Users/charg/myWorkspace/aegis-ai-hub/src/index.css) 内のメイン背景変数 `--surface-base` を半透明の `rgba()` カラーに変更。
+        - [App.tsx](file:///C:/Users/charg/myWorkspace/aegis-ai-hub/src/App.tsx) のルート要素の不透明な黒背景 `bg-[#0a0b0c]` を削除し、CSS側のアクリル透過クラス `window-base` を適用。
+- **検証**:
+    - `npm run test:e2e -- --project=chromium` を実行し、全12件のE2Eテストがすべて正常にパス（12 passed）することを確認。
+
+---
+
 ### #24 ダッシュボードの「Refresh」ボタン押下時に「Syncing...」やスピナーが動作しない不具合の修正と、AIオーケストレーションハンドラーの欠落修正 (2026-06-07)
 - **事象**: 
     1. ダッシュボードの統計ヘッダー内の「Refresh」ボタンをクリックしても、ローディングスピナー（「Syncing...」）が表示されず、ボタンも無効化（disabled）されない。

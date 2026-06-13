@@ -132222,7 +132222,7 @@ var nexusRouter, NexusRouter_default;
 var init_NexusRouter = __esm({
   "src/api/server/NexusRouter.ts"() {
     nexusRouter = async (fastify2, options) => {
-      const { scraper: scraper2, settingsManager: settingsManager2 } = options;
+      const { scraper: scraper2, settingsManager: settingsManager2, orchestrator: orchestrator2 } = options;
       fastify2.get("/interests", async (_request, reply) => {
         try {
           return await settingsManager2.getInterests();
@@ -132244,6 +132244,19 @@ var init_NexusRouter = __esm({
         } catch (error51) {
           console.error("[NexusRouter] Sync Settings Error:", error51);
           reply.status(500).send({ error: "Failed to sync settings", details: String(error51) });
+        }
+      });
+      fastify2.post("/orchestrate", async (request, reply) => {
+        try {
+          const { requirements } = request.body;
+          if (orchestrator2) {
+            void orchestrator2.runAutonomousLoop(requirements || "");
+            return { success: true, newFeedsCount: 0 };
+          }
+          return { success: false, newFeedsCount: 0 };
+        } catch (error51) {
+          console.error("[NexusRouter] Orchestrate Error:", error51);
+          reply.status(500).send({ error: "Failed to trigger orchestration", details: String(error51) });
         }
       });
       fastify2.post("/discover-trends", async (_request, reply) => {
@@ -133109,7 +133122,10 @@ function createWindow() {
     icon,
     transparent: false,
     // FancyZones対応のため透明度はオフ
-    backgroundColor: "#0f172a",
+    backgroundMaterial: "acrylic",
+    // Windows 11 アクリル透過を有効化
+    backgroundColor: "#00000000",
+    // アクリル効果を活かすため完全に透明に設定
     resizable: true,
     // 明示的に有効化
     hasShadow: true,
@@ -133176,6 +133192,15 @@ function setupIpcHandlers() {
     const result = await settingsManager.syncSettings(settings, rssFetcher);
     if (feedManager) feedManager.config = result.validatedFeedConfig;
     return result;
+  });
+  ipcMain.handle("trigger-orchestration", async (event, requirements) => {
+    try {
+      void orchestrator.runAutonomousLoop(requirements || "");
+      return { success: true, newFeedsCount: 0 };
+    } catch (err) {
+      console.error("[Main] Trigger orchestration failed:", err);
+      return { success: false, error: String(err) };
+    }
   });
   ipcMain.handle("suggest-category", async (event, name) => {
     return await geminiService.suggestCategoryDetails(name);
