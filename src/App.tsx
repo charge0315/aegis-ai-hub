@@ -49,13 +49,14 @@ interface AppBodyProps {
   refetch: () => Promise<void>;
   syncError: string | null;
   isSyncing: boolean;
+  loading: boolean;
   lastRefreshed: Date | null;
 }
 
 /**
  * アプリケーションの主要な表示ロジックを担当する内部コンポーモント
  */
-const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch, syncError, isSyncing, lastRefreshed }) => {
+const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch, syncError, isSyncing, loading, lastRefreshed }) => {
   const {
     feedSize,
     showImages,
@@ -70,6 +71,9 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 1024);
   const { t } = useTranslation();
+
+  // ローディング中または同期中をまとめて判定
+  const showSyncOverlay = isSyncing || loading;
 
   // カスタムフックによるグローバル機能の注入
   useTheme(theme);
@@ -300,11 +304,11 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
                 japaneseRatio={japaneseRatio}
                 lastUpdated={lastRefreshed}
                 onRefresh={() => refetch()}
-                isSyncing={isSyncing}
+                isSyncing={showSyncOverlay}
               />
 
               {/* 空状態または記事フィード表示 */}
-              {filteredArticles.length === 0 ? (
+              {filteredArticles.length === 0 && !showSyncOverlay ? (
                 <EmptyFeedState 
                   hasSearchQuery={!!searchQuery}
                   onNavigateToSettings={() => handleNavigate('settings')}
@@ -315,7 +319,7 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
                   settings={settings}
                   feedSize={feedSize}
                   showImages={showImages}
-                  isSyncing={isSyncing}
+                  isSyncing={showSyncOverlay}
                 />
               )}
             </div>
@@ -358,11 +362,11 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
  */
 const App: React.FC = () => {
   const ui = useUiSettingsSync();
-  const { settings, articles, sync, refetch, error: syncError, isSyncing, lastRefreshed } = useNexusSync();
+  const { settings, articles, loading, sync, refetch, error: syncError, isSyncing, lastRefreshed } = useNexusSync();
 
   return (
     <LanguageProvider value={{ language: ui.language, setLanguage: ui.setLanguage }}>
-      <AppBody ui={ui} settings={settings} articles={articles} sync={sync} refetch={refetch} syncError={syncError} isSyncing={isSyncing} lastRefreshed={lastRefreshed} />
+      <AppBody ui={ui} settings={settings} articles={articles} sync={sync} refetch={refetch} syncError={syncError} isSyncing={isSyncing} loading={loading} lastRefreshed={lastRefreshed} />
     </LanguageProvider>
   );
 };
