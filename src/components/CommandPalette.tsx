@@ -68,6 +68,14 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       category: 'navigation'
     },
     {
+      id: 'show-all-categories',
+      title: 'Show All Categories',
+      subtitle: 'Clear active category filters and show all signals',
+      icon: <Tag size={18} />,
+      action: () => onNavigate('feed', ''),
+      category: 'navigation'
+    },
+    {
       id: 'go-settings',
       title: 'Open Nexus Settings',
       subtitle: 'Configure categories, brands and keywords',
