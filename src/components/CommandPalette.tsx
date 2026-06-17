@@ -62,16 +62,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     {
       id: 'go-feed',
       title: 'Go to Intelligence Feed',
-      subtitle: 'View your personalized news stream',
+      subtitle: 'View your personalized news stream (Clear active filters)',
       icon: <LayoutDashboard size={18} />,
-      action: () => onNavigate('feed'),
-      category: 'navigation'
-    },
-    {
-      id: 'show-all-categories',
-      title: 'Show All Categories',
-      subtitle: 'Clear active category filters and show all signals',
-      icon: <Tag size={18} />,
       action: () => onNavigate('feed', ''),
       category: 'navigation'
     },
