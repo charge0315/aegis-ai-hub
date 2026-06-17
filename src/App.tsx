@@ -18,7 +18,8 @@ import {
   Command,
   Menu,
   AlertTriangle,
-  Tag
+  Tag,
+  X
 } from 'lucide-react';
 
 import { AgentMonitor } from './components/AgentMonitor';
@@ -87,7 +88,7 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
    */
   const handleNavigate = useCallback((view: 'feed' | 'settings', category?: string) => {
     setCurrentView(view);
-    if (category) setSearchQuery(category);
+    if (category !== undefined) setSearchQuery(category);
   }, []);
 
   // 画面リサイズに応じたサイドバーの自動開閉
@@ -266,15 +267,24 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
           </div>
           <div className="flex items-center gap-4 no-drag">
             {currentView === 'feed' && (
-              <div className="relative group">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
+              <div className="relative group flex items-center">
+                <Search className="absolute left-4 text-slate-500" size={18} />
                 <input 
                   type="text" 
                   placeholder={t.header?.search || 'Search...'} 
                   value={searchQuery} 
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-64 bg-white/5 border border-white/10 rounded-2xl pl-12 pr-4 py-2 text-sm text-white focus:outline-none focus:border-primary/50 transition-all" 
+                  className="w-64 bg-white/5 border border-white/10 rounded-2xl pl-12 pr-10 py-2 text-sm text-white focus:outline-none focus:border-primary/50 transition-all" 
                 />
+                {searchQuery && (
+                  <button 
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 text-slate-500 hover:text-white transition-colors"
+                    aria-label="Clear search"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
               </div>
             )}
             <button 
