@@ -35,8 +35,8 @@ export interface CuratedArticle {
  */
 export class GeminiService {
   private genAI: GoogleGenerativeAI | null;
-  private primaryModelName: string = "gemini-3.1-flash";
-  private highReasoningModelName: string = "gemini-3.1-pro";
+  private primaryModelName: string = "gemini-3.5-flash";
+  private highReasoningModelName: string = "gemini-3.1-pro-preview";
   private stableFallbackModelName: string = "gemini-2.5-flash";
   private usageManager: UsageManager | null = null;
 
@@ -108,7 +108,7 @@ export class GeminiService {
       // モデルのダウングレードによる再試行（自己修復的なフォールバック戦略）
       if (modelName === this.highReasoningModelName) return this.generateStructured<T>(prompt, schema, this.primaryModelName, zodSchema);
       if (modelName === this.primaryModelName) return this.generateStructured<T>(prompt, schema, this.stableFallbackModelName, zodSchema);
-      if (modelName === this.stableFallbackModelName) return this.generateStructured<T>(prompt, schema, "gemini-1.5-flash", zodSchema);
+      if (modelName === this.stableFallbackModelName) return this.generateStructured<T>(prompt, schema, "gemini-2.5-flash-lite", zodSchema);
 
       throw new Error(`Gemini API execution failed: ${errorMessage}`, { cause: error });
     }

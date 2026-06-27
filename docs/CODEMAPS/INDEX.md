@@ -4,7 +4,7 @@
 **Last Updated:** 2026-05-21
 
 ## プロジェクト概要
-Aegis AI Hub は、Gemini 3.1 を中枢に据えた「自律学習型知的ダッシュボード」です。  
+Aegis AI Hub は、Gemini 3 シリーズ（Flash 3.5 / Pro 3.1）を中枢に据えた「自律学習型知的ダッシュボード」です。  
 v5.4.0 Aegis Chroma では、マルチテーマ対応に加え、Windows 11 環境への高度な統合（自動起動・タスクバーアイコン最適化）を実現しました。
 
 ## 主要なアップデート (v5.4.0 Aegis Chroma)
@@ -80,7 +80,7 @@ graph TD
 
     User <--> UI
     
-    Server -- Evolution/Discovery --> GeminiAPI[Gemini 3.1 API]
+    Server -- Evolution/Discovery --> GeminiAPI[Gemini 3.x API]
     Server -- Scrape --> Feeds[External RSS]
     Server -- Update --> Config
     Server -- Update --> Creds
@@ -94,7 +94,7 @@ graph TD
 - `src/api/nexusApi.ts`: Electron IPC と HTTP API の両対応ブリッジ。
 
 ### Intelligence & Logic (`src/`)
-- `services/GeminiService.ts`: Gemini 3.1 による解析・探索ロジック。
+- `services/GeminiService.ts`: Gemini 3.5 Flash / 3.1 Pro による解析・探索ロジック。
 - `core/NexusOrchestrator.ts`: 自律的なインテリジェンス・サイクルの制御。
 - `agents/`: 各種自律エージェント（Architect, Archivist, etc.）。
 - `jobs/`: 進化サイクルやヘルスチェック等の定期タスク。

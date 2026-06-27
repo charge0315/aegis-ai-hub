@@ -1,17 +1,17 @@
 # Aegis Nexus 🛡️🤖
 
 <p align="center">
-  <img src="public/logo-shield.png" width="200" alt="Aegis Nexus Logo">
+  <img src="public/app-icon.png" width="200" alt="Aegis Nexus Logo">
 </p>
 
 <p align="center">
-  <strong>The Ultimate Autonomous Intelligence Command Center powered by Gemini 3.1</strong><br>
-  <i>Gemini 3.1 が駆動する、究極の自律学習型インテリジェンス・コマンドセンター</i>
+  <strong>The Ultimate Autonomous Intelligence Command Center powered by Gemini 3.x</strong><br>
+  <i>Gemini 3.x が駆動する、究極の自律学習型インテリジェンス・コマンドセンター</i>
 </p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Version-5.4.0-blue.svg" alt="Version">
-  <img src="https://img.shields.io/badge/AI-Gemini_3.1-orange.svg" alt="Gemini 3.1">
+  <img src="https://img.shields.io/badge/AI-Gemini_3.5_Flash-orange.svg" alt="Gemini 3.5 Flash">
   <img src="https://img.shields.io/badge/UI-Acrylic_Glassmorphism-cyan.svg" alt="UI Style">
   <img src="https://img.shields.io/badge/Platform-Windows_11-blue.svg" alt="Platform">
 </p>
@@ -21,12 +21,12 @@
 ## 🌟 What is Aegis Nexus? / Aegis Nexus とは？
 
 **[EN]**  
-Aegis Nexus is a next-generation, self-evolving news dashboard that transforms the way you consume information. Built with the **Gemini 3.1 Series (Pro/Flash)** as its core engine and wrapped in a stunning **Windows 11 Acrylic Glassmorphism** interface, it filters the noise to deliver pure intelligence.
+Aegis Nexus is a next-generation, self-evolving news dashboard that transforms the way you consume information. Built with the **Gemini 3 Series (Flash 3.5 / Pro 3.1)** as its core engine and wrapped in a stunning **Windows 11 Acrylic Glassmorphism** interface, it filters the noise to deliver pure intelligence.
 
 It doesn't just show you news; it **learns** your interests, **discovers** new sources, and **evolves** your knowledge base autonomously.
 
 **[JP]**  
-Aegis Nexus は、情報の消費スタイルを根本から変える次世代の自律進化型ニュースダッシュボードです。中枢に **Gemini 3.1 シリーズ (Pro/Flash)** を据え、Windows 11 に最適化された美しい **Acrylic Glassmorphism** インターフェースを採用。ノイズを削ぎ落とし、真に価値のあるインテリジェンスのみを届けます。
+Aegis Nexus は、情報の消費スタイルを根本から変える次世代の自律進化型ニュースダッシュボードです。中枢に **Gemini 3 シリーズ (Flash 3.5 / Pro 3.1)** を据え、Windows 11 に最適化された美しい **Acrylic Glassmorphism** インターフェースを採用。ノイズを削ぎ落とし、真に価値のあるインテリジェンスのみを届けます。
 
 単にニュースを表示するだけではありません。あなたの興味を**学習**し、新しい情報源を**発見**し、自律的にナレッジベースを**進化**させます。
 
@@ -41,8 +41,8 @@ Aegis Nexus は、情報の消費スタイルを根本から変える次世代�
   *OSの設定とリアルタイムに同期するライト/ダーク/システムモード。*
 
 ### 🧠 Deep AI Discovery (AIによる自律探索)
-- **Autonomous Sourcing**: Gemini 3.1 proactively explores the web to find high-quality RSS/Atom feeds based on your niche interests.  
-  *Gemini 3.1 が Web を能動的に探索し、あなたのニッチな関心に沿った高品質な情報源を発見。*
+- **Autonomous Sourcing**: Gemini 3.5 Flash proactively explores the web to find high-quality RSS/Atom feeds based on your niche interests.  
+  *Gemini 3.5 Flash が Web を能動的に探索し、あなたのニッチな関心に沿った高品質な情報源を発見。*
 - **AI Insights**: Automatically extracts emerging trends and suggests new keywords to refine your personal feed.  
   *最新記事からトレンドを自動抽出し、フィードを洗練させるためのキーワードを提案。*
 

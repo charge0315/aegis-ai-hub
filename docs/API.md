@@ -21,7 +21,7 @@ v5.4.0 より、バックエンドロジックは Electron 内蔵の Fastify サ
 - **`GET /api/dashboard`**: スコアリング済みの全記事を取得（ダッシュボード用）。
     - **フィルタリング**: 記事取得時に、90日以上前の記事は自動的に除外されます。
     - **画像エンリッチメント**: 上位記事に対して自動スクレイピングとキャッシュによる画像補完を実行。
-- **`POST /api/v5/discover-trends`**: 最新の記事群から Gemini 3.1 Pro を用いて潜在的なトレンドを抽出。
+- **`POST /api/v5/discover-trends`**: 最新の記事群から Gemini 3.1 Pro Preview を用いて潜在的なトレンドを抽出。
     - **レスポンス**: `Confidence`, `Context`, `Type` を含むトレンドリスト。
 - **`POST /api/v5/suggest-category`**: 特定のカテゴリ名に基づき、AI によるブランド・キーワード提案を取得。
 - **`GET /api/v5/proposals`**: 情報源を分析し、新しいサイトやキーワードの進化提案を取得。
