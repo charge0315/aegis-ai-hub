@@ -61668,7 +61668,7 @@ var init_Schemas = __esm({
       // キーは YYYY-MM-DD 形式の日付文字列
       external_exports.record(
         external_exports.string(),
-        // キーはモデル名（例: gemini-3.1-pro）
+        // キーはモデル名（例: gemini-3.5-flash）
         external_exports.object({
           promptTokens: external_exports.number(),
           candidatesTokens: external_exports.number(),
@@ -63521,8 +63521,8 @@ var init_GeminiService = __esm({
     init_AiSchemas();
     GeminiService = class {
       genAI;
-      primaryModelName = "gemini-3.1-flash";
-      highReasoningModelName = "gemini-3.1-pro";
+      primaryModelName = "gemini-3.5-flash";
+      highReasoningModelName = "gemini-3.1-pro-preview";
       stableFallbackModelName = "gemini-2.5-flash";
       usageManager = null;
       constructor(apiKey) {
@@ -63580,7 +63580,7 @@ var init_GeminiService = __esm({
           if (isQuotaError) throw new Error("QUOTA_EXCEEDED", { cause: error51 });
           if (modelName === this.highReasoningModelName) return this.generateStructured(prompt, schema, this.primaryModelName, zodSchema);
           if (modelName === this.primaryModelName) return this.generateStructured(prompt, schema, this.stableFallbackModelName, zodSchema);
-          if (modelName === this.stableFallbackModelName) return this.generateStructured(prompt, schema, "gemini-1.5-flash", zodSchema);
+          if (modelName === this.stableFallbackModelName) return this.generateStructured(prompt, schema, "gemini-2.5-flash-lite", zodSchema);
           throw new Error(`Gemini API execution failed: ${errorMessage}`, { cause: error51 });
         }
       }

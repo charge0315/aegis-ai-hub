@@ -16,7 +16,7 @@ v5.4.0 では、OS との親和性を高める **Auto-Launch（自動起動）�
 - **高性能**: 非同期 I/O に最適化された Fastify を採用。
 - **API エンドポイント**: 
     - `/api/v5/`: 記事取得、設定同期、エージェント実行等の機能。
-    - **`/api/v5/discover-trends`**: 最新の記事群から Gemini 3.1 Pro を用いて潜在的なトレンド、コンテキスト、信頼度を抽出する新エンドポイント。
+    - **`/api/v5/discover-trends`**: 最新の記事群から Gemini 3.1 Pro Preview を用いて潜在的なトレンド、コンテキスト、信頼度を抽出する新エンドポイント。
 - **単一リポジトリ**: 全ての依存関係が `package.json` で管理されます。
 
 ### 2. OS Integration (Auto-Launch)
@@ -38,7 +38,7 @@ Windows のスタートアップへの自動登録をメインプロセスで直
 
 ### 4. 能動的インテリジェンス探索 (Active Intelligence Discovery)
 `ScraperFacade.discoverTrends` メソッドを中心に、従来の受動的な学習から能動的な探索へと進化しました：
-- **Gemini 3.1 Pro 活用**: 高度な推論能力を持つ Pro モデルを使用し、単なるキーワード抽出を超えた「文脈（Context）」の理解を実現。
+- **Gemini 3.1 Pro Preview 活用**: 高度な推論能力を持つ Pro モデルを使用し、単なるキーワード抽出を超えた「文脈（Context）」の理解を実現。
 - **拡張データ構造**: 抽出されるトレンドデータには、以下のメタデータが含まれます：
     - `type`: トレンドの種類（技術、市場、製品、人物等）。
     - `confidence`: AI による確信度（0.0 - 1.0）。
@@ -98,11 +98,11 @@ Electron メインプロセス (`electron/main.cjs`) では、Windows 11 の **A
 
 | サービス名 | 役割 | 進化の内容 |
 | :--- | :--- | :--- |
-| `ScraperFacade` | ワークフロー統合 | **`discoverTrends` (Gemini 3.1 Pro)** による能動的インテリジェンス探索の実装。 |
+| `ScraperFacade` | ワークフロー統合 | **`discoverTrends` (Gemini 3.1 Pro Preview)** による能動的インテリジェンス探索の実装。 |
 | `Fastify Server` | API ホスティング | Electron 内蔵型への統合。新エンドポイント `/api/v5/discover-trends` の追加。 |
 | `RSSFetcher` | フィード取得 | **疎通確認 (validateFeed)** 機能の追加。 |
 | `FeedManager` | フィード構成管理 | **自動ヘルスチェック付きフィード昇格**の実装。 |
-| `GeminiService` | AI 推論 | **Gemini 3.1 Pro/Flash 対応**。高度なトレンド分析、並列検証、Google News フォールバックを実装。 |
+| `GeminiService` | AI 推論 | **Gemini 3.5 Flash / 3.1 Pro Preview 対応**。高度なトレンド分析、並列検証、Google News フォールバックを実装。 |
 | `ArchivistAgent` | 自律学習 | 収集記事からトレンドを抽出し、拡張メタデータ（Confidence, Context）を付与して蓄積。 |
 | `DiscoveryService` | ソース探索 | **`Promise.all` による全カテゴリーの並列フィード検証**を導入し、探索のタイムアウトを防止。 |
 | `EnrichmentService` | 記事加工 | 並列スクレイピングによる画像補完。 |

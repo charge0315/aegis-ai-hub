@@ -137,7 +137,7 @@ export type UiSettings = z.infer<typeof UiSettingsSchema>;
 export const UsageStatsSchema = z.record(
   z.string(), // キーは YYYY-MM-DD 形式の日付文字列
   z.record(
-    z.string(), // キーはモデル名（例: gemini-3.1-pro）
+    z.string(), // キーはモデル名（例: gemini-3.5-flash）
     z.object({
       promptTokens: z.number(),
       candidatesTokens: z.number(),

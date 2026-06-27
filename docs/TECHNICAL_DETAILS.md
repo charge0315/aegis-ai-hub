@@ -24,7 +24,7 @@ Aegis Nexus uses a tightly coupled hybrid architecture consisting of an Electron
 
 ## 🧠 AI Agent Framework
 
-The core intelligence of Aegis Nexus is powered by the **Gemini 3.1 Series** (Pro & Flash), orchestrated through a specialized agent layer.
+The core intelligence of Aegis Nexus is powered by the **Gemini 3 Series** (Flash 3.5 & Pro 3.1), orchestrated through a specialized agent layer.
 
 ### Core Agents
 - **ArchitectAgent**: Designs implementation plans and orchestrates high-level tasks.
@@ -35,8 +35,8 @@ The core intelligence of Aegis Nexus is powered by the **Gemini 3.1 Series** (Pr
 ### AI Strategies
 - **Structured Output**: Uses Gemini's JSON mode with strict response schemas to ensure zero-hallucination structured data.
 - **Dynamic Model Switching**:
-  - `gemini-3.1-pro`: Used for complex restructuring and deep context analysis.
-  - `gemini-3.1-flash`: Used for lightweight summarization and discovery.
+  - `gemini-3.1-pro-preview`: Used for complex restructuring and deep context analysis.
+  - `gemini-3.5-flash`: Used for lightweight summarization and discovery.
 - **Resilient Fallbacks**: If AI-discovered feeds fail validation, the system automatically injects optimized Google News RSS searches as a fallback.
 
 ---
@@ -73,7 +73,7 @@ aegis-ai-hub/
 - **Backend**: Fastify 5.x
 - **Language**: TypeScript 6.x
 - **Bundler**: Vite 8 (Renderer), esbuild (Main)
-- **AI Engine**: Google Gemini API (v1beta / 3.1 models)
+- **AI Engine**: Google Gemini API (v1beta / 3.x models)
 - **Automation**: Playwright (E2E), Vitest (Unit)
 
 ---
