@@ -280,10 +280,24 @@ export const ANALYZE_TRENDS_SCHEMA: ResponseSchema = {
   required: ["suggestions"]
 };
 
-export const analyzeTrendsPrompt = (categories: string, articles: string) => `
-最新記事から新しい興味（トレンド、ブランド）を抽出してください。
-現在のカテゴリ: ${categories}
-最新記事: ${articles}
+export const analyzeTrendsPrompt = (categories: string, articles: string, externalTrends: string) => `
+あなたはトレンド分析の専門家です。以下の情報を統合して、ユーザーが興味を持ちそうな新しいキーワードやブランドを抽出してください。
+
+## 現在のユーザーカテゴリ（既知の興味）
+${categories}
+
+## X（旧Twitter）・Googleトレンド・Yahoo Japanのリアルタイムトレンド
+${externalTrends}
+
+## 最新ニュース記事
+${articles}
+
+## 指示
+- 上記のSNSトレンドとニュース記事を横断的に分析してください
+- 既存カテゴリにまだ含まれていない新しい興味・ブランド・キーワードを提案してください
+- SNSトレンドに登場しているトピックを優先的に取り上げてください
+- confidenceはSNSトレンドとニュース両方に登場するものは高め(80以上)、片方のみは中程度(50-79)にしてください
+- typeはSNSトレンドのみに出現するものは"emerging"、ニュースにも出るものは"mainstream"としてください
 `;
 
 // 9. Suggest Category Details (カテゴリ詳細の提案)

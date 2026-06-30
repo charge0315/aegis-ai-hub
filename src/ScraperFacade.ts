@@ -16,6 +16,7 @@ import { ScoringService } from './services/ScoringService';
 import { EnrichmentService } from './services/EnrichmentService';
 import { Article } from './models/Article';
 import { GeminiService } from './services/GeminiService';
+import { ExternalTrendFetcher } from './services/ExternalTrendFetcher';
 import type { Interests } from './models/Schemas';
 import type { TrendSuggestion } from './types';
 import { normalizeCategoryName } from './utils/normalize';
@@ -29,6 +30,7 @@ export class ScraperFacade {
     public rssFetcher: RSSFetcher;
     public enrichmentService: EnrichmentService;
     public geminiService: GeminiService;
+    public externalTrendFetcher: ExternalTrendFetcher;
 
     /**
      * @param _interestsPath - 未使用（将来の拡張用）
@@ -40,6 +42,7 @@ export class ScraperFacade {
         this.rssFetcher = new RSSFetcher(20); // 同時実行数を20に制限し、ネットワーク負荷を制御
         this.geminiService = new GeminiService(process.env.GEMINI_API_KEY);
         this.enrichmentService = new EnrichmentService(this.geminiService, dataDir);
+        this.externalTrendFetcher = new ExternalTrendFetcher();
     }
 
     /**
@@ -177,12 +180,15 @@ export class ScraperFacade {
      */
     async discoverTrends(interests: Interests): Promise<TrendSuggestion[]> {
         try {
-            const articles = await this.fetchAndProcessArticles(interests);
-            if (articles.length === 0) return [];
+            // 記事取得と外部トレンド取得を並列実行して時間を短縮
+            const [articles, externalTrends] = await Promise.all([
+                this.fetchAndProcessArticles(interests),
+                this.externalTrendFetcher.fetchAll('JP'),
+            ]);
 
             // AIの入力トークン制限を考慮し、上位50件に絞って解析
             const topArticles = articles.slice(0, 50).map(a => ({ title: a.title, desc: a.desc, brand: a.brand }));
-            const suggestions = await this.geminiService.analyzeTrends(topArticles, interests);
+            const suggestions = await this.geminiService.analyzeTrends(topArticles, interests, externalTrends);
             return suggestions as unknown as TrendSuggestion[];
         } catch (e: unknown) {
             console.error(`[ScraperFacade] discoverTrends Error: ${String(e)}`);

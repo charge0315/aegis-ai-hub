@@ -236,8 +236,12 @@ export class GeminiService {
   /**
    * トレンド分析: 流れてきた最新ニュースから、新しい関心事の兆候を検知。
    */
-  async analyzeTrends(articles: Record<string, unknown>[], interests: Interests): Promise<z.infer<typeof AiSchemas.AnalyzeTrendsSchema>['suggestions']> {
-    const prompt = Prompts.analyzeTrendsPrompt(Object.keys(interests.categories).join(', '), JSON.stringify(articles.slice(0, 30).map(a => ({ title: a.title, desc: a.desc }))));
+  async analyzeTrends(articles: Record<string, unknown>[], interests: Interests, externalTrends: { title: string; source: string; trafficVolume?: string }[] = []): Promise<z.infer<typeof AiSchemas.AnalyzeTrendsSchema>['suggestions']> {
+    const prompt = Prompts.analyzeTrendsPrompt(
+      Object.keys(interests.categories).join(', '),
+      JSON.stringify(articles.slice(0, 30).map(a => ({ title: a.title, desc: a.desc }))),
+      JSON.stringify(externalTrends),
+    );
     const result = await this.generateStructured<z.infer<typeof AiSchemas.AnalyzeTrendsSchema>>(prompt, Prompts.ANALYZE_TRENDS_SCHEMA, this.primaryModelName, AiSchemas.AnalyzeTrendsSchema);
     return result.suggestions;
   }
