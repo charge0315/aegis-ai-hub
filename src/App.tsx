@@ -10,7 +10,7 @@
  * - Framer Motion を使用したスムーズなアニメーション遷移。
  */
 
-import React, { useState, useEffect, useCallback, useMemo, Suspense, lazy, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, Suspense, lazy } from 'react';
 import { 
   Settings, 
   Search, 
@@ -72,8 +72,7 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
   const [searchQuery, setSearchQuery] = useState('');
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 1024);
-  const [showOnboarding, setShowOnboarding] = useState(false);
-  const onboardingChecked = useRef(false);
+  const [showOnboarding, setShowOnboarding] = useState(() => isInitialized === false);
   const { t } = useTranslation();
 
   // ローディング中または同期中をまとめて判定
@@ -102,15 +101,6 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
   }, []);
 
   const { dialog, alert: dialogAlert, confirm: dialogConfirm, prompt: dialogPrompt } = useDialog();
-
-  // 初回起動時のオンボーディング表示
-  useEffect(() => {
-    if (onboardingChecked.current) return;
-    onboardingChecked.current = true;
-    if (isInitialized === false) {
-      setShowOnboarding(true);
-    }
-  }, [isInitialized]);
 
   const handleOnboardingSetup = useCallback(() => {
     setShowOnboarding(false);
