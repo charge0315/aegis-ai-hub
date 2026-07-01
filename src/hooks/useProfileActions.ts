@@ -8,6 +8,7 @@ import type { DialogType } from '../components/CustomDialog';
 interface UseProfileActionsProps {
   draft: NexusSettings;
   setDraft: React.Dispatch<React.SetStateAction<NexusSettings>>;
+  currentSettings: NexusSettings;
   onSave: (newSettings: NexusSettings) => Promise<void>;
   apiKey: string;
   customAlert: (title: string, message: string, type?: DialogType) => Promise<void>;
@@ -35,6 +36,7 @@ interface UseProfileActionsProps {
 export function useProfileActions({
   draft,
   setDraft,
+  currentSettings,
   onSave,
   apiKey,
   customAlert,
@@ -133,5 +135,5 @@ export function useProfileActions({
     }
   }, [customConfirm, customAlert, language, t, handleError]);
 
-  return { isSaving, isTranslating, restructureStep, handleSave, handleRestructure, handleResetToDefaults, handleReset: () => setDraft(draft) };
+  return { isSaving, isTranslating, restructureStep, handleSave, handleRestructure, handleResetToDefaults, handleReset: () => setDraft(currentSettings) };
 }

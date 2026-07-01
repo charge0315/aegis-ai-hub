@@ -18,5 +18,22 @@ export default defineConfig({
         changeOrigin: true,
       }
     }
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id: string) {
+          if (id.includes('node_modules/d3') || id.includes('node_modules/d3-')) {
+            return 'd3-vendor';
+          }
+          if (id.includes('node_modules/recharts')) {
+            return 'recharts-vendor';
+          }
+          if (id.includes('node_modules/framer-motion')) {
+            return 'motion-vendor';
+          }
+        }
+      }
+    }
   }
 })

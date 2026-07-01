@@ -75,7 +75,7 @@ contextBridge.exposeInMainWorld('nexusApi', {
   /**
    * トラブルシューティングやリセットが必要な場合、全設定を工場出荷時の状態に戻します。
    */
-  resetToDefaults: () => ipcRenderer.invoke('reset-to-defaults'),
+  resetToDefaults: (lang) => ipcRenderer.invoke('reset-to-defaults', lang),
 
   /**
    * テーマや言語設定などのUI表示に関する永続化設定を操作します。
@@ -103,5 +103,16 @@ contextBridge.exposeInMainWorld('nexusApi', {
   /**
    * 最小化・最大化・閉じるなどのカスタムウィンドウ操作をメインプロセスに要求します。
    */
-  windowControl: (action) => ipcRenderer.send('window-control', action)
+  windowControl: (action) => ipcRenderer.send('window-control', action),
+
+  /**
+   * 外部URLをシステムのデフォルトブラウザで安全に開きます。
+   * メインプロセス側でhttps/httpスキームのみ許可します。
+   */
+  openExternal: (url) => ipcRenderer.send('open-external', url),
+
+  /**
+   * 設定（興味関心）を別の言語に翻訳します。
+   */
+  translateInterests: (settings) => ipcRenderer.invoke('translate-interests', settings),
 });

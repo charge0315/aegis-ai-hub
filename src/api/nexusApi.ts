@@ -304,17 +304,21 @@ export function useNexusSync() {
     try {
       setIsSyncing(true);
       const result = await nexusApi.syncSettings(newSettings);
-      setSettings({ 
-        ...newSettings, 
-        interests: { 
-          ...newSettings.interests, 
-          lastUpdated: result.lastUpdated 
-        } 
+      setSettings({
+        ...newSettings,
+        interests: {
+          ...newSettings.interests,
+          lastUpdated: result.lastUpdated
+        }
       });
       // 設定変更後に記事の内容が変化する可能性があるため、即座にリフレッシュ。
       const a = await nexusApi.getArticles();
       setArticles(a);
       setLastRefreshed(new Date());
+      setError(null);
+    } catch (err: unknown) {
+      console.error('[useNexusSync] Sync failed:', err);
+      setError(err instanceof Error ? err.message : 'Sync error');
     } finally {
       setIsSyncing(false);
     }

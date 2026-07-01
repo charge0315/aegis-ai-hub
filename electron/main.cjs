@@ -136,7 +136,17 @@ async function startBackend() {
 
   // 内部サーバー (Browser Fallback / SSE 用)
   const server = fastify({ logger: isDev });
-  await server.register(cors, { origin: '*' });
+  const allowedOrigins = new Set([
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+  ]);
+  await server.register(cors, {
+    origin: (origin, cb) => {
+      // file:// ロードや Electron IPC 経由では origin が未設定になるため許可
+      if (!origin || allowedOrigins.has(origin)) cb(null, true);
+      else cb(new Error('CORS: origin not allowed'), false);
+    }
+  });
   
   await server.register(nexusRouter, {
     prefix: '/api/v5',
@@ -197,26 +207,12 @@ function createWindow() {
     orchestrator.setWebContents(mainWindow.webContents);
   }
 
-  // 子ウィンドウ（window.open で開かれた記事詳細画面など）が作成された際の処理
-  mainWindow.webContents.on('did-create-window', (childWindow) => {
-    const childMenu = Menu.buildFromTemplate([
-      {
-        label: 'Window',
-        submenu: [
-          {
-            label: 'Close',
-            accelerator: 'CmdOrCtrl+W',
-            role: 'close'
-          }
-        ]
-      }
-    ]);
-    childWindow.setMenu(childMenu);
-    
-    // Windows/Linuxではメニューバーを非表示にする
-    if (process.platform !== 'darwin') {
-      childWindow.setMenuBarVisibility(false);
+  // window.open() / <a target="_blank"> をシステムブラウザに転送し、子ウィンドウ生成を防ぐ
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith('https://') || url.startsWith('http://')) {
+      shell.openExternal(url);
     }
+    return { action: 'deny' };
   });
 
   if (isDev) {
@@ -355,9 +351,16 @@ function setupIpcHandlers() {
     }
   });
 
-  // 外部リンクをデフォルトブラウザで開く
+  // 外部リンクをデフォルトブラウザで開く（https/http のみ許可）
   ipcMain.on('open-external', (event, url) => {
-    shell.openExternal(url);
+    if (typeof url === 'string' && (url.startsWith('https://') || url.startsWith('http://'))) {
+      shell.openExternal(url);
+    }
+  });
+
+  // AIによるフィード改善提案の取得（将来実装のスタブ）
+  ipcMain.handle('get-proposals', async () => {
+    return { proposals: [] };
   });
 }
 

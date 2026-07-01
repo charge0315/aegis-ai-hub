@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense, lazy } from 'react';
 import { 
   Save, 
   RotateCcw, 
@@ -10,12 +10,12 @@ import {
   AlertCircle,
   LayoutTemplate
 } from 'lucide-react';
-import { KnowledgeGraph } from './KnowledgeGraph';
+const KnowledgeGraph = lazy(() => import('./KnowledgeGraph').then(m => ({ default: m.KnowledgeGraph })));
+const UsageDashboard = lazy(() => import('./editors/UsageDashboard').then(m => ({ default: m.UsageDashboard })));
 import { SkillRegistry } from './SkillRegistry';
 import { CategoryEditor } from './editors/CategoryEditor';
 import { SystemSettings } from './editors/SystemSettings';
 import { AIInsightsPanel } from './editors/AIInsightsPanel';
-import { UsageDashboard } from './editors/UsageDashboard';
 import { useUnifiedEditorHandlers } from '../hooks/useUnifiedEditorHandlers';
 import type { NexusSettings, UiSettings } from '../types';
 import type { DialogType } from './CustomDialog';
@@ -217,11 +217,13 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
           )}
 
           {activeTab === 'graph' && (
-            <KnowledgeGraph 
-              settings={draft} 
-              onKeywordToggle={handleKeywordToggle}
-              onBrandToggle={handleBrandToggle}
-            />
+            <Suspense fallback={<div className="flex items-center justify-center h-[400px] text-content-muted">Loading graph...</div>}>
+              <KnowledgeGraph
+                settings={draft}
+                onKeywordToggle={handleKeywordToggle}
+                onBrandToggle={handleBrandToggle}
+              />
+            </Suspense>
           )}
 
           {activeTab === 'skills' && (
@@ -256,7 +258,9 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
             />
           )}
           {activeTab === 'usage' && (
-            <UsageDashboard />
+            <Suspense fallback={<div className="flex items-center justify-center h-[400px] text-content-muted">Loading dashboard...</div>}>
+              <UsageDashboard />
+            </Suspense>
           )}
         </div>
       </div>
