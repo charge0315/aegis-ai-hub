@@ -1,116 +1,213 @@
-# Aegis Nexus 🛡️🤖
+<div align="center">
 
-<p align="center">
-  <img src="public/app-icon.png" width="200" alt="Aegis Nexus Logo">
-</p>
+<img src="public/app-icon.png" width="120" alt="Aegis Nexus">
 
-<p align="center">
-  <strong>The Ultimate Autonomous Intelligence Command Center powered by Gemini 3.x</strong><br>
-  <i>Gemini 3.x が駆動する、究極の自律学習型インテリジェンス・コマンドセンター</i>
-</p>
+# AEGIS NEXUS
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Version-5.4.0-blue.svg" alt="Version">
-  <img src="https://img.shields.io/badge/AI-Gemini_3.5_Flash-orange.svg" alt="Gemini 3.5 Flash">
-  <img src="https://img.shields.io/badge/UI-Acrylic_Glassmorphism-cyan.svg" alt="UI Style">
-  <img src="https://img.shields.io/badge/Platform-Windows_11-blue.svg" alt="Platform">
-</p>
+### The Autonomous AI Intelligence Command Center
 
----
+**Powered by Gemini 3.x · Built for Windows 11**
 
-## 🌟 What is Aegis Nexus? / Aegis Nexus とは？
+[![Version](https://img.shields.io/badge/version-5.4.0-6366f1?style=for-the-badge&logo=github)](https://github.com/charge0315/aegis-ai-hub/releases)
+[![AI Engine](https://img.shields.io/badge/AI-Gemini_3.1_Pro%2FFlash-FF6B35?style=for-the-badge&logo=google)](https://aistudio.google.com)
+[![Platform](https://img.shields.io/badge/platform-Windows_11-0078D4?style=for-the-badge&logo=windows)](https://www.microsoft.com/windows)
+[![License](https://img.shields.io/badge/license-MIT-22c55e?style=for-the-badge)](LICENSE)
+[![Electron](https://img.shields.io/badge/Electron-36.x-47848F?style=for-the-badge&logo=electron)](https://electronjs.org)
+[![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react)](https://react.dev)
 
-**[EN]**  
-Aegis Nexus is a next-generation, self-evolving news dashboard that transforms the way you consume information. Built with the **Gemini 3 Series (Flash 3.5 / Pro 3.1)** as its core engine and wrapped in a stunning **Windows 11 Acrylic Glassmorphism** interface, it filters the noise to deliver pure intelligence.
+*Stop drowning in noise. Start commanding intelligence.*  
+*ノイズに溺れるのをやめ、インテリジェンスを掌握せよ。*
 
-It doesn't just show you news; it **learns** your interests, **discovers** new sources, and **evolves** your knowledge base autonomously.
-
-**[JP]**  
-Aegis Nexus は、情報の消費スタイルを根本から変える次世代の自律進化型ニュースダッシュボードです。中枢に **Gemini 3 シリーズ (Flash 3.5 / Pro 3.1)** を据え、Windows 11 に最適化された美しい **Acrylic Glassmorphism** インターフェースを採用。ノイズを削ぎ落とし、真に価値のあるインテリジェンスのみを届けます。
-
-単にニュースを表示するだけではありません。あなたの興味を**学習**し、新しい情報源を**発見**し、自律的にナレッジベースを**進化**させます。
+</div>
 
 ---
 
-## ✨ Key Features / 主な機能
+## 📸 見てください
 
-### 🛡️ Aegis Chroma (Stunning UI/UX / 圧倒的なビジュアル)
-- **Acrylic Glassmorphism**: A beautiful, translucent interface that blends perfectly with your Windows 11 desktop.  
-  *Windows 11 デスクトップと完璧に調和する、美しく透き通ったインターフェース。*
-- **Dynamic Theme Engine**: Seamlessly switches between Light, Dark, and System modes with real-time OS synchronization.  
-  *OSの設定とリアルタイムに同期するライト/ダーク/システムモード。*
+<div align="center">
 
-### 🧠 Deep AI Discovery (AIによる自律探索)
-- **Autonomous Sourcing**: Gemini 3.5 Flash proactively explores the web to find high-quality RSS/Atom feeds based on your niche interests.  
-  *Gemini 3.5 Flash が Web を能動的に探索し、あなたのニッチな関心に沿った高品質な情報源を発見。*
-- **AI Insights**: Automatically extracts emerging trends and suggests new keywords to refine your personal feed.  
-  *最新記事からトレンドを自動抽出し、フィードを洗練させるためのキーワードを提案。*
+### 🛰️ Intelligence Dashboard — 148 articles, zero noise
 
-### ⚡ Precision Engineering (精密な設計)
-- **Signal vs Noise**: Advanced scoring algorithm filters out the clutter, ensuring you only see what matters.  
-  *高度なスコアリングアルゴリズムが不要な情報を排除。*
-- **Image Enrichment**: Auto-extracts high-quality visuals and OGP data even from sites that lack proper metadata.  
-  *メタデータのないサイトからも高品質な画像とOGPデータを自動抽出。*
-
-### 🔒 Privacy & Local First (プライバシー重視)
-- **Zero Telemetry**: Your interests and data stay on your machine.  
-  *あなたの興味やデータはすべてローカルに保存。外部への送信は一切ありません。*
-- **Secure Storage**: API keys are protected using OS-native encryption via Electron `safeStorage`.  
-  *APIキーは OS ネイティブの暗号化（safeStorage）で安全に保護。*
-
----
-
-## 📸 Screenshots / スクリーンショット
-
-### 🛰️ Intelligence Dashboard / インテリジェンス・ダッシュボード
-*A clean, distraction-free view of your curated world.*  
-*AIによって厳選された、ノイズのない世界。*  
 ![Dashboard](./docs/assets/screenshot-dashboard.png)
 
-### 🛠️ Nexus Command / ネクサス・コマンド
-*Manage your interests and control the AI evolution.*  
-*興味関心の管理と、AI進化のコントロール。*  
+### 🧠 Nexus Command — AI-powered knowledge profile editor
+
 ![Nexus Command](./docs/assets/screenshot-nexus-command.png)
+
+### 🕸️ Intelligence Knowledge Graph — Live semantic map of your interests
+
+![Knowledge Graph](./docs/assets/screenshot-knowledge-graph.png)
+
+</div>
 
 ---
 
-## 🚀 Quick Start / クイックスタート
+## 🌟 Aegis Nexus とは？
 
-### 1. Prerequisites / 前提条件
+Aegis Nexus は **自律学習型のパーソナル AI インテリジェンス・ダッシュボード** です。  
+単なるニュースリーダーではありません。あなたの興味を学習し、Web を能動的に探索し、価値のある情報だけを届ける **AI エージェントの司令塔** です。
+
+**EN:** Aegis Nexus is a self-evolving AI intelligence hub that learns your interests, autonomously discovers high-quality sources across the web, and delivers curated knowledge — wrapped in a stunning Windows 11 Acrylic Glassmorphism interface.
+
+> **"It doesn't just show news. It thinks, learns, and evolves."**
+
+---
+
+## ✨ 主な機能 / Key Features
+
+<table>
+<tr>
+<td width="50%">
+
+### 🤖 AI Agent Swarm
+4つの専門 AI エージェントが並列稼働：
+
+- **Architect** — カテゴリ構造を最適化
+- **Curator** — 関連記事をスコアリング
+- **Discovery** — 新しい情報源を自律探索
+- **Archivist** — トレンドと知識を学習・蓄積
+
+</td>
+<td width="50%">
+
+### 🛡️ Aegis Chroma UI
+次世代の Windows 11 ネイティブ体験：
+
+- **Acrylic Glassmorphism** — 透明感のある美しいUI
+- **Dynamic Theme** — OS連動のダーク/ライトモード
+- **Command Palette** — `Ctrl+K` で全機能即時アクセス
+- **Knowledge Graph** — D3.js インタラクティブ意味マップ
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+### ⚡ Deep AI Discovery
+Gemini 3.1 が Web を能動的に探索：
+
+- RSS/Atom フィードの自律発見
+- Google News RSS フォールバック
+- OGP 画像の自動エンリッチメント
+- カテゴリ名の AI 正規化・揺れ吸収
+
+</td>
+<td width="50%">
+
+### 🔒 Privacy-First & Local
+あなたのデータはあなたのものです：
+
+- **Zero Telemetry** — 外部送信一切なし
+- **safeStorage 暗号化** — OS ネイティブ暗号でAPIキーを保護
+- **Local JSON** — DB 不要、すべてローカルに永続化
+- **3世代バックアップ** — データ損失ゼロの設計
+
+</td>
+</tr>
+</table>
+
+---
+
+## 🚀 クイックスタート / Quick Start
+
+### 前提条件
+
 - **Node.js** v20+
-- **Google Gemini API Key** (Get it at [Google AI Studio](https://aistudio.google.com/app/apikey))
+- **Google Gemini API Key** → [Google AI Studio で無料取得](https://aistudio.google.com/app/apikey)
 
-### 2. Installation / インストール
+### インストール
+
 ```bash
-# Clone the repository / リポジトリをクローン
 git clone https://github.com/charge0315/aegis-ai-hub.git
 cd aegis-ai-hub
-
-# Install dependencies / 依存関係のインストール
 npm install
 ```
 
-### 3. Launch / 起動
+### 起動
+
 ```bash
-# Run in development mode / 開発モードで実行
+# 開発モードで起動 (Electron + Vite HMR)
 npm run electron:dev
 
-# Or build the production installer (EXE) / または製品版インストーラーを生成
-npm run electron:build
+# Windows 11 インストーラー (.exe) をビルド
+npm run dist
+```
+
+起動後、**オンボーディング画面** の指示に従って Gemini API キーを設定するだけです。  
+設定は OS ネイティブ暗号化で自動保護されます。
+
+---
+
+## 🏗️ アーキテクチャ / Architecture
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                   Electron Main Process                  │
+│  ┌──────────────────┐   ┌────────────────────────────┐  │
+│  │ ElectronSettings │   │   Fastify API Server        │  │
+│  │ (safeStorage)    │   │   (localhost only, CORS)    │  │
+│  └──────────────────┘   └──────────┬─────────────────┘  │
+└────────────────────────────────────┼────────────────────┘
+                                     │ IPC / HTTP
+┌────────────────────────────────────┼────────────────────┐
+│                React Renderer      │                     │
+│  ┌─────────────┐  ┌────────────┐  │  ┌───────────────┐  │
+│  │  Dashboard  │  │   Nexus    │  │  │  Agent Swarm  │  │
+│  │  (Articles) │  │  Command   │  │  │  Status Panel │  │
+│  └─────────────┘  └────────────┘  │  └───────────────┘  │
+│  ┌─────────────────────────────────────────────────────┐ │
+│  │           NexusOrchestrator                         │ │
+│  │  Architect · Curator · Discovery · Archivist        │ │
+│  └─────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 👨‍💻 For Developers / 開発者の方へ
+## 🛠️ Tech Stack
 
-**[EN]** Aegis Nexus is a production-ready application with a sophisticated hybrid architecture.  
-**[JP]** Aegis Nexus は、洗練されたハイブリッドアーキテクチャを備えたプロダクションレディなアプリケーションです。
-
-- [**Technical Details & Engineering Specifications (技術仕様)**](./docs/TECHNICAL_DETAILS.md)
-- [**System Codemaps (システム構成図)**](./docs/CODEMAPS/INDEX.md)
+| Layer | Technology |
+|-------|-----------|
+| **Desktop Shell** | Electron 36 |
+| **Frontend** | React 19 + TypeScript 6 + Vite 8 (Rolldown) |
+| **Styling** | Tailwind CSS 4 + Glassmorphism |
+| **AI Engine** | Google Gemini 3.1 Pro / Flash |
+| **Backend API** | Fastify (embedded, localhost) |
+| **Data Viz** | D3.js (Knowledge Graph) + Recharts (Usage) |
+| **Animation** | Framer Motion |
+| **Validation** | Zod |
+| **Testing** | Vitest + Playwright |
+| **Build** | electron-builder (NSIS installer) |
 
 ---
 
-<p align="center">
-  <i>Aegis Nexus - Precision Engineering for Intellectual Excellence. 🚀</i>
-</p>
+## 📁 ドキュメント / Documentation
+
+| Document | Description |
+|----------|-------------|
+| [📋 SPECIFICATION](./docs/SPECIFICATION.md) | 機能仕様書 v5.4.0 |
+| [🔧 TECHNICAL_DETAILS](./docs/TECHNICAL_DETAILS.md) | アーキテクチャ詳細 |
+| [🤖 GEMINI](./docs/GEMINI.md) | Gemini 連携ガイド |
+| [📖 Manual](./docs/aegis-hub-manual.md) | ユーザーマニュアル |
+| [🐛 Troubleshooting](./docs/TROUBLESHOOTING_HISTORY.md) | トラブルシューティング履歴 |
+| [🔍 Code Review History](./docs/REVIEW_RESULT.md) | コードレビュー履歴 (v5.3.0〜v5.4.0) |
+
+---
+
+## 🔑 セキュリティ / Security
+
+- API キーは Electron `safeStorage`（OS ネイティブ暗号）で保護
+- 平文キーを検出した場合は自動的に即時再暗号化
+- CORS はローカルオリジン（`localhost:5173`）のみ許可
+- 外部リンクはすべてシステムブラウザへルーティング
+- `contextIsolation: true` / `nodeIntegration: false` 準拠
+
+---
+
+<div align="center">
+
+**Aegis Nexus** — *Precision Engineering for Intellectual Excellence*
+
+[⭐ Star this repo](https://github.com/charge0315/aegis-ai-hub) · [🐛 Report Bug](https://github.com/charge0315/aegis-ai-hub/issues) · [💡 Request Feature](https://github.com/charge0315/aegis-ai-hub/issues)
+
+</div>
