@@ -99,6 +99,7 @@ export function useUnifiedEditorHandlers({
   const profileActions = useProfileActions({
     draft,
     setDraft,
+    currentSettings,
     onSave,
     apiKey: apiKeyManager.apiKey,
     customAlert,

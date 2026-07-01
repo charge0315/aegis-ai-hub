@@ -42,14 +42,19 @@ export class ElectronSettingsManager extends SettingsManager {
       // 暗号化されたキーがある場合は復号を試みる
       // 意図: 異なる端末や環境での不正な読み取りを防ぐため、OSレベルの暗号化を適用しています。
       // 'enc:' プレフィックスにより、未暗号化の旧データとの互換性も維持します。
-      if (apiKey && safeStorage.isEncryptionAvailable() && apiKey.startsWith('enc:')) {
-        try {
-          const encryptedBuffer = Buffer.from(apiKey.slice(4), 'base64');
-          apiKey = safeStorage.decryptString(encryptedBuffer);
-        } catch (decryptError) {
-          console.error('[ElectronSettingsManager] Failed to decrypt API key:', decryptError);
-          // 復号失敗時は空を返すことで、不正なデータの利用によるエラーを回避します。
-          apiKey = ''; 
+      if (apiKey && safeStorage.isEncryptionAvailable()) {
+        if (apiKey.startsWith('enc:')) {
+          try {
+            const encryptedBuffer = Buffer.from(apiKey.slice(4), 'base64');
+            apiKey = safeStorage.decryptString(encryptedBuffer);
+          } catch (decryptError) {
+            console.error('[ElectronSettingsManager] Failed to decrypt API key:', decryptError);
+            apiKey = '';
+          }
+        } else {
+          // 平文キーを検出 — 即座に再暗号化して上書き保存する
+          console.warn('[ElectronSettingsManager] Plaintext API key detected. Re-encrypting now...');
+          await this.saveApiKey(apiKey);
         }
       }
       

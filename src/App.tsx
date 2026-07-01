@@ -10,7 +10,7 @@
  * - Framer Motion を使用したスムーズなアニメーション遷移。
  */
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, Suspense, lazy } from 'react';
 import { 
   Settings, 
   Search, 
@@ -23,8 +23,8 @@ import {
 } from 'lucide-react';
 
 import { AgentMonitor } from './components/AgentMonitor';
-import { UnifiedEditor } from './components/UnifiedEditor';
-import { CommandPalette } from './components/CommandPalette';
+const UnifiedEditor = lazy(() => import('./components/UnifiedEditor').then(m => ({ default: m.UnifiedEditor })));
+const CommandPalette = lazy(() => import('./components/CommandPalette').then(m => ({ default: m.CommandPalette })));
 import { CustomDialog } from './components/CustomDialog';
 import { useDialog } from './hooks/useDialog';
 import { useNexusSync, useAgentEvents, nexusApi } from './api/nexusApi';
@@ -40,6 +40,7 @@ import { FeedStatsHeader } from './components/FeedStatsHeader';
 import { EmptyFeedState } from './components/EmptyFeedState';
 import { StatusBar } from './components/StatusBar';
 import { FeedView } from './components/FeedView';
+import { OnboardingModal } from './components/OnboardingModal';
 import { useArticleFilter } from './hooks/useArticleFilter';
 
 interface AppBodyProps {
@@ -71,6 +72,7 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
   const [searchQuery, setSearchQuery] = useState('');
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 1024);
+  const [showOnboarding, setShowOnboarding] = useState(() => isInitialized === false);
   const { t } = useTranslation();
 
   // ローディング中または同期中をまとめて判定
@@ -100,13 +102,18 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
 
   const { dialog, alert: dialogAlert, confirm: dialogConfirm, prompt: dialogPrompt } = useDialog();
 
-  // 初回起動時の初期化フラグ管理
-  useEffect(() => {
-    if (isInitialized === false) {
-      setIsInitialized(true);
-      localStorage.setItem('nexus_initialized', 'true');
-    }
-  }, [isInitialized, setIsInitialized]);
+  const handleOnboardingSetup = useCallback(() => {
+    setShowOnboarding(false);
+    setIsInitialized(true);
+    localStorage.setItem('nexus_initialized', 'true');
+    setCurrentView('settings');
+  }, [setIsInitialized]);
+
+  const handleOnboardingSkip = useCallback(() => {
+    setShowOnboarding(false);
+    setIsInitialized(true);
+    localStorage.setItem('nexus_initialized', 'true');
+  }, [setIsInitialized]);
 
   // AIエージェントのイベント監視（データ更新時に再取得）
   const agents = useAgentEvents(refetch);
@@ -140,6 +147,11 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
 
   return (
     <div className="window-base flex h-screen text-slate-200 overflow-hidden font-sans pb-[28px]">
+      {/* 初回起動オンボーディング */}
+      {showOnboarding && (
+        <OnboardingModal onSetup={handleOnboardingSetup} onSkip={handleOnboardingSkip} />
+      )}
+
       {/* カスタムダイアログ: 全体で統一されたデザインの確認・警告・入力インターフェース */}
       {dialog.isOpen && (
         <CustomDialog 
@@ -155,14 +167,16 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
       )}
 
       {/* コマンドパレット: キーボード中心の操作を提供するパワーユーザー向けインターフェース */}
-      <CommandPalette 
-        isOpen={isCommandPaletteOpen} 
-        onClose={() => setIsCommandPaletteOpen(false)} 
-        settings={settings}
-        onNavigate={handleNavigate} 
-        onSync={() => settings ? sync(settings) : Promise.resolve()}
-        onTriggerOrchestration={async (req) => { await nexusApi.triggerOrchestration(req); }}
-      />
+      <Suspense fallback={null}>
+        <CommandPalette
+          isOpen={isCommandPaletteOpen}
+          onClose={() => setIsCommandPaletteOpen(false)}
+          settings={settings}
+          onNavigate={handleNavigate}
+          onSync={() => settings ? sync(settings) : Promise.resolve()}
+          onTriggerOrchestration={async (req) => { await nexusApi.triggerOrchestration(req); }}
+        />
+      </Suspense>
 
       {/* サイドバー: アクリル質感を活用したナビゲーションエリア */}
       <aside 
@@ -337,17 +351,19 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
             settings ? (
               /* 設定エディタ: 統合された高度な設定インターフェース */
               <div data-testid="unified-editor-container">
-                <UnifiedEditor 
-                  currentSettings={settings} 
-                  onSave={sync} 
-                  alert={dialogAlert} 
-                  confirm={dialogConfirm} 
-                  prompt={dialogPrompt} 
-                  theme={theme} 
-                  setTheme={setTheme} 
-                  autoLaunch={ui.autoLaunch}
-                  setAutoLaunch={ui.setAutoLaunch}
-                />
+                <Suspense fallback={<div className="flex items-center justify-center h-full text-content-muted">Loading...</div>}>
+                  <UnifiedEditor
+                    currentSettings={settings}
+                    onSave={sync}
+                    alert={dialogAlert}
+                    confirm={dialogConfirm}
+                    prompt={dialogPrompt}
+                    theme={theme}
+                    setTheme={setTheme}
+                    autoLaunch={ui.autoLaunch}
+                    setAutoLaunch={ui.setAutoLaunch}
+                  />
+                </Suspense>
               </div>
             ) : (
               <div className="flex items-center justify-center h-full text-content-muted" data-testid="settings-loading">Loading settings...</div>

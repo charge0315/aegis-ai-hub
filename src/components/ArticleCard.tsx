@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ExternalLink, Sparkles, Calendar } from 'lucide-react';
 import { GlassPanel } from './GlassPanel';
+import { nexusApi } from '../api/nexusApi';
 import type { Article } from '../types';
 
 /**
@@ -62,7 +63,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({ article, index = 0, si
       transition={{ delay: Math.min(index * 0.05, 0.5) }}
       whileHover={{ y: -4 }}
       data-testid="article-card"
-      onClick={() => window.open(article.link, '_blank', 'noopener,noreferrer')}
+      onClick={() => nexusApi.openExternal(article.link)}
     >
       {/* Image Section - 視覚的なフック（アンカー）の提供。
           テキストモード（showImages=false）の場合は、情報密度を高めるために空間ごと省略されます。 */}
@@ -82,7 +83,13 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({ article, index = 0, si
             // テクスチャ（carbon-fibre）を重ねることで、プレミアム感を維持します。
             <div className={`w-full h-full flex items-center justify-center text-white/40 bg-linear-to-br ${getFallbackGradient()} relative overflow-hidden`}>
               {/* 背景の装飾的な要素 */}
-              <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
+              <div
+                className="absolute inset-0 opacity-20"
+                style={{
+                  backgroundImage: 'repeating-linear-gradient(45deg, rgba(255,255,255,.06) 0, rgba(255,255,255,.06) 1px, transparent 0, transparent 50%), repeating-linear-gradient(135deg, rgba(255,255,255,.06) 0, rgba(255,255,255,.06) 1px, transparent 0, transparent 50%)',
+                  backgroundSize: '4px 4px'
+                }}
+              />
               <div className="relative z-1 flex flex-col items-center gap-2">
                 <Sparkles size={isSmall ? 24 : 40} className="text-white/30" />
                 {!isSmall && <span className="text-[9px] font-black uppercase tracking-[0.2em] opacity-40">Signal Synthesized</span>}
