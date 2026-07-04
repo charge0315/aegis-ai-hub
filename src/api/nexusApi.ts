@@ -247,6 +247,15 @@ export const nexusApi = {
     } else {
       window.open(url, '_blank');
     }
+  },
+
+  /** 記事をアプリ内の別ウィンドウ（Webビュー）で安全に開く。 */
+  openArticle(url: string): void {
+    if (window.nexusApi?.openArticle && !isE2E()) {
+      window.nexusApi.openArticle(url);
+    } else {
+      window.open(url, '_blank');
+    }
   }
 };
 

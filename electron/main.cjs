@@ -358,6 +358,31 @@ function setupIpcHandlers() {
     }
   });
 
+  // 記事をアプリ内の別ウィンドウ（Webビュー）で開く
+  ipcMain.on('open-article', (event, url) => {
+    if (typeof url === 'string' && (url.startsWith('https://') || url.startsWith('http://'))) {
+      const win = new BrowserWindow({
+        width: 1200,
+        height: 800,
+        autoHideMenuBar: true,
+        webPreferences: {
+          nodeIntegration: false,
+          contextIsolation: true,
+          sandbox: true
+        }
+      });
+      win.setMenu(null);
+      win.loadURL(url);
+
+      win.webContents.on('before-input-event', (inputEvent, input) => {
+        if (input.control && input.key.toLowerCase() === 'q') {
+          win.close();
+          inputEvent.preventDefault();
+        }
+      });
+    }
+  });
+
   // AIによるフィード改善提案の取得（将来実装のスタブ）
   ipcMain.handle('get-proposals', async () => {
     return { proposals: [] };

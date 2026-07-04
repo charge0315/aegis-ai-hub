@@ -62077,13 +62077,18 @@ var init_ElectronSettingsManager = __esm({
           const json2 = JSON.parse(data2);
           const creds = CredentialsSchema.parse(json2);
           let apiKey = creds.geminiApiKey || "";
-          if (apiKey && import_electron.safeStorage.isEncryptionAvailable() && apiKey.startsWith("enc:")) {
-            try {
-              const encryptedBuffer = Buffer.from(apiKey.slice(4), "base64");
-              apiKey = import_electron.safeStorage.decryptString(encryptedBuffer);
-            } catch (decryptError) {
-              console.error("[ElectronSettingsManager] Failed to decrypt API key:", decryptError);
-              apiKey = "";
+          if (apiKey && import_electron.safeStorage.isEncryptionAvailable()) {
+            if (apiKey.startsWith("enc:")) {
+              try {
+                const encryptedBuffer = Buffer.from(apiKey.slice(4), "base64");
+                apiKey = import_electron.safeStorage.decryptString(encryptedBuffer);
+              } catch (decryptError) {
+                console.error("[ElectronSettingsManager] Failed to decrypt API key:", decryptError);
+                apiKey = "";
+              }
+            } else {
+              console.warn("[ElectronSettingsManager] Plaintext API key detected. Re-encrypting now...");
+              await this.saveApiKey(apiKey);
             }
           }
           return apiKey || process.env.GEMINI_API_KEY || "";
@@ -63353,10 +63358,24 @@ var init_GeminiPrompts = __esm({
       },
       required: ["suggestions"]
     };
-    analyzeTrendsPrompt = (categories, articles) => `
-\u6700\u65B0\u8A18\u4E8B\u304B\u3089\u65B0\u3057\u3044\u8208\u5473\uFF08\u30C8\u30EC\u30F3\u30C9\u3001\u30D6\u30E9\u30F3\u30C9\uFF09\u3092\u62BD\u51FA\u3057\u3066\u304F\u3060\u3055\u3044\u3002
-\u73FE\u5728\u306E\u30AB\u30C6\u30B4\u30EA: ${categories}
-\u6700\u65B0\u8A18\u4E8B: ${articles}
+    analyzeTrendsPrompt = (categories, articles, externalTrends) => `
+\u3042\u306A\u305F\u306F\u30C8\u30EC\u30F3\u30C9\u5206\u6790\u306E\u5C02\u9580\u5BB6\u3067\u3059\u3002\u4EE5\u4E0B\u306E\u60C5\u5831\u3092\u7D71\u5408\u3057\u3066\u3001\u30E6\u30FC\u30B6\u30FC\u304C\u8208\u5473\u3092\u6301\u3061\u305D\u3046\u306A\u65B0\u3057\u3044\u30AD\u30FC\u30EF\u30FC\u30C9\u3084\u30D6\u30E9\u30F3\u30C9\u3092\u62BD\u51FA\u3057\u3066\u304F\u3060\u3055\u3044\u3002
+
+## \u73FE\u5728\u306E\u30E6\u30FC\u30B6\u30FC\u30AB\u30C6\u30B4\u30EA\uFF08\u65E2\u77E5\u306E\u8208\u5473\uFF09
+${categories}
+
+## X\uFF08\u65E7Twitter\uFF09\u30FBGoogle\u30C8\u30EC\u30F3\u30C9\u30FBYahoo Japan\u306E\u30EA\u30A2\u30EB\u30BF\u30A4\u30E0\u30C8\u30EC\u30F3\u30C9
+${externalTrends}
+
+## \u6700\u65B0\u30CB\u30E5\u30FC\u30B9\u8A18\u4E8B
+${articles}
+
+## \u6307\u793A
+- \u4E0A\u8A18\u306ESNS\u30C8\u30EC\u30F3\u30C9\u3068\u30CB\u30E5\u30FC\u30B9\u8A18\u4E8B\u3092\u6A2A\u65AD\u7684\u306B\u5206\u6790\u3057\u3066\u304F\u3060\u3055\u3044
+- \u65E2\u5B58\u30AB\u30C6\u30B4\u30EA\u306B\u307E\u3060\u542B\u307E\u308C\u3066\u3044\u306A\u3044\u65B0\u3057\u3044\u8208\u5473\u30FB\u30D6\u30E9\u30F3\u30C9\u30FB\u30AD\u30FC\u30EF\u30FC\u30C9\u3092\u63D0\u6848\u3057\u3066\u304F\u3060\u3055\u3044
+- SNS\u30C8\u30EC\u30F3\u30C9\u306B\u767B\u5834\u3057\u3066\u3044\u308B\u30C8\u30D4\u30C3\u30AF\u3092\u512A\u5148\u7684\u306B\u53D6\u308A\u4E0A\u3052\u3066\u304F\u3060\u3055\u3044
+- confidence\u306FSNS\u30C8\u30EC\u30F3\u30C9\u3068\u30CB\u30E5\u30FC\u30B9\u4E21\u65B9\u306B\u767B\u5834\u3059\u308B\u3082\u306E\u306F\u9AD8\u3081(80\u4EE5\u4E0A)\u3001\u7247\u65B9\u306E\u307F\u306F\u4E2D\u7A0B\u5EA6(50-79)\u306B\u3057\u3066\u304F\u3060\u3055\u3044
+- type\u306FSNS\u30C8\u30EC\u30F3\u30C9\u306E\u307F\u306B\u51FA\u73FE\u3059\u308B\u3082\u306E\u306F"emerging"\u3001\u30CB\u30E5\u30FC\u30B9\u306B\u3082\u51FA\u308B\u3082\u306E\u306F"mainstream"\u3068\u3057\u3066\u304F\u3060\u3055\u3044
 `;
     SUGGEST_CATEGORY_DETAILS_SCHEMA = {
       type: SchemaType.OBJECT,
@@ -63695,8 +63714,12 @@ var init_GeminiService = __esm({
       /**
        * トレンド分析: 流れてきた最新ニュースから、新しい関心事の兆候を検知。
        */
-      async analyzeTrends(articles, interests) {
-        const prompt = analyzeTrendsPrompt(Object.keys(interests.categories).join(", "), JSON.stringify(articles.slice(0, 30).map((a) => ({ title: a.title, desc: a.desc }))));
+      async analyzeTrends(articles, interests, externalTrends = []) {
+        const prompt = analyzeTrendsPrompt(
+          Object.keys(interests.categories).join(", "),
+          JSON.stringify(articles.slice(0, 30).map((a) => ({ title: a.title, desc: a.desc }))),
+          JSON.stringify(externalTrends)
+        );
         const result = await this.generateStructured(prompt, ANALYZE_TRENDS_SCHEMA, this.primaryModelName, AnalyzeTrendsSchema);
         return result.suggestions;
       }
@@ -132385,6 +132408,119 @@ var init_Article = __esm({
   }
 });
 
+// src/services/ExternalTrendFetcher.ts
+var ExternalTrendFetcher;
+var init_ExternalTrendFetcher = __esm({
+  "src/services/ExternalTrendFetcher.ts"() {
+    init_axios2();
+    init_esm11();
+    ExternalTrendFetcher = class {
+      TIMEOUT = 8e3;
+      HEADERS = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Accept": "application/rss+xml, application/xml, text/xml, text/html, */*",
+        "Accept-Language": "ja-JP,ja;q=0.9,en-US;q=0.8,en;q=0.7"
+      };
+      /**
+       * GoogleトレンドのDaily RSSフィードから日本のトレンドを取得します。
+       * 公式RSS: https://trends.google.com/trending/rss?geo=JP
+       */
+      async fetchGoogleTrends(geo = "JP") {
+        const url3 = `https://trends.google.com/trending/rss?geo=${geo}`;
+        try {
+          const res = await axios_default.get(url3, { timeout: this.TIMEOUT, headers: this.HEADERS });
+          const $2 = load(res.data, { xmlMode: true });
+          const trends = [];
+          $2("item").each((_, el) => {
+            const title = $2(el).find("title").first().text().trim();
+            const traffic = $2(el).find("ht\\:approx_traffic, approx_traffic").text().trim();
+            if (title) {
+              trends.push({ title, source: "Google Trends", trafficVolume: traffic || void 0 });
+            }
+          });
+          return trends.slice(0, 20);
+        } catch (e) {
+          console.warn("[ExternalTrendFetcher] Google Trends fetch failed:", String(e));
+          return [];
+        }
+      }
+      /**
+       * Yahoo Japan の検索トレンドページからトレンドワードを取得します。
+       */
+      async fetchYahooJapanTrends() {
+        try {
+          const res = await axios_default.get("https://search.yahoo.co.jp/realtime/buzznews", {
+            timeout: this.TIMEOUT,
+            headers: this.HEADERS
+          });
+          const $2 = load(res.data);
+          const trends = [];
+          $2('[class*="buzz"], [class*="trend"], .SearchResult, .BuzznewsList li').each((_, el) => {
+            const text3 = $2(el).text().trim().split("\n")[0].trim();
+            if (text3 && text3.length > 1 && text3.length < 60) {
+              trends.push({ title: text3, source: "Yahoo Japan" });
+            }
+          });
+          return trends.slice(0, 15);
+        } catch (e) {
+          console.warn("[ExternalTrendFetcher] Yahoo Japan Trends fetch failed:", String(e));
+          return [];
+        }
+      }
+      /**
+       * X（旧Twitter）のトレンドをNitter公開インスタンス経由で取得します。
+       * Nitterが利用不可の場合はスキップします。
+       */
+      async fetchXTrends(geo = "JP") {
+        const guestTokenUrl = "https://api.twitter.com/1.1/guest/activate.json";
+        const trendsUrl = `https://api.twitter.com/1.1/trends/place.json?id=${geo === "JP" ? 23424856 : 1}`;
+        try {
+          const tokenRes = await axios_default.post(guestTokenUrl, {}, {
+            timeout: this.TIMEOUT,
+            headers: {
+              ...this.HEADERS,
+              "Authorization": "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA",
+              "Content-Type": "application/json"
+            }
+          });
+          const guestToken = tokenRes.data?.guest_token;
+          if (!guestToken) return [];
+          const trendsRes = await axios_default.get(trendsUrl, {
+            timeout: this.TIMEOUT,
+            headers: {
+              ...this.HEADERS,
+              "Authorization": "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA",
+              "x-guest-token": guestToken
+            }
+          });
+          const rawTrends = trendsRes.data?.[0]?.trends ?? [];
+          return rawTrends.slice(0, 20).map((t) => ({
+            title: t.name,
+            source: "X (Twitter)",
+            trafficVolume: t.tweet_volume ? `${t.tweet_volume} tweets` : void 0
+          }));
+        } catch (e) {
+          console.warn("[ExternalTrendFetcher] X Trends fetch failed:", String(e));
+          return [];
+        }
+      }
+      /**
+       * 全ソースからトレンドを並列取得し、まとめて返します。
+       */
+      async fetchAll(geo = "JP") {
+        const [googleTrends, xTrends, yahooTrends] = await Promise.all([
+          this.fetchGoogleTrends(geo),
+          this.fetchXTrends(geo),
+          this.fetchYahooJapanTrends()
+        ]);
+        const all3 = [...xTrends, ...googleTrends, ...yahooTrends];
+        console.log(`[ExternalTrendFetcher] \u53D6\u5F97\u30C8\u30EC\u30F3\u30C9\u6570: X=${xTrends.length}, Google=${googleTrends.length}, Yahoo=${yahooTrends.length}`);
+        return all3;
+      }
+    };
+  }
+});
+
 // src/ScraperFacade.ts
 var ScraperFacade_exports = {};
 __export(ScraperFacade_exports, {
@@ -132399,12 +132535,14 @@ var init_ScraperFacade = __esm({
     init_EnrichmentService();
     init_Article();
     init_GeminiService();
+    init_ExternalTrendFetcher();
     init_normalize();
     ScraperFacade = class {
       feedManager;
       rssFetcher;
       enrichmentService;
       geminiService;
+      externalTrendFetcher;
       /**
        * @param _interestsPath - 未使用（将来の拡張用）
        * @param feedsPath - フィード構成ファイルのパス
@@ -132415,6 +132553,7 @@ var init_ScraperFacade = __esm({
         this.rssFetcher = new RSSFetcher(20);
         this.geminiService = new GeminiService(process.env.GEMINI_API_KEY);
         this.enrichmentService = new EnrichmentService(this.geminiService, dataDir2);
+        this.externalTrendFetcher = new ExternalTrendFetcher();
       }
       /**
        * AIサービス（Gemini）のAPIキーを更新します。
@@ -132527,10 +132666,12 @@ var init_ScraperFacade = __esm({
        */
       async discoverTrends(interests) {
         try {
-          const articles = await this.fetchAndProcessArticles(interests);
-          if (articles.length === 0) return [];
+          const [articles, externalTrends] = await Promise.all([
+            this.fetchAndProcessArticles(interests),
+            this.externalTrendFetcher.fetchAll("JP")
+          ]);
           const topArticles = articles.slice(0, 50).map((a) => ({ title: a.title, desc: a.desc, brand: a.brand }));
-          const suggestions = await this.geminiService.analyzeTrends(topArticles, interests);
+          const suggestions = await this.geminiService.analyzeTrends(topArticles, interests, externalTrends);
           return suggestions;
         } catch (e) {
           console.error(`[ScraperFacade] discoverTrends Error: ${String(e)}`);
@@ -133090,7 +133231,16 @@ async function startBackend() {
   scraper.feedManager = feedManager;
   orchestrator = new NexusOrchestrator2(geminiService);
   const server = fastify({ logger: isDev });
-  await server.register(cors, { origin: "*" });
+  const allowedOrigins = /* @__PURE__ */ new Set([
+    "http://localhost:5173",
+    "http://127.0.0.1:5173"
+  ]);
+  await server.register(cors, {
+    origin: (origin2, cb) => {
+      if (!origin2 || allowedOrigins.has(origin2)) cb(null, true);
+      else cb(new Error("CORS: origin not allowed"), false);
+    }
+  });
   await server.register(nexusRouter2, {
     prefix: "/api/v5",
     scraper,
@@ -133140,23 +133290,11 @@ function createWindow() {
   if (orchestrator && typeof orchestrator.setWebContents === "function") {
     orchestrator.setWebContents(mainWindow.webContents);
   }
-  mainWindow.webContents.on("did-create-window", (childWindow) => {
-    const childMenu = Menu.buildFromTemplate([
-      {
-        label: "Window",
-        submenu: [
-          {
-            label: "Close",
-            accelerator: "CmdOrCtrl+W",
-            role: "close"
-          }
-        ]
-      }
-    ]);
-    childWindow.setMenu(childMenu);
-    if (process.platform !== "darwin") {
-      childWindow.setMenuBarVisibility(false);
+  mainWindow.webContents.setWindowOpenHandler(({ url: url3 }) => {
+    if (url3.startsWith("https://") || url3.startsWith("http://")) {
+      shell.openExternal(url3);
     }
+    return { action: "deny" };
   });
   if (isDev) {
     mainWindow.loadURL("http://localhost:5173");
@@ -133263,7 +133401,34 @@ function setupIpcHandlers() {
     }
   });
   ipcMain.on("open-external", (event, url3) => {
-    shell.openExternal(url3);
+    if (typeof url3 === "string" && (url3.startsWith("https://") || url3.startsWith("http://"))) {
+      shell.openExternal(url3);
+    }
+  });
+  ipcMain.on("open-article", (event, url3) => {
+    if (typeof url3 === "string" && (url3.startsWith("https://") || url3.startsWith("http://"))) {
+      const win = new BrowserWindow({
+        width: 1200,
+        height: 800,
+        autoHideMenuBar: true,
+        webPreferences: {
+          nodeIntegration: false,
+          contextIsolation: true,
+          sandbox: true
+        }
+      });
+      win.setMenu(null);
+      win.loadURL(url3);
+      win.webContents.on("before-input-event", (inputEvent, input) => {
+        if (input.control && input.key.toLowerCase() === "q") {
+          win.close();
+          inputEvent.preventDefault();
+        }
+      });
+    }
+  });
+  ipcMain.handle("get-proposals", async () => {
+    return { proposals: [] };
   });
 }
 app.whenReady().then(async () => {
