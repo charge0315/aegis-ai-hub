@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "build:electron": "npx esbuild electron/main.cjs --bundle --platform=node --target=node20 --outfile=electron/main.bundle.cjs --external:electron --packages=external --loader:.ts=ts",
+    "build:electron": "npx esbuild electron/main.cjs --bundle --platform=node --target=node20 --outfile=electron/main.bundle.cjs --external:electron --external:fastify --external:@fastify/cors --external:@fastify/static --loader:.ts=ts",
     "dist": "npm run build && npm run build:electron && electron-builder",
     "lint": "eslint .",
     "preview": "vite preview",

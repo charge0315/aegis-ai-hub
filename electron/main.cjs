@@ -18,6 +18,25 @@
 const { app, BrowserWindow, ipcMain, globalShortcut, Tray, Menu, shell, nativeImage } = require('electron');
 const path = require('path');
 const fs = require('fs');
+
+// クラッシュロギングの設定（一切の外部モジュールのロード前に実行）
+// app.getPath('userData') の準備が整う前（ready前）のアクセスによるC++アサーション即死を防ぐため、遅延解決します
+let crashLogPath;
+process.on('uncaughtException', (error) => {
+  try {
+    const logPath = crashLogPath || path.join(process.env.USERPROFILE || process.env.HOME || 'C:/Users/Public', 'aegis_crash.log');
+    fs.writeFileSync(logPath, `Uncaught Exception: ${new Date().toISOString()}\n${error.stack || error}\n`);
+  } catch (e) {}
+  app.quit();
+});
+process.on('unhandledRejection', (reason, promise) => {
+  try {
+    const logPath = crashLogPath || path.join(process.env.USERPROFILE || process.env.HOME || 'C:/Users/Public', 'aegis_crash.log');
+    fs.writeFileSync(logPath, `Unhandled Rejection: ${new Date().toISOString()}\nReason: ${reason?.stack || reason}\n`);
+  } catch (e) {}
+  app.quit();
+});
+
 const fastify = require('fastify');
 const cors = require('@fastify/cors');
 
@@ -87,7 +106,7 @@ function setupDataDirectory() {
   return dataDir;
 }
 
-const dataDir = setupDataDirectory();
+let dataDir;
 
 /**
  * バックエンドサービス群の初期化と内部APIサーバーの起動。
@@ -190,8 +209,7 @@ function createWindow() {
     frame: false,
     icon: icon,
     transparent: false, // FancyZones対応のため透明度はオフ
-    backgroundMaterial: 'acrylic', // Windows 11 アクリル透過を有効化
-    backgroundColor: '#00000000', // アクリル効果を活かすため完全に透明に設定
+    backgroundColor: '#121214', // シックなダークモード背景色
     resizable: true, // 明示的に有効化
     hasShadow: true,
     thickFrame: true, // Windowsでのスナップ(FancyZones)対応に必須
@@ -393,6 +411,8 @@ function setupIpcHandlers() {
  * アプリケーションの起動ライフサイクル。
  */
 app.whenReady().then(async () => {
+  crashLogPath = path.join(app.getPath('userData'), 'crash.log');
+  dataDir = setupDataDirectory();
   await startBackend();
   setupIpcHandlers();
 
