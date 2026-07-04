@@ -92,6 +92,7 @@ export interface NexusApiBridge {
   getUsageStats: () => Promise<UsageStats>;
   onUsageUpdate: (callback: (stats: UsageStats) => void) => () => void;
   openExternal: (url: string) => void;
+  openArticle: (url: string) => void;
 }
 
 declare global {

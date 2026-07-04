@@ -63,7 +63,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({ article, index = 0, si
       transition={{ delay: Math.min(index * 0.05, 0.5) }}
       whileHover={{ y: -4 }}
       data-testid="article-card"
-      onClick={() => nexusApi.openExternal(article.link)}
+      onClick={() => nexusApi.openArticle(article.link)}
     >
       {/* Image Section - 視覚的なフック（アンカー）の提供。
           テキストモード（showImages=false）の場合は、情報密度を高めるために空間ごと省略されます。 */}

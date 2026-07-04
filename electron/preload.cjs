@@ -112,6 +112,11 @@ contextBridge.exposeInMainWorld('nexusApi', {
   openExternal: (url) => ipcRenderer.send('open-external', url),
 
   /**
+   * 記事をアプリ内の別ウィンドウ（Webビュー）で安全に開きます。
+   */
+  openArticle: (url) => ipcRenderer.send('open-article', url),
+
+  /**
    * 設定（興味関心）を別の言語に翻訳します。
    */
   translateInterests: (settings) => ipcRenderer.invoke('translate-interests', settings),
