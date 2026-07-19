@@ -67,7 +67,7 @@ export class DiscoveryService {
     console.log("[DiscoveryService] 全カテゴリのフィード先再取得プロセスを開始します...");
 
     // 1. Geminiに日本語フィード候補を問い合わせ
-    let suggestedSites: SuggestedSite[] = [];
+    let suggestedSites: SuggestedSite[];
     try {
       suggestedSites = await this.geminiService.reacquireAllFeeds(interests) as unknown as SuggestedSite[];
       console.log(`[DiscoveryService] AIから ${suggestedSites.length} 件のサイト提案がありました。`);
