@@ -108,6 +108,25 @@ export const nexusRouter = async (fastify: FastifyInstance, options: FastifyPlug
   });
 
   /**
+   * POST /reacquire-all-feeds
+   * 全カテゴリのフィード取得先をGeminiで再取得し、有効なRSSを確認して追加する。
+   */
+  fastify.post('/reacquire-all-feeds', async (_request, reply) => {
+    try {
+      const interests = await settingsManager.getInterests();
+      const evolution = options.evolution;
+      if (!evolution) {
+        throw new Error('Evolution service (DiscoveryService) is not available');
+      }
+      const updatedFeedConfig = await evolution.reacquireAllFeeds(interests);
+      return { success: true, feedConfig: updatedFeedConfig };
+    } catch (error) {
+      console.error('[NexusRouter] Reacquire All Feeds Error:', error);
+      reply.status(500).send({ error: 'Failed to reacquire all feeds', details: String(error) });
+    }
+  });
+
+  /**
    * GET /ui-settings
    * 表示モードやテーマ設定などのUI固有設定を取得する。
    */

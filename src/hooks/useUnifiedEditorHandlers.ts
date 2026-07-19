@@ -127,6 +127,7 @@ export function useUnifiedEditorHandlers({
     restructureStep: profileActions.restructureStep,
     isDirty,
     isTranslating: profileActions.isTranslating,
+    isReacquiring: profileActions.isReacquiring,
 
     // Handlers
     handleDiscoverTrends: trendActions.handleDiscoverTrends,
@@ -146,8 +147,10 @@ export function useUnifiedEditorHandlers({
     handleDeleteCategory: categoryActions.handleDeleteCategory,
     handleUpdateCategory: categoryActions.handleUpdateCategory,
     handleAISuggest: categoryActions.handleAISuggest,
+    handleUpdateFeeds: categoryActions.handleUpdateFeeds,
     handleRestructure: profileActions.handleRestructure,
     handleResetToDefaults: profileActions.handleResetToDefaults,
+    handleReacquireAllFeeds: profileActions.handleReacquireAllFeeds,
     
     // Theme (Passthrough)
     theme, setTheme

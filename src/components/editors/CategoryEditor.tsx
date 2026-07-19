@@ -9,10 +9,12 @@ import {
   X,
   Sparkles,
   RotateCcw,
-  Pencil
+  Pencil,
+  Rss,
+  AlertCircle
 } from 'lucide-react';
 import { GlassPanel } from '../GlassPanel';
-import type { Interests } from '../../models/Schemas';
+import type { NexusSettings } from '../../types';
 import { useTranslation } from '../../hooks/useTranslationHook';
 
 /**
@@ -24,7 +26,7 @@ import { useTranslation } from '../../hooks/useTranslationHook';
  */
 
 interface CategoryEditorProps {
-  draft: { interests: Interests };
+  draft: NexusSettings;
   selectedCategory: string | null;
   setSelectedCategory: (name: string | null) => void;
   isSuggesting: boolean;
@@ -37,7 +39,9 @@ interface CategoryEditorProps {
   handleReorderCategories: (newOrder: string[]) => void;
   handleAISuggest: (field: 'brands' | 'keywords') => Promise<void>;
   handleUpdateCategory: (name: string, field: 'brands' | 'keywords', values: string[]) => void;
+  handleUpdateFeeds: (category: string, urls: string[]) => void;
   customPrompt: (title: string, message: string, defaultValue?: string) => Promise<string | null>;
+  customAlert: (title: string, message: string, type?: 'success' | 'error' | 'warning' | 'info') => Promise<void>;
 }
 
 export const CategoryEditor: React.FC<CategoryEditorProps> = ({
@@ -54,7 +58,9 @@ export const CategoryEditor: React.FC<CategoryEditorProps> = ({
   handleReorderCategories,
   handleAISuggest,
   handleUpdateCategory,
-  customPrompt
+  handleUpdateFeeds,
+  customPrompt,
+  customAlert
 }) => {
   const categoryKeys = Object.keys(draft.interests.categories);
 
@@ -304,6 +310,90 @@ export const CategoryEditor: React.FC<CategoryEditorProps> = ({
                 </div>
               </GlassPanel>
             </div>
+
+            {/* Active Feeds Section: 現在のカテゴリ用のRSSフィード一覧と手動追加・削除 */}
+            <GlassPanel className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="font-bold flex items-center gap-2 text-content-base">
+                  <Rss size={18} className="text-primary" />
+                  Active Feed Sources
+                </h3>
+                <span className="text-[10px] text-content-muted font-mono">
+                  {draft.feedConfig[selectedCategory]?.active?.length || 0} Configured
+                </span>
+              </div>
+              
+              <div className="space-y-3">
+                {draft.feedConfig[selectedCategory]?.active && draft.feedConfig[selectedCategory].active.length > 0 ? (
+                  <div className="grid grid-cols-1 gap-2">
+                    {draft.feedConfig[selectedCategory].active.map((url, idx) => {
+                      const failures = draft.feedConfig[selectedCategory]?.failures?.[url] || 0;
+                      return (
+                        <div 
+                          key={idx}
+                          className="flex items-center justify-between p-3 bg-white/5 border border-white/5 hover:border-white/10 rounded-xl transition-all"
+                        >
+                          <div className="flex items-center gap-3 overflow-hidden mr-4">
+                            <Rss size={14} className={failures > 0 ? "text-alert shrink-0 animate-pulse" : "text-content-muted shrink-0"} />
+                            <span className="text-sm font-mono text-content-base truncate" title={url}>
+                              {url}
+                            </span>
+                            {failures > 0 && (
+                              <span className="flex items-center gap-1 text-[10px] font-bold text-alert shrink-0 bg-alert/10 px-2 py-0.5 rounded-full border border-alert/20">
+                                <AlertCircle size={10} />
+                                {failures} failures
+                              </span>
+                            )}
+                          </div>
+                          
+                          <button
+                            onClick={() => {
+                              const currentUrls = draft.feedConfig[selectedCategory]?.active || [];
+                              const newUrls = currentUrls.filter((_, i) => i !== idx);
+                              handleUpdateFeeds(selectedCategory, newUrls);
+                            }}
+                            className="p-1 text-content-muted hover:text-alert transition-colors"
+                            title="Remove Feed"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-xs text-content-muted italic p-4 bg-white/5 rounded-xl border border-white/5 border-dashed text-center">
+                    No active feed sources configured for this category. Click below to add one.
+                  </p>
+                )}
+                
+                <div className="pt-2 flex justify-start">
+                  <button
+                    onClick={async () => {
+                      const url = await customPrompt('Add Feed Source', 'Enter RSS/Atom feed URL (e.g. https://example.com/feed.xml):');
+                      if (url) {
+                        try {
+                          new URL(url);
+                          const currentUrls = draft.feedConfig[selectedCategory]?.active || [];
+                          if (currentUrls.includes(url)) {
+                            await customAlert('Duplicate URL', 'This URL is already registered.', 'warning');
+                            return;
+                          }
+                          const newUrls = [...currentUrls, url];
+                          handleUpdateFeeds(selectedCategory, newUrls);
+                        } catch {
+                          await customAlert('Invalid Format', 'Please enter a valid HTTP/HTTPS URL.', 'error');
+                        }
+                      }
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl text-xs font-bold transition-all active:scale-95"
+                  >
+                    <Plus size={14} />
+                    Add Feed Source
+                  </button>
+                </div>
+              </div>
+            </GlassPanel>
 
             {/* AI Reasoning: なぜこのカテゴリが提案・設定されたかの背景を提示 */}
             <div className="p-6 bg-primary/5 border border-primary/20 rounded-2xl">

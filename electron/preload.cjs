@@ -78,6 +78,11 @@ contextBridge.exposeInMainWorld('nexusApi', {
   resetToDefaults: (lang) => ipcRenderer.invoke('reset-to-defaults', lang),
 
   /**
+   * 全カテゴリのフィード先をGeminiで再取得します。
+   */
+  reacquireAllFeeds: () => ipcRenderer.invoke('reacquire-all-feeds'),
+
+  /**
    * テーマや言語設定などのUI表示に関する永続化設定を操作します。
    */
   getUiSettings: () => ipcRenderer.invoke('get-ui-settings'),

@@ -32,6 +32,8 @@ interface SystemSettingsProps {
   setTheme: (theme: UiSettings['theme']) => void;
   autoLaunch: boolean;
   setAutoLaunch: (enabled: boolean) => void;
+  isReacquiring: boolean;
+  handleReacquireAllFeeds: () => Promise<void>;
 }
 
 export const SystemSettings: React.FC<SystemSettingsProps> = ({
@@ -44,7 +46,9 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
   theme,
   setTheme,
   autoLaunch,
-  setAutoLaunch
+  setAutoLaunch,
+  isReacquiring,
+  handleReacquireAllFeeds
 }) => {
   return (
     <motion.div
@@ -180,13 +184,25 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
           <div className="p-3 bg-alert/10 text-alert rounded-2xl">
             <RotateCcw size={24} />
           </div>
-          <div className="flex-grow">
-            <h3 className="text-xl font-bold text-content-base">Factory Reset</h3>
-            <p className="text-sm text-content-muted mt-1">Restore the default intelligence profile and feed sources.</p>
-            <div className="mt-6">
+          <div className="flex-grow space-y-6">
+            <div>
+              <h3 className="text-xl font-bold text-content-base">Advanced System Actions</h3>
+              <p className="text-sm text-content-muted mt-1">Perform maintenance operations on the system database and feed configurations.</p>
+            </div>
+            
+            <div className="flex flex-wrap gap-4">
+              <button
+                onClick={handleReacquireAllFeeds}
+                disabled={isSaving || isReacquiring}
+                className="flex items-center gap-2 px-6 py-2.5 bg-primary text-white rounded-xl text-sm font-bold shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all active:scale-95 disabled:opacity-50"
+              >
+                <Sparkles size={18} />
+                {isReacquiring ? 'Reacquiring...' : 'Reacquire All Feed Sources'}
+              </button>
+
               <button
                 onClick={handleResetToDefaults}
-                disabled={isSaving}
+                disabled={isSaving || isReacquiring}
                 className="flex items-center gap-2 px-6 py-2.5 bg-alert text-white rounded-xl text-sm font-bold shadow-lg shadow-alert/20 hover:shadow-alert/40 transition-all active:scale-95 disabled:opacity-50"
               >
                 <RotateCcw size={18} />

@@ -19,6 +19,7 @@ describe('DiscoveryService', () => {
       getRestructureProposal: vi.fn(),
       getEvolutionProposals: vi.fn().mockResolvedValue({ sites: [], brands: [], keywords: [] }),
       updateApiKey: vi.fn(),
+      reacquireAllFeeds: vi.fn().mockResolvedValue([]),
     } as unknown as vi.Mocked<GeminiService>;
 
     mockRSSFetcher = {
@@ -95,6 +96,42 @@ describe('DiscoveryService', () => {
 
       expect(result.sites).toHaveLength(1);
       expect(result.sites[0].name).toBe('Google News Fallback');
+    });
+  });
+
+  describe('reacquireAllFeeds', () => {
+    it('should query Gemini, validate URLs, update feed config for successful ones, and preserve ones that failed', async () => {
+      const interests: Interests = {
+        categories: {
+          'AI': { emoji: '🤖', brands: [], keywords: [], score: 5 },
+          'NoNewFeeds': { emoji: '❌', brands: [], keywords: [], score: 5 }
+        }
+      };
+
+      mockFeedManager.config = {
+        'AI': { active: ['https://old-ai.com/rss'], pool: [], failures: {} },
+        'NoNewFeeds': { active: ['https://old-nonew.com/rss'], pool: [], failures: {} }
+      };
+      mockFeedManager.saveConfig = vi.fn().mockResolvedValue(undefined);
+
+      mockGeminiService.reacquireAllFeeds.mockResolvedValue([
+        { name: 'New AI Source', url: 'https://new-ai.com/rss', category: 'AI' },
+        { name: 'Failed Source', url: 'https://failed.com/rss', category: 'AI' },
+        { name: 'NoNew Source', url: 'https://new-nonew-failed.com/rss', category: 'NoNewFeeds' }
+      ]);
+
+      mockRSSFetcher.fetch.mockImplementation(async (url: string) => {
+        if (url === 'https://new-ai.com/rss') {
+          return [{ title: 'New Article', link: 'l1', content: 'c1', date: new Date().toISOString(), category: 'AI', brand: 'B', score: 10, language: 'en', img: null }];
+        }
+        throw new Error('Fetch failed');
+      });
+
+      const updatedConfig = await discoveryService.reacquireAllFeeds(interests);
+
+      expect(updatedConfig['AI'].active).toEqual(['https://new-ai.com/rss']);
+      expect(updatedConfig['NoNewFeeds'].active).toEqual(['https://old-nonew.com/rss']);
+      expect(mockFeedManager.saveConfig).toHaveBeenCalled();
     });
   });
 });

@@ -93,6 +93,7 @@ export interface NexusApiBridge {
   onUsageUpdate: (callback: (stats: UsageStats) => void) => () => void;
   openExternal: (url: string) => void;
   openArticle: (url: string) => void;
+  reacquireAllFeeds: () => Promise<{ success: boolean; feedConfig: FeedConfig }>;
 }
 
 declare global {

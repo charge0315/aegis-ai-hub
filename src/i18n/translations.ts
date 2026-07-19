@@ -72,7 +72,10 @@ export const translations = {
       invalidNumber: '無効な数値',
       restructureComplete: '再構築完了',
       restructureFailed: '再構築失敗',
-      restoreDefaultProfile: 'デフォルトに戻す'
+      restoreDefaultProfile: 'デフォルトに戻す',
+      reacquireAllFeeds: 'フィード先全再取得',
+      reacquireComplete: '再取得完了',
+      reacquireFailed: '再取得失敗'
     },
     handlers: {
       apiKeySuccess: 'APIキーを保存しました。',
@@ -108,7 +111,9 @@ export const translations = {
       restructurePhase2: 'フィードの再マッピングと検証を実行中...',
       restructureSuccess: 'プロファイルの再構築が完了しました。',
       resetConfirm: '現在の設定を全て破棄し、工場出荷時のデフォルト設定に戻します。よろしいですか？（この操作は取り消せません）',
-      resetSuccess: '設定をリセットしました。'
+      resetSuccess: '設定をリセットしました。',
+      reacquireAllFeedsConfirm: 'すべてのカテゴリのフィード先（RSS）をGeminiで再検索し、RSSの有効性を検証した上で追加します。この処理には数分かかる場合があります。実行しますか？',
+      reacquireSuccess: 'すべてのカテゴリのフィード先を再取得しました。有効なフィードが再設定されました。'
     },
     usage: {
       loading: '統計データを読み込み中...',
@@ -192,7 +197,10 @@ export const translations = {
       invalidNumber: 'Invalid Number',
       restructureComplete: 'Restructure Complete',
       restructureFailed: 'Restructure Failed',
-      restoreDefaultProfile: 'Restore Defaults'
+      restoreDefaultProfile: 'Restore Defaults',
+      reacquireAllFeeds: 'Reacquire All Feeds',
+      reacquireComplete: 'Reacquire Complete',
+      reacquireFailed: 'Reacquire Failed'
     },
     handlers: {
       apiKeySuccess: 'API Key saved successfully.',
@@ -228,7 +236,9 @@ export const translations = {
       restructurePhase2: 'Remapping feeds and validating...',
       restructureSuccess: 'Profile restructure complete.',
       resetConfirm: 'Are you sure you want to discard all settings and restore factory defaults?',
-      resetSuccess: 'Settings have been reset.'
+      resetSuccess: 'Settings have been reset.',
+      reacquireAllFeedsConfirm: 'AI will re-search and discover new RSS feeds for all categories using Gemini, and register validated ones. This may take a few minutes. Continue?',
+      reacquireSuccess: 'Successfully reacquired feed sources for all categories.'
     },
     usage: {
       loading: 'Loading stats...',

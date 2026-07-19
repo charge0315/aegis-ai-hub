@@ -206,10 +206,24 @@ export function useCategoryActions({
     });
   }, [setDraft]);
 
+  const handleUpdateFeeds = useCallback((category: string, urls: string[]) => {
+    setDraft(prev => {
+      const newFeedConfig = { ...(prev.feedConfig || {}) };
+      if (!newFeedConfig[category]) {
+        newFeedConfig[category] = { active: [], pool: [], failures: {} };
+      }
+      newFeedConfig[category] = {
+        ...newFeedConfig[category],
+        active: urls
+      };
+      return { ...prev, feedConfig: newFeedConfig };
+    });
+  }, [setDraft]);
+
   return {
     selectedCategory, setSelectedCategory,
     isSuggesting, isSuggestingBrands, isSuggestingKeywords,
     handleAddCategory, handleRenameCategory, handleDeleteCategory, handleUpdateCategory, handleAISuggest,
-    handleReorderCategories, handleEditEmoji, handleKeywordToggle, handleBrandToggle
+    handleReorderCategories, handleEditEmoji, handleKeywordToggle, handleBrandToggle, handleUpdateFeeds
   };
 }

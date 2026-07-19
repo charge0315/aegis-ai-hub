@@ -2,6 +2,7 @@ import type { GeminiService } from './GeminiService';
 import type { RSSFetcher } from './RSSFetcher';
 import type { FeedManager } from './FeedManager';
 import type { Interests, FeedConfig, InterestCategory } from '../models/Schemas';
+import { normalizeCategoryName } from '../utils/normalize';
 
 interface SuggestedSite {
   name: string;
@@ -56,6 +57,81 @@ export class DiscoveryService {
    */
   async translateInterests(interests: Interests): Promise<{ interests: Interests, feedConfig: FeedConfig }> {
     return await this.geminiService.translateInterests(interests);
+  }
+
+  /**
+   * すべてのカテゴリのフィード先をGeminiで再取得し、有効なRSSを確認して更新します。
+   * 有効なものが取得できないカテゴリは、以前のフィード先を維持します。
+   */
+  async reacquireAllFeeds(interests: Interests): Promise<FeedConfig> {
+    console.log("[DiscoveryService] 全カテゴリのフィード先再取得プロセスを開始します...");
+
+    // 1. Geminiに日本語フィード候補を問い合わせ
+    let suggestedSites: SuggestedSite[] = [];
+    try {
+      suggestedSites = await this.geminiService.reacquireAllFeeds(interests) as unknown as SuggestedSite[];
+      console.log(`[DiscoveryService] AIから ${suggestedSites.length} 件のサイト提案がありました。`);
+    } catch (err) {
+      console.error("[DiscoveryService] Geminiによるフィード探索に失敗しました:", err);
+      return this.feedManager.config;
+    }
+
+    // 2. 提案されたURLを検証する（並列実行）
+    const validSitesByCategory: Record<string, string[]> = {};
+    const sitesToValidate = suggestedSites.filter(s => s && s.url && s.category);
+
+    const mapToCat = (name: string): string | null => {
+      if (interests.categories[name]) return name;
+      const clean = normalizeCategoryName(name);
+      for (const key of Object.keys(interests.categories)) {
+        if (normalizeCategoryName(key) === clean) return key;
+      }
+      return null;
+    };
+
+    await Promise.all(sitesToValidate.map(async (site) => {
+      const mappedCategory = mapToCat(site.category);
+      if (!mappedCategory) return;
+
+      try {
+        const items = await this.rssFetcher.fetch(site.url);
+        if (items && items.length > 0) {
+          if (!validSitesByCategory[mappedCategory]) {
+            validSitesByCategory[mappedCategory] = [];
+          }
+          if (!validSitesByCategory[mappedCategory].includes(site.url)) {
+            validSitesByCategory[mappedCategory].push(site.url);
+          }
+        }
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : String(e);
+        console.log(`[DiscoveryService] NG: ${site.name} (${site.url}) - ${msg}`);
+      }
+    }));
+
+    // 3. 各カテゴリについて、新しい有効フィードがあれば置き換え、無ければ前回のものを残す
+    const currentConfig = { ...this.feedManager.config };
+    for (const category of Object.keys(interests.categories)) {
+      const newUrls = validSitesByCategory[category] || [];
+      if (newUrls.length > 0) {
+        currentConfig[category] = {
+          active: newUrls,
+          pool: [],
+          failures: {}
+        };
+        console.log(`[DiscoveryService] カテゴリ [${category}] のフィードを再設定しました: ${newUrls.join(', ')}`);
+      } else {
+        console.log(`[DiscoveryService] カテゴリ [${category}] は有効な新しいフィードが見つからなかったため、既存の設定を維持します。`);
+        if (!currentConfig[category]) {
+          currentConfig[category] = { active: [], pool: [], failures: {} };
+        }
+      }
+    }
+
+    this.feedManager.config = currentConfig;
+    await this.feedManager.saveConfig();
+
+    return this.feedManager.config;
   }
 
   /**
