@@ -215,6 +215,15 @@ export class GeminiService {
   }
 
   /**
+   * 各カテゴリについて日本語のRSS/Atomフィード候補を探索します。
+   */
+  async reacquireAllFeeds(interests: Interests): Promise<z.infer<typeof AiSchemas.DiscoverSitesSchema>['sites']> {
+    const prompt = Prompts.reacquireAllFeedsPrompt(JSON.stringify(interests.categories));
+    const result = await this.generateStructured<z.infer<typeof AiSchemas.DiscoverSitesSchema>>(prompt, Prompts.DISCOVER_SITES_SCHEMA, this.primaryModelName, AiSchemas.DiscoverSitesSchema);
+    return result.sites;
+  }
+
+  /**
    * グローバル展開のための英語圏ソースの探索。
    */
   async discoverEnglishSites(interests: Interests, targetCategories: string[]): Promise<z.infer<typeof AiSchemas.DiscoverEnglishSitesSchema>['sites']> {

@@ -317,6 +317,13 @@ function setupIpcHandlers() {
     return await discoveryService.translateInterests(settings);
   });
 
+  // 全カテゴリのフィード先再取得
+  ipcMain.handle('reacquire-all-feeds', async () => {
+    const interests = await settingsManager.getInterests();
+    const updatedFeedConfig = await discoveryService.reacquireAllFeeds(interests);
+    return { success: true, feedConfig: updatedFeedConfig };
+  });
+
   // APIキー管理
   ipcMain.handle('get-api-key', async () => {
     return await settingsManager.getApiKey();

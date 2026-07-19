@@ -16608,7 +16608,7 @@ var init_dist = __esm({
 });
 
 // src/services/prompts/GeminiPrompts.ts
-var CURATE_SCHEMA, curatePrompt, EVOLUTION_SCHEMA, evolutionPrompt, FALLBACK_EVOLUTION_SCHEMA, fallbackEvolutionPrompt, RESTRUCTURE_SCHEMA, restructurePrompt, DISCOVER_SITES_SCHEMA, discoverSitesPrompt, DISCOVER_ENGLISH_SITES_SCHEMA, discoverEnglishSitesPrompt, TRANSLATE_ARTICLES_SCHEMA, translateArticlesPrompt, ANALYZE_TRENDS_SCHEMA, analyzeTrendsPrompt, SUGGEST_CATEGORY_DETAILS_SCHEMA, suggestCategoryDetailsPrompt, TRANSLATE_INTERESTS_SCHEMA, translateInterestsPrompt;
+var CURATE_SCHEMA, curatePrompt, EVOLUTION_SCHEMA, evolutionPrompt, FALLBACK_EVOLUTION_SCHEMA, fallbackEvolutionPrompt, RESTRUCTURE_SCHEMA, restructurePrompt, DISCOVER_SITES_SCHEMA, discoverSitesPrompt, reacquireAllFeedsPrompt, DISCOVER_ENGLISH_SITES_SCHEMA, discoverEnglishSitesPrompt, TRANSLATE_ARTICLES_SCHEMA, translateArticlesPrompt, ANALYZE_TRENDS_SCHEMA, analyzeTrendsPrompt, SUGGEST_CATEGORY_DETAILS_SCHEMA, suggestCategoryDetailsPrompt, TRANSLATE_INTERESTS_SCHEMA, translateInterestsPrompt;
 var init_GeminiPrompts = __esm({
   "src/services/prompts/GeminiPrompts.ts"() {
     init_dist();
@@ -16779,6 +16779,12 @@ var init_GeminiPrompts = __esm({
     };
     discoverSitesPrompt = (interests) => `
 \u4EE5\u4E0B\u306E\u8208\u5473\u8A2D\u5B9A\u306B\u5408\u81F4\u3059\u308B\u3001\u65B0\u3057\u3044\u30CB\u30E5\u30FC\u30B9\u30BD\u30FC\u30B9(RSS/Atom)\u3092\u63D0\u6848\u3057\u3066\u304F\u3060\u3055\u3044\u3002
+\u8208\u5473\u8A2D\u5B9A: ${interests}
+`;
+    reacquireAllFeedsPrompt = (interests) => `
+\u4EE5\u4E0B\u306E\u8208\u5473\u8A2D\u5B9A\u30AB\u30C6\u30B4\u30EA\u306E\u305D\u308C\u305E\u308C\u306B\u3064\u3044\u3066\u3001\u305D\u308C\u306B\u5408\u81F4\u3059\u308B\u4FE1\u983C\u6027\u306E\u9AD8\u3044\u65E5\u672C\u8A9E\u306ERSS/Atom\u30D5\u30A3\u30FC\u30C9\u306EURL\u3092\u63D0\u6848\u3057\u3066\u304F\u3060\u3055\u3044\u3002
+\u5FC5\u305A\u300C\u65E5\u672C\u8A9E\u3067\u66F8\u304B\u308C\u305F\u30B5\u30A4\u30C8\u300D\u306E\u307F\u3092\u63D0\u6848\u3057\u3001\u5404\u30AB\u30C6\u30B4\u30EA\u306B\u3064\u3044\u3066\u8907\u6570\uFF083\u301C5\u4EF6\uFF09\u5019\u88DC\u3092\u6319\u3052\u3066\u304F\u3060\u3055\u3044\u3002
+
 \u8208\u5473\u8A2D\u5B9A: ${interests}
 `;
     DISCOVER_ENGLISH_SITES_SCHEMA = {
@@ -17182,6 +17188,14 @@ var init_GeminiService = __esm({
         return result.sites;
       }
       /**
+       * 各カテゴリについて日本語のRSS/Atomフィード候補を探索します。
+       */
+      async reacquireAllFeeds(interests) {
+        const prompt = reacquireAllFeedsPrompt(JSON.stringify(interests.categories));
+        const result = await this.generateStructured(prompt, DISCOVER_SITES_SCHEMA, this.primaryModelName, DiscoverSitesSchema);
+        return result.sites;
+      }
+      /**
        * グローバル展開のための英語圏ソースの探索。
        */
       async discoverEnglishSites(interests, targetCategories) {
@@ -17382,6 +17396,7 @@ __export(DiscoveryService_exports, {
 var DiscoveryService;
 var init_DiscoveryService = __esm({
   "src/services/DiscoveryService.ts"() {
+    init_normalize();
     DiscoveryService = class {
       geminiService;
       rssFetcher;
@@ -17404,6 +17419,69 @@ var init_DiscoveryService = __esm({
        */
       async translateInterests(interests) {
         return await this.geminiService.translateInterests(interests);
+      }
+      /**
+       * すべてのカテゴリのフィード先をGeminiで再取得し、有効なRSSを確認して更新します。
+       * 有効なものが取得できないカテゴリは、以前のフィード先を維持します。
+       */
+      async reacquireAllFeeds(interests) {
+        console.log("[DiscoveryService] \u5168\u30AB\u30C6\u30B4\u30EA\u306E\u30D5\u30A3\u30FC\u30C9\u5148\u518D\u53D6\u5F97\u30D7\u30ED\u30BB\u30B9\u3092\u958B\u59CB\u3057\u307E\u3059...");
+        let suggestedSites = [];
+        try {
+          suggestedSites = await this.geminiService.reacquireAllFeeds(interests);
+          console.log(`[DiscoveryService] AI\u304B\u3089 ${suggestedSites.length} \u4EF6\u306E\u30B5\u30A4\u30C8\u63D0\u6848\u304C\u3042\u308A\u307E\u3057\u305F\u3002`);
+        } catch (err) {
+          console.error("[DiscoveryService] Gemini\u306B\u3088\u308B\u30D5\u30A3\u30FC\u30C9\u63A2\u7D22\u306B\u5931\u6557\u3057\u307E\u3057\u305F:", err);
+          return this.feedManager.config;
+        }
+        const validSitesByCategory = {};
+        const sitesToValidate = suggestedSites.filter((s) => s && s.url && s.category);
+        const mapToCat = (name) => {
+          if (interests.categories[name]) return name;
+          const clean = normalizeCategoryName(name);
+          for (const key of Object.keys(interests.categories)) {
+            if (normalizeCategoryName(key) === clean) return key;
+          }
+          return null;
+        };
+        await Promise.all(sitesToValidate.map(async (site) => {
+          const mappedCategory = mapToCat(site.category);
+          if (!mappedCategory) return;
+          try {
+            const items = await this.rssFetcher.fetch(site.url);
+            if (items && items.length > 0) {
+              if (!validSitesByCategory[mappedCategory]) {
+                validSitesByCategory[mappedCategory] = [];
+              }
+              if (!validSitesByCategory[mappedCategory].includes(site.url)) {
+                validSitesByCategory[mappedCategory].push(site.url);
+              }
+            }
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : String(e);
+            console.log(`[DiscoveryService] NG: ${site.name} (${site.url}) - ${msg}`);
+          }
+        }));
+        const currentConfig = { ...this.feedManager.config };
+        for (const category of Object.keys(interests.categories)) {
+          const newUrls = validSitesByCategory[category] || [];
+          if (newUrls.length > 0) {
+            currentConfig[category] = {
+              active: newUrls,
+              pool: [],
+              failures: {}
+            };
+            console.log(`[DiscoveryService] \u30AB\u30C6\u30B4\u30EA [${category}] \u306E\u30D5\u30A3\u30FC\u30C9\u3092\u518D\u8A2D\u5B9A\u3057\u307E\u3057\u305F: ${newUrls.join(", ")}`);
+          } else {
+            console.log(`[DiscoveryService] \u30AB\u30C6\u30B4\u30EA [${category}] \u306F\u6709\u52B9\u306A\u65B0\u3057\u3044\u30D5\u30A3\u30FC\u30C9\u304C\u898B\u3064\u304B\u3089\u306A\u304B\u3063\u305F\u305F\u3081\u3001\u65E2\u5B58\u306E\u8A2D\u5B9A\u3092\u7DAD\u6301\u3057\u307E\u3059\u3002`);
+            if (!currentConfig[category]) {
+              currentConfig[category] = { active: [], pool: [], failures: {} };
+            }
+          }
+        }
+        this.feedManager.config = currentConfig;
+        await this.feedManager.saveConfig();
+        return this.feedManager.config;
       }
       /**
        * APIキーを更新します。
@@ -85785,6 +85863,20 @@ var init_NexusRouter = __esm({
           reply.status(500).send({ error: "Failed to restructure categories", details: String(error51) });
         }
       });
+      fastify2.post("/reacquire-all-feeds", async (_request, reply) => {
+        try {
+          const interests = await settingsManager2.getInterests();
+          const evolution = options.evolution;
+          if (!evolution) {
+            throw new Error("Evolution service (DiscoveryService) is not available");
+          }
+          const updatedFeedConfig = await evolution.reacquireAllFeeds(interests);
+          return { success: true, feedConfig: updatedFeedConfig };
+        } catch (error51) {
+          console.error("[NexusRouter] Reacquire All Feeds Error:", error51);
+          reply.status(500).send({ error: "Failed to reacquire all feeds", details: String(error51) });
+        }
+      });
       fastify2.get("/ui-settings", async () => {
         return await settingsManager2.getUiSettings();
       });
@@ -86860,6 +86952,11 @@ function setupIpcHandlers() {
   });
   ipcMain.handle("translate-interests", async (event, settings) => {
     return await discoveryService.translateInterests(settings);
+  });
+  ipcMain.handle("reacquire-all-feeds", async () => {
+    const interests = await settingsManager.getInterests();
+    const updatedFeedConfig = await discoveryService.reacquireAllFeeds(interests);
+    return { success: true, feedConfig: updatedFeedConfig };
   });
   ipcMain.handle("get-api-key", async () => {
     return await settingsManager.getApiKey();

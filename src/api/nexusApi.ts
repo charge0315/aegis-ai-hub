@@ -172,6 +172,18 @@ export const nexusApi = {
     return await res.json();
   },
 
+  /** 全カテゴリのフィード先をGeminiで再取得する。 */
+  async reacquireAllFeeds(): Promise<{ success: boolean; feedConfig: FeedConfig }> {
+    if (window.nexusApi?.reacquireAllFeeds && !isE2E()) {
+      return await window.nexusApi.reacquireAllFeeds();
+    }
+    const res = await fetch(`${this.getBackendUrl()}/api/v5/reacquire-all-feeds`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    return await res.json();
+  },
+
   /** APIキーをセキュアに取得する（Electron環境のみ推奨）。 */
   async getApiKey(): Promise<string> {
     if (window.nexusApi?.getApiKey && !isE2E()) {

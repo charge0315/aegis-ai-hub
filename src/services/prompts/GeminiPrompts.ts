@@ -205,6 +205,13 @@ export const discoverSitesPrompt = (interests: string) => `
 興味設定: ${interests}
 `;
 
+export const reacquireAllFeedsPrompt = (interests: string) => `
+以下の興味設定カテゴリのそれぞれについて、それに合致する信頼性の高い日本語のRSS/AtomフィードのURLを提案してください。
+必ず「日本語で書かれたサイト」のみを提案し、各カテゴリについて複数（3〜5件）候補を挙げてください。
+
+興味設定: ${interests}
+`;
+
 // 6. Discover English Sites (英語サイト探索)
 export const DISCOVER_ENGLISH_SITES_SCHEMA: ResponseSchema = {
   type: SchemaType.OBJECT,

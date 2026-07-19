@@ -89,10 +89,13 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
     handleRenameCategory,
     handleEditEmoji,
     handleDeleteCategory,
-    handleUpdateCategory,
+    handleUpdateCategory: handleUpdateCategory,
     handleAISuggest,
+    handleUpdateFeeds,
     handleRestructure,
-    handleResetToDefaults
+    handleResetToDefaults,
+    isReacquiring,
+    handleReacquireAllFeeds
   } = useUnifiedEditorHandlers({
     currentSettings,
     onSave,
@@ -212,7 +215,9 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
               handleReorderCategories={handleReorderCategories}
               handleAISuggest={handleAISuggest}
               handleUpdateCategory={handleUpdateCategory}
+              handleUpdateFeeds={handleUpdateFeeds}
               customPrompt={customPrompt}
+              customAlert={customAlert}
             />
           )}
 
@@ -255,6 +260,8 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
               setTheme={setTheme}
               autoLaunch={autoLaunch}
               setAutoLaunch={setAutoLaunch}
+              isReacquiring={isReacquiring}
+              handleReacquireAllFeeds={handleReacquireAllFeeds}
             />
           )}
           {activeTab === 'usage' && (

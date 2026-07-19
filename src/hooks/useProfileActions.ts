@@ -50,6 +50,7 @@ export function useProfileActions({
   const [isSaving, setIsSaving] = useState(false);
   const [isTranslating, setIsTranslating] = useState(false);
   const [restructureStep, setRestructureStep] = useState<string | null>(null);
+  const [isReacquiring, setIsReacquiring] = useState(false);
 
   const handleSave = useCallback(async () => {
     setIsSaving(true);
@@ -135,5 +136,46 @@ export function useProfileActions({
     }
   }, [customConfirm, customAlert, language, t, handleError]);
 
-  return { isSaving, isTranslating, restructureStep, handleSave, handleRestructure, handleResetToDefaults, handleReset: () => setDraft(currentSettings) };
+  const handleReacquireAllFeeds = useCallback(async () => {
+    if (!apiKey) {
+      await customAlert(t.dialog.apiKeyRequired, t.handlers.apiKeyRequiredSimple, 'warning');
+      setActiveTab('system');
+      return;
+    }
+
+    const confirmed = await customConfirm(
+      t.dialog.reacquireAllFeeds || 'フィード先全再取得',
+      t.handlers.reacquireAllFeedsConfirm || 'すべてのカテゴリのフィード先を再取得しますか？'
+    );
+    if (!confirmed) return;
+
+    setIsReacquiring(true);
+    try {
+      const result = await nexusApi.reacquireAllFeeds();
+      if (result.success) {
+        setDraft(prev => ({
+          ...prev,
+          feedConfig: result.feedConfig
+        }));
+        await customAlert(
+          t.dialog.reacquireComplete || '再取得完了',
+          t.handlers.reacquireSuccess || 'フィード先を再取得しました。',
+          'success'
+        );
+        // 設定を保存する
+        await onSave({
+          ...draft,
+          feedConfig: result.feedConfig
+        });
+      } else {
+        throw new Error('Reacquire failed');
+      }
+    } catch (err) {
+      await handleError(err, t.dialog.reacquireFailed || '再取得失敗', 'Failed to reacquire feeds');
+    } finally {
+      setIsReacquiring(false);
+    }
+  }, [apiKey, customAlert, customConfirm, onSave, draft, t, setDraft, handleError, setActiveTab]);
+
+  return { isSaving, isTranslating, restructureStep, isReacquiring, handleSave, handleRestructure, handleResetToDefaults, handleReacquireAllFeeds, handleReset: () => setDraft(currentSettings) };
 }
