@@ -69,6 +69,7 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
   // Sync from props
   useEffect(() => {
     if (credentials) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLocalCreds(credentials);
     }
   }, [credentials]);

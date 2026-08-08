@@ -55,12 +55,15 @@ export class OpenAiCompatibleProvider implements AiProvider {
       }
 
       return JSON.parse(text) as T;
-    } catch (error: any) {
-      const apiErrorMsg = error.response?.data?.error?.message || error.message;
+    } catch (error: unknown) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const err = error as any;
+      const apiErrorMsg = err.response?.data?.error?.message || err.message;
       throw new Error(`OpenAI-compatible request failed: ${apiErrorMsg}`, { cause: error });
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private convertGeminiSchemaToJsonSchema(schema: any): any {
     if (!schema) return undefined;
     
@@ -73,6 +76,7 @@ export class OpenAiCompatibleProvider implements AiProvider {
       'ARRAY': 'array'
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const jsonSchema: any = {};
     
     if (schema.type) {

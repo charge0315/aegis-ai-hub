@@ -59,18 +59,22 @@ export class AnthropicProvider implements AiProvider {
         throw new Error("Invalid Anthropic API response format.");
       }
 
-      const toolUse = content.find((item: any) => item.type === 'tool_use');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const toolUse = content.find((item: any) => (item as Record<string, any>).type === 'tool_use') as Record<string, any> | undefined;
       if (!toolUse || toolUse.name !== 'structured_output') {
         throw new Error("Anthropic did not call the expected structured output tool.");
       }
 
       return toolUse.input as T;
-    } catch (error: any) {
-      const apiErrorMsg = error.response?.data?.error?.message || error.message;
+    } catch (error: unknown) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const err = error as any;
+      const apiErrorMsg = err.response?.data?.error?.message || err.message;
       throw new Error(`Anthropic API request failed: ${apiErrorMsg}`, { cause: error });
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private convertGeminiSchemaToJsonSchema(schema: any): any {
     if (!schema) return undefined;
     
@@ -83,6 +87,7 @@ export class AnthropicProvider implements AiProvider {
       'ARRAY': 'array'
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const jsonSchema: any = {};
     
     if (schema.type) {

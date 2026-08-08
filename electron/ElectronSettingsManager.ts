@@ -38,7 +38,7 @@ export class ElectronSettingsManager extends SettingsManager {
       // 各プロバイダーの API キーの復号処理
       const providers = ['google', 'anthropic', 'openai'] as const;
       for (const provider of providers) {
-        let key = creds[provider]?.apiKey;
+        const key = creds[provider]?.apiKey;
         if (key && safeStorage.isEncryptionAvailable()) {
           if (key.startsWith('enc:')) {
             try {
@@ -57,7 +57,7 @@ export class ElectronSettingsManager extends SettingsManager {
       }
 
       // 互換性用の古い geminiApiKey の復号処理
-      let oldKey = creds.geminiApiKey;
+      const oldKey = creds.geminiApiKey;
       if (oldKey && safeStorage.isEncryptionAvailable()) {
         if (oldKey.startsWith('enc:')) {
           try {

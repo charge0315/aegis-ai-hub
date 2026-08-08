@@ -19,6 +19,7 @@ export class OllamaProvider implements AiProvider {
     const url = `${this.baseUrl.replace(/\/+$/, '')}/api/chat`;
 
     // Ollama のパラメータ。format に JSON Schema を渡して形式を固定させる
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const requestBody: any = {
       model: options.modelName,
       messages: [
@@ -34,6 +35,7 @@ export class OllamaProvider implements AiProvider {
 
     let attempts = 0;
     const maxAttempts = 2;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let lastError: any = null;
 
     while (attempts < maxAttempts) {
@@ -56,10 +58,12 @@ export class OllamaProvider implements AiProvider {
         }
 
         return JSON.parse(text) as T;
-      } catch (error: any) {
+      } catch (error: unknown) {
         lastError = error;
         attempts++;
-        console.warn(`[OllamaProvider] Attempt ${attempts} failed. Error: ${error.message}`);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const err = error as any;
+        console.warn(`[OllamaProvider] Attempt ${attempts} failed. Error: ${err.message}`);
         
         if (attempts < maxAttempts) {
           // 2回目の試行では format: "json" (単なるJSONモード) にダウングレードしてリトライ
@@ -68,9 +72,12 @@ export class OllamaProvider implements AiProvider {
       }
     }
 
-    throw new Error(`Ollama generation failed after ${maxAttempts} attempts. Last error: ${lastError?.message}`, { cause: lastError });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const lastErr = lastError as any;
+    throw new Error(`Ollama generation failed after ${maxAttempts} attempts. Last error: ${lastErr?.message}`, { cause: lastError });
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private convertGeminiSchemaToJsonSchema(schema: any): any {
     if (!schema) return undefined;
     
@@ -83,6 +90,7 @@ export class OllamaProvider implements AiProvider {
       'ARRAY': 'array'
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const jsonSchema: any = {};
     
     if (schema.type) {
