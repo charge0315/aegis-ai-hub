@@ -25,70 +25,124 @@ export class ElectronSettingsManager extends SettingsManager {
   }
 
   /**
-   * 保存されているAPIキーを取得します。
-   * 
-   * 意図: ファイルから設定を読み込み、暗号化されている場合は復号します。
-   * これにより、万が一設定ファイルが第三者に渡っても、OSのログイン認証がない限り
-   * APIキーが生テキストで漏洩することを防ぎます。
+   * 保存されている認証情報全体を取得し、必要に応じて復号します。
    */
-  async getApiKey(): Promise<string> {
+  async getCredentials(): Promise<Credentials> {
     try {
       const data = await fs.readFile(this.credentialsPath, 'utf8');
       const json = JSON.parse(data);
       const creds = CredentialsSchema.parse(json);
-      
-      let apiKey = creds.geminiApiKey || '';
-      
-      // 暗号化されたキーがある場合は復号を試みる
-      // 意図: 異なる端末や環境での不正な読み取りを防ぐため、OSレベルの暗号化を適用しています。
-      // 'enc:' プレフィックスにより、未暗号化の旧データとの互換性も維持します。
-      if (apiKey && safeStorage.isEncryptionAvailable()) {
-        if (apiKey.startsWith('enc:')) {
-          try {
-            const encryptedBuffer = Buffer.from(apiKey.slice(4), 'base64');
-            apiKey = safeStorage.decryptString(encryptedBuffer);
-          } catch (decryptError) {
-            console.error('[ElectronSettingsManager] Failed to decrypt API key:', decryptError);
-            apiKey = '';
+
+      let needsReSave = false;
+
+      // 各プロバイダーの API キーの復号処理
+      const providers = ['google', 'anthropic', 'openai'] as const;
+      for (const provider of providers) {
+        const key = creds[provider]?.apiKey;
+        if (key && safeStorage.isEncryptionAvailable()) {
+          if (key.startsWith('enc:')) {
+            try {
+              const encryptedBuffer = Buffer.from(key.slice(4), 'base64');
+              creds[provider]!.apiKey = safeStorage.decryptString(encryptedBuffer);
+            } catch (decryptError) {
+              console.error(`[ElectronSettingsManager] Failed to decrypt ${provider} API key:`, decryptError);
+              creds[provider]!.apiKey = '';
+            }
+          } else {
+            // 平文キーを検出 — 後で暗号化して再保存するフラグを立てる
+            console.warn(`[ElectronSettingsManager] Plaintext API key detected for ${provider}. Will re-encrypt...`);
+            needsReSave = true;
           }
-        } else {
-          // 平文キーを検出 — 即座に再暗号化して上書き保存する
-          console.warn('[ElectronSettingsManager] Plaintext API key detected. Re-encrypting now...');
-          await this.saveApiKey(apiKey);
         }
       }
-      
-      return apiKey || process.env.GEMINI_API_KEY || '';
+
+      // 互換性用の古い geminiApiKey の復号処理
+      const oldKey = creds.geminiApiKey;
+      if (oldKey && safeStorage.isEncryptionAvailable()) {
+        if (oldKey.startsWith('enc:')) {
+          try {
+            const encryptedBuffer = Buffer.from(oldKey.slice(4), 'base64');
+            creds.geminiApiKey = safeStorage.decryptString(encryptedBuffer);
+          } catch (decryptError) {
+            console.error('[ElectronSettingsManager] Failed to decrypt old geminiApiKey:', decryptError);
+            creds.geminiApiKey = '';
+          }
+        } else {
+          needsReSave = true;
+        }
+      }
+
+      // 後方互換性：もし旧形式でgeminiApiKeyだけがあった場合、google.apiKeyに移行する
+      if (creds.geminiApiKey && (!creds.google || !creds.google.apiKey)) {
+        if (!creds.google) creds.google = {};
+        creds.google.apiKey = creds.geminiApiKey;
+        needsReSave = true;
+      }
+
+      if (needsReSave) {
+        await this.saveCredentials(creds);
+      }
+
+      return creds;
     } catch {
-      // ファイルが存在しない、またはパースエラーの場合は環境変数へフォールバック
-      return process.env.GEMINI_API_KEY || '';
+      // ファイルが存在しない、またはパースエラーの場合は親クラスのフォールバックへ
+      return super.getCredentials();
     }
   }
 
   /**
-   * APIキーをセキュアに保存します。
-   * 
-   * 意図: 機密情報をディスクに書き出す前にOSレベルで暗号化し、
-   * セキュリティのベストプラクティスを遵守します。
+   * 認証情報全体を安全に暗号化して保存します。
    */
-  async saveApiKey(apiKey: string): Promise<void> {
-    let keyToSave = apiKey;
-    
-    // 暗号化が利用可能な場合は暗号化してプレフィックスをつける
-    if (apiKey && safeStorage.isEncryptionAvailable()) {
-      try {
-        const encryptedBuffer = safeStorage.encryptString(apiKey);
-        keyToSave = `enc:${encryptedBuffer.toString('base64')}`;
-      } catch (encryptError) {
-        console.error('[ElectronSettingsManager] Failed to encrypt API key:', encryptError);
-        // 暗号化に失敗した場合は、リスクを承知の上で生テキストで保存するか、
-        // あるいは保存を中断するかの判断が必要ですが、ここでは可用性を優先し
-        // ログ出力のみ行います。
+  async saveCredentials(creds: Credentials): Promise<void> {
+    // パラメータを書き換えないようディープコピーを作成
+    const credsToSave = JSON.parse(JSON.stringify(creds)) as Credentials;
+
+    if (safeStorage.isEncryptionAvailable()) {
+      const providers = ['google', 'anthropic', 'openai'] as const;
+      for (const provider of providers) {
+        const key = credsToSave[provider]?.apiKey;
+        if (key && !key.startsWith('enc:')) {
+          try {
+            const encryptedBuffer = safeStorage.encryptString(key);
+            credsToSave[provider]!.apiKey = `enc:${encryptedBuffer.toString('base64')}`;
+          } catch (encryptError) {
+            console.error(`[ElectronSettingsManager] Failed to encrypt ${provider} API key:`, encryptError);
+          }
+        }
+      }
+
+      const oldKey = credsToSave.geminiApiKey;
+      if (oldKey && !oldKey.startsWith('enc:')) {
+        try {
+          const encryptedBuffer = safeStorage.encryptString(oldKey);
+          credsToSave.geminiApiKey = `enc:${encryptedBuffer.toString('base64')}`;
+        } catch (encryptError) {
+          console.error('[ElectronSettingsManager] Failed to encrypt old geminiApiKey:', encryptError);
+        }
       }
     }
 
-    const creds: Credentials = { geminiApiKey: keyToSave };
-    await this._safeWrite(this.credentialsPath, creds);
+    const validated = CredentialsSchema.parse(credsToSave);
+    await this._safeWrite(this.credentialsPath, validated);
+  }
+
+  /**
+   * 保存されているAPIキーを取得します。
+   */
+  async getApiKey(): Promise<string> {
+    const creds = await this.getCredentials();
+    return creds.google?.apiKey || creds.geminiApiKey || process.env.GEMINI_API_KEY || '';
+  }
+
+  /**
+   * APIキーをセキュアに保存します。
+   */
+  async saveApiKey(apiKey: string): Promise<void> {
+    const creds = await this.getCredentials();
+    creds.geminiApiKey = apiKey;
+    if (!creds.google) creds.google = {};
+    creds.google.apiKey = apiKey;
+    await this.saveCredentials(creds);
   }
 }
 

@@ -75,6 +75,16 @@ export class MockFactory {
       (window as unknown as { nexusApi: unknown }).nexusApi = {
         getApiKey: () => Promise.resolve('mock-api-key'),
         saveApiKey: () => Promise.resolve({ success: true }),
+        getCredentials: () => Promise.resolve({
+          activeProvider: 'google',
+          activeModel: 'gemini-3.5-flash',
+          google: { apiKey: 'mock-api-key' },
+          anthropic: {},
+          openai: {},
+          ollama: { baseUrl: 'http://localhost:11434' },
+          geminiApiKey: 'mock-api-key'
+        }),
+        saveCredentials: () => Promise.resolve({ success: true }),
         onAgentEvent: () => () => {},
         removeAgentEventListener: () => {},
         windowControl: () => {},

@@ -48,7 +48,14 @@ export class SettingsManager {
     await fs.mkdir(this.dataDir, { recursive: true });
     await this._ensureFile(this.interestsPath, { categories: {}, lastUpdated: Date.now() });
     await this._ensureFile(this.feedConfigPath, {});
-    await this._ensureFile(this.credentialsPath, { geminiApiKey: '' });
+    await this._ensureFile(this.credentialsPath, {
+      activeProvider: 'google',
+      activeModel: 'gemini-3.5-flash',
+      google: {},
+      anthropic: {},
+      openai: {},
+      ollama: { baseUrl: 'http://localhost:11434' }
+    });
     await this.usageManager.init();
   }
 
@@ -106,15 +113,48 @@ export class SettingsManager {
   }
 
   /**
+   * APIキーや認証情報全体を取得します。
+   */
+  async getCredentials(): Promise<Credentials> {
+    try {
+      const data = await fs.readFile(this.credentialsPath, 'utf8');
+      const json = JSON.parse(data);
+      const parsed = CredentialsSchema.parse(json);
+      // 後方互換性：もし旧形式でgeminiApiKeyだけがあった場合、google.apiKeyに移行する
+      if (parsed.geminiApiKey && (!parsed.google || !parsed.google.apiKey)) {
+        if (!parsed.google) parsed.google = {};
+        parsed.google.apiKey = parsed.geminiApiKey;
+      }
+      return parsed;
+    } catch {
+      // 初期値またはフォールバック
+      return CredentialsSchema.parse({
+        activeProvider: 'google',
+        activeModel: 'gemini-3.5-flash',
+        google: {},
+        anthropic: {},
+        openai: {},
+        ollama: { baseUrl: 'http://localhost:11434' }
+      });
+    }
+  }
+
+  /**
+   * 認証情報全体を保存します。
+   */
+  async saveCredentials(creds: Credentials): Promise<void> {
+    const validated = CredentialsSchema.parse(creds);
+    await this._safeWrite(this.credentialsPath, validated);
+  }
+
+  /**
    * 保存されているGemini APIキーを取得します。
    * 開発環境では環境変数からの取得もサポート。
    */
   async getApiKey(): Promise<string> {
     try {
-      const data = await fs.readFile(this.credentialsPath, 'utf8');
-      const json = JSON.parse(data);
-      const creds = CredentialsSchema.parse(json);
-      const key = creds.geminiApiKey || '';
+      const creds = await this.getCredentials();
+      const key = creds.google?.apiKey || creds.geminiApiKey || '';
       if (!key && this.isDev) {
         return process.env.GEMINI_API_KEY || '';
       }
@@ -128,8 +168,11 @@ export class SettingsManager {
    * Gemini APIキーを安全に保存します。
    */
   async saveApiKey(apiKey: string): Promise<void> {
-    const creds: Credentials = { geminiApiKey: apiKey };
-    await this._safeWrite(this.credentialsPath, creds);
+    const creds = await this.getCredentials();
+    creds.geminiApiKey = apiKey;
+    if (!creds.google) creds.google = {};
+    creds.google.apiKey = apiKey;
+    await this.saveCredentials(creds);
   }
 
   /**
@@ -235,17 +278,16 @@ export class SettingsManager {
       }
 
       if (newUrls.length > 0) {
-        // 並列で検証を実行し、1つでも失敗すれば同期を中断（安全策）
+        // 並列で検証を実行（一時的なエラーや429等のため、警告に留め同期は中断しない）
         await Promise.all(newUrls.map(async (item) => {
           try {
             const check = await fetcher.validateFeed(item.url);
             if (!check.ok) {
-              throw new Error(`VALIDATION_FAILED: ${item.url} is invalid (Status: ${check.status})`);
+              console.warn(`[SettingsManager] Feed validation failed for ${item.url} (Status: ${check.status}). Continuing sync.`);
             }
           } catch (e: unknown) {
             const msg = e instanceof Error ? e.message : String(e);
-            console.warn(`[SettingsManager] Feed validation failed for ${item.url}:`, msg);
-            throw e;
+            console.warn(`[SettingsManager] Feed validation failed for ${item.url}: ${msg}. Continuing sync.`);
           }
         }));
       }

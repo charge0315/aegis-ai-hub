@@ -63,6 +63,8 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
     draft,
     apiKey,
     setApiKey,
+    credentials,
+    handleSaveCredentials,
     selectedCategory,
     setSelectedCategory,
     isSaving,
@@ -252,6 +254,8 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
             <SystemSettings 
               apiKey={apiKey}
               setApiKey={setApiKey}
+              credentials={credentials}
+              handleSaveCredentials={handleSaveCredentials}
               isSavingApiKey={isSavingApiKey}
               isSaving={isSaving}
               handleSaveApiKey={handleSaveApiKey}

@@ -1,10 +1,12 @@
-import { GoogleGenerativeAI, type GenerativeModel, type ResponseSchema } from "@google/generative-ai";
+import { type ResponseSchema } from "@google/generative-ai";
 import { z } from 'zod';
-import type { Interests, InterestCategory, FeedConfig } from "../models/Schemas";
+import type { Interests, InterestCategory, FeedConfig, Credentials } from "../models/Schemas";
 import { normalizeCategoryName } from "../utils/normalize";
 import { UsageManager } from "./UsageManager";
 import * as Prompts from "./prompts/GeminiPrompts";
 import * as AiSchemas from "../models/AiSchemas";
+import type { AiProvider } from "./ai/AiProvider";
+import { AiProviderFactory } from "./ai/AiProviderFactory";
 
 export interface CuratedArticle {
   id: number;
@@ -34,14 +36,31 @@ export interface CuratedArticle {
  * - GeminiPrompts: 各タスク専用のシステムプロンプトとスキーマ定義。
  */
 export class GeminiService {
-  private genAI: GoogleGenerativeAI | null;
+  private provider: AiProvider | null = null;
+  private activeModelName: string = "gemini-3.5-flash";
   private primaryModelName: string = "gemini-3.5-flash";
   private highReasoningModelName: string = "gemini-3.1-pro-preview";
-  private stableFallbackModelName: string = "gemini-2.5-flash";
   private usageManager: UsageManager | null = null;
 
-  constructor(apiKey: string | undefined) {
-    this.genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
+  constructor(credentialsOrApiKey: Credentials | string | undefined) {
+    if (credentialsOrApiKey) {
+      if (typeof credentialsOrApiKey === 'string') {
+        const creds: Credentials = {
+          activeProvider: 'google',
+          activeModel: 'gemini-3.5-flash',
+          google: { apiKey: credentialsOrApiKey },
+          anthropic: {},
+          openai: {},
+          ollama: { baseUrl: 'http://localhost:11434' },
+          geminiApiKey: credentialsOrApiKey
+        };
+        this.provider = AiProviderFactory.create(creds);
+        this.activeModelName = 'gemini-3.5-flash';
+      } else {
+        this.provider = AiProviderFactory.create(credentialsOrApiKey);
+        this.activeModelName = credentialsOrApiKey.activeModel || 'gemini-3.5-flash';
+      }
+    }
   }
 
   /**
@@ -55,62 +74,95 @@ export class GeminiService {
    * APIキーを動的に更新（設定画面からの変更に対応）。
    */
   updateApiKey(apiKey: string): void {
-    this.genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
+    const creds: Credentials = {
+      activeProvider: 'google',
+      activeModel: 'gemini-3.5-flash',
+      google: { apiKey },
+      anthropic: {},
+      openai: {},
+      ollama: { baseUrl: 'http://localhost:11434' },
+      geminiApiKey: apiKey
+    };
+    this.updateCredentials(creds);
+  }
+
+  /**
+   * 認証情報とアクティブプロバイダーを更新します。
+   */
+  updateCredentials(credentials: Credentials): void {
+    this.provider = AiProviderFactory.create(credentials);
+    this.activeModelName = credentials.activeModel || 'gemini-3.5-flash';
+  }
+
+  /**
+   * 推論レベルに応じた適切なモデル名をマッピングします。
+   */
+  private getMappedModelName(alias: string): string {
+    if (alias === this.highReasoningModelName) {
+      if (
+        this.activeModelName.includes('flash') || 
+        this.activeModelName.includes('haiku') || 
+        this.activeModelName.includes('mini') ||
+        this.activeModelName.includes('8b') ||
+        this.activeModelName.includes('3b')
+      ) {
+        if (this.activeModelName.startsWith('gemini')) {
+          return 'gemini-3.5-pro';
+        }
+        if (this.activeModelName.startsWith('claude')) {
+          return 'claude-3-5-sonnet-latest';
+        }
+        if (this.activeModelName.startsWith('gpt')) {
+          return 'gpt-4o';
+        }
+      }
+    }
+    return this.activeModelName;
   }
 
   /**
    * 厳格なデータ構造でのみ返答を許すためのコア・インターフェース。
-   * 
-   * 設計意図:
-   * - GeminiのJSONモード(responseMimeType: "application/json")を活用。
-   * - フォールバック処理: 特定のモデルでエラー（特にクォータ不足や一時的な不調）が発生した場合、
-   *   自動的に下位モデルへリクエストをリトライし、ユーザー体験を損なわないようにする。
    */
   async generateStructured<T>(prompt: string, schema: ResponseSchema, modelName: string = this.primaryModelName, zodSchema?: z.ZodSchema<T>): Promise<T> {
-    if (!this.genAI) throw new Error("Gemini APIキーが設定されていません。");
+    if (!this.provider) throw new Error("AIプロバイダーが設定されていません。");
+
+    let modelToUse = modelName;
+    if (modelName === this.highReasoningModelName) {
+      modelToUse = this.getMappedModelName(modelName);
+    } else if (modelName === this.primaryModelName) {
+      modelToUse = this.activeModelName;
+    }
 
     try {
-      console.log(`[GeminiService] Model: ${modelName}`);
-      const model: GenerativeModel = this.genAI.getGenerativeModel({
-        model: modelName,
-        generationConfig: { responseMimeType: "application/json", responseSchema: schema },
+      console.log(`[GeminiService] Calling Provider with model: ${modelToUse}`);
+      
+      const result = await this.provider.generateStructured<T>(prompt, schema, {
+        modelName: modelToUse,
+        temperature: 0.2,
+        onUsageUpdate: (promptTokens: number, completionTokens: number) => {
+          if (this.usageManager) {
+            this.usageManager.recordUsage(modelToUse, promptTokens, completionTokens).catch(console.error);
+          }
+        }
       });
 
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      const text = response.text();
-
-      // トークン使用量の記録
-      if (this.usageManager && response.usageMetadata) {
-        const { promptTokenCount = 0, candidatesTokenCount = 0 } = response.usageMetadata;
-        this.usageManager.recordUsage(modelName, promptTokenCount, candidatesTokenCount).catch(console.error);
-      }
-
-      if (!text) throw new Error("Empty response");
-
-      const parsed = JSON.parse(text) as T;
       // Zodによる最終的な型検証
       if (zodSchema) {
-        const validation = zodSchema.safeParse(parsed);
+        const validation = zodSchema.safeParse(result);
         if (!validation.success) {
           console.error(`[GeminiService] Zod Validation Failed:`, validation.error.format());
           throw new Error(`AI response schema validation failed: ${validation.error.message}`);
         }
         return validation.data;
       }
-      return parsed;
+      return result;
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       const isQuotaError = errorMessage.includes("429") || errorMessage.toLowerCase().includes("quota");
 
       if (isQuotaError) throw new Error("QUOTA_EXCEEDED", { cause: error });
 
-      // モデルのダウングレードによる再試行（自己修復的なフォールバック戦略）
-      if (modelName === this.highReasoningModelName) return this.generateStructured<T>(prompt, schema, this.primaryModelName, zodSchema);
-      if (modelName === this.primaryModelName) return this.generateStructured<T>(prompt, schema, this.stableFallbackModelName, zodSchema);
-      if (modelName === this.stableFallbackModelName) return this.generateStructured<T>(prompt, schema, "gemini-2.5-flash-lite", zodSchema);
-
-      throw new Error(`Gemini API execution failed: ${errorMessage}`, { cause: error });
+      throw new Error(`AI execution failed: ${errorMessage}`, { cause: error });
     }
   }
 

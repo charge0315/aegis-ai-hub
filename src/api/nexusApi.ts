@@ -9,7 +9,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import type { Article, NexusSettings, AgentStatus, InterestCategory, FeedConfig, UiSettings, TrendSuggestion, Interests, UsageStats } from '../types';
+import type { Article, NexusSettings, AgentStatus, InterestCategory, FeedConfig, UiSettings, TrendSuggestion, Interests, UsageStats, Credentials } from '../types';
 
 /** 
  * ウィンドウの座標とサイズ情報を保持するインターフェース。
@@ -196,6 +196,30 @@ export const nexusApi = {
   async saveApiKey(apiKey: string): Promise<{ success: boolean }> {
     if (window.nexusApi?.saveApiKey && !isE2E()) {
       return await window.nexusApi.saveApiKey(apiKey);
+    }
+    return { success: true };
+  },
+
+  /** 拡張された認証情報 (Credentials) を取得する。 */
+  async getCredentials(): Promise<Credentials> {
+    if (window.nexusApi?.getCredentials && !isE2E()) {
+      return await window.nexusApi.getCredentials();
+    }
+    // Web環境やE2Eでのフォールバック
+    return {
+      activeProvider: 'google',
+      activeModel: 'gemini-3.5-flash',
+      google: {},
+      anthropic: {},
+      openai: {},
+      ollama: { baseUrl: 'http://localhost:11434' }
+    };
+  },
+
+  /** 拡張された認証情報を保存する。 */
+  async saveCredentials(creds: Credentials): Promise<{ success: boolean }> {
+    if (window.nexusApi?.saveCredentials && !isE2E()) {
+      return await window.nexusApi.saveCredentials(creds);
     }
     return { success: true };
   },

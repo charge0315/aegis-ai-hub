@@ -114,6 +114,8 @@ export function useUnifiedEditorHandlers({
     draft, setDraft,
     apiKey: apiKeyManager.apiKey,
     setApiKey: apiKeyManager.setApiKey,
+    credentials: apiKeyManager.credentials,
+    setCredentials: apiKeyManager.setCredentials,
     selectedCategory: categoryActions.selectedCategory,
     setSelectedCategory: categoryActions.setSelectedCategory,
     
@@ -138,6 +140,7 @@ export function useUnifiedEditorHandlers({
     handleSave: profileActions.handleSave,
     handleReset: profileActions.handleReset,
     handleSaveApiKey: apiKeyManager.handleSaveApiKey,
+    handleSaveCredentials: apiKeyManager.handleSaveCredentials,
     handleKeywordToggle: categoryActions.handleKeywordToggle,
     handleBrandToggle: categoryActions.handleBrandToggle,
     handleToggleSkill: skillActions.handleToggleSkill,

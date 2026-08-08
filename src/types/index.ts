@@ -4,7 +4,8 @@ import {
   type FeedConfig as SchemaFeedConfig, 
   type Skill as SchemaSkill,
   type UiSettings as SchemaUiSettings,
-  type UsageStats as SchemaUsageStats
+  type UsageStats as SchemaUsageStats,
+  type Credentials as SchemaCredentials
 } from '../models/Schemas';
 
 export interface Article {
@@ -26,6 +27,7 @@ export type FeedConfig = SchemaFeedConfig;
 export type Skill = SchemaSkill;
 export type UiSettings = SchemaUiSettings;
 export type UsageStats = SchemaUsageStats;
+export type Credentials = SchemaCredentials;
 
 export interface NexusSettings {
   interests: Interests;
@@ -81,6 +83,8 @@ export interface NexusApiBridge {
   }>;
   getApiKey: () => Promise<string>;
   saveApiKey: (apiKey: string) => Promise<{ success: boolean }>;
+  getCredentials: () => Promise<Credentials>;
+  saveCredentials: (creds: Credentials) => Promise<{ success: boolean }>;
   getProposals: () => Promise<{ sites: { url: string; name: string; reason: string; category: string }[] }>;
   restructureCategories: (count?: number, language?: string) => Promise<{ categories: Record<string, InterestCategory>; feedConfig: FeedConfig }>;
   discoverTrends: () => Promise<{ suggestions: TrendSuggestion[] }>;

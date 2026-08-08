@@ -128,8 +128,8 @@ async function startBackend() {
     }
   };
 
-  const apiKey = await settingsManager.getApiKey();
-  geminiService = new GeminiService(apiKey);
+  const credentials = await settingsManager.getCredentials();
+  geminiService = new GeminiService(credentials);
   geminiService.setUsageManager(settingsManager.usageManager);
   
   const feedConfigPath = path.join(dataDir, 'feed_config.json');
@@ -332,6 +332,17 @@ function setupIpcHandlers() {
   ipcMain.handle('save-api-key', async (event, key) => {
     await settingsManager.saveApiKey(key);
     geminiService.updateApiKey(key);
+    return { success: true };
+  });
+
+  // 拡張された認証情報 (Credentials) 管理
+  ipcMain.handle('get-credentials', async () => {
+    return await settingsManager.getCredentials();
+  });
+
+  ipcMain.handle('save-credentials', async (event, creds) => {
+    await settingsManager.saveCredentials(creds);
+    geminiService.updateCredentials(creds);
     return { success: true };
   });
 
