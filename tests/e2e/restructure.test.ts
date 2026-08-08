@@ -25,11 +25,14 @@ test.describe('Deep AI Restructure E2E Journey', () => {
     await restructureBtn.click();
 
     // 1. Enter count
+    const input = page.getByTestId('dialog-input');
+    await expect(input).toBeVisible();
+    await input.fill('10');
+
     const confirm1 = page.getByTestId('dialog-confirm-button').last();
     await expect(confirm1).toBeVisible();
-    await confirm1.click();
 
-    // 2. Confirm restructure
+    // モック提案を先に設定してリクエスト送信に備える
     await MockFactory.mockRestructureProposal(page, {
       categories: {
         "AI & Future Tech": { emoji: "🚀", brands: ["OpenAI"], keywords: ["LLM"], score: 10, reason: "Unified AI" },
@@ -40,6 +43,10 @@ test.describe('Deep AI Restructure E2E Journey', () => {
         "Gaming Central": { active: ["https://ign.com/rss"], pool: [], failures: {} }
       }
     });
+
+    await confirm1.click();
+
+    // 2. Confirm restructure
     const confirm2 = page.getByTestId('dialog-confirm-button').last();
     await expect(confirm2).toBeVisible();
     await confirm2.click();
