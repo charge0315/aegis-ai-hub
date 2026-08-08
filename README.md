@@ -6,14 +6,13 @@
 
 ### The Autonomous AI Intelligence Command Center
 
-**Powered by Gemini 3.x · Built for Windows 11**
+**Powered by Gemini, Claude & Local LLMs · Built for Windows 11**
 
-[![Version](https://img.shields.io/badge/version-5.4.0-6366f1?style=for-the-badge&logo=github)](https://github.com/charge0315/aegis-ai-hub/releases)
-[![AI Engine](https://img.shields.io/badge/AI-Gemini_3.1_Pro%2FFlash-FF6B35?style=for-the-badge&logo=google)](https://aistudio.google.com)
+[![Version](https://img.shields.io/badge/version-5.5.0-6366f1?style=for-the-badge&logo=github)](https://github.com/charge0315/aegis-ai-hub/releases)
+[![AI Engine](https://img.shields.io/badge/AI_Engine-Gemini_/_Claude_/_Ollama-FF6B35?style=for-the-badge&logo=cpu)](https://github.com/charge0315/aegis-ai-hub)
 [![Platform](https://img.shields.io/badge/platform-Windows_11-0078D4?style=for-the-badge&logo=windows)](https://www.microsoft.com/windows)
 [![License](https://img.shields.io/badge/license-MIT-22c55e?style=for-the-badge)](LICENSE)
-[![Electron](https://img.shields.io/badge/Electron-36.x-47848F?style=for-the-badge&logo=electron)](https://electronjs.org)
-[![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react)](https://react.dev)
+[![Ollama](https://img.shields.io/badge/Ollama-Local_LLM-000000?style=for-the-badge&logo=ollama)](https://ollama.com)
 
 *Stop drowning in noise. Start commanding intelligence.*  
 *ノイズに溺れるのをやめ、インテリジェンスを掌握せよ。*
@@ -47,7 +46,7 @@
 Aegis Nexus は **自律学習型のパーソナル AI インテリジェンス・ダッシュボード** です。  
 単なるニュースリーダーではありません。あなたの興味を学習し、Web を能動的に探索し、価値のある情報だけを届ける **AI エージェントの司令塔** です。
 
-**EN:** Aegis Nexus is a self-evolving AI intelligence hub that learns your interests, autonomously discovers high-quality sources across the web, and delivers curated knowledge — wrapped in a stunning Windows 11 Acrylic Glassmorphism interface.
+**EN:** Aegis Nexus is a self-evolving AI intelligence hub that learns your interests, autonomously discovers high-quality sources across the web, and delivers curated knowledge. Now powered by any LLM of your choice — Google Gemini, Anthropic Claude, OpenAI, or 100% locally via Ollama — all wrapped in a stunning Windows 11 Acrylic Glassmorphism interface.
 
 > **"It doesn't just show news. It thinks, learns, and evolves."**
 
@@ -83,13 +82,13 @@ Aegis Nexus は **自律学習型のパーソナル AI インテリジェンス�
 <tr>
 <td width="50%">
 
-### ⚡ Deep AI Discovery
-Gemini 3.1 が Web を能動的に探索：
+### ⚡ Bring Your Own LLM & Local
+クラウドでも、完全ローカルでも動作：
 
-- RSS/Atom フィードの自律発見
-- Google News RSS フォールバック
-- OGP 画像の自動エンリッチメント
-- カテゴリ名の AI 正規化・揺れ吸収
+- **Google Gemini** — Gemini 3.5/3.6 シリーズのサポート
+- **Anthropic Claude** — Claude 4.6 などの高性能エンジン
+- **Ollama (Local LLM)** — Llama 3 や Mistral などのローカルモデルによる 100% オフライン・プライバシー動作
+- **OpenAI / 互換 API** — GPT-OSS 120B やカスタム接続
 
 </td>
 <td width="50%">
@@ -98,7 +97,7 @@ Gemini 3.1 が Web を能動的に探索：
 あなたのデータはあなたのものです：
 
 - **Zero Telemetry** — 外部送信一切なし
-- **safeStorage 暗号化** — OS ネイティブ暗号でAPIキーを保護
+- **safeStorage 暗号化** — OS ネイティブ暗号で複数プロバイダーのAPIキーを安全に保護
 - **Local JSON** — DB 不要、すべてローカルに永続化
 - **3世代バックアップ** — データ損失ゼロの設計
 
@@ -112,8 +111,11 @@ Gemini 3.1 が Web を能動的に探索：
 
 ### 前提条件
 
-- **Node.js** v20+
-- **Google Gemini API Key** → [Google AI Studio で無料取得](https://aistudio.google.com/app/apikey)
+- **Node.js** v22+
+- 以下のいずれか：
+  - **Google Gemini API Key** → [Google AI Studio で無料取得](https://aistudio.google.com/app/apikey)
+  - **Anthropic API Key** → [Anthropic Console で取得](https://console.anthropic.com/)
+  - **Ollama** → [Ollama 公式からインストール](https://ollama.com) (ローカルLLMで動かす場合、APIキー不要)
 
 ### インストール
 
@@ -133,8 +135,8 @@ npm run electron:dev
 npm run dist
 ```
 
-起動後、**オンボーディング画面** の指示に従って Gemini API キーを設定するだけです。  
-設定は OS ネイティブ暗号化で自動保護されます。
+起動後、**オンボーディング画面** または **設定（System Settings）画面** の指示に従って LLM 接続を設定するだけです。  
+APIキーなどの機密情報は、OS ネイティブの暗号化によって自动で安全に保護されます。
 
 ---
 
@@ -168,10 +170,10 @@ npm run dist
 
 | Layer | Technology |
 |-------|-----------|
-| **Desktop Shell** | Electron 36 |
+| **Desktop Shell** | Electron 41 |
 | **Frontend** | React 19 + TypeScript 6 + Vite 8 (Rolldown) |
 | **Styling** | Tailwind CSS 4 + Glassmorphism |
-| **AI Engine** | Google Gemini 3.1 Pro / Flash |
+| **AI Engine** | Google Gemini / Anthropic Claude / OpenAI / Ollama (Local) |
 | **Backend API** | Fastify (embedded, localhost) |
 | **Data Viz** | D3.js (Knowledge Graph) + Recharts (Usage) |
 | **Animation** | Framer Motion |
@@ -185,18 +187,19 @@ npm run dist
 
 | Document | Description |
 |----------|-------------|
-| [📋 SPECIFICATION](./docs/SPECIFICATION.md) | 機能仕様書 v5.4.0 |
+| [📋 SPECIFICATION](./docs/SPECIFICATION.md) | 機能仕様書 v5.5.0 |
 | [🔧 TECHNICAL_DETAILS](./docs/TECHNICAL_DETAILS.md) | アーキテクチャ詳細 |
 | [🤖 GEMINI](./docs/GEMINI.md) | Gemini 連携ガイド |
 | [📖 Manual](./docs/aegis-hub-manual.md) | ユーザーマニュアル |
 | [🐛 Troubleshooting](./docs/TROUBLESHOOTING_HISTORY.md) | トラブルシューティング履歴 |
-| [🔍 Code Review History](./docs/REVIEW_RESULT.md) | コードレビュー履歴 (v5.3.0〜v5.4.0) |
+| [🔍 Code Review History](./docs/REVIEW_RESULT.md) | コードレビュー履歴 (v5.3.0〜v5.5.0) |
+| [🤝 CONTRIBUTING.md](./CONTRIBUTING.md) | コントリビューション・開発ガイド |
 
 ---
 
-## 🔑 セキュリティ / Security
+## 🔒 セキュリティ / Security
 
-- API キーは Electron `safeStorage`（OS ネイティブ暗号）で保護
+- API キーは Electron `safeStorage`（OS ネイティブ暗号）で安全に保護
 - 平文キーを検出した場合は自動的に即時再暗号化
 - CORS はローカルオリジン（`localhost:5173`）のみ許可
 - 外部リンクはすべてシステムブラウザへルーティング

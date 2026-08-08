@@ -156,6 +156,23 @@ export type UsageStats = z.infer<typeof UsageStatsSchema>;
  */
 export const CredentialsSchema = z.object({
   geminiApiKey: z.string().optional(),
+  activeProvider: z.enum(['google', 'anthropic', 'openai', 'ollama']).default('google'),
+  activeModel: z.string().default('gemini-3.5-flash'),
+  google: z.object({
+    apiKey: z.string().optional(),
+    baseUrl: z.string().optional(),
+  }).default({}),
+  anthropic: z.object({
+    apiKey: z.string().optional(),
+    baseUrl: z.string().optional(),
+  }).default({}),
+  openai: z.object({
+    apiKey: z.string().optional(),
+    baseUrl: z.string().optional(),
+  }).default({}),
+  ollama: z.object({
+    baseUrl: z.string().default('http://localhost:11434'),
+  }).default({ baseUrl: 'http://localhost:11434' }),
 });
 
 export type Credentials = z.infer<typeof CredentialsSchema>;

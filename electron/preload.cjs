@@ -63,6 +63,16 @@ contextBridge.exposeInMainWorld('nexusApi', {
   saveApiKey: (apiKey) => ipcRenderer.invoke('save-api-key', apiKey),
 
   /**
+   * 拡張された認証情報を取得します。
+   */
+  getCredentials: () => ipcRenderer.invoke('get-credentials'),
+
+  /**
+   * 拡張された認証情報を保存します。
+   */
+  saveCredentials: (creds) => ipcRenderer.invoke('save-credentials', creds),
+
+  /**
    * 肥大化したカテゴリ構造をAIによって整理・統合します。
    */
   restructureCategories: (count) => ipcRenderer.invoke('restructure-categories', count),
