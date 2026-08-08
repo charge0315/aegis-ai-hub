@@ -17426,7 +17426,7 @@ var init_DiscoveryService = __esm({
        */
       async reacquireAllFeeds(interests) {
         console.log("[DiscoveryService] \u5168\u30AB\u30C6\u30B4\u30EA\u306E\u30D5\u30A3\u30FC\u30C9\u5148\u518D\u53D6\u5F97\u30D7\u30ED\u30BB\u30B9\u3092\u958B\u59CB\u3057\u307E\u3059...");
-        let suggestedSites = [];
+        let suggestedSites;
         try {
           suggestedSites = await this.geminiService.reacquireAllFeeds(interests);
           console.log(`[DiscoveryService] AI\u304B\u3089 ${suggestedSites.length} \u4EF6\u306E\u30B5\u30A4\u30C8\u63D0\u6848\u304C\u3042\u308A\u307E\u3057\u305F\u3002`);

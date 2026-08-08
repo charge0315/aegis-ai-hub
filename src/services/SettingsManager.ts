@@ -278,17 +278,16 @@ export class SettingsManager {
       }
 
       if (newUrls.length > 0) {
-        // 並列で検証を実行し、1つでも失敗すれば同期を中断（安全策）
+        // 並列で検証を実行（一時的なエラーや429等のため、警告に留め同期は中断しない）
         await Promise.all(newUrls.map(async (item) => {
           try {
             const check = await fetcher.validateFeed(item.url);
             if (!check.ok) {
-              throw new Error(`VALIDATION_FAILED: ${item.url} is invalid (Status: ${check.status})`);
+              console.warn(`[SettingsManager] Feed validation failed for ${item.url} (Status: ${check.status}). Continuing sync.`);
             }
           } catch (e: unknown) {
             const msg = e instanceof Error ? e.message : String(e);
-            console.warn(`[SettingsManager] Feed validation failed for ${item.url}:`, msg);
-            throw e;
+            console.warn(`[SettingsManager] Feed validation failed for ${item.url}: ${msg}. Continuing sync.`);
           }
         }));
       }
