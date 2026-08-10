@@ -18,6 +18,7 @@ import { SystemSettings } from './editors/SystemSettings';
 import { AIInsightsPanel } from './editors/AIInsightsPanel';
 import { useUnifiedEditorHandlers } from '../hooks/useUnifiedEditorHandlers';
 import type { NexusSettings, UiSettings } from '../types';
+import type { FeatureGate } from '../services/LicenseManager';
 import type { DialogType } from './CustomDialog';
 import { useTranslation } from '../hooks/useTranslationHook';
 
@@ -40,6 +41,7 @@ interface UnifiedEditorProps {
   setTheme: (theme: UiSettings['theme']) => void;
   autoLaunch: boolean;
   setAutoLaunch: (enabled: boolean) => void;
+  featureGates?: FeatureGate | null;
 }
 
 type Tab = 'editor' | 'graph' | 'skills' | 'system' | 'insights' | 'usage';
@@ -53,7 +55,8 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
   theme,
   setTheme,
   autoLaunch,
-  setAutoLaunch
+  setAutoLaunch,
+  featureGates = null,
 }) => {
   const [activeTab, setActiveTab] = useState<Tab>('editor');
   const { t } = useTranslation();
@@ -241,12 +244,13 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
             />
           )}
           {activeTab === 'insights' && (
-            <AIInsightsPanel 
+            <AIInsightsPanel
               draft={draft}
               isDiscovering={isDiscovering}
               handleDiscoverTrends={handleDiscoverTrends}
               handlePromoteKeyword={handlePromoteKeyword}
               handleDismissKeyword={handleDismissKeyword}
+              featureGates={featureGates}
             />
           )}
 

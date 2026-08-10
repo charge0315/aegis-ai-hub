@@ -89,6 +89,13 @@ export class MockFactory {
         removeAgentEventListener: () => {},
         windowControl: () => {},
         onUsageUpdate: () => () => {},
+        // E2Eテスト環境ではPro版として扱い、機能ゲートをすべて開放する
+        getLicenseState: () => Promise.resolve({ tier: 'pro', licenseKey: 'TEST-KEY', email: 'test@example.com', expiresAt: null, lastVerifiedAt: new Date().toISOString(), gracePeriodUntil: null }),
+        activateLicense: () => Promise.resolve({ success: true, message: 'OK' }),
+        deactivateLicense: () => Promise.resolve({ success: true }),
+        getFeatureGates: () => Promise.resolve({ aiInsights: true, aiDiscover: true, aiRestructure: true, aiCategorySuggest: true, knowledgeGraphEdit: true, dataExport: true, unlimitedCategories: true, unlimitedFeeds: true, autoRecovery: true }),
+        checkForUpdates: () => Promise.resolve({ status: 'dev' }),
+        onUpdateEvent: () => () => {},
       };
     });
   }

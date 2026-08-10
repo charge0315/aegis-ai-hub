@@ -27,7 +27,8 @@ export const ProGate: React.FC<ProGateProps> = ({
 }) => {
   const [showTooltip, setShowTooltip] = useState(false);
 
-  const isAllowed = featureGates?.[feature] ?? false;
+  // featureGatesがnull/undefined（ロード中）の間はブロックしない
+  const isAllowed = featureGates == null ? true : (featureGates[feature] ?? true);
 
   if (isAllowed) return <>{children}</>;
 
