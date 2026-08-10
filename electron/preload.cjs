@@ -135,4 +135,47 @@ contextBridge.exposeInMainWorld('nexusApi', {
    * 設定（興味関心）を別の言語に翻訳します。
    */
   translateInterests: (settings) => ipcRenderer.invoke('translate-interests', settings),
+
+  // ── ライセンス管理 ───────────────────────────────────────────────
+
+  /**
+   * 現在のライセンス状態（tier, 有効期限等）を取得します。
+   */
+  getLicenseState: () => ipcRenderer.invoke('get-license-state'),
+
+  /**
+   * Gumroadライセンスキーを検証・有効化します。
+   */
+  activateLicense: (key, email) => ipcRenderer.invoke('activate-license', key, email),
+
+  /**
+   * ライセンスを無効化してFree版に戻します。
+   */
+  deactivateLicense: () => ipcRenderer.invoke('deactivate-license'),
+
+  /**
+   * 機能ゲートの一覧（どの機能がFree/Proで使えるか）を取得します。
+   */
+  getFeatureGates: () => ipcRenderer.invoke('get-feature-gates'),
+
+  // ── 自動アップデート ─────────────────────────────────────────────
+
+  /**
+   * アップデートを手動でチェックします。
+   */
+  checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
+
+  /**
+   * ダウンロード済みのアップデートをインストールしてアプリを再起動します。
+   */
+  installUpdate: () => ipcRenderer.invoke('install-update'),
+
+  /**
+   * アップデートイベント（利用可能・ダウンロード中・完了）を購読します。
+   */
+  onUpdateEvent: (callback) => {
+    const subscription = (event, data) => callback(data);
+    ipcRenderer.on('update-event', subscription);
+    return () => ipcRenderer.removeListener('update-event', subscription);
+  },
 });
