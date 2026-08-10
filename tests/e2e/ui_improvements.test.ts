@@ -38,8 +38,8 @@ test.describe('UI UX Improvements E2E Tests', () => {
     const statusBar = page.locator('footer[role="contentinfo"]');
     await expect(statusBar).toBeVisible();
 
-    // バージョン情報 v5.4.0 が表示されていること
-    await expect(statusBar).toContainText('v5.4.0');
+    // バージョン情報が表示されていること
+    await expect(statusBar).toContainText('v5.5.0');
 
     // 接続状態 (Connected/Syncing 等) が表示されていること
     await expect(statusBar).toContainText(/Connected|Syncing/i);
