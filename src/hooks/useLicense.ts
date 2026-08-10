@@ -40,7 +40,8 @@ export function useLicense() {
   }, []);
 
   useEffect(() => {
-    refresh();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void refresh();
 
     // ライセンス変更イベントを購読
     const handler = (event: Event) => {
