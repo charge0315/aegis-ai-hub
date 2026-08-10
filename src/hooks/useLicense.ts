@@ -1,26 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { LicenseState, FeatureGate } from '../services/LicenseManager';
 
-interface NexusApiWithLicense {
-  getLicenseState: () => Promise<LicenseState>;
-  activateLicense: (key: string, email: string) => Promise<{ success: boolean; message: string }>;
-  deactivateLicense: () => Promise<{ success: boolean }>;
-  getFeatureGates: () => Promise<FeatureGate>;
-  onUpdateEvent?: (cb: (data: UpdateEvent) => void) => () => void;
-  checkForUpdates?: () => Promise<{ status: string }>;
-  installUpdate?: () => Promise<void>;
-}
-
 export interface UpdateEvent {
   type: 'available' | 'downloaded' | 'error';
   info?: unknown;
   message?: string;
-}
-
-declare global {
-  interface Window {
-    nexusApi: NexusApiWithLicense & Record<string, unknown>;
-  }
 }
 
 export function useLicense() {

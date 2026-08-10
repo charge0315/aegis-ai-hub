@@ -98,6 +98,15 @@ export interface NexusApiBridge {
   openExternal: (url: string) => void;
   openArticle: (url: string) => void;
   reacquireAllFeeds: () => Promise<{ success: boolean; feedConfig: FeedConfig }>;
+  // ライセンス管理
+  getLicenseState: () => Promise<import('../services/LicenseManager').LicenseState>;
+  activateLicense: (key: string, email: string) => Promise<{ success: boolean; message: string }>;
+  deactivateLicense: () => Promise<{ success: boolean }>;
+  getFeatureGates: () => Promise<import('../services/LicenseManager').FeatureGate>;
+  // 自動アップデート
+  checkForUpdates?: () => Promise<{ status: string }>;
+  installUpdate?: () => Promise<void>;
+  onUpdateEvent?: (callback: (data: { type: 'available' | 'downloaded' | 'error'; info?: unknown; message?: string }) => void) => () => void;
 }
 
 declare global {
