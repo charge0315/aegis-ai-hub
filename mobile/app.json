@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "Aegis Nexus",
+    "slug": "aegis-nexus-mobile",
+    "scheme": "aegisnexus",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0b0e1a",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.aegis.nexus.mobile"
+    },
+    "android": {
+      "package": "com.aegis.nexus.mobile",
+      "adaptiveIcon": {
+        "backgroundColor": "#0b0e1a",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}
