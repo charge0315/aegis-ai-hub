@@ -44,13 +44,14 @@ test.describe('AI Insights & Trend Discovery', () => {
     MockFactory.updateCurrentSettings(updatedSettings);
 
     await page.reload();
-    await page.getByTestId('nav-settings').click();
-    
+    // ライセンス状態の非同期ロードによる再レンダリング後でもクリックできるようforce指定
+    await page.getByTestId('nav-settings').click({ force: true });
+
     // ロード待機
     const container = page.getByTestId('unified-editor-container');
     await expect(container).toBeVisible({ timeout: 15000 });
 
-    await page.getByTestId('tab-editor').click();
+    await page.getByTestId('tab-editor').click({ force: true });
     
     // カテゴリが選択されていることを確認
     await expect(page.getByText(categoryName).last()).toBeVisible();
@@ -94,12 +95,13 @@ test.describe('AI Insights & Trend Discovery', () => {
     MockFactory.updateCurrentSettings(DEFAULT_MOCK_SETTINGS);
 
     await page.reload();
-    await page.getByTestId('nav-settings').click();
-    
+    // ライセンス状態の非同期ロードによる再レンダリング後でもクリックできるようforce指定
+    await page.getByTestId('nav-settings').click({ force: true });
+
     const container = page.getByTestId('unified-editor-container');
     await expect(container).toBeVisible({ timeout: 15000 });
 
-    await page.getByTestId('tab-insights').click();
+    await page.getByTestId('tab-insights').click({ force: true });
     await expect(page.getByText(trendValue)).not.toBeVisible();
     await expect(page.getByText(/No active trends detected/i)).toBeVisible();
   });

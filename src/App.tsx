@@ -42,6 +42,7 @@ import { StatusBar } from './components/StatusBar';
 import { FeedView } from './components/FeedView';
 import { OnboardingModal } from './components/OnboardingModal';
 import { useArticleFilter } from './hooks/useArticleFilter';
+import { useLicense } from './hooks/useLicense';
 
 interface AppBodyProps {
   ui: ReturnType<typeof useUiSettingsSync>;
@@ -117,6 +118,9 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
 
   // AIエージェントのイベント監視（データ更新時に再取得）
   const agents = useAgentEvents(refetch);
+
+  // ライセンス状態とフィーチャーゲート
+  const { featureGates } = useLicense();
 
   // カスタムフックを使用して記事のフィルタリング、ソート、グループ化、統計計算を実行
   const {
@@ -362,6 +366,7 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
                     setTheme={setTheme}
                     autoLaunch={ui.autoLaunch}
                     setAutoLaunch={ui.setAutoLaunch}
+                    featureGates={featureGates}
                   />
                 </Suspense>
               </div>
