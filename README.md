@@ -183,10 +183,17 @@ APIキーなどの機密情報は、OS ネイティブの暗号化によって�
 
 ---
 
+## 📱 モバイル版 / Mobile Apps
+
+同じコンセプトを iOS / Android アプリとして展開する新規プロジェクトを [`mobile/`](./mobile) で開発中です（Expo / React Native + TypeScript）。詳細は [mobile/README.md](./mobile/README.md) を参照してください。
+
+---
+
 ## 📁 ドキュメント / Documentation
 
 | Document | Description |
 |----------|-------------|
+| [📱 mobile/README](./mobile/README.md) | iOS / Android アプリ（React Native + Expo）|
 | [📋 SPECIFICATION](./docs/SPECIFICATION.md) | 機能仕様書 v5.5.0 |
 | [🔧 TECHNICAL_DETAILS](./docs/TECHNICAL_DETAILS.md) | アーキテクチャ詳細 |
 | [🤖 GEMINI](./docs/GEMINI.md) | Gemini 連携ガイド |
