@@ -492,10 +492,17 @@ app.whenReady().then(async () => {
       mainWindow?.webContents.send('update-event', { type: 'downloaded', info });
     });
     autoUpdater.on('error', (err) => {
+      // "No published versions" はリリース未公開時の正常な状態のためレンダラーには通知しない
+      if (String(err).includes('No published versions')) {
+        log.info('No GitHub releases found, skipping update check.');
+        return;
+      }
       mainWindow?.webContents.send('update-event', { type: 'error', message: String(err) });
     });
     // 起動後30秒待ってからアップデートチェック（起動UXを妨げないため）
-    setTimeout(() => autoUpdater.checkForUpdates(), 30000);
+    setTimeout(() => autoUpdater.checkForUpdates().catch((err) => {
+      if (!String(err).includes('No published versions')) log.error('Update check failed:', err);
+    }), 30000);
   }
 
   // 起動時に最新の自動起動設定をOSに同期
