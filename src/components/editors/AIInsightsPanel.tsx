@@ -1,6 +1,6 @@
 import React from 'react';
-import { 
-  Plus, 
+import {
+  Plus,
   Trash2,
   Sparkles,
   Zap,
@@ -9,7 +9,9 @@ import {
   BarChart3
 } from 'lucide-react';
 import { GlassPanel } from '../GlassPanel';
+import { ProGate } from '../ProGate';
 import type { Interests } from '../../models/Schemas';
+import type { FeatureGate } from '../../services/LicenseManager';
 
 /**
  * AIInsightsPanel Component
@@ -26,6 +28,7 @@ interface AIInsightsPanelProps {
   handleDiscoverTrends: () => Promise<void>;
   handlePromoteKeyword: (keyword: string, category: string) => void;
   handleDismissKeyword: (keyword: string) => void;
+  featureGates: FeatureGate | null;
 }
 
 export const AIInsightsPanel: React.FC<AIInsightsPanelProps> = ({
@@ -33,7 +36,8 @@ export const AIInsightsPanel: React.FC<AIInsightsPanelProps> = ({
   isDiscovering,
   handleDiscoverTrends,
   handlePromoteKeyword,
-  handleDismissKeyword
+  handleDismissKeyword,
+  featureGates,
 }) => {
   return (
     <div className="space-y-6">
@@ -45,14 +49,15 @@ export const AIInsightsPanel: React.FC<AIInsightsPanelProps> = ({
           </h3>
           <p className="text-content-muted text-sm mt-1">Autonomous agents analyzing signals for emerging patterns and breakthrough concepts.</p>
         </div>
-        {/* トレンド発見ボタン: アーキビストエージェントに命令を下すためのアクション */}
+        {/* トレンド発見ボタン: Pro版限定機能 */}
+        <ProGate feature="aiInsights" featureGates={featureGates}>
         <button
           onClick={handleDiscoverTrends}
           disabled={isDiscovering}
           data-testid="discover-trends-button"
           className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold transition-all ${
-            isDiscovering 
-              ? 'bg-primary/20 text-primary cursor-not-allowed' 
+            isDiscovering
+              ? 'bg-primary/20 text-primary cursor-not-allowed'
               : 'bg-primary text-white hover:bg-primary/90 shadow-lg shadow-primary/20 hover:scale-105 active:scale-95'
           }`}
         >
@@ -68,6 +73,7 @@ export const AIInsightsPanel: React.FC<AIInsightsPanelProps> = ({
             </>
           )}
         </button>
+        </ProGate>
       </div>
 
       {/* 空状態のプレースホルダー: ユーザーに次のアクション（スキャン実行）を促す設計 */}

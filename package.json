@@ -1,7 +1,7 @@
 {
   "name": "aegis-ai-hub",
   "private": true,
-  "version": "5.4.0",
+  "version": "5.5.0",
   "description": "Next-gen Intelligence Command Center powered by Gemini 3.1",
   "author": "Aegis AI Hub Team",
   "type": "module",
@@ -71,6 +71,8 @@
     "clsx": "^2.1.1",
     "d3": "^7.9.0",
     "dotenv": "^17.4.2",
+    "electron-log": "^5.4.4",
+    "electron-updater": "^6.8.9",
     "fastify": "^5.1.0",
     "framer-motion": "^12.38.0",
     "lucide-react": "^1.11.0",

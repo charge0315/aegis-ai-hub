@@ -16,6 +16,8 @@
  */
 
 const { app, BrowserWindow, ipcMain, globalShortcut, Tray, Menu, shell, nativeImage } = require('electron');
+const { autoUpdater } = require('electron-updater');
+const log = require('electron-log');
 const path = require('path');
 const fs = require('fs');
 
@@ -54,10 +56,12 @@ const { ScoringService } = require('../src/services/ScoringService');
 const { nexusRouter } = require('../src/api/server/NexusRouter');
 const { ScraperFacade } = require('../src/ScraperFacade');
 const { NexusOrchestrator } = require('../src/core/NexusOrchestrator');
+const { LicenseManager } = require('../src/services/LicenseManager');
 
 let mainWindow;
 let tray;
 let settingsManager;
+let licenseManager;
 let scraper;
 let discoveryService;
 let orchestrator;
@@ -423,6 +427,42 @@ function setupIpcHandlers() {
   ipcMain.handle('get-proposals', async () => {
     return { proposals: [] };
   });
+
+  // ── ライセンス管理 ─────────────────────────────────────────────
+
+  ipcMain.handle('get-license-state', async () => {
+    return licenseManager.state;
+  });
+
+  ipcMain.handle('activate-license', async (_, key, email) => {
+    const result = await licenseManager.activate(key, email);
+    if (result.success) {
+      mainWindow?.webContents.send('license-changed', licenseManager.state);
+    }
+    return result;
+  });
+
+  ipcMain.handle('deactivate-license', async () => {
+    await licenseManager.deactivate();
+    mainWindow?.webContents.send('license-changed', licenseManager.state);
+    return { success: true };
+  });
+
+  ipcMain.handle('get-feature-gates', async () => {
+    return licenseManager.getFeatureGates();
+  });
+
+  // ── 自動アップデート ─────────────────────────────────────────────
+
+  ipcMain.handle('check-for-updates', async () => {
+    if (!app.isPackaged) return { status: 'dev' };
+    autoUpdater.checkForUpdates();
+    return { status: 'checking' };
+  });
+
+  ipcMain.handle('install-update', async () => {
+    autoUpdater.quitAndInstall();
+  });
 }
 
 /**
@@ -431,8 +471,32 @@ function setupIpcHandlers() {
 app.whenReady().then(async () => {
   crashLogPath = path.join(app.getPath('userData'), 'crash.log');
   dataDir = setupDataDirectory();
+
+  // LicenseManagerの初期化（バックエンド起動前）
+  licenseManager = LicenseManager.getInstance(dataDir);
+  await licenseManager.load();
+  // バックグラウンドで定期検証（ネットワーク依存のため非同期）
+  licenseManager.verify().catch(() => {});
+
   await startBackend();
   setupIpcHandlers();
+
+  // 自動アップデートの設定
+  if (app.isPackaged) {
+    log.transports.file.level = 'info';
+    autoUpdater.logger = log;
+    autoUpdater.on('update-available', (info) => {
+      mainWindow?.webContents.send('update-event', { type: 'available', info });
+    });
+    autoUpdater.on('update-downloaded', (info) => {
+      mainWindow?.webContents.send('update-event', { type: 'downloaded', info });
+    });
+    autoUpdater.on('error', (err) => {
+      mainWindow?.webContents.send('update-event', { type: 'error', message: String(err) });
+    });
+    // 起動後30秒待ってからアップデートチェック（起動UXを妨げないため）
+    setTimeout(() => autoUpdater.checkForUpdates(), 30000);
+  }
 
   // 起動時に最新の自動起動設定をOSに同期
   const uiSettings = await settingsManager.getUiSettings();

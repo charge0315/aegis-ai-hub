@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Save, 
-  Key, 
+import {
+  Save,
+  Key,
   RotateCcw,
   Sun,
   Moon,
@@ -11,10 +11,14 @@ import {
   Rocket,
   Cpu,
   Server,
-  Network
+  Network,
+  Crown,
+  CheckCircle2,
+  LogOut
 } from 'lucide-react';
 import { GlassPanel } from '../GlassPanel';
 import type { UiSettings, Credentials } from '../../types';
+import { useLicense } from '../../hooks/useLicense';
 
 interface SystemSettingsProps {
   apiKey: string;
@@ -56,6 +60,18 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
   isReacquiring,
   handleReacquireAllFeeds
 }) => {
+  const { licenseState, isPro, isActivating, activate, deactivate } = useLicense();
+  const [licenseKey, setLicenseKey] = useState('');
+  const [licenseEmail, setLicenseEmail] = useState('');
+  const [licenseMsg, setLicenseMsg] = useState('');
+
+  const handleActivate = async () => {
+    if (!licenseKey.trim()) return;
+    const result = await activate(licenseKey.trim(), licenseEmail.trim());
+    setLicenseMsg(result.message);
+    if (result.success) setLicenseKey('');
+  };
+
   // Local state for credentials editing
   const [localCreds, setLocalCreds] = useState<Credentials>({
     activeProvider: 'google',
@@ -389,6 +405,77 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
             </div>
           </div>
         </div>
+      </GlassPanel>
+
+      {/* ライセンス管理 */}
+      <GlassPanel className="p-8 space-y-6">
+        <div className="flex items-center gap-3">
+          <Crown size={18} className="text-primary" />
+          <h3 className="text-base font-bold text-content-base">ライセンス</h3>
+          {isPro && (
+            <span className="ml-auto px-3 py-1 rounded-full text-xs font-bold bg-primary/20 text-primary border border-primary/30">
+              ✨ Pro版 有効
+            </span>
+          )}
+        </div>
+
+        {isPro ? (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-sm text-content-muted">
+              <CheckCircle2 size={14} className="text-success" />
+              <span>メール: {licenseState?.email ?? '—'}</span>
+            </div>
+            <button
+              onClick={() => { deactivate(); setLicenseMsg('ライセンスを解除しました。'); }}
+              className="flex items-center gap-2 text-xs text-content-muted hover:text-alert transition-colors"
+            >
+              <LogOut size={12} />
+              ライセンスを解除
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-xs text-content-muted">
+              Pro版ライセンスキーを入力して、全機能を解放してください。
+            </p>
+            <input
+              type="email"
+              placeholder="メールアドレス"
+              value={licenseEmail}
+              onChange={(e) => setLicenseEmail(e.target.value)}
+              className="w-full px-4 py-2.5 rounded-xl bg-content-muted/10 border border-content-muted/20 text-sm text-content-base focus:outline-none focus:border-primary/50"
+            />
+            <div className="flex gap-3">
+              <input
+                type="text"
+                placeholder="ライセンスキー (XXXX-XXXX-XXXX-XXXX)"
+                value={licenseKey}
+                onChange={(e) => setLicenseKey(e.target.value)}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-content-muted/10 border border-content-muted/20 text-sm text-content-base focus:outline-none focus:border-primary/50"
+              />
+              <button
+                onClick={handleActivate}
+                disabled={isActivating || !licenseKey.trim()}
+                className="px-5 py-2.5 rounded-xl bg-primary/80 hover:bg-primary text-white text-sm font-bold transition-colors disabled:opacity-50"
+              >
+                {isActivating ? '検証中...' : '有効化'}
+              </button>
+            </div>
+            {licenseMsg && (
+              <p className={`text-xs ${licenseMsg.includes('有効') ? 'text-success' : 'text-alert'}`}>
+                {licenseMsg}
+              </p>
+            )}
+            <a
+              href="https://aegis-nexus.gumroad.com/l/pro"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block text-center py-2.5 rounded-xl bg-gradient-to-r from-primary to-primary/70 text-white text-sm font-bold hover:opacity-90 transition-opacity"
+            >
+              ✨ Pro版を購入する (¥980/月)
+            </a>
+          </div>
+        )}
       </GlassPanel>
 
       {/* 外部リンクと補足情報 */}
