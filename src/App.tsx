@@ -379,7 +379,7 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
 
       {/* システムステータスバー */}
       <StatusBar 
-        version="v5.4.0"
+        version="v5.5.0"
         connectionStatus={isSyncing ? 'syncing' : syncError ? 'disconnected' : 'connected'}
         lastSyncTime={lastRefreshed}
         agentCount={agents.length}
