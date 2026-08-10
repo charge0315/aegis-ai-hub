@@ -17,20 +17,42 @@ export interface LLMProvider {
   chat(params: { apiKey?: string; model: string; baseUrl?: string; system: string; prompt: string }): Promise<LLMChatResult>;
 }
 
-async function fetchJson(url: string, init: RequestInit): Promise<any> {
+interface ApiErrorBody {
+  error?: { message?: string };
+  message?: string;
+}
+
+async function fetchJson<T>(url: string, init: RequestInit): Promise<T> {
   const res = await fetch(url, init);
   const body = await res.text();
-  let json: any;
+  let json: unknown;
   try {
     json = body ? JSON.parse(body) : {};
   } catch {
     throw new Error(`Invalid response from ${url}: ${body.slice(0, 200)}`);
   }
   if (!res.ok) {
-    const message = json?.error?.message || json?.message || `HTTP ${res.status}`;
+    const errorBody = json as ApiErrorBody;
+    const message = errorBody?.error?.message || errorBody?.message || `HTTP ${res.status}`;
     throw new Error(message);
   }
-  return json;
+  return json as T;
+}
+
+interface GeminiResponse {
+  candidates?: { content?: { parts?: { text: string }[] } }[];
+}
+
+interface ClaudeResponse {
+  content?: { text: string }[];
+}
+
+interface OpenAiResponse {
+  choices?: { message?: { content?: string } }[];
+}
+
+interface OllamaResponse {
+  message?: { content?: string };
 }
 
 const gemini: LLMProvider = {
@@ -41,7 +63,7 @@ const gemini: LLMProvider = {
   async chat({ apiKey, model, system, prompt }) {
     if (!apiKey) throw new Error('Gemini API key is required');
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-    const json = await fetchJson(url, {
+    const json = await fetchJson<GeminiResponse>(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -49,7 +71,7 @@ const gemini: LLMProvider = {
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
       }),
     });
-    const text = json?.candidates?.[0]?.content?.parts?.map((p: any) => p.text).join('') ?? '';
+    const text = json.candidates?.[0]?.content?.parts?.map((p) => p.text).join('') ?? '';
     return { text };
   },
 };
@@ -61,7 +83,7 @@ const claude: LLMProvider = {
   defaultModel: 'claude-sonnet-5',
   async chat({ apiKey, model, system, prompt }) {
     if (!apiKey) throw new Error('Anthropic API key is required');
-    const json = await fetchJson('https://api.anthropic.com/v1/messages', {
+    const json = await fetchJson<ClaudeResponse>('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -75,7 +97,7 @@ const claude: LLMProvider = {
         messages: [{ role: 'user', content: prompt }],
       }),
     });
-    const text = json?.content?.map((c: any) => c.text).join('') ?? '';
+    const text = json.content?.map((c) => c.text).join('') ?? '';
     return { text };
   },
 };
@@ -88,7 +110,7 @@ const openai: LLMProvider = {
   async chat({ apiKey, model, baseUrl, system, prompt }) {
     if (!apiKey) throw new Error('OpenAI API key is required');
     const url = `${(baseUrl || 'https://api.openai.com/v1').replace(/\/$/, '')}/chat/completions`;
-    const json = await fetchJson(url, {
+    const json = await fetchJson<OpenAiResponse>(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({
@@ -99,7 +121,7 @@ const openai: LLMProvider = {
         ],
       }),
     });
-    const text = json?.choices?.[0]?.message?.content ?? '';
+    const text = json.choices?.[0]?.message?.content ?? '';
     return { text };
   },
 };
@@ -111,7 +133,7 @@ const ollama: LLMProvider = {
   defaultModel: 'llama3',
   async chat({ model, baseUrl, system, prompt }) {
     const url = `${(baseUrl || 'http://localhost:11434').replace(/\/$/, '')}/api/chat`;
-    const json = await fetchJson(url, {
+    const json = await fetchJson<OllamaResponse>(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -123,7 +145,7 @@ const ollama: LLMProvider = {
         ],
       }),
     });
-    const text = json?.message?.content ?? '';
+    const text = json.message?.content ?? '';
     return { text };
   },
 };

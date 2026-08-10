@@ -2,7 +2,8 @@ import React from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { AppSettingsProvider, useAppSettings } from './src/hooks/useAppSettings';
+import { AppSettingsProvider } from './src/hooks/AppSettingsProvider';
+import { useAppSettings } from './src/hooks/useAppSettings';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { colors } from './src/theme/theme';
 

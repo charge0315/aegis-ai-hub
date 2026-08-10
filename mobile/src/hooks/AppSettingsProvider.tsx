@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import type { InterestCategory, LLMProviderConfig } from '../types';
 import {
   DEFAULT_LLM_CONFIG,
@@ -12,20 +12,7 @@ import {
   saveLanguage,
 } from '../services/settingsStore';
 import type { Lang } from '../i18n';
-
-interface AppSettingsValue {
-  ready: boolean;
-  lang: Lang;
-  setLang: (lang: Lang) => void;
-  llmConfig: LLMProviderConfig;
-  setLlmConfig: (config: LLMProviderConfig) => void;
-  apiKey: string;
-  setApiKey: (key: string) => void;
-  interests: InterestCategory[];
-  setInterests: (interests: InterestCategory[]) => void;
-}
-
-const AppSettingsContext = createContext<AppSettingsValue | null>(null);
+import { AppSettingsContext } from './AppSettingsContext';
 
 export function AppSettingsProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
@@ -75,10 +62,4 @@ export function AppSettingsProvider({ children }: { children: React.ReactNode })
       {children}
     </AppSettingsContext.Provider>
   );
-}
-
-export function useAppSettings(): AppSettingsValue {
-  const ctx = useContext(AppSettingsContext);
-  if (!ctx) throw new Error('useAppSettings must be used within AppSettingsProvider');
-  return ctx;
 }
