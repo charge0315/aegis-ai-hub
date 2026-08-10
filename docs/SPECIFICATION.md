@@ -36,7 +36,14 @@ Aegis Nexusは、RSSフィードとGoogle Gemini 3.1 Proを統合し、ユーザ
 - **動的APIキー同期と即時反映**: `SettingsManager` からのAPIキー変更を検知すると、再起動なしでシステム全体の `GeminiService` インスタンスに新しいキーが即座に反映される。特に、各IPCハンドラー（suggest-category等）の実行直前に `getApiKey()` を介して最新のキーをセットする実装により、ユーザーが設定を変更した直後のリクエストが古いキー（または空のキー）で失敗する問題を物理的に排除し、UXを劇的に改善している。
 
 ### 2.3 AI Insights (自律学習トレンド管理システム)
-- **仕組み**: `ArchivistAgent` が記事の収集・解析プロセスにおいて、重要度が高いが現在の `interests.json` には含まれていない新しい概念やキーワードを `learned_keywords` として抽出。これらは一時的なバッファとして `interests.json` に蓄積され、UI上の「AI Insights」タブに提示される。
+- **仕組み**: `ScraperFacade.discoverTrends` が記事の収集・解析プロセスにおいて、重要度が高いが現在の `interests.json` には含まれていない新しい概念やキーワードを `learned_keywords` として抽出。これらは一時的なバッファとして `interests.json` に蓄積され、UI上の「AI Insights」タブに提示される。
+- **外部トレンドシグナルの統合 (`ExternalTrendFetcher`)**: RSSフィード記事だけでなく、以下のリアルタイムSNS・検索トレンドを並列取得して Gemini の分析入力に加えることで、話題性の高いトピックを確実に検出する：
+  - **X（旧Twitter）**: ゲストトークン経由で日本（WOEID: 23424856）のトレンドワードを取得。tweet件数（`tweet_volume`）をトラフィック指標として付与。
+  - **Google Trends**: 公式 Daily RSS（`trends.google.com/trending/rss?geo=JP`）から認証不要で日本のトレンド検索ワードを取得。
+  - **Yahoo Japan**: リアルタイム検索トレンドページを `axios` + `cheerio` でスクレイピングして補完。
+- **並列化による高速化**: 記事フェッチと外部トレンド取得を `Promise.all` で同時実行し、ユーザーの待機時間を短縮。
+- **Confidence スコア戦略**: GeminiプロンプトでSNSとニュース両方に登場するトピックは高信頼度（80以上）、片方のみのトピックは中程度（50〜79）に分類するよう指示。
+- **type 分類**: SNSトレンドのみに出現するトピックは `emerging`、ニュースにも登場するトピックは `mainstream` として返す。
 - **機能 (ライフサイクル)**:
   - **昇格 (Promote)**: ユーザーがキーワードを承認すると、そのカテゴリの正式な `keywords` リストへ移動し、以降のスコアリングやAI探索の対象となる。
   - **却下 (Dismiss)**: ユーザーが不要と判断したキーワードはリストから削除され、ノイズとして処理される。

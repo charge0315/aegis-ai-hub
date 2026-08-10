@@ -1,7 +1,7 @@
 # Backend Architecture Codemap
 
-**Last Updated:** 2026-05-21
-**Version:** v5.4.0 Aegis Chroma
+**Last Updated:** 2026-08-10
+**Version:** v5.5.0
 **Entry Point:** `electron/main.cjs` (App/Main Process)
 
 ## 概要
@@ -38,10 +38,15 @@ Windows のスタートアップへの自動登録をメインプロセスで直
 
 ### 4. 能動的インテリジェンス探索 (Active Intelligence Discovery)
 `ScraperFacade.discoverTrends` メソッドを中心に、従来の受動的な学習から能動的な探索へと進化しました：
-- **Gemini 3.1 Pro Preview 活用**: 高度な推論能力を持つ Pro モデルを使用し、単なるキーワード抽出を超えた「文脈（Context）」の理解を実現。
+- **Gemini 活用**: 高度な推論能力を持つモデルを使用し、単なるキーワード抽出を超えた「文脈（Context）」の理解を実現。
+- **外部リアルタイムトレンド統合 (`ExternalTrendFetcher`)**: RSSフィード記事の解析に加え、以下のSNS・検索トレンドを並列取得して Gemini の入力に組み込みます：
+    - **X（旧Twitter）**: ゲストトークン経由で日本（WOEID: 23424856）のトレンドを取得。
+    - **Google Trends**: 公式 Daily RSS フィード（`trends.google.com/trending/rss?geo=JP`）から認証不要で取得。
+    - **Yahoo Japan**: リアルタイム検索トレンドページをスクレイピングで補完。
+- **並列取得による高速化**: 記事フェッチと外部トレンド取得を `Promise.all` で同時実行し、全体の待機時間を短縮。
 - **拡張データ構造**: 抽出されるトレンドデータには、以下のメタデータが含まれます：
-    - `type`: トレンドの種類（技術、市場、製品、人物等）。
-    - `confidence`: AI による確信度（0.0 - 1.0）。
+    - `type`: `emerging`（SNSのみ）/ `mainstream`（ニュースにも登場）等のトレンド種別。
+    - `confidence`: AI による確信度（SNSとニュース両方に出現: 80以上 / 片方のみ: 50〜79）。
     - `context`: なぜそのトレンドが重要なのか、既存の興味とどう関連するかの説明。
 - **検証パイプライン**: 抽出されたトレンドは即座に既存の `learned_keywords` と照合され、重複排除と優先順位付けが行われます。
 
@@ -98,11 +103,12 @@ Electron メインプロセス (`electron/main.cjs`) では、Windows 11 の **A
 
 | サービス名 | 役割 | 進化の内容 |
 | :--- | :--- | :--- |
-| `ScraperFacade` | ワークフロー統合 | **`discoverTrends` (Gemini 3.1 Pro Preview)** による能動的インテリジェンス探索の実装。 |
+| `ScraperFacade` | ワークフロー統合 | `discoverTrends` が `ExternalTrendFetcher` と連携し、SNSトレンドを含む能動的インテリジェンス探索を実現。 |
+| `ExternalTrendFetcher` | 外部トレンド取得 | X（旧Twitter）・Google Trends・Yahoo Japan から日本のリアルタイムトレンドを並列取得。 |
 | `Fastify Server` | API ホスティング | Electron 内蔵型への統合。新エンドポイント `/api/v5/discover-trends` の追加。 |
 | `RSSFetcher` | フィード取得 | **疎通確認 (validateFeed)** 機能の追加。 |
 | `FeedManager` | フィード構成管理 | **自動ヘルスチェック付きフィード昇格**の実装。 |
-| `GeminiService` | AI 推論 | **Gemini 3.5 Flash / 3.1 Pro Preview 対応**。高度なトレンド分析、並列検証、Google News フォールバックを実装。 |
+| `GeminiService` | AI 推論 | **Gemini 3.5 Flash / 3.1 Pro Preview 対応**。SNSトレンドデータを加味した高度なトレンド分析を実装。 |
 | `ArchivistAgent` | 自律学習 | 収集記事からトレンドを抽出し、拡張メタデータ（Confidence, Context）を付与して蓄積。 |
 | `DiscoveryService` | ソース探索 | **`Promise.all` による全カテゴリーの並列フィード検証**を導入し、探索のタイムアウトを防止。 |
 | `EnrichmentService` | 記事加工 | 並列スクレイピングによる画像補完。 |
