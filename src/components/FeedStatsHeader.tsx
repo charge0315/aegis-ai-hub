@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Database, FolderOpen, Languages, Clock, RefreshCw } from 'lucide-react';
+import { Database, FolderOpen, Languages, Clock, RefreshCw, LayoutGrid, List, Image as ImageIcon, ImageOff } from 'lucide-react';
 import { GlassPanel } from './GlassPanel';
 
 interface FeedStatsHeaderProps {
@@ -10,6 +10,12 @@ interface FeedStatsHeaderProps {
   lastUpdated: Date | null;
   onRefresh: () => void;
   isSyncing: boolean;
+  feedSize?: 'small' | 'medium' | 'large';
+  setFeedSize?: (size: 'small' | 'medium' | 'large') => void;
+  showImages?: boolean;
+  setShowImages?: (show: boolean) => void;
+  isJapaneseOnly?: boolean;
+  setIsJapaneseOnly?: (jaOnly: boolean) => void;
 }
 
 /**
@@ -21,7 +27,13 @@ export const FeedStatsHeader: React.FC<FeedStatsHeaderProps> = ({
   japaneseRatio,
   lastUpdated,
   onRefresh,
-  isSyncing
+  isSyncing,
+  feedSize,
+  setFeedSize,
+  showImages,
+  setShowImages,
+  isJapaneseOnly,
+  setIsJapaneseOnly
 }) => {
   const [relativeTime, setRelativeTime] = useState<string>('--');
 
@@ -130,16 +142,81 @@ export const FeedStatsHeader: React.FC<FeedStatsHeaderProps> = ({
         </div>
       </div>
 
-      {/* 更新ボタン */}
-      <button
-        onClick={() => onRefresh()}
-        disabled={isSyncing}
-        aria-label="Refresh feeds"
-        className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 active:bg-white/15 text-slate-300 hover:text-white rounded-xl transition-all border border-white/10 font-medium text-xs disabled:opacity-50"
-      >
-        <RefreshCw size={14} className={isSyncing ? 'animate-spin' : ''} />
-        <span>{isSyncing ? 'Syncing...' : 'Refresh'}</span>
-      </button>
+      <div className="flex items-center gap-3">
+        {/* 表示サイズ切替ボタングループ */}
+        {feedSize && setFeedSize && (
+          <div className="flex bg-white/5 p-1 rounded-xl border border-white/10">
+            {(['small', 'medium', 'large'] as const).map((size) => {
+              const label = size === 'small' ? 'Compact' : size === 'medium' ? 'Grid' : 'List';
+              return (
+                <button
+                  key={size}
+                  onClick={() => setFeedSize(size)}
+                  className={`p-1.5 rounded-lg text-xs font-bold transition-all ${
+                    feedSize === size
+                      ? 'bg-primary text-white shadow-md'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                  title={`${label} View`}
+                  aria-label={`${label} View`}
+                >
+                  {size === 'small' ? (
+                    <LayoutGrid size={14} className="scale-75" />
+                  ) : size === 'medium' ? (
+                    <LayoutGrid size={14} />
+                  ) : (
+                    <List size={14} />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* 画像表示トグル */}
+        {showImages !== undefined && setShowImages && (
+          <button
+            onClick={() => setShowImages(!showImages)}
+            className={`p-2 rounded-xl border transition-all ${
+              showImages 
+                ? 'bg-primary/15 border-primary/30 text-primary' 
+                : 'bg-white/5 border-white/10 text-slate-400 hover:text-white'
+            }`}
+            title={showImages ? "Hide Images" : "Show Images"}
+            aria-label={showImages ? "Hide Images" : "Show Images"}
+          >
+            {showImages ? <ImageIcon size={14} /> : <ImageOff size={14} />}
+          </button>
+        )}
+
+        {/* 日本語優先トグル */}
+        {isJapaneseOnly !== undefined && setIsJapaneseOnly && (
+          <button
+            onClick={() => setIsJapaneseOnly(!isJapaneseOnly)}
+            className={`p-2 rounded-xl border transition-all flex items-center gap-1.5 px-2.5 ${
+              isJapaneseOnly 
+                ? 'bg-indigo-500/20 border-indigo-500/30 text-indigo-400' 
+                : 'bg-white/5 border-white/10 text-slate-400 hover:text-white'
+            }`}
+            title={isJapaneseOnly ? "Showing Japanese Only" : "Showing All Languages"}
+            aria-label={isJapaneseOnly ? "Showing Japanese Only" : "Showing All Languages"}
+          >
+            <Languages size={14} />
+            <span className="text-[9px] font-black uppercase tracking-wider">JA ONLY</span>
+          </button>
+        )}
+
+        {/* 更新ボタン */}
+        <button
+          onClick={() => onRefresh()}
+          disabled={isSyncing}
+          aria-label="Refresh feeds"
+          className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 active:bg-white/15 text-slate-300 hover:text-white rounded-xl transition-all border border-white/10 font-medium text-xs disabled:opacity-50 shrink-0"
+        >
+          <RefreshCw size={14} className={isSyncing ? 'animate-spin' : ''} />
+          <span>{isSyncing ? 'Syncing...' : 'Refresh'}</span>
+        </button>
+      </div>
     </GlassPanel>
   );
 };

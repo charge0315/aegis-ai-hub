@@ -78,7 +78,13 @@ export const FeedView: React.FC<FeedViewProps> = ({
             <div className="h-px flex-1 bg-white/10"></div>
             <span className="text-xs font-medium text-slate-500">{items.length} Signals</span>
           </div>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className={`grid ${
+            feedSize === 'small'
+              ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4'
+              : feedSize === 'large'
+              ? 'grid-cols-1 lg:grid-cols-2 gap-8'
+              : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'
+          }`}>
             {items.map((article, idx) => (
               <ArticleCard 
                 key={`${category}-${idx}`} 

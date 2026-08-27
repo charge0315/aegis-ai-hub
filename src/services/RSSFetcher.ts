@@ -31,7 +31,7 @@ export class RSSFetcher {
   private limit: <T>(fn: () => Promise<T>) => Promise<T>;
   private parser: Parser;
 
-  constructor(concurrency = 20) { // 大量取得のため並列数を20に設定
+  constructor(concurrency = 10) { // 負荷制御のため並列数を10に設定
     this.limit = pLimit(concurrency);
     this.parser = new Parser({
       timeout: 20000, // ネットワーク遅延を考慮し20秒に設定

@@ -334,14 +334,23 @@ export function useNexusSync() {
     }
   }, []);
 
-  /** コンポーネントのマウント時に初回データを取得する。 */
+  /** コンポーネントのマウント時に初回データを取得し、10分ごとに自動リフレッシュする。 */
   useEffect(() => {
     let active = true;
     const load = async () => {
       if (active) await fetchData(true); // 初回ロード時は画面全体ローディングを表示
     };
     void load();
-    return () => { active = false; };
+
+    // 10分ごとにバックグラウンドでフィードを定期更新
+    const interval = setInterval(() => {
+      if (active) void fetchData(false);
+    }, 10 * 60 * 1000);
+
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
   }, [fetchData]);
 
   /** 設定の保存と、それに伴う記事データの自動リフレッシュを行う。 */

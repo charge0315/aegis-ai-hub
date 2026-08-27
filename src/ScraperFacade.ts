@@ -39,7 +39,7 @@ export class ScraperFacade {
      */
     constructor(_interestsPath: string, feedsPath: string, dataDir?: string) {
         this.feedManager = new FeedManager(feedsPath);
-        this.rssFetcher = new RSSFetcher(20); // 同時実行数を20に制限し、ネットワーク負荷を制御
+        this.rssFetcher = new RSSFetcher(10); // 同時実行数を10に制限し、ネットワーク負荷を制御
         this.geminiService = new GeminiService(process.env.GEMINI_API_KEY);
         this.enrichmentService = new EnrichmentService(this.geminiService, dataDir);
         this.externalTrendFetcher = new ExternalTrendFetcher();
@@ -201,7 +201,7 @@ export class ScraperFacade {
      */
     private _sortAndSlice(articles: Article[], count: number): Article[] {
         return articles
-            .sort((a, b) => b.score - a.score || new Date(b.date).getTime() - new Date(a.date).getTime())
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime() || b.score - a.score)
             .slice(0, count);
     }
 
@@ -290,7 +290,7 @@ export class ScraperFacade {
         }
 
         console.log(`[ScraperFacade] Processed ${allArticles.length} articles.`);
-        return allArticles.sort((a, b) => b.score - a.score);
+        return allArticles.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime() || b.score - a.score);
     }
 
     /**

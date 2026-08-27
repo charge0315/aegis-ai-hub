@@ -61,9 +61,9 @@ interface AppBodyProps {
  */
 const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch, syncError, isSyncing, loading, lastRefreshed }) => {
   const {
-    feedSize,
-    showImages,
-    isJapaneseOnly,
+    feedSize, setFeedSize,
+    showImages, setShowImages,
+    isJapaneseOnly, setIsJapaneseOnly,
     isInitialized, setIsInitialized,
     theme, setTheme
   } = ui;
@@ -333,6 +333,12 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
                 lastUpdated={lastRefreshed}
                 onRefresh={() => refetch()}
                 isSyncing={showSyncOverlay}
+                feedSize={feedSize}
+                setFeedSize={setFeedSize}
+                showImages={showImages}
+                setShowImages={setShowImages}
+                isJapaneseOnly={isJapaneseOnly}
+                setIsJapaneseOnly={setIsJapaneseOnly}
               />
 
               {/* 空状態または記事フィード表示 */}
