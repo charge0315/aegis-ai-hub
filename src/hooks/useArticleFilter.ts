@@ -42,6 +42,8 @@ export const useArticleFilter = (options: UseArticleFilterOptions): UseArticleFi
     return result.sort((a, b) => {
       if (a.language === 'ja' && b.language !== 'ja') return -1;
       if (a.language !== 'ja' && b.language === 'ja') return 1;
+      const dateDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
+      if (dateDiff !== 0) return dateDiff;
       return (b.score || 0) - (a.score || 0);
     });
   }, [articles, searchQuery, isJapaneseOnly]);
