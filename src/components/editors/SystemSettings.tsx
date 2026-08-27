@@ -14,7 +14,8 @@ import {
   Network,
   Crown,
   CheckCircle2,
-  LogOut
+  LogOut,
+  RefreshCw
 } from 'lucide-react';
 import { GlassPanel } from '../GlassPanel';
 import type { UiSettings, Credentials } from '../../types';
@@ -34,6 +35,8 @@ interface SystemSettingsProps {
   setTheme: (theme: UiSettings['theme']) => void;
   autoLaunch: boolean;
   setAutoLaunch: (enabled: boolean) => void;
+  refreshInterval?: number;
+  setRefreshInterval?: (interval: number) => void;
   isReacquiring: boolean;
   handleReacquireAllFeeds: () => Promise<void>;
 }
@@ -57,6 +60,8 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
   setTheme,
   autoLaunch,
   setAutoLaunch,
+  refreshInterval = 15,
+  setRefreshInterval,
   isReacquiring,
   handleReacquireAllFeeds
 }) => {
@@ -205,6 +210,44 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
             />
           </button>
         </div>
+
+        {/* Feed Refresh Interval */}
+        {setRefreshInterval && (
+          <div className="p-4 bg-white/5 rounded-2xl border border-white/5 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <h4 className="text-sm font-bold text-content-base flex items-center gap-2">
+                  <RefreshCw size={16} className="text-primary" />
+                  Feed Refresh Interval
+                </h4>
+                <p className="text-xs text-content-muted">Set how frequently the intelligence feed automatically updates.</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 pt-1">
+              {[
+                { label: '15分', value: 15 },
+                { label: '30分', value: 30 },
+                { label: '1時間', value: 60 },
+                { label: '4時間', value: 240 },
+                { label: '8時間', value: 480 },
+                { label: 'なし', value: 0 }
+              ].map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setRefreshInterval(opt.value)}
+                  className={`py-2 px-3 rounded-xl text-xs font-bold transition-all ${
+                    refreshInterval === opt.value
+                      ? 'bg-primary text-white shadow-lg shadow-primary/20'
+                      : 'bg-content-muted/10 text-content-muted hover:text-content-base hover:bg-white/10'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </GlassPanel>
 
       {/* Theme Customization: 視覚体験のパーソナライズ */}

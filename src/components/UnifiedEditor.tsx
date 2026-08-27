@@ -41,6 +41,8 @@ interface UnifiedEditorProps {
   setTheme: (theme: UiSettings['theme']) => void;
   autoLaunch: boolean;
   setAutoLaunch: (enabled: boolean) => void;
+  refreshInterval?: number;
+  setRefreshInterval?: (interval: number) => void;
   featureGates?: FeatureGate | null;
 }
 
@@ -56,6 +58,8 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
   setTheme,
   autoLaunch,
   setAutoLaunch,
+  refreshInterval,
+  setRefreshInterval,
   featureGates = null,
 }) => {
   const [activeTab, setActiveTab] = useState<Tab>('editor');
@@ -268,6 +272,8 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
               setTheme={setTheme}
               autoLaunch={autoLaunch}
               setAutoLaunch={setAutoLaunch}
+              refreshInterval={refreshInterval}
+              setRefreshInterval={setRefreshInterval}
               isReacquiring={isReacquiring}
               handleReacquireAllFeeds={handleReacquireAllFeeds}
             />

@@ -235,7 +235,7 @@ export const nexusApi = {
       return await res.json();
     } catch {
       // エラー時のフォールバック。初期化状態の不整合を防ぐためデフォルト値を返す。
-      return { jaOnly: false, viewMode: 'grid', hideImages: false, isInitialized: true, theme: 'system', language: 'ja', autoLaunch: false };
+      return { jaOnly: false, viewMode: 'grid', hideImages: false, isInitialized: true, theme: 'system', language: 'ja', autoLaunch: false, refreshInterval: 15 };
     }
   },
 
@@ -302,7 +302,7 @@ export const nexusApi = {
  * 初回ロード時のデータ取得、ポーリング、および設定更新後の再取得を一元化し、
  * ローディング状態やエラーハンドリングを抽象化して提供する。
  */
-export function useNexusSync() {
+export function useNexusSync(refreshInterval: number = 15) {
   const [settings, setSettings] = useState<NexusSettings | null>(null);
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
@@ -334,7 +334,7 @@ export function useNexusSync() {
     }
   }, []);
 
-  /** コンポーネントのマウント時に初回データを取得し、10分ごとに自動リフレッシュする。 */
+  /** コンポーネントのマウント時に初回データを取得し、設定された間隔で自動リフレッシュする。 */
   useEffect(() => {
     let active = true;
     const load = async () => {
@@ -342,16 +342,19 @@ export function useNexusSync() {
     };
     void load();
 
-    // 10分ごとにバックグラウンドでフィードを定期更新
-    const interval = setInterval(() => {
-      if (active) void fetchData(false);
-    }, 10 * 60 * 1000);
+    // refreshInterval > 0 の場合、指定分（ミリ秒）ごとにバックグラウンドでフィードを定期更新
+    let interval: NodeJS.Timeout | null = null;
+    if (refreshInterval > 0) {
+      interval = setInterval(() => {
+        if (active) void fetchData(false);
+      }, refreshInterval * 60 * 1000);
+    }
 
     return () => {
       active = false;
-      clearInterval(interval);
+      if (interval) clearInterval(interval);
     };
-  }, [fetchData]);
+  }, [fetchData, refreshInterval]);
 
   /** 設定の保存と、それに伴う記事データの自動リフレッシュを行う。 */
   const sync = useCallback(async (newSettings: NexusSettings) => {

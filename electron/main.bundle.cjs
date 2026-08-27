@@ -15148,7 +15148,8 @@ var init_Schemas = __esm({
       isInitialized: external_exports.boolean().default(false),
       theme: external_exports.enum(["light", "dark", "system"]).default("system"),
       language: external_exports.enum(["ja", "en"]).default("ja"),
-      autoLaunch: external_exports.boolean().default(false)
+      autoLaunch: external_exports.boolean().default(false),
+      refreshInterval: external_exports.number().default(15)
     });
     UsageStatsSchema = external_exports.record(
       external_exports.string(),
