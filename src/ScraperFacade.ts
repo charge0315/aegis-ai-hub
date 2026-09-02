@@ -17,6 +17,7 @@ import { EnrichmentService } from './services/EnrichmentService';
 import { Article } from './models/Article';
 import { GeminiService } from './services/GeminiService';
 import { ExternalTrendFetcher } from './services/ExternalTrendFetcher';
+import { ObsidianVaultService } from './services/ObsidianVaultService';
 import type { Interests } from './models/Schemas';
 import type { TrendSuggestion } from './types';
 import { normalizeCategoryName } from './utils/normalize';
@@ -31,6 +32,7 @@ export class ScraperFacade {
     public enrichmentService: EnrichmentService;
     public geminiService: GeminiService;
     public externalTrendFetcher: ExternalTrendFetcher;
+    public obsidianVaultService?: ObsidianVaultService;
 
     /**
      * @param _interestsPath - 未使用（将来の拡張用）
@@ -43,6 +45,10 @@ export class ScraperFacade {
         this.geminiService = new GeminiService(process.env.GEMINI_API_KEY);
         this.enrichmentService = new EnrichmentService(this.geminiService, dataDir);
         this.externalTrendFetcher = new ExternalTrendFetcher();
+        this.obsidianVaultService = new ObsidianVaultService(
+            'C:\\Users\\charg\\Documents\\Personal Space',
+            this.geminiService
+        );
     }
 
     /**
@@ -51,6 +57,9 @@ export class ScraperFacade {
      */
     public updateApiKey(apiKey: string): void {
         this.geminiService.updateApiKey(apiKey);
+        if (this.obsidianVaultService) {
+            this.obsidianVaultService.setGeminiService(this.geminiService);
+        }
     }
 
     /**
@@ -290,7 +299,16 @@ export class ScraperFacade {
         }
 
         console.log(`[ScraperFacade] Processed ${allArticles.length} articles.`);
-        return allArticles.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime() || b.score - a.score);
+        const sorted = allArticles.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime() || b.score - a.score);
+
+        // Obsidianへの自動エクスポート（非同期バックグラウンド実行）
+        if (this.obsidianVaultService && sorted.length > 0) {
+            void this.obsidianVaultService.exportArticles(sorted, 10).catch(err => {
+                console.error('[ScraperFacade] Auto export to Obsidian failed:', err);
+            });
+        }
+
+        return sorted;
     }
 
     /**

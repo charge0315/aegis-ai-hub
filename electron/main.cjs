@@ -56,6 +56,7 @@ const { ScoringService } = require('../src/services/ScoringService');
 const { nexusRouter } = require('../src/api/server/NexusRouter');
 const { ScraperFacade } = require('../src/ScraperFacade');
 const { NexusOrchestrator } = require('../src/core/NexusOrchestrator');
+const { ObsidianVaultService } = require('../src/services/ObsidianVaultService');
 const { LicenseManager } = require('../src/services/LicenseManager');
 
 let mainWindow;
@@ -154,6 +155,13 @@ async function startBackend() {
   scraper.geminiService = geminiService;
   scraper.enrichmentService = enrichmentService;
   scraper.feedManager = feedManager;
+
+  const uiSettings = await settingsManager.getUiSettings();
+  const obsidianVaultService = new ObsidianVaultService(
+    uiSettings.obsidianVaultPath || 'C:\\Users\\charg\\Documents\\Personal Space',
+    geminiService
+  );
+  scraper.obsidianVaultService = obsidianVaultService;
 
   orchestrator = new NexusOrchestrator(geminiService);
 
