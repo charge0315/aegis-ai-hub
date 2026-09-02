@@ -234,8 +234,18 @@ export const nexusApi = {
       const res = await fetch(url);
       return await res.json();
     } catch {
-      // エラー時のフォールバック。初期化状態の不整合を防ぐためデフォルト値を返す。
-      return { jaOnly: false, viewMode: 'grid', hideImages: false, isInitialized: true, theme: 'system', language: 'ja', autoLaunch: false, refreshInterval: 15 };
+      return {
+        jaOnly: false,
+        viewMode: 'grid',
+        hideImages: false,
+        isInitialized: true,
+        theme: 'system',
+        language: 'ja',
+        autoLaunch: false,
+        refreshInterval: 15,
+        obsidianVaultPath: 'C:\\Users\\charg\\Documents\\Personal Space',
+        enableObsidianAutoSync: true
+      };
     }
   },
 

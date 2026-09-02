@@ -31,7 +31,9 @@ describe('ObsidianVaultService', () => {
     // クリーニング
     try {
       await fs.rm(tempVaultDir, { recursive: true, force: true });
-    } catch {}
+    } catch {
+      // ignore
+    }
   });
 
   describe('indexVaultNotes', () => {

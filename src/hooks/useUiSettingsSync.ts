@@ -61,7 +61,9 @@ export const useUiSettingsSync = () => {
             theme,
             language,
             autoLaunch,
-            refreshInterval
+            refreshInterval,
+            obsidianVaultPath: 'C:\\Users\\charg\\Documents\\Personal Space',
+            enableObsidianAutoSync: true
           });
         }
       } catch (err) {

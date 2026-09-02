@@ -1,5 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
+import { SchemaType, type ResponseSchema } from '@google/generative-ai';
 import type { Article } from '../models/Article';
 import type { GeminiService } from './GeminiService';
 import type { ArchivistAgent } from '../agents/ArchivistAgent';
@@ -214,16 +215,16 @@ export class ObsidianVaultService {
     if (this.geminiService) {
       try {
         const prompt = `以下のニュース記事を要約し、日本語のJSON形式で出力してください。\nタイトル: ${title}\n詳細: ${desc}\nカテゴリ: ${category}`;
-        const schema = {
-          type: "OBJECT" as const,
+        const schema: ResponseSchema = {
+          type: SchemaType.OBJECT,
           properties: {
-            summary: { type: "STRING" as const },
-            keyTakeaways: { type: "ARRAY" as const, items: { type: "STRING" as const } },
-            tags: { type: "ARRAY" as const, items: { type: "STRING" as const } }
+            summary: { type: SchemaType.STRING },
+            keyTakeaways: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+            tags: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } }
           },
           required: ["summary", "keyTakeaways", "tags"]
         };
-        const result = await this.geminiService.generateStructured<ArticleSummaryResult>(prompt, schema as any);
+        const result = await this.geminiService.generateStructured<ArticleSummaryResult>(prompt, schema);
         if (result && result.summary) {
           return result;
         }
