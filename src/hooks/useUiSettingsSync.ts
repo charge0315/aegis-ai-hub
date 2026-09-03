@@ -25,6 +25,7 @@ export const useUiSettingsSync = () => {
   const [theme, setTheme] = useState<UiSettings['theme']>('system');
   const [language, setLanguage] = useState<Language>('ja');
   const [autoLaunch, setAutoLaunch] = useState(false);
+  const [refreshInterval, setRefreshInterval] = useState<number>(15);
 
   // Load UI settings
   useEffect(() => {
@@ -38,6 +39,7 @@ export const useUiSettingsSync = () => {
         setTheme(saved.theme || 'system');
         setLanguage(saved.language || 'ja');
         setAutoLaunch(saved.autoLaunch || false);
+        setRefreshInterval(saved.refreshInterval ?? 15);
       } catch (err) {
         console.error("Failed to load UI settings:", err);
       }
@@ -58,7 +60,10 @@ export const useUiSettingsSync = () => {
             isInitialized,
             theme,
             language,
-            autoLaunch
+            autoLaunch,
+            refreshInterval,
+            obsidianVaultPath: 'C:\\Users\\charg\\Documents\\Personal Space',
+            enableObsidianAutoSync: true
           });
         }
       } catch (err) {
@@ -67,7 +72,7 @@ export const useUiSettingsSync = () => {
     };
     const timeout = setTimeout(() => { void save(); }, 100);
     return () => clearTimeout(timeout);
-  }, [isJapaneseOnly, feedSize, showImages, isInitialized, theme, language, autoLaunch]);
+  }, [isJapaneseOnly, feedSize, showImages, isInitialized, theme, language, autoLaunch, refreshInterval]);
 
   return {
     feedSize, setFeedSize,
@@ -76,6 +81,7 @@ export const useUiSettingsSync = () => {
     isInitialized, setIsInitialized,
     theme, setTheme,
     language, setLanguage,
-    autoLaunch, setAutoLaunch
+    autoLaunch, setAutoLaunch,
+    refreshInterval, setRefreshInterval
   };
 };

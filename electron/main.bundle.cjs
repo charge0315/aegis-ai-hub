@@ -279,10 +279,10 @@ function mergeDefs(...defs) {
 function cloneDef(schema) {
   return mergeDefs(schema._zod.def);
 }
-function getElementAtPath(obj, path6) {
-  if (!path6)
+function getElementAtPath(obj, path7) {
+  if (!path7)
     return obj;
-  return path6.reduce((acc, key) => acc?.[key], obj);
+  return path7.reduce((acc, key) => acc?.[key], obj);
 }
 function promiseAllObject(promisesObj) {
   const keys = Object.keys(promisesObj);
@@ -610,11 +610,11 @@ function explicitlyAborted(x, startIndex = 0) {
   }
   return false;
 }
-function prefixIssues(path6, issues) {
+function prefixIssues(path7, issues) {
   return issues.map((iss) => {
     var _a7;
     (_a7 = iss).path ?? (_a7.path = []);
-    iss.path.unshift(path6);
+    iss.path.unshift(path7);
     return iss;
   });
 }
@@ -831,16 +831,16 @@ function flattenError(error51, mapper = (issue2) => issue2.message) {
 }
 function formatError(error51, mapper = (issue2) => issue2.message) {
   const fieldErrors = { _errors: [] };
-  const processError = (error52, path6 = []) => {
+  const processError = (error52, path7 = []) => {
     for (const issue2 of error52.issues) {
       if (issue2.code === "invalid_union" && issue2.errors.length) {
-        issue2.errors.map((issues) => processError({ issues }, [...path6, ...issue2.path]));
+        issue2.errors.map((issues) => processError({ issues }, [...path7, ...issue2.path]));
       } else if (issue2.code === "invalid_key") {
-        processError({ issues: issue2.issues }, [...path6, ...issue2.path]);
+        processError({ issues: issue2.issues }, [...path7, ...issue2.path]);
       } else if (issue2.code === "invalid_element") {
-        processError({ issues: issue2.issues }, [...path6, ...issue2.path]);
+        processError({ issues: issue2.issues }, [...path7, ...issue2.path]);
       } else {
-        const fullpath = [...path6, ...issue2.path];
+        const fullpath = [...path7, ...issue2.path];
         if (fullpath.length === 0) {
           fieldErrors._errors.push(mapper(issue2));
         } else {
@@ -867,17 +867,17 @@ function formatError(error51, mapper = (issue2) => issue2.message) {
 }
 function treeifyError(error51, mapper = (issue2) => issue2.message) {
   const result = { errors: [] };
-  const processError = (error52, path6 = []) => {
+  const processError = (error52, path7 = []) => {
     var _a7, _b;
     for (const issue2 of error52.issues) {
       if (issue2.code === "invalid_union" && issue2.errors.length) {
-        issue2.errors.map((issues) => processError({ issues }, [...path6, ...issue2.path]));
+        issue2.errors.map((issues) => processError({ issues }, [...path7, ...issue2.path]));
       } else if (issue2.code === "invalid_key") {
-        processError({ issues: issue2.issues }, [...path6, ...issue2.path]);
+        processError({ issues: issue2.issues }, [...path7, ...issue2.path]);
       } else if (issue2.code === "invalid_element") {
-        processError({ issues: issue2.issues }, [...path6, ...issue2.path]);
+        processError({ issues: issue2.issues }, [...path7, ...issue2.path]);
       } else {
-        const fullpath = [...path6, ...issue2.path];
+        const fullpath = [...path7, ...issue2.path];
         if (fullpath.length === 0) {
           result.errors.push(mapper(issue2));
           continue;
@@ -909,8 +909,8 @@ function treeifyError(error51, mapper = (issue2) => issue2.message) {
 }
 function toDotPath(_path) {
   const segs = [];
-  const path6 = _path.map((seg) => typeof seg === "object" ? seg.key : seg);
-  for (const seg of path6) {
+  const path7 = _path.map((seg) => typeof seg === "object" ? seg.key : seg);
+  for (const seg of path7) {
     if (typeof seg === "number")
       segs.push(`[${seg}]`);
     else if (typeof seg === "symbol")
@@ -14316,13 +14316,13 @@ function resolveRef(ref, ctx) {
   if (!ref.startsWith("#")) {
     throw new Error("External $ref is not supported, only local refs (#/...) are allowed");
   }
-  const path6 = ref.slice(1).split("/").filter(Boolean);
-  if (path6.length === 0) {
+  const path7 = ref.slice(1).split("/").filter(Boolean);
+  if (path7.length === 0) {
     return ctx.rootSchema;
   }
   const defsKey = ctx.version === "draft-2020-12" ? "$defs" : "definitions";
-  if (path6[0] === defsKey) {
-    const key = path6[1];
+  if (path7[0] === defsKey) {
+    const key = path7[1];
     if (!key || !ctx.defs[key]) {
       throw new Error(`Reference not found: ${ref}`);
     }
@@ -15148,7 +15148,10 @@ var init_Schemas = __esm({
       isInitialized: external_exports.boolean().default(false),
       theme: external_exports.enum(["light", "dark", "system"]).default("system"),
       language: external_exports.enum(["ja", "en"]).default("ja"),
-      autoLaunch: external_exports.boolean().default(false)
+      autoLaunch: external_exports.boolean().default(false),
+      refreshInterval: external_exports.number().default(15),
+      obsidianVaultPath: external_exports.string().default("C:\\Users\\charg\\Documents\\Personal Space"),
+      enableObsidianAutoSync: external_exports.boolean().default(true)
     });
     UsageStatsSchema = external_exports.record(
       external_exports.string(),
@@ -26541,11 +26544,11 @@ var require_mime_types = __commonJS({
       }
       return exts[0];
     }
-    function lookup(path6) {
-      if (!path6 || typeof path6 !== "string") {
+    function lookup(path7) {
+      if (!path7 || typeof path7 !== "string") {
         return false;
       }
-      var extension2 = extname("x." + path6).toLowerCase().substr(1);
+      var extension2 = extname("x." + path7).toLowerCase().substr(1);
       if (!extension2) {
         return false;
       }
@@ -27650,11 +27653,11 @@ var require_form_data = __commonJS({
     "use strict";
     var CombinedStream = require_combined_stream();
     var util3 = require("util");
-    var path6 = require("path");
+    var path7 = require("path");
     var http3 = require("http");
     var https2 = require("https");
     var parseUrl2 = require("url").parse;
-    var fs8 = require("fs");
+    var fs9 = require("fs");
     var Stream = require("stream").Stream;
     var crypto3 = require("crypto");
     var mime = require_mime_types();
@@ -27721,7 +27724,7 @@ var require_form_data = __commonJS({
         if (value.end != void 0 && value.end != Infinity && value.start != void 0) {
           callback(null, value.end + 1 - (value.start ? value.start : 0));
         } else {
-          fs8.stat(value.path, function(err, stat) {
+          fs9.stat(value.path, function(err, stat) {
             if (err) {
               callback(err);
               return;
@@ -27778,11 +27781,11 @@ var require_form_data = __commonJS({
     FormData3.prototype._getContentDisposition = function(value, options) {
       var filename;
       if (typeof options.filepath === "string") {
-        filename = path6.normalize(options.filepath).replace(/\\/g, "/");
+        filename = path7.normalize(options.filepath).replace(/\\/g, "/");
       } else if (options.filename || value && (value.name || value.path)) {
-        filename = path6.basename(options.filename || value && (value.name || value.path));
+        filename = path7.basename(options.filename || value && (value.name || value.path));
       } else if (value && value.readable && hasOwn2(value, "httpVersion")) {
-        filename = path6.basename(value.client._httpMessage.path || "");
+        filename = path7.basename(value.client._httpMessage.path || "");
       }
       if (filename) {
         return 'filename="' + filename + '"';
@@ -27979,9 +27982,9 @@ function isVisitable(thing) {
 function removeBrackets(key) {
   return utils_default.endsWith(key, "[]") ? key.slice(0, -2) : key;
 }
-function renderKey(path6, key, dots) {
-  if (!path6) return key;
-  return path6.concat(key).map(function each2(token, i) {
+function renderKey(path7, key, dots) {
+  if (!path7) return key;
+  return path7.concat(key).map(function each2(token, i) {
     token = removeBrackets(token);
     return !dots && i ? "[" + token + "]" : token;
   }).join(dots ? "." : "");
@@ -28032,13 +28035,13 @@ function toFormData(obj, formData, options) {
     }
     return value;
   }
-  function defaultVisitor(value, key, path6) {
+  function defaultVisitor(value, key, path7) {
     let arr = value;
     if (utils_default.isReactNative(formData) && utils_default.isReactNativeBlob(value)) {
-      formData.append(renderKey(path6, key, dots), convertValue(value));
+      formData.append(renderKey(path7, key, dots), convertValue(value));
       return false;
     }
-    if (value && !path6 && typeof value === "object") {
+    if (value && !path7 && typeof value === "object") {
       if (utils_default.endsWith(key, "{}")) {
         key = metaTokens ? key : key.slice(0, -2);
         value = JSON.stringify(value);
@@ -28057,7 +28060,7 @@ function toFormData(obj, formData, options) {
     if (isVisitable(value)) {
       return true;
     }
-    formData.append(renderKey(path6, key, dots), convertValue(value));
+    formData.append(renderKey(path7, key, dots), convertValue(value));
     return false;
   }
   const stack = [];
@@ -28066,7 +28069,7 @@ function toFormData(obj, formData, options) {
     convertValue,
     isVisitable
   });
-  function build(value, path6, depth = 0) {
+  function build(value, path7, depth = 0) {
     if (utils_default.isUndefined(value)) return;
     if (depth > maxDepth) {
       throw new AxiosError_default(
@@ -28075,13 +28078,13 @@ function toFormData(obj, formData, options) {
       );
     }
     if (stack.indexOf(value) !== -1) {
-      throw Error("Circular reference detected in " + path6.join("."));
+      throw Error("Circular reference detected in " + path7.join("."));
     }
     stack.push(value);
     utils_default.forEach(value, function each2(el, key) {
-      const result = !(utils_default.isUndefined(el) || el === null) && visitor.call(formData, el, utils_default.isString(key) ? key.trim() : key, path6, exposedHelpers);
+      const result = !(utils_default.isUndefined(el) || el === null) && visitor.call(formData, el, utils_default.isString(key) ? key.trim() : key, path7, exposedHelpers);
       if (result === true) {
-        build(el, path6 ? path6.concat(key) : [key], depth + 1);
+        build(el, path7 ? path7.concat(key) : [key], depth + 1);
       }
     });
     stack.pop();
@@ -28354,7 +28357,7 @@ var init_platform = __esm({
 // node_modules/axios/lib/helpers/toURLEncodedForm.js
 function toURLEncodedForm(data2, options) {
   return toFormData_default(data2, new platform_default.classes.URLSearchParams(), {
-    visitor: function(value, key, path6, helpers) {
+    visitor: function(value, key, path7, helpers) {
       if (platform_default.isNode && utils_default.isBuffer(value)) {
         this.append(key, value.toString("base64"));
         return false;
@@ -28392,11 +28395,11 @@ function arrayToObject(arr) {
   return obj;
 }
 function formDataToJSON(formData) {
-  function buildPath(path6, value, target, index2) {
-    let name = path6[index2++];
+  function buildPath(path7, value, target, index2) {
+    let name = path7[index2++];
     if (name === "__proto__") return true;
     const isNumericKey = Number.isFinite(+name);
-    const isLast = index2 >= path6.length;
+    const isLast = index2 >= path7.length;
     name = !name && utils_default.isArray(target) ? target.length : name;
     if (isLast) {
       if (utils_default.hasOwnProp(target, name)) {
@@ -28409,7 +28412,7 @@ function formDataToJSON(formData) {
     if (!target[name] || !utils_default.isObject(target[name])) {
       target[name] = [];
     }
-    const result = buildPath(path6, value, target[name], index2);
+    const result = buildPath(path7, value, target[name], index2);
     if (result && utils_default.isArray(target[name])) {
       target[name] = arrayToObject(target[name]);
     }
@@ -31492,9 +31495,9 @@ var init_http = __esm({
           auth = urlUsername + ":" + urlPassword;
         }
         auth && headers.delete("authorization");
-        let path6;
+        let path7;
         try {
-          path6 = buildURL(
+          path7 = buildURL(
             parsed.pathname + parsed.search,
             config2.params,
             config2.paramsSerializer
@@ -31512,7 +31515,7 @@ var init_http = __esm({
           false
         );
         const options = Object.assign(/* @__PURE__ */ Object.create(null), {
-          path: path6,
+          path: path7,
           method,
           headers: headers.toJSON(),
           agents: { http: config2.httpAgent, https: config2.httpsAgent },
@@ -31862,14 +31865,14 @@ var init_cookies = __esm({
     cookies_default = platform_default.hasStandardBrowserEnv ? (
       // Standard browser envs support document.cookie
       {
-        write(name, value, expires, path6, domain2, secure, sameSite) {
+        write(name, value, expires, path7, domain2, secure, sameSite) {
           if (typeof document === "undefined") return;
           const cookie = [`${name}=${encodeURIComponent(value)}`];
           if (utils_default.isNumber(expires)) {
             cookie.push(`expires=${new Date(expires).toUTCString()}`);
           }
-          if (utils_default.isString(path6)) {
-            cookie.push(`path=${path6}`);
+          if (utils_default.isString(path7)) {
+            cookie.push(`path=${path7}`);
           }
           if (utils_default.isString(domain2)) {
             cookie.push(`domain=${domain2}`);
@@ -54826,14 +54829,14 @@ var require_util = __commonJS({
         }
         const port = url3.port != null ? url3.port : url3.protocol === "https:" ? 443 : 80;
         let origin2 = url3.origin != null ? url3.origin : `${url3.protocol || ""}//${url3.hostname || ""}:${port}`;
-        let path6 = url3.path != null ? url3.path : `${url3.pathname || ""}${url3.search || ""}`;
+        let path7 = url3.path != null ? url3.path : `${url3.pathname || ""}${url3.search || ""}`;
         if (origin2[origin2.length - 1] === "/") {
           origin2 = origin2.slice(0, origin2.length - 1);
         }
-        if (path6 && path6[0] !== "/") {
-          path6 = `/${path6}`;
+        if (path7 && path7[0] !== "/") {
+          path7 = `/${path7}`;
         }
-        return new URL(`${origin2}${path6}`);
+        return new URL(`${origin2}${path7}`);
       }
       if (!isHttpOrHttpsPrefixed(url3.origin || url3.protocol)) {
         throw new InvalidArgumentError("Invalid URL protocol: the URL must start with `http:` or `https:`.");
@@ -55654,9 +55657,9 @@ var require_diagnostics = __commonJS({
         "undici:client:sendHeaders",
         (evt) => {
           const {
-            request: { method, path: path6, origin: origin2 }
+            request: { method, path: path7, origin: origin2 }
           } = evt;
-          debugLog("sending request to %s %s%s", method, origin2, path6);
+          debugLog("sending request to %s %s%s", method, origin2, path7);
         }
       );
     }
@@ -55674,14 +55677,14 @@ var require_diagnostics = __commonJS({
         "undici:request:headers",
         (evt) => {
           const {
-            request: { method, path: path6, origin: origin2 },
+            request: { method, path: path7, origin: origin2 },
             response: { statusCode }
           } = evt;
           debugLog(
             "received response to %s %s%s - HTTP %d",
             method,
             origin2,
-            path6,
+            path7,
             statusCode
           );
         }
@@ -55690,23 +55693,23 @@ var require_diagnostics = __commonJS({
         "undici:request:trailers",
         (evt) => {
           const {
-            request: { method, path: path6, origin: origin2 }
+            request: { method, path: path7, origin: origin2 }
           } = evt;
-          debugLog("trailers received from %s %s%s", method, origin2, path6);
+          debugLog("trailers received from %s %s%s", method, origin2, path7);
         }
       );
       diagnosticsChannel.subscribe(
         "undici:request:error",
         (evt) => {
           const {
-            request: { method, path: path6, origin: origin2 },
+            request: { method, path: path7, origin: origin2 },
             error: error51
           } = evt;
           debugLog(
             "request to %s %s%s errored - %s",
             method,
             origin2,
-            path6,
+            path7,
             error51.message
           );
         }
@@ -55809,7 +55812,7 @@ var require_request = __commonJS({
     var kHandler = /* @__PURE__ */ Symbol("handler");
     var Request = class {
       constructor(origin2, {
-        path: path6,
+        path: path7,
         method,
         body,
         headers,
@@ -55826,11 +55829,11 @@ var require_request = __commonJS({
         maxRedirections,
         typeOfService
       }, handler) {
-        if (typeof path6 !== "string") {
+        if (typeof path7 !== "string") {
           throw new InvalidArgumentError("path must be a string");
-        } else if (path6[0] !== "/" && !(path6.startsWith("http://") || path6.startsWith("https://")) && method !== "CONNECT") {
+        } else if (path7[0] !== "/" && !(path7.startsWith("http://") || path7.startsWith("https://")) && method !== "CONNECT") {
           throw new InvalidArgumentError("path must be an absolute URL or start with a slash");
-        } else if (invalidPathRegex.test(path6)) {
+        } else if (invalidPathRegex.test(path7)) {
           throw new InvalidArgumentError("invalid request path");
         }
         if (typeof method !== "string") {
@@ -55905,7 +55908,7 @@ var require_request = __commonJS({
         this.completed = false;
         this.aborted = false;
         this.upgrade = upgrade || null;
-        this.path = query ? serializePathWithQuery(path6, query) : path6;
+        this.path = query ? serializePathWithQuery(path7, query) : path7;
         this.origin = origin2;
         this.protocol = getProtocolFromUrlString(origin2);
         this.idempotent = idempotent == null ? method === "HEAD" || method === "GET" : idempotent;
@@ -60944,7 +60947,7 @@ var require_client_h1 = __commonJS({
       return method !== "GET" && method !== "HEAD" && method !== "OPTIONS" && method !== "TRACE" && method !== "CONNECT";
     }
     function writeH1(client, request) {
-      const { method, path: path6, host, upgrade, blocking, reset } = request;
+      const { method, path: path7, host, upgrade, blocking, reset } = request;
       let { body, headers, contentLength } = request;
       const expectsPayload = method === "PUT" || method === "POST" || method === "PATCH" || method === "QUERY" || method === "PROPFIND" || method === "PROPPATCH";
       if (util3.isFormDataLike(body)) {
@@ -61013,7 +61016,7 @@ var require_client_h1 = __commonJS({
       if (socket.setTypeOfService) {
         socket.setTypeOfService(request.typeOfService);
       }
-      let header = `${method} ${path6} HTTP/1.1\r
+      let header = `${method} ${path7} HTTP/1.1\r
 `;
       if (typeof host === "string") {
         header += `host: ${host}\r
@@ -61666,7 +61669,7 @@ var require_client_h2 = __commonJS({
     function writeH2(client, request) {
       const requestTimeout = request.bodyTimeout ?? client[kBodyTimeout];
       const session = client[kHTTP2Session];
-      const { method, path: path6, host, upgrade, expectContinue, signal, protocol, headers: reqHeaders } = request;
+      const { method, path: path7, host, upgrade, expectContinue, signal, protocol, headers: reqHeaders } = request;
       let { body } = request;
       if (upgrade != null && upgrade !== "websocket") {
         util3.errorRequest(client, request, new InvalidArgumentError(`Custom upgrade "${upgrade}" not supported over HTTP/2`));
@@ -61734,7 +61737,7 @@ var require_client_h2 = __commonJS({
           }
           headers[HTTP2_HEADER_METHOD] = "CONNECT";
           headers[HTTP2_HEADER_PROTOCOL] = "websocket";
-          headers[HTTP2_HEADER_PATH] = path6;
+          headers[HTTP2_HEADER_PATH] = path7;
           if (protocol === "ws:" || protocol === "wss:") {
             headers[HTTP2_HEADER_SCHEME] = protocol === "ws:" ? "http" : "https";
           } else {
@@ -61775,7 +61778,7 @@ var require_client_h2 = __commonJS({
         stream4.setTimeout(requestTimeout);
         return true;
       }
-      headers[HTTP2_HEADER_PATH] = path6;
+      headers[HTTP2_HEADER_PATH] = path7;
       headers[HTTP2_HEADER_SCHEME] = protocol === "http:" ? "http" : "https";
       const expectsPayload = method === "PUT" || method === "POST" || method === "PATCH";
       if (body && typeof body.read === "function") {
@@ -64077,10 +64080,10 @@ var require_proxy_agent = __commonJS({
         };
         const {
           origin: origin2,
-          path: path6 = "/",
+          path: path7 = "/",
           headers = {}
         } = opts;
-        opts.path = origin2 + path6;
+        opts.path = origin2 + path7;
         if (!("host" in headers) && !("Host" in headers)) {
           const { host } = new URL(origin2);
           headers.host = host;
@@ -66143,20 +66146,20 @@ var require_mock_utils = __commonJS({
       }
       return normalizedQp;
     }
-    function safeUrl(path6) {
-      if (typeof path6 !== "string") {
-        return path6;
+    function safeUrl(path7) {
+      if (typeof path7 !== "string") {
+        return path7;
       }
-      const pathSegments = path6.split("?", 3);
+      const pathSegments = path7.split("?", 3);
       if (pathSegments.length !== 2) {
-        return path6;
+        return path7;
       }
       const qp = new URLSearchParams(pathSegments.pop());
       qp.sort();
       return [...pathSegments, qp.toString()].join("?");
     }
-    function matchKey(mockDispatch2, { path: path6, method, body, headers }) {
-      const pathMatch = matchValue(mockDispatch2.path, path6);
+    function matchKey(mockDispatch2, { path: path7, method, body, headers }) {
+      const pathMatch = matchValue(mockDispatch2.path, path7);
       const methodMatch = matchValue(mockDispatch2.method, method);
       const bodyMatch = typeof mockDispatch2.body !== "undefined" ? matchValue(mockDispatch2.body, body) : true;
       const headersMatch = matchHeaders(mockDispatch2, headers);
@@ -66181,8 +66184,8 @@ var require_mock_utils = __commonJS({
       const basePath = key.query ? serializePathWithQuery(key.path, key.query) : key.path;
       const resolvedPath = typeof basePath === "string" ? safeUrl(basePath) : basePath;
       const resolvedPathWithoutTrailingSlash = removeTrailingSlash(resolvedPath);
-      let matchedMockDispatches = mockDispatches.filter(({ consumed }) => !consumed).filter(({ path: path6, ignoreTrailingSlash }) => {
-        return ignoreTrailingSlash ? matchValue(removeTrailingSlash(safeUrl(path6)), resolvedPathWithoutTrailingSlash) : matchValue(safeUrl(path6), resolvedPath);
+      let matchedMockDispatches = mockDispatches.filter(({ consumed }) => !consumed).filter(({ path: path7, ignoreTrailingSlash }) => {
+        return ignoreTrailingSlash ? matchValue(removeTrailingSlash(safeUrl(path7)), resolvedPathWithoutTrailingSlash) : matchValue(safeUrl(path7), resolvedPath);
       });
       if (matchedMockDispatches.length === 0) {
         throw new MockNotMatchedError(`Mock dispatch not matched for path '${resolvedPath}'`);
@@ -66221,19 +66224,19 @@ var require_mock_utils = __commonJS({
         mockDispatches.splice(index2, 1);
       }
     }
-    function removeTrailingSlash(path6) {
-      while (path6.endsWith("/")) {
-        path6 = path6.slice(0, -1);
+    function removeTrailingSlash(path7) {
+      while (path7.endsWith("/")) {
+        path7 = path7.slice(0, -1);
       }
-      if (path6.length === 0) {
-        path6 = "/";
+      if (path7.length === 0) {
+        path7 = "/";
       }
-      return path6;
+      return path7;
     }
     function buildKey(opts) {
-      const { path: path6, method, body, headers, query } = opts;
+      const { path: path7, method, body, headers, query } = opts;
       return {
-        path: path6,
+        path: path7,
         method,
         body,
         headers,
@@ -66923,10 +66926,10 @@ var require_pending_interceptors_formatter = __commonJS({
       }
       format(pendingInterceptors) {
         const withPrettyHeaders = pendingInterceptors.map(
-          ({ method, path: path6, data: { statusCode }, persist, times, timesInvoked, origin: origin2 }) => ({
+          ({ method, path: path7, data: { statusCode }, persist, times, timesInvoked, origin: origin2 }) => ({
             Method: method,
             Origin: origin2,
-            Path: path6,
+            Path: path7,
             "Status code": statusCode,
             Persistent: persist ? PERSISTENT : NOT_PERSISTENT,
             Invocations: timesInvoked,
@@ -67008,9 +67011,9 @@ var require_mock_agent = __commonJS({
         const acceptNonStandardSearchParameters = this[kMockAgentAcceptsNonStandardSearchParameters];
         const dispatchOpts = { ...opts };
         if (acceptNonStandardSearchParameters && dispatchOpts.path) {
-          const [path6, searchParams] = dispatchOpts.path.split("?");
+          const [path7, searchParams] = dispatchOpts.path.split("?");
           const normalizedSearchParams = normalizeSearchParams(searchParams, acceptNonStandardSearchParameters);
-          dispatchOpts.path = `${path6}?${normalizedSearchParams}`;
+          dispatchOpts.path = `${path7}?${normalizedSearchParams}`;
         }
         return this[kAgent].dispatch(dispatchOpts, handler);
       }
@@ -67411,12 +67414,12 @@ var require_snapshot_recorder = __commonJS({
        * @return {Promise<void>} - Resolves when snapshots are loaded
        */
       async loadSnapshots(filePath) {
-        const path6 = filePath || this.#snapshotPath;
-        if (!path6) {
+        const path7 = filePath || this.#snapshotPath;
+        if (!path7) {
           throw new InvalidArgumentError("Snapshot path is required");
         }
         try {
-          const data2 = await readFile(resolve(path6), "utf8");
+          const data2 = await readFile(resolve(path7), "utf8");
           const parsed = JSON.parse(data2);
           if (Array.isArray(parsed)) {
             this.#snapshots.clear();
@@ -67430,7 +67433,7 @@ var require_snapshot_recorder = __commonJS({
           if (error51.code === "ENOENT") {
             this.#snapshots.clear();
           } else {
-            throw new UndiciError(`Failed to load snapshots from ${path6}`, { cause: error51 });
+            throw new UndiciError(`Failed to load snapshots from ${path7}`, { cause: error51 });
           }
         }
       }
@@ -67441,11 +67444,11 @@ var require_snapshot_recorder = __commonJS({
        * @returns {Promise<void>} - Resolves when snapshots are saved
        */
       async saveSnapshots(filePath) {
-        const path6 = filePath || this.#snapshotPath;
-        if (!path6) {
+        const path7 = filePath || this.#snapshotPath;
+        if (!path7) {
           throw new InvalidArgumentError("Snapshot path is required");
         }
-        const resolvedPath = resolve(path6);
+        const resolvedPath = resolve(path7);
         await mkdir(dirname(resolvedPath), { recursive: true });
         const data2 = Array.from(this.#snapshots.entries()).map(([hash2, snapshot]) => ({
           hash: hash2,
@@ -68070,15 +68073,15 @@ var require_redirect_handler = __commonJS({
           return;
         }
         const { origin: origin2, pathname, search } = util3.parseURL(new URL(this.location, this.opts.origin && new URL(this.opts.path, this.opts.origin)));
-        const path6 = search ? `${pathname}${search}` : pathname;
-        const redirectUrlString = `${origin2}${path6}`;
+        const path7 = search ? `${pathname}${search}` : pathname;
+        const redirectUrlString = `${origin2}${path7}`;
         for (const historyUrl of this.history) {
           if (historyUrl.toString() === redirectUrlString) {
             throw new InvalidArgumentError(`Redirect loop detected. Cannot redirect to ${origin2}. This typically happens when using a Client or Pool with cross-origin redirects. Use an Agent for cross-origin redirects.`);
           }
         }
         this.opts.headers = cleanRequestHeaders(this.opts.headers, statusCode === 303, this.opts.origin !== origin2);
-        this.opts.path = path6;
+        this.opts.path = path7;
         this.opts.origin = origin2;
         this.opts.query = null;
       }
@@ -74285,11 +74288,11 @@ var require_fetch = __commonJS({
       function dispatch({ body }) {
         const url3 = requestCurrentURL(request);
         const agent = fetchParams.controller.dispatcher;
-        const path6 = url3.pathname + url3.search;
+        const path7 = url3.pathname + url3.search;
         const hasTrailingQuestionMark = url3.search.length === 0 && url3.href[url3.href.length - url3.hash.length - 1] === "?";
         return new Promise((resolve, reject) => agent.dispatch(
           {
-            path: hasTrailingQuestionMark ? `${path6}?` : path6,
+            path: hasTrailingQuestionMark ? `${path7}?` : path7,
             origin: url3.origin,
             method: request.method,
             body: agent.isMockActive ? request.body && (request.body.source || request.body.stream) : body,
@@ -75236,9 +75239,9 @@ var require_util4 = __commonJS({
         }
       }
     }
-    function validateCookiePath(path6) {
-      for (let i = 0; i < path6.length; ++i) {
-        const code = path6.charCodeAt(i);
+    function validateCookiePath(path7) {
+      for (let i = 0; i < path7.length; ++i) {
+        const code = path7.charCodeAt(i);
         if (code < 32 || // exclude CTLs (0-31)
         code === 127 || // DEL
         code === 59) {
@@ -78408,11 +78411,11 @@ var require_undici = __commonJS({
           if (typeof opts.path !== "string") {
             throw new InvalidArgumentError("invalid opts.path");
           }
-          let path6 = opts.path;
+          let path7 = opts.path;
           if (!opts.path.startsWith("/")) {
-            path6 = `/${path6}`;
+            path7 = `/${path7}`;
           }
-          url3 = new URL(util3.parseOrigin(url3).origin + path6);
+          url3 = new URL(util3.parseOrigin(url3).origin + path7);
         } else {
           if (!opts) {
             opts = typeof url3 === "object" ? url3 : {};
@@ -86615,6 +86618,262 @@ var init_ExternalTrendFetcher = __esm({
   }
 });
 
+// src/services/ObsidianVaultService.ts
+var ObsidianVaultService_exports = {};
+__export(ObsidianVaultService_exports, {
+  ObsidianVaultService: () => ObsidianVaultService
+});
+var import_promises6, import_path5, ObsidianVaultService;
+var init_ObsidianVaultService = __esm({
+  "src/services/ObsidianVaultService.ts"() {
+    import_promises6 = __toESM(require("fs/promises"), 1);
+    import_path5 = __toESM(require("path"), 1);
+    init_dist();
+    ObsidianVaultService = class {
+      vaultPath;
+      geminiService;
+      archivistAgent;
+      processedLinks = /* @__PURE__ */ new Set();
+      constructor(vaultPath = "C:\\Users\\charg\\Documents\\Personal Space", geminiService2, archivistAgent) {
+        this.vaultPath = vaultPath;
+        this.geminiService = geminiService2;
+        this.archivistAgent = archivistAgent;
+      }
+      setVaultPath(vaultPath) {
+        this.vaultPath = vaultPath;
+      }
+      setGeminiService(geminiService2) {
+        this.geminiService = geminiService2;
+      }
+      setArchivistAgent(archivistAgent) {
+        this.archivistAgent = archivistAgent;
+      }
+      /**
+       * Vault内の全Markdownファイルを走査してインデックスを作成する
+       */
+      async indexVaultNotes() {
+        const index2 = [];
+        const scanDirectory = async (dir) => {
+          try {
+            const entries = await import_promises6.default.readdir(dir, { withFileTypes: true });
+            for (const entry of entries) {
+              const fullPath = import_path5.default.join(dir, entry.name);
+              if (entry.isDirectory()) {
+                const dirName = entry.name.toLowerCase();
+                if (entry.name.startsWith(".") || dirName === "node_modules" || dirName === "dist" || dirName === "build") continue;
+                await scanDirectory(fullPath);
+              } else if (entry.isFile() && entry.name.endsWith(".md")) {
+                const relPath = import_path5.default.relative(this.vaultPath, fullPath);
+                const title = import_path5.default.basename(entry.name, ".md");
+                try {
+                  const content = await import_promises6.default.readFile(fullPath, "utf-8");
+                  const tags = [];
+                  const tagMatches = content.matchAll(/#([\w\-/\u3040-\u30FF\u4E00-\u9FAF]+)/g);
+                  for (const m of tagMatches) {
+                    if (m[1]) tags.push(m[1]);
+                  }
+                  const headers = (content.match(/^#{1,6}\s+(.+)$/gm) || []).map((h) => h.replace(/^#{1,6}\s+/, ""));
+                  const keywords = [
+                    ...title.split(/[\s_\-–—/]+/),
+                    ...headers.flatMap((h) => h.split(/[\s_\-–—/]+/))
+                  ].filter((k) => k.length > 1);
+                  index2.push({
+                    title,
+                    relativePath: relPath,
+                    tags,
+                    keywords
+                  });
+                } catch {
+                  index2.push({
+                    title,
+                    relativePath: relPath,
+                    tags: [],
+                    keywords: [title]
+                  });
+                }
+              }
+            }
+          } catch (err) {
+            console.warn(`[ObsidianVaultService] Failed to scan dir ${dir}:`, err);
+          }
+        };
+        try {
+          await scanDirectory(this.vaultPath);
+        } catch (err) {
+          console.error("[ObsidianVaultService] Failed to index vault notes:", err);
+        }
+        return index2;
+      }
+      /**
+       * 記事のタイトル・カテゴリ・要約から既存ノートとの関連ノート（WikiLink候補）を特定する
+       */
+      findRelatedNotes(articleTitle, category, summary, noteIndex, limit = 4) {
+        const textToMatch = `${articleTitle} ${category} ${summary}`.toLowerCase();
+        const tokens = new Set(
+          textToMatch.replace(/[^\w\s\u3040-\u30FF\u4E00-\u9FAF]/g, " ").split(/\s+/).filter((t) => t.length >= 2)
+        );
+        const scored = noteIndex.filter((item) => {
+          const isNewsDir = item.relativePath.startsWith("News\\") || item.relativePath.startsWith("News/");
+          return !isNewsDir || !articleTitle.includes(item.title);
+        }).map((item) => {
+          let score = 0;
+          const itemTitleLower = item.title.toLowerCase();
+          if (textToMatch.includes(itemTitleLower)) {
+            score += 10;
+          } else {
+            const itemTitleTokens = itemTitleLower.split(/[\s_\-–—/]+/);
+            for (const t of itemTitleTokens) {
+              if (t.length >= 2 && tokens.has(t)) {
+                score += 3;
+              }
+            }
+          }
+          for (const kw of item.keywords) {
+            if (tokens.has(kw.toLowerCase())) {
+              score += 2;
+            }
+          }
+          for (const tag of item.tags) {
+            if (tokens.has(tag.toLowerCase())) {
+              score += 2;
+            }
+          }
+          return { item, score };
+        }).filter((r) => r.score >= 3).sort((a, b) => b.score - a.score).slice(0, limit);
+        return scored.map((s) => s.item);
+      }
+      /**
+       * AIを用いて記事の要約と要点、タグを生成する
+       */
+      async summarizeArticle(article) {
+        const title = article.title;
+        const desc = article.desc || "";
+        const category = article.category || "News";
+        if (this.archivistAgent) {
+          try {
+            const res = await this.archivistAgent.summarizeAndArchive(`\u30BF\u30A4\u30C8\u30EB: ${title}
+\u5185\u5BB9: ${desc}
+\u30AB\u30C6\u30B4\u30EA: ${category}`);
+            return {
+              summary: res.summary,
+              keyTakeaways: res.key_takeaways || [],
+              tags: res.tags || [category]
+            };
+          } catch (err) {
+            console.warn("[ObsidianVaultService] ArchivistAgent summarize failed, fallback:", err);
+          }
+        }
+        if (this.geminiService) {
+          try {
+            const prompt = `\u4EE5\u4E0B\u306E\u30CB\u30E5\u30FC\u30B9\u8A18\u4E8B\u3092\u8981\u7D04\u3057\u3001\u65E5\u672C\u8A9E\u306EJSON\u5F62\u5F0F\u3067\u51FA\u529B\u3057\u3066\u304F\u3060\u3055\u3044\u3002
+\u30BF\u30A4\u30C8\u30EB: ${title}
+\u8A73\u7D30: ${desc}
+\u30AB\u30C6\u30B4\u30EA: ${category}`;
+            const schema = {
+              type: SchemaType.OBJECT,
+              properties: {
+                summary: { type: SchemaType.STRING },
+                keyTakeaways: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+                tags: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } }
+              },
+              required: ["summary", "keyTakeaways", "tags"]
+            };
+            const result = await this.geminiService.generateStructured(prompt, schema);
+            if (result && result.summary) {
+              return result;
+            }
+          } catch (err) {
+            console.warn("[ObsidianVaultService] GeminiService summarize failed, fallback:", err);
+          }
+        }
+        return {
+          summary: desc ? desc.length > 200 ? desc.slice(0, 200) + "..." : desc : title,
+          keyTakeaways: [title],
+          tags: [category.replace(/\s+/g, "_")]
+        };
+      }
+      /**
+       * 単一の記事をObsidianノートとして保存する
+       */
+      async exportArticle(article, noteIndex) {
+        if (!article.link || this.processedLinks.has(article.link)) {
+          return null;
+        }
+        const category = article.category || "Uncategorized";
+        const sanitizedCategory = category.replace(/[\\/:*?"<>|]/g, "_").trim();
+        const targetDir = import_path5.default.join(this.vaultPath, "News", sanitizedCategory);
+        await import_promises6.default.mkdir(targetDir, { recursive: true });
+        const summaryData = await this.summarizeArticle(article);
+        const index2 = noteIndex || await this.indexVaultNotes();
+        const relatedNotes = this.findRelatedNotes(article.title, category, summaryData.summary, index2);
+        const pubDate = article.date ? new Date(article.date) : /* @__PURE__ */ new Date();
+        const datePrefix = !isNaN(pubDate.getTime()) ? pubDate.toISOString().slice(0, 10).replace(/-/g, "") : (/* @__PURE__ */ new Date()).toISOString().slice(0, 10).replace(/-/g, "");
+        const sanitizedTitle = article.title.replace(/[\\/:*?"<>|]/g, "_").replace(/\s+/g, " ").trim().slice(0, 60);
+        const fileName = `${datePrefix}_${sanitizedTitle}.md`;
+        const filePath = import_path5.default.join(targetDir, fileName);
+        const tagsYaml = ["news", sanitizedCategory.toLowerCase().replace(/\s+/g, "_"), ...summaryData.tags].map((t) => t.replace(/^[#\s]+/, "")).filter((v, i, a) => a.indexOf(v) === i).map((t) => `  - ${t}`).join("\n");
+        const relatedLinksSection = relatedNotes.length > 0 ? relatedNotes.map((n) => `- [[${n.title}]]`).join("\n") : "- \u95A2\u9023\u30CE\u30FC\u30C8\u304C\u898B\u3064\u304B\u308A\u307E\u305B\u3093\u3067\u3057\u305F";
+        const keyTakeawaysSection = summaryData.keyTakeaways.length > 0 ? summaryData.keyTakeaways.map((k) => `- ${k}`).join("\n") : `- ${article.title}`;
+        const markdownContent = `---
+title: "${article.title.replace(/"/g, '\\"')}"
+source: "${article.link}"
+category: "${category}"
+date: "${pubDate.toISOString()}"
+brand: "${article.brand || ""}"
+tags:
+${tagsYaml}
+---
+
+# ${article.title}
+
+## \u6982\u8981
+${summaryData.summary}
+
+## \u4E3B\u8981\u30DD\u30A4\u30F3\u30C8
+${keyTakeawaysSection}
+
+## \u95A2\u9023\u30CE\u30FC\u30C8
+${relatedLinksSection}
+
+## \u60C5\u5831\u6E90
+- [\u5143\u8A18\u4E8B\u30EA\u30F3\u30AF](${article.link})
+`;
+        try {
+          await import_promises6.default.writeFile(filePath, markdownContent, "utf-8");
+          this.processedLinks.add(article.link);
+          console.log(`[ObsidianVaultService] Saved note: ${filePath}`);
+          return filePath;
+        } catch (err) {
+          console.error(`[ObsidianVaultService] Failed to write file ${filePath}:`, err);
+          return null;
+        }
+      }
+      /**
+       * 複数の記事を一括処理・Obsidianへ保存する
+       */
+      async exportArticles(articles, maxCount = 10) {
+        if (!articles || articles.length === 0) return [];
+        try {
+          const noteIndex = await this.indexVaultNotes();
+          const savedPaths = [];
+          const targetArticles = articles.slice(0, maxCount);
+          for (const article of targetArticles) {
+            const result = await this.exportArticle(article, noteIndex);
+            if (result) {
+              savedPaths.push(result);
+            }
+          }
+          console.log(`[ObsidianVaultService] Exported ${savedPaths.length} articles to Obsidian Vault.`);
+          return savedPaths;
+        } catch (err) {
+          console.error("[ObsidianVaultService] Export articles failed:", err);
+          return [];
+        }
+      }
+    };
+  }
+});
+
 // src/ScraperFacade.ts
 var ScraperFacade_exports = {};
 __export(ScraperFacade_exports, {
@@ -86630,6 +86889,7 @@ var init_ScraperFacade = __esm({
     init_Article();
     init_GeminiService();
     init_ExternalTrendFetcher();
+    init_ObsidianVaultService();
     init_normalize();
     ScraperFacade = class {
       feedManager;
@@ -86637,6 +86897,7 @@ var init_ScraperFacade = __esm({
       enrichmentService;
       geminiService;
       externalTrendFetcher;
+      obsidianVaultService;
       /**
        * @param _interestsPath - 未使用（将来の拡張用）
        * @param feedsPath - フィード構成ファイルのパス
@@ -86648,6 +86909,10 @@ var init_ScraperFacade = __esm({
         this.geminiService = new GeminiService(process.env.GEMINI_API_KEY);
         this.enrichmentService = new EnrichmentService(this.geminiService, dataDir2);
         this.externalTrendFetcher = new ExternalTrendFetcher();
+        this.obsidianVaultService = new ObsidianVaultService(
+          "C:\\Users\\charg\\Documents\\Personal Space",
+          this.geminiService
+        );
       }
       /**
        * AIサービス（Gemini）のAPIキーを更新します。
@@ -86655,6 +86920,9 @@ var init_ScraperFacade = __esm({
        */
       updateApiKey(apiKey) {
         this.geminiService.updateApiKey(apiKey);
+        if (this.obsidianVaultService) {
+          this.obsidianVaultService.setGeminiService(this.geminiService);
+        }
       }
       /**
        * AIによる「おすすめ記事」のキュレーションを実行します。
@@ -86845,7 +87113,13 @@ var init_ScraperFacade = __esm({
           }
         }
         console.log(`[ScraperFacade] Processed ${allArticles.length} articles.`);
-        return allArticles.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime() || b.score - a.score);
+        const sorted = allArticles.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime() || b.score - a.score);
+        if (this.obsidianVaultService && sorted.length > 0) {
+          void this.obsidianVaultService.exportArticles(sorted, 10).catch((err) => {
+            console.error("[ScraperFacade] Auto export to Obsidian failed:", err);
+          });
+        }
+        return sorted;
       }
       /**
        * 言語判定ロジック。
@@ -87253,11 +87527,11 @@ var LicenseManager_exports = {};
 __export(LicenseManager_exports, {
   LicenseManager: () => LicenseManager
 });
-var import_promises6, import_path5, import_crypto2, GRACE_PERIOD_DAYS, MAX_FREE_CATEGORIES, MAX_FREE_FEEDS, GUMROAD_VERIFY_URL, GUMROAD_PRODUCT_ID, HMAC_SECRET, LicenseManager;
+var import_promises7, import_path6, import_crypto2, GRACE_PERIOD_DAYS, MAX_FREE_CATEGORIES, MAX_FREE_FEEDS, GUMROAD_VERIFY_URL, GUMROAD_PRODUCT_ID, HMAC_SECRET, LicenseManager;
 var init_LicenseManager = __esm({
   "src/services/LicenseManager.ts"() {
-    import_promises6 = __toESM(require("fs/promises"), 1);
-    import_path5 = __toESM(require("path"), 1);
+    import_promises7 = __toESM(require("fs/promises"), 1);
+    import_path6 = __toESM(require("path"), 1);
     import_crypto2 = __toESM(require("crypto"), 1);
     GRACE_PERIOD_DAYS = 3;
     MAX_FREE_CATEGORIES = 3;
@@ -87270,7 +87544,7 @@ var init_LicenseManager = __esm({
       _state;
       _statePath;
       constructor(dataDir2) {
-        this._statePath = import_path5.default.join(dataDir2, "license.json");
+        this._statePath = import_path6.default.join(dataDir2, "license.json");
         this._state = this._defaultState();
       }
       static getInstance(dataDir2) {
@@ -87292,7 +87566,7 @@ var init_LicenseManager = __esm({
       // ── ローカル永続化 ──────────────────────────────────────────────
       async load() {
         try {
-          const raw = await import_promises6.default.readFile(this._statePath, "utf8");
+          const raw = await import_promises7.default.readFile(this._statePath, "utf8");
           const parsed = JSON.parse(raw);
           const { _sig, ...data2 } = parsed;
           const expected = this._sign(data2);
@@ -87309,7 +87583,7 @@ var init_LicenseManager = __esm({
       async save() {
         const data2 = { ...this._state };
         const _sig = this._sign(data2);
-        await import_promises6.default.writeFile(this._statePath, JSON.stringify({ ...data2, _sig }, null, 2), "utf8");
+        await import_promises7.default.writeFile(this._statePath, JSON.stringify({ ...data2, _sig }, null, 2), "utf8");
       }
       _sign(data2) {
         return import_crypto2.default.createHmac("sha256", HMAC_SECRET).update(JSON.stringify(data2)).digest("hex");
@@ -87409,13 +87683,13 @@ var init_LicenseManager = __esm({
 var { app, BrowserWindow, ipcMain, globalShortcut, Tray, Menu, shell, nativeImage } = require("electron");
 var { autoUpdater } = require("electron-updater");
 var log = require("electron-log");
-var path5 = require("path");
-var fs7 = require("fs");
+var path6 = require("path");
+var fs8 = require("fs");
 var crashLogPath;
 process.on("uncaughtException", (error51) => {
   try {
-    const logPath = crashLogPath || path5.join(process.env.USERPROFILE || process.env.HOME || "C:/Users/Public", "aegis_crash.log");
-    fs7.writeFileSync(logPath, `Uncaught Exception: ${(/* @__PURE__ */ new Date()).toISOString()}
+    const logPath = crashLogPath || path6.join(process.env.USERPROFILE || process.env.HOME || "C:/Users/Public", "aegis_crash.log");
+    fs8.writeFileSync(logPath, `Uncaught Exception: ${(/* @__PURE__ */ new Date()).toISOString()}
 ${error51.stack || error51}
 `);
   } catch (e) {
@@ -87424,8 +87698,8 @@ ${error51.stack || error51}
 });
 process.on("unhandledRejection", (reason, promise2) => {
   try {
-    const logPath = crashLogPath || path5.join(process.env.USERPROFILE || process.env.HOME || "C:/Users/Public", "aegis_crash.log");
-    fs7.writeFileSync(logPath, `Unhandled Rejection: ${(/* @__PURE__ */ new Date()).toISOString()}
+    const logPath = crashLogPath || path6.join(process.env.USERPROFILE || process.env.HOME || "C:/Users/Public", "aegis_crash.log");
+    fs8.writeFileSync(logPath, `Unhandled Rejection: ${(/* @__PURE__ */ new Date()).toISOString()}
 Reason: ${reason?.stack || reason}
 `);
   } catch (e) {
@@ -87445,6 +87719,7 @@ var { ScoringService: ScoringService2 } = (init_ScoringService(), __toCommonJS(S
 var { nexusRouter: nexusRouter2 } = (init_NexusRouter(), __toCommonJS(NexusRouter_exports));
 var { ScraperFacade: ScraperFacade2 } = (init_ScraperFacade(), __toCommonJS(ScraperFacade_exports));
 var { NexusOrchestrator: NexusOrchestrator2 } = (init_NexusOrchestrator(), __toCommonJS(NexusOrchestrator_exports));
+var { ObsidianVaultService: ObsidianVaultService2 } = (init_ObsidianVaultService(), __toCommonJS(ObsidianVaultService_exports));
 var { LicenseManager: LicenseManager2 } = (init_LicenseManager(), __toCommonJS(LicenseManager_exports));
 var mainWindow;
 var settingsManager;
@@ -87459,19 +87734,19 @@ var enrichmentService;
 var isDev = !app.isPackaged;
 function setupDataDirectory() {
   const userDataPath = app.getPath("userData");
-  const dataDir2 = path5.join(userDataPath, "data");
-  if (!fs7.existsSync(dataDir2)) {
+  const dataDir2 = path6.join(userDataPath, "data");
+  if (!fs8.existsSync(dataDir2)) {
     console.log("[Main] Creating data directory...");
-    fs7.mkdirSync(dataDir2, { recursive: true });
+    fs8.mkdirSync(dataDir2, { recursive: true });
   }
-  const defaultDataDir = isDev ? path5.join(__dirname, "..", "data") : path5.join(process.resourcesPath, "default-data");
-  if (fs7.existsSync(defaultDataDir)) {
+  const defaultDataDir = isDev ? path6.join(__dirname, "..", "data") : path6.join(process.resourcesPath, "default-data");
+  if (fs8.existsSync(defaultDataDir)) {
     const requiredFiles = ["interests.json", "feed_config.json"];
     for (const file2 of requiredFiles) {
-      const destPath = path5.join(dataDir2, file2);
-      const srcPath = path5.join(defaultDataDir, file2);
-      if (fs7.existsSync(srcPath) && (!fs7.existsSync(destPath) || fs7.statSync(destPath).size < 5)) {
-        fs7.copyFileSync(srcPath, destPath);
+      const destPath = path6.join(dataDir2, file2);
+      const srcPath = path6.join(defaultDataDir, file2);
+      if (fs8.existsSync(srcPath) && (!fs8.existsSync(destPath) || fs8.statSync(destPath).size < 5)) {
+        fs8.copyFileSync(srcPath, destPath);
         console.log(`[Main] Restored default ${file2} to user data directory.`);
       }
     }
@@ -87491,7 +87766,7 @@ async function startBackend() {
   const credentials = await settingsManager.getCredentials();
   geminiService = new GeminiService2(credentials);
   geminiService.setUsageManager(settingsManager.usageManager);
-  const feedConfigPath = path5.join(dataDir, "feed_config.json");
+  const feedConfigPath = path6.join(dataDir, "feed_config.json");
   feedManager = new FeedManager2(feedConfigPath);
   feedManager.setSaveHandler(async (config2) => {
     await settingsManager.saveFeedConfig(config2);
@@ -87505,6 +87780,12 @@ async function startBackend() {
   scraper.geminiService = geminiService;
   scraper.enrichmentService = enrichmentService;
   scraper.feedManager = feedManager;
+  const uiSettings = await settingsManager.getUiSettings();
+  const obsidianVaultService = new ObsidianVaultService2(
+    uiSettings.obsidianVaultPath || "C:\\Users\\charg\\Documents\\Personal Space",
+    geminiService
+  );
+  scraper.obsidianVaultService = obsidianVaultService;
   orchestrator = new NexusOrchestrator2(geminiService);
   const server = fastify({ logger: isDev });
   const allowedOrigins = /* @__PURE__ */ new Set([
@@ -87536,7 +87817,7 @@ async function startBackend() {
   }
 }
 function createWindow() {
-  const iconPath = path5.join(__dirname, "../public/app-icon-192.png");
+  const iconPath = path6.join(__dirname, "../public/app-icon-192.png");
   const icon = nativeImage.createFromPath(iconPath);
   mainWindow = new BrowserWindow({
     width: 1440,
@@ -87556,7 +87837,7 @@ function createWindow() {
     thickFrame: true,
     // Windowsでのスナップ(FancyZones)対応に必須
     webPreferences: {
-      preload: path5.join(__dirname, "preload.cjs"),
+      preload: path6.join(__dirname, "preload.cjs"),
       contextIsolation: true,
       nodeIntegration: false
     }
@@ -87574,7 +87855,7 @@ function createWindow() {
     mainWindow.loadURL("http://localhost:5173");
     mainWindow.webContents.openDevTools();
   } else {
-    mainWindow.loadFile(path5.join(__dirname, "../dist/index.html"));
+    mainWindow.loadFile(path6.join(__dirname, "../dist/index.html"));
   }
   mainWindow.once("ready-to-show", () => {
     mainWindow.show();
@@ -87745,7 +88026,7 @@ function setupIpcHandlers() {
   });
 }
 app.whenReady().then(async () => {
-  crashLogPath = path5.join(app.getPath("userData"), "crash.log");
+  crashLogPath = path6.join(app.getPath("userData"), "crash.log");
   dataDir = setupDataDirectory();
   licenseManager = LicenseManager2.getInstance(dataDir);
   await licenseManager.load();

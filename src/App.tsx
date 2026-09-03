@@ -372,6 +372,8 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
                     setTheme={setTheme}
                     autoLaunch={ui.autoLaunch}
                     setAutoLaunch={ui.setAutoLaunch}
+                    refreshInterval={ui.refreshInterval}
+                    setRefreshInterval={ui.setRefreshInterval}
                     featureGates={featureGates}
                   />
                 </Suspense>
@@ -399,7 +401,7 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
  */
 const App: React.FC = () => {
   const ui = useUiSettingsSync();
-  const { settings, articles, loading, sync, refetch, error: syncError, isSyncing, lastRefreshed } = useNexusSync();
+  const { settings, articles, loading, sync, refetch, error: syncError, isSyncing, lastRefreshed } = useNexusSync(ui.refreshInterval);
 
   return (
     <LanguageProvider value={{ language: ui.language, setLanguage: ui.setLanguage }}>

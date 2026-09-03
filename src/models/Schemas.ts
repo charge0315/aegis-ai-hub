@@ -125,6 +125,9 @@ export const UiSettingsSchema = z.object({
   theme: z.enum(['light', 'dark', 'system']).default('system'),
   language: z.enum(['ja', 'en']).default('ja'),
   autoLaunch: z.boolean().default(false),
+  refreshInterval: z.number().default(15),
+  obsidianVaultPath: z.string().default('C:\\Users\\charg\\Documents\\Personal Space'),
+  enableObsidianAutoSync: z.boolean().default(true),
 });
 
 export type UiSettings = z.infer<typeof UiSettingsSchema>;
