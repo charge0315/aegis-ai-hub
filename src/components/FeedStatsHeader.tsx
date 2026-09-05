@@ -67,8 +67,8 @@ export const FeedStatsHeader: React.FC<FeedStatsHeaderProps> = ({
   }, [lastUpdated]);
 
   return (
-    <GlassPanel className="p-4 flex flex-wrap items-center justify-between gap-4 border border-white/5 bg-black/20">
-      <div className="flex flex-wrap items-center gap-6 md:gap-8">
+    <GlassPanel className="p-4 flex items-center justify-between gap-4 border border-white/5 bg-black/20 overflow-x-auto custom-scrollbar">
+      <div className="flex items-center gap-4 sm:gap-6 md:gap-8 shrink-0">
         {/* 総記事数 */}
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-lg bg-primary/10 text-primary">
@@ -142,7 +142,7 @@ export const FeedStatsHeader: React.FC<FeedStatsHeaderProps> = ({
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 shrink-0 ml-auto">
         {/* 表示サイズ切替ボタングループ */}
         {feedSize && setFeedSize && (
           <div className="flex bg-white/5 p-1 rounded-xl border border-white/10">
