@@ -75,6 +75,8 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({ article, index = 0, si
             <img 
               src={article.img} 
               alt={article.title} 
+              referrerPolicy="no-referrer"
+              loading="lazy"
               onError={() => setImageError(true)}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             />
