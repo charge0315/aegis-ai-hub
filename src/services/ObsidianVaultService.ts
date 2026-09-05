@@ -1,5 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
+import os from 'os';
+import { exec } from 'child_process';
 import { SchemaType, type ResponseSchema } from '@google/generative-ai';
 import type { Article } from '../models/Article';
 import type { GeminiService } from './GeminiService';
@@ -355,6 +357,36 @@ ${relatedLinksSection}
     } catch (err) {
       console.error('[ObsidianVaultService] Export articles failed:', err);
       return [];
+    }
+  }
+
+  /**
+   * kb_creator CLI (Python) を呼び出してニュース記事をエクスポート・ナレッジベース構築する
+   */
+  async exportArticlesViaKbCreator(articles: Article[], kbCreatorPath?: string): Promise<boolean> {
+    if (!articles || articles.length === 0) return false;
+    try {
+      const tempJsonPath = path.join(os.tmpdir(), `news_export_${Date.now()}.json`);
+      await fs.writeFile(tempJsonPath, JSON.stringify(articles, null, 2), 'utf-8');
+
+      const projectPath = kbCreatorPath || 'C:\\Users\\charg\\myWorkspace\\obsidian-knowledge-base-creator';
+      const cmd = `python -m kb_creator news-build --vault "${this.vaultPath}" --json-file "${tempJsonPath}"`;
+
+      return new Promise((resolve) => {
+        exec(cmd, { cwd: projectPath }, (error, stdout, stderr) => {
+          void fs.unlink(tempJsonPath).catch(() => {});
+          if (error) {
+            console.error('[ObsidianVaultService] kb_creator execution failed:', error, stderr);
+            resolve(false);
+          } else {
+            console.log('[ObsidianVaultService] kb_creator executed successfully:', stdout);
+            resolve(true);
+          }
+        });
+      });
+    } catch (err) {
+      console.error('[ObsidianVaultService] Failed to delegate export to kb_creator:', err);
+      return false;
     }
   }
 }

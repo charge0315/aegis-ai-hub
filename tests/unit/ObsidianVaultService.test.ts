@@ -142,4 +142,11 @@ describe('ObsidianVaultService', () => {
       expect(savedPaths).toHaveLength(2);
     });
   });
+
+  describe('exportArticlesViaKbCreator', () => {
+    it('should return false if articles array is empty', async () => {
+      const result = await service.exportArticlesViaKbCreator([]);
+      expect(result).toBe(false);
+    });
+  });
 });

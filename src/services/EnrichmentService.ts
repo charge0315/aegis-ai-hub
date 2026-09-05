@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url';
 import { type ArticleType } from '../models/Article';
 import { type GeminiService } from './GeminiService';
 import { ImageCacheManager } from './ImageCacheManager';
+import { normalizeCategoryName } from '../utils/normalize';
 
 // ESM/CommonJS 互換の __dirname 取得
 const _dirname = (typeof import.meta !== 'undefined' && import.meta.url)
@@ -43,8 +44,18 @@ export class EnrichmentService {
             '音楽・ギター・DTM': "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400",
             'AI・ソフトウェア': "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=400",
             'PC・ハードウェア': "https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?w=400",
+            'ガジェット・ハードウェア': "https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=400",
+            'PC・デバイス': "https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=400",
+            '周辺機器・PCアクセサリ': "https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=400",
+            'モバイル・タブレット': "https://images.unsplash.com/photo-1512499617640-c74ae3a79d37?w=400",
             'ロードバイク': "https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=400",
-            'ゲーム': "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=400"
+            'ロードバイク・MTB・サイクリング': "https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=400",
+            'ゲーム': "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=400",
+            'ゲーム・配信': "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=400",
+            'NEWS': "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=400",
+            'オーディオ・音楽制作': "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400",
+            'セール・EC情報': "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=400",
+            'ライフスタイル': "https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=400",
         };
     }
 
@@ -125,19 +136,26 @@ export class EnrichmentService {
      * 記事URLから最適な画像を抽出します。
      * OGP(Open Graph Protocol)タグを優先し、見つからない場合は本文内の主要な画像を探索します。
      */
+    /**
+     * 記事URLから最適な画像を抽出します。
+     * OGP(Open Graph Protocol)タグを優先し、見つからない場合は本文内の主要な画像を探索します。
+     */
     private async scrapeImage(url: string): Promise<string | null> {
         try {
             const { data } = await axios.get(url, { 
                 timeout: 8000, 
                 headers: { 
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' 
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8'
                 } 
             });
             const $ = cheerio.load(data);
             
             // 1. OGP / Meta Tags (High priority: 正確性が高い)
             let imgUrl = $('meta[property="og:image"]').attr('content') || 
+                         $('meta[property="og:image:secure_url"]').attr('content') ||
                          $('meta[name="twitter:image"]').attr('content') ||
+                         $('meta[name="twitter:image:src"]').attr('content') ||
                          $('meta[name="image"]').attr('content') ||
                          $('meta[name="thumbnail"]').attr('content') ||
                          $('link[rel="image_src"]').attr('href') ||
@@ -151,7 +169,7 @@ export class EnrichmentService {
                 imgElements.each((_, el) => {
                     const src = $(el).attr('src') || $(el).attr('data-src') || $(el).attr('data-lazy-src');
                     
-                    if (src && /\.(jpg|jpeg|png|webp|gif)/i.test(src)) {
+                    if (src && (/\.(jpg|jpeg|png|webp|gif|avif|svg)/i.test(src) || src.includes('image') || src.startsWith('http'))) {
                         // アイコンやバナー（小さい画像）を避けるための簡単なフィルター
                         const width = $(el).attr('width');
                         const height = $(el).attr('height');
@@ -165,9 +183,13 @@ export class EnrichmentService {
             }
 
             if (imgUrl) {
+                let formatted = imgUrl.trim();
+                if (formatted.startsWith('//')) {
+                    formatted = 'https:' + formatted;
+                }
                 try {
                     // 相対URLを絶対URLに変換（ベースURLとの結合）
-                    const absoluteUrl = new URL(imgUrl, url).href;
+                    const absoluteUrl = new URL(formatted, url).href;
                     if (absoluteUrl.startsWith('http')) {
                         return absoluteUrl;
                     }
@@ -194,37 +216,81 @@ export class EnrichmentService {
      * 画像が一切見つからなかった記事に対して、システムが提供するデフォルトの画像URLを取得します。
      */
     getPlaceholder(category: string): string {
-        return this.placeholders[category] || "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400";
+        if (this.placeholders[category]) {
+            return this.placeholders[category];
+        }
+        const targetClean = normalizeCategoryName(category);
+        for (const [catName, url] of Object.entries(this.placeholders)) {
+            if (normalizeCategoryName(catName) === targetClean) {
+                return url;
+            }
+        }
+        return "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400";
     }
 
     /**
      * RSSフィードの初期取得時に、メタデータ（media:content等）から高速に画像URLを引き出すための第一次フィルター。
      */
     extractBasicImage(item: Record<string, unknown>): string | null {
-        const mediaContent = item.mediaContent as { $?: { url?: string } } | Array<{ $?: { url?: string } }> | undefined;
+        const mediaContent = item.mediaContent as { $?: { url?: string; href?: string } } | Array<{ $?: { url?: string; href?: string } }> | undefined;
         if (mediaContent) {
             if (Array.isArray(mediaContent)) {
-                if (mediaContent[0]?.$?.url) return mediaContent[0].$.url;
-            } else if (mediaContent.$?.url) {
-                return mediaContent.$.url;
+                for (const mc of mediaContent) {
+                    const u = mc?.$?.url || mc?.$?.href;
+                    if (u) return this.formatBasicImageUrl(u);
+                }
+            } else {
+                const u = mediaContent.$?.url || mediaContent.$?.href;
+                if (u) return this.formatBasicImageUrl(u);
             }
         }
 
-        const mediaThumbnail = item.mediaThumbnail as { $?: { url?: string } } | undefined;
-        if (mediaThumbnail?.$?.url) return mediaThumbnail.$.url;
+        const mediaThumbnail = item.mediaThumbnail as { $?: { url?: string; href?: string } } | Array<{ $?: { url?: string; href?: string } }> | undefined;
+        if (mediaThumbnail) {
+            if (Array.isArray(mediaThumbnail)) {
+                for (const mt of mediaThumbnail) {
+                    const u = mt?.$?.url || mt?.$?.href;
+                    if (u) return this.formatBasicImageUrl(u);
+                }
+            } else {
+                const u = mediaThumbnail.$?.url || mediaThumbnail.$?.href;
+                if (u) return this.formatBasicImageUrl(u);
+            }
+        }
 
-        const enclosure = item.enclosure as { url?: string } | undefined;
-        if (enclosure?.url) return enclosure.url;
+        const enclosure = item.enclosure as { url?: string; href?: string } | undefined;
+        if (enclosure?.url || enclosure?.href) {
+            return this.formatBasicImageUrl(enclosure.url || enclosure.href!);
+        }
 
-        if (item.itunesImage) return String(item.itunesImage);
+        if (item.itunesImage) {
+            const itunesStr = typeof item.itunesImage === 'string' ? item.itunesImage : (item.itunesImage as { $?: { href?: string } })?.$?.href;
+            if (itunesStr) return this.formatBasicImageUrl(itunesStr);
+        }
 
-        // descriptionの中にimgタグが含まれている場合のフォールバック抽出
+        // description/contentの中にimgタグが含まれている場合のフォールバック抽出
         const snippet = (item.description as string) || "";
         const content = (item.content as string) || (item.contentEncoded as string) || "";
         const fullContent = `${snippet} ${content}`;
-        const matches = fullContent.match(/src=["']([^"']+\.(jpg|png|gif|jpeg|webp))["']/i);
-        if (matches && matches[1]) return matches[1];
+        
+        if (fullContent) {
+            const imgMatch = fullContent.match(/<img[^>]+(?:src|data-src|data-lazy-src)=["']([^"']+)["']/i);
+            if (imgMatch && imgMatch[1]) {
+                const src = imgMatch[1];
+                if (!src.includes('tracker') && !src.includes('pixel') && !src.includes('spacer.gif')) {
+                    return this.formatBasicImageUrl(src);
+                }
+            }
+        }
 
         return null;
+    }
+
+    private formatBasicImageUrl(urlStr: string): string {
+        let trimmed = urlStr.trim();
+        if (trimmed.startsWith('//')) {
+            trimmed = 'https:' + trimmed;
+        }
+        return trimmed;
     }
 }
