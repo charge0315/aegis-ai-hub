@@ -67,20 +67,20 @@ export const FeedStatsHeader: React.FC<FeedStatsHeaderProps> = ({
   }, [lastUpdated]);
 
   return (
-    <GlassPanel className="p-4 flex items-center justify-between gap-4 border border-white/5 bg-black/20 overflow-x-auto custom-scrollbar">
-      <div className="flex items-center gap-4 sm:gap-6 md:gap-8 shrink-0">
+    <GlassPanel className="p-3 px-4 flex items-center justify-between gap-3 border border-white/5 bg-black/20 overflow-hidden">
+      <div className="flex items-center gap-3 sm:gap-5 md:gap-6 min-w-0">
         {/* 総記事数 */}
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-primary/10 text-primary">
-            <Database size={16} />
+        <div className="flex items-center gap-2.5">
+          <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
+            <Database size={15} />
           </div>
           <div className="flex flex-col">
-            <span className="text-[10px] text-slate-500 uppercase tracking-widest font-medium">Total Articles</span>
+            <span className="text-[9px] text-slate-500 uppercase tracking-wider font-medium whitespace-nowrap">Total Articles</span>
             <motion.span 
               key={totalArticles}
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="text-lg font-bold text-white tabular-nums font-mono"
+              className="text-base font-bold text-white tabular-nums font-mono"
             >
               {totalArticles}
             </motion.span>
@@ -88,17 +88,17 @@ export const FeedStatsHeader: React.FC<FeedStatsHeaderProps> = ({
         </div>
 
         {/* カテゴリ数 */}
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400">
-            <FolderOpen size={16} />
+        <div className="flex items-center gap-2.5">
+          <div className="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-400">
+            <FolderOpen size={15} />
           </div>
           <div className="flex flex-col">
-            <span className="text-[10px] text-slate-500 uppercase tracking-widest font-medium">Categories</span>
+            <span className="text-[9px] text-slate-500 uppercase tracking-wider font-medium whitespace-nowrap">Categories</span>
             <motion.span 
               key={categoryCount}
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="text-lg font-bold text-white tabular-nums font-mono"
+              className="text-base font-bold text-white tabular-nums font-mono"
             >
               {categoryCount}
             </motion.span>
@@ -106,17 +106,17 @@ export const FeedStatsHeader: React.FC<FeedStatsHeaderProps> = ({
         </div>
 
         {/* 日本語記事の割合 */}
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-accent/10 text-accent">
-            <Languages size={16} />
+        <div className="flex items-center gap-2.5">
+          <div className="p-1.5 rounded-lg bg-accent/10 text-accent">
+            <Languages size={15} />
           </div>
           <div className="flex flex-col">
-            <span className="text-[10px] text-slate-500 uppercase tracking-widest font-medium">JA Signals</span>
+            <span className="text-[9px] text-slate-500 uppercase tracking-wider font-medium whitespace-nowrap">JA Signals</span>
             <motion.span 
               key={japaneseRatio}
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="text-lg font-bold text-white tabular-nums font-mono"
+              className="text-base font-bold text-white tabular-nums font-mono"
             >
               {japaneseRatio}%
             </motion.span>
@@ -124,25 +124,25 @@ export const FeedStatsHeader: React.FC<FeedStatsHeaderProps> = ({
         </div>
 
         {/* 最終更新日時 */}
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-white/5 text-slate-400 relative">
-            <Clock size={16} />
+        <div className="flex items-center gap-2.5">
+          <div className="p-1.5 rounded-lg bg-white/5 text-slate-400 relative">
+            <Clock size={15} />
             {lastUpdated && (
               <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-accent rounded-full animate-pulse" />
             )}
           </div>
           <div className="flex flex-col">
-            <span className="text-[10px] text-slate-500 uppercase tracking-widest font-medium flex items-center gap-1.5">
+            <span className="text-[9px] text-slate-500 uppercase tracking-wider font-medium whitespace-nowrap flex items-center gap-1.5">
               Last Updated
             </span>
-            <span className="text-sm font-semibold text-slate-300 font-sans">
+            <span className="text-xs font-semibold text-slate-300 font-sans whitespace-nowrap">
               {relativeTime}
             </span>
           </div>
         </div>
       </div>
 
-      <div className="flex items-center gap-3 shrink-0 ml-auto">
+      <div className="flex items-center gap-2 shrink-0 ml-auto">
         {/* 表示サイズ切替ボタングループ */}
         {feedSize && setFeedSize && (
           <div className="flex bg-white/5 p-1 rounded-xl border border-white/10">
@@ -177,7 +177,7 @@ export const FeedStatsHeader: React.FC<FeedStatsHeaderProps> = ({
         {showImages !== undefined && setShowImages && (
           <button
             onClick={() => setShowImages(!showImages)}
-            className={`p-2 rounded-xl border transition-all ${
+            className={`p-1.5 rounded-xl border transition-all ${
               showImages 
                 ? 'bg-primary/15 border-primary/30 text-primary' 
                 : 'bg-white/5 border-white/10 text-slate-400 hover:text-white'
@@ -193,7 +193,7 @@ export const FeedStatsHeader: React.FC<FeedStatsHeaderProps> = ({
         {isJapaneseOnly !== undefined && setIsJapaneseOnly && (
           <button
             onClick={() => setIsJapaneseOnly(!isJapaneseOnly)}
-            className={`p-2 rounded-xl border transition-all flex items-center gap-1.5 px-2.5 ${
+            className={`p-1.5 rounded-xl border transition-all flex items-center gap-1.5 px-2.5 ${
               isJapaneseOnly 
                 ? 'bg-indigo-500/20 border-indigo-500/30 text-indigo-400' 
                 : 'bg-white/5 border-white/10 text-slate-400 hover:text-white'
@@ -211,7 +211,7 @@ export const FeedStatsHeader: React.FC<FeedStatsHeaderProps> = ({
           onClick={() => onRefresh()}
           disabled={isSyncing}
           aria-label="Refresh feeds"
-          className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 active:bg-white/15 text-slate-300 hover:text-white rounded-xl transition-all border border-white/10 font-medium text-xs disabled:opacity-50 shrink-0"
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 hover:bg-white/10 active:bg-white/15 text-slate-300 hover:text-white rounded-xl transition-all border border-white/10 font-medium text-xs disabled:opacity-50 shrink-0"
         >
           <RefreshCw size={14} className={isSyncing ? 'animate-spin' : ''} />
           <span>{isSyncing ? 'Syncing...' : 'Refresh'}</span>
