@@ -28,7 +28,7 @@ export interface ArticleSummaryResult {
 /**
  * ObsidianVaultService
  * 
- * フィードで取得したニュース記事をAI要約し、Obsidian Vault 内の News フォルダへ保存・更新する。
+ * フィードで取得したニュース記事をAI要約し、Obsidian Vault 内の 40_Archives/News フォルダへ保存・更新する。
  * また、Vault 内の既存ノートを検索して WikiLink [[ノート名]] による自動紐づけを行う。
  */
 export class ObsidianVaultService {
@@ -152,7 +152,7 @@ export class ObsidianVaultService {
     const scored = noteIndex
       .filter(item => {
         // 自分自身のNews記事などの重複判定を防止
-        const isNewsDir = item.relativePath.startsWith('News\\') || item.relativePath.startsWith('News/');
+        const isNewsDir = item.relativePath.startsWith('40_Archives\\News\\') || item.relativePath.startsWith('40_Archives/News/');
         return !isNewsDir || !articleTitle.includes(item.title);
       })
       .map(item => {
@@ -253,9 +253,9 @@ export class ObsidianVaultService {
 
     const category = article.category || 'Uncategorized';
     const sanitizedCategory = category.replace(/[\\/:*?"<>|]/g, '_').trim();
-    const targetDir = path.join(this.vaultPath, 'News', sanitizedCategory);
+    const targetDir = path.join(this.vaultPath, '40_Archives', 'News', sanitizedCategory);
 
-    // News/Category ディレクトリの確保
+    // 40_Archives/News/Category ディレクトリの確保
     await fs.mkdir(targetDir, { recursive: true });
 
     // AI要約の生成
