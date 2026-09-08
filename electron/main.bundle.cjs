@@ -29558,7 +29558,7 @@ var require_has_flag = __commonJS({
 var require_supports_color = __commonJS({
   "node_modules/supports-color/index.js"(exports2, module2) {
     "use strict";
-    var os = require("os");
+    var os2 = require("os");
     var tty = require("tty");
     var hasFlag = require_has_flag();
     var { env } = process;
@@ -29615,7 +29615,7 @@ var require_supports_color = __commonJS({
         return min;
       }
       if (process.platform === "win32") {
-        const osRelease = os.release().split(".");
+        const osRelease = os2.release().split(".");
         if (Number(osRelease[0]) >= 10 && Number(osRelease[2]) >= 10586) {
           return Number(osRelease[2]) >= 14931 ? 3 : 2;
         }
@@ -79144,6 +79144,7 @@ var init_EnrichmentService = __esm({
     import_path4 = __toESM(require("path"), 1);
     import_url2 = require("url");
     init_ImageCacheManager();
+    init_normalize();
     import_meta = {};
     _dirname = typeof import_meta !== "undefined" && import_meta.url ? import_path4.default.dirname((0, import_url2.fileURLToPath)(import_meta.url)) : typeof __dirname !== "undefined" ? __dirname : "";
     EnrichmentService = class {
@@ -79160,8 +79161,18 @@ var init_EnrichmentService = __esm({
           "\u97F3\u697D\u30FB\u30AE\u30BF\u30FC\u30FBDTM": "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400",
           "AI\u30FB\u30BD\u30D5\u30C8\u30A6\u30A7\u30A2": "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=400",
           "PC\u30FB\u30CF\u30FC\u30C9\u30A6\u30A7\u30A2": "https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?w=400",
+          "\u30AC\u30B8\u30A7\u30C3\u30C8\u30FB\u30CF\u30FC\u30C9\u30A6\u30A7\u30A2": "https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=400",
+          "PC\u30FB\u30C7\u30D0\u30A4\u30B9": "https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=400",
+          "\u5468\u8FBA\u6A5F\u5668\u30FBPC\u30A2\u30AF\u30BB\u30B5\u30EA": "https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=400",
+          "\u30E2\u30D0\u30A4\u30EB\u30FB\u30BF\u30D6\u30EC\u30C3\u30C8": "https://images.unsplash.com/photo-1512499617640-c74ae3a79d37?w=400",
           "\u30ED\u30FC\u30C9\u30D0\u30A4\u30AF": "https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=400",
-          "\u30B2\u30FC\u30E0": "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=400"
+          "\u30ED\u30FC\u30C9\u30D0\u30A4\u30AF\u30FBMTB\u30FB\u30B5\u30A4\u30AF\u30EA\u30F3\u30B0": "https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=400",
+          "\u30B2\u30FC\u30E0": "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=400",
+          "\u30B2\u30FC\u30E0\u30FB\u914D\u4FE1": "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=400",
+          "NEWS": "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=400",
+          "\u30AA\u30FC\u30C7\u30A3\u30AA\u30FB\u97F3\u697D\u5236\u4F5C": "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400",
+          "\u30BB\u30FC\u30EB\u30FBEC\u60C5\u5831": "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=400",
+          "\u30E9\u30A4\u30D5\u30B9\u30BF\u30A4\u30EB": "https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=400"
         };
       }
       /**
@@ -79226,22 +79237,27 @@ var init_EnrichmentService = __esm({
        * 記事URLから最適な画像を抽出します。
        * OGP(Open Graph Protocol)タグを優先し、見つからない場合は本文内の主要な画像を探索します。
        */
+      /**
+       * 記事URLから最適な画像を抽出します。
+       * OGP(Open Graph Protocol)タグを優先し、見つからない場合は本文内の主要な画像を探索します。
+       */
       async scrapeImage(url3) {
         try {
           const { data: data2 } = await axios_default.get(url3, {
             timeout: 8e3,
             headers: {
-              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+              "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8"
             }
           });
           const $2 = load(data2);
-          let imgUrl = $2('meta[property="og:image"]').attr("content") || $2('meta[name="twitter:image"]').attr("content") || $2('meta[name="image"]').attr("content") || $2('meta[name="thumbnail"]').attr("content") || $2('link[rel="image_src"]').attr("href") || $2('link[rel="shortcut icon"]').attr("href");
+          let imgUrl = $2('meta[property="og:image"]').attr("content") || $2('meta[property="og:image:secure_url"]').attr("content") || $2('meta[name="twitter:image"]').attr("content") || $2('meta[name="twitter:image:src"]').attr("content") || $2('meta[name="image"]').attr("content") || $2('meta[name="thumbnail"]').attr("content") || $2('link[rel="image_src"]').attr("href") || $2('link[rel="shortcut icon"]').attr("href");
           if (!imgUrl) {
             const contentAreas = $2('article, main, [role="main"], .post-content, .entry-content, #content, .article-body');
             const imgElements = contentAreas.length > 0 ? contentAreas.find("img") : $2("img");
             imgElements.each((_, el) => {
               const src = $2(el).attr("src") || $2(el).attr("data-src") || $2(el).attr("data-lazy-src");
-              if (src && /\.(jpg|jpeg|png|webp|gif)/i.test(src)) {
+              if (src && (/\.(jpg|jpeg|png|webp|gif|avif|svg)/i.test(src) || src.includes("image") || src.startsWith("http"))) {
                 const width = $2(el).attr("width");
                 const height = $2(el).attr("height");
                 if (width && parseInt(width) < 100) return true;
@@ -79252,8 +79268,12 @@ var init_EnrichmentService = __esm({
             });
           }
           if (imgUrl) {
+            let formatted = imgUrl.trim();
+            if (formatted.startsWith("//")) {
+              formatted = "https:" + formatted;
+            }
             try {
-              const absoluteUrl = new URL(imgUrl, url3).href;
+              const absoluteUrl = new URL(formatted, url3).href;
               if (absoluteUrl.startsWith("http")) {
                 return absoluteUrl;
               }
@@ -79276,7 +79296,16 @@ var init_EnrichmentService = __esm({
        * 画像が一切見つからなかった記事に対して、システムが提供するデフォルトの画像URLを取得します。
        */
       getPlaceholder(category) {
-        return this.placeholders[category] || "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400";
+        if (this.placeholders[category]) {
+          return this.placeholders[category];
+        }
+        const targetClean = normalizeCategoryName(category);
+        for (const [catName, url3] of Object.entries(this.placeholders)) {
+          if (normalizeCategoryName(catName) === targetClean) {
+            return url3;
+          }
+        }
+        return "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400";
       }
       /**
        * RSSフィードの初期取得時に、メタデータ（media:content等）から高速に画像URLを引き出すための第一次フィルター。
@@ -79285,22 +79314,55 @@ var init_EnrichmentService = __esm({
         const mediaContent = item.mediaContent;
         if (mediaContent) {
           if (Array.isArray(mediaContent)) {
-            if (mediaContent[0]?.$?.url) return mediaContent[0].$.url;
-          } else if (mediaContent.$?.url) {
-            return mediaContent.$.url;
+            for (const mc of mediaContent) {
+              const u = mc?.$?.url || mc?.$?.href;
+              if (u) return this.formatBasicImageUrl(u);
+            }
+          } else {
+            const u = mediaContent.$?.url || mediaContent.$?.href;
+            if (u) return this.formatBasicImageUrl(u);
           }
         }
         const mediaThumbnail = item.mediaThumbnail;
-        if (mediaThumbnail?.$?.url) return mediaThumbnail.$.url;
+        if (mediaThumbnail) {
+          if (Array.isArray(mediaThumbnail)) {
+            for (const mt of mediaThumbnail) {
+              const u = mt?.$?.url || mt?.$?.href;
+              if (u) return this.formatBasicImageUrl(u);
+            }
+          } else {
+            const u = mediaThumbnail.$?.url || mediaThumbnail.$?.href;
+            if (u) return this.formatBasicImageUrl(u);
+          }
+        }
         const enclosure = item.enclosure;
-        if (enclosure?.url) return enclosure.url;
-        if (item.itunesImage) return String(item.itunesImage);
+        if (enclosure?.url || enclosure?.href) {
+          return this.formatBasicImageUrl(enclosure.url || enclosure.href);
+        }
+        if (item.itunesImage) {
+          const itunesStr = typeof item.itunesImage === "string" ? item.itunesImage : item.itunesImage?.$?.href;
+          if (itunesStr) return this.formatBasicImageUrl(itunesStr);
+        }
         const snippet = item.description || "";
         const content = item.content || item.contentEncoded || "";
         const fullContent = `${snippet} ${content}`;
-        const matches = fullContent.match(/src=["']([^"']+\.(jpg|png|gif|jpeg|webp))["']/i);
-        if (matches && matches[1]) return matches[1];
+        if (fullContent) {
+          const imgMatch = fullContent.match(/<img[^>]+(?:src|data-src|data-lazy-src)=["']([^"']+)["']/i);
+          if (imgMatch && imgMatch[1]) {
+            const src = imgMatch[1];
+            if (!src.includes("tracker") && !src.includes("pixel") && !src.includes("spacer.gif")) {
+              return this.formatBasicImageUrl(src);
+            }
+          }
+        }
         return null;
+      }
+      formatBasicImageUrl(urlStr) {
+        let trimmed = urlStr.trim();
+        if (trimmed.startsWith("//")) {
+          trimmed = "https:" + trimmed;
+        }
+        return trimmed;
       }
     };
   }
@@ -86623,11 +86685,13 @@ var ObsidianVaultService_exports = {};
 __export(ObsidianVaultService_exports, {
   ObsidianVaultService: () => ObsidianVaultService
 });
-var import_promises6, import_path5, ObsidianVaultService;
+var import_promises6, import_path5, import_os, import_child_process, ObsidianVaultService;
 var init_ObsidianVaultService = __esm({
   "src/services/ObsidianVaultService.ts"() {
     import_promises6 = __toESM(require("fs/promises"), 1);
     import_path5 = __toESM(require("path"), 1);
+    import_os = __toESM(require("os"), 1);
+    import_child_process = require("child_process");
     init_dist();
     ObsidianVaultService = class {
       vaultPath;
@@ -86868,6 +86932,34 @@ ${relatedLinksSection}
         } catch (err) {
           console.error("[ObsidianVaultService] Export articles failed:", err);
           return [];
+        }
+      }
+      /**
+       * kb_creator CLI (Python) を呼び出してニュース記事をエクスポート・ナレッジベース構築する
+       */
+      async exportArticlesViaKbCreator(articles, kbCreatorPath) {
+        if (!articles || articles.length === 0) return false;
+        try {
+          const tempJsonPath = import_path5.default.join(import_os.default.tmpdir(), `news_export_${Date.now()}.json`);
+          await import_promises6.default.writeFile(tempJsonPath, JSON.stringify(articles, null, 2), "utf-8");
+          const projectPath = kbCreatorPath || "C:\\Users\\charg\\myWorkspace\\obsidian-knowledge-base-creator";
+          const cmd = `python -m kb_creator news-build --vault "${this.vaultPath}" --json-file "${tempJsonPath}"`;
+          return new Promise((resolve) => {
+            (0, import_child_process.exec)(cmd, { cwd: projectPath }, (error51, stdout, stderr) => {
+              void import_promises6.default.unlink(tempJsonPath).catch(() => {
+              });
+              if (error51) {
+                console.error("[ObsidianVaultService] kb_creator execution failed:", error51, stderr);
+                resolve(false);
+              } else {
+                console.log("[ObsidianVaultService] kb_creator executed successfully:", stdout);
+                resolve(true);
+              }
+            });
+          });
+        } catch (err) {
+          console.error("[ObsidianVaultService] Failed to delegate export to kb_creator:", err);
+          return false;
         }
       }
     };
