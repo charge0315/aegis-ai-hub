@@ -86777,7 +86777,7 @@ var init_ObsidianVaultService = __esm({
           textToMatch.replace(/[^\w\s\u3040-\u30FF\u4E00-\u9FAF]/g, " ").split(/\s+/).filter((t) => t.length >= 2)
         );
         const scored = noteIndex.filter((item) => {
-          const isNewsDir = item.relativePath.startsWith("News\\") || item.relativePath.startsWith("News/");
+          const isNewsDir = item.relativePath.startsWith("40_Archives\\News\\") || item.relativePath.startsWith("40_Archives/News/");
           return !isNewsDir || !articleTitle.includes(item.title);
         }).map((item) => {
           let score = 0;
@@ -86865,7 +86865,7 @@ var init_ObsidianVaultService = __esm({
         }
         const category = article.category || "Uncategorized";
         const sanitizedCategory = category.replace(/[\\/:*?"<>|]/g, "_").trim();
-        const targetDir = import_path5.default.join(this.vaultPath, "News", sanitizedCategory);
+        const targetDir = import_path5.default.join(this.vaultPath, "40_Archives", "News", sanitizedCategory);
         await import_promises6.default.mkdir(targetDir, { recursive: true });
         const summaryData = await this.summarizeArticle(article);
         const index2 = noteIndex || await this.indexVaultNotes();
