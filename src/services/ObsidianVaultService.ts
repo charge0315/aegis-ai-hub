@@ -151,8 +151,9 @@ export class ObsidianVaultService {
 
     const scored = noteIndex
       .filter(item => {
-        // 自分自身のNews記事などの重複判定を防止
-        const isNewsDir = item.relativePath.startsWith('40_Archives\\News\\') || item.relativePath.startsWith('40_Archives/News/');
+        // 自分自身のNews記事などの重複判定を防止(フォルダ移行前の旧News/配下ノートも後方互換で判定)
+        const isNewsDir = item.relativePath.startsWith('40_Archives\\News\\') || item.relativePath.startsWith('40_Archives/News/')
+          || item.relativePath.startsWith('News\\') || item.relativePath.startsWith('News/');
         return !isNewsDir || !articleTitle.includes(item.title);
       })
       .map(item => {
