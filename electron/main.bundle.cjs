@@ -86777,7 +86777,7 @@ var init_ObsidianVaultService = __esm({
           textToMatch.replace(/[^\w\s\u3040-\u30FF\u4E00-\u9FAF]/g, " ").split(/\s+/).filter((t) => t.length >= 2)
         );
         const scored = noteIndex.filter((item) => {
-          const isNewsDir = item.relativePath.startsWith("40_Archives\\News\\") || item.relativePath.startsWith("40_Archives/News/");
+          const isNewsDir = item.relativePath.startsWith("40_Archives\\News\\") || item.relativePath.startsWith("40_Archives/News/") || item.relativePath.startsWith("News\\") || item.relativePath.startsWith("News/");
           return !isNewsDir || !articleTitle.includes(item.title);
         }).map((item) => {
           let score = 0;
