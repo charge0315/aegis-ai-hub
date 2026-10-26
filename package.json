@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "build:electron": "npx esbuild electron/main.cjs --bundle --platform=node --target=node20 --outfile=electron/main.bundle.cjs --external:electron --external:fastify --external:@fastify/cors --external:@fastify/static --external:electron-updater --external:electron-log --loader:.ts=ts",
+    "build:electron": "npx esbuild electron/main.cjs --bundle --platform=node --target=node20 --outfile=electron/main.bundle.cjs --external:electron --external:fastify --external:@fastify/cors --external:electron-updater --external:electron-log --loader:.ts=ts",
     "dist": "npm run build && npm run build:electron && electron-builder",
     "lint": "eslint .",
     "preview": "vite preview",
@@ -64,7 +64,6 @@
   },
   "dependencies": {
     "@fastify/cors": "^10.0.1",
-    "@fastify/static": "^8.0.1",
     "@google/generative-ai": "^0.24.1",
     "axios": "^1.15.2",
     "cheerio": "^1.2.0",
@@ -93,10 +92,10 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
-    "@vitest/coverage-v8": "^4.1.5",
+    "@vitest/coverage-v8": "^4.1.12",
     "autoprefixer": "^10.5.0",
     "concurrently": "^9.2.1",
-    "electron": "^41.3.0",
+    "electron": "^44.9.3",
     "electron-builder": "^26.8.1",
     "esbuild-register": "^3.6.0",
     "eslint": "^10.2.1",
@@ -108,7 +107,7 @@
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.58.2",
     "vite": "^8.0.10",
-    "vitest": "^4.1.5",
+    "vitest": "^4.1.12",
     "wait-on": "^9.0.5"
   }
 }

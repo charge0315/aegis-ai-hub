@@ -1,6 +1,16 @@
 import axios from 'axios';
 import type { ResponseSchema } from "@google/generative-ai";
 import type { AiProvider, LlmOptions } from "../AiProvider";
+import { readApiErrorMessage } from "./apiError";
+import { convertGeminiSchemaToJsonSchema } from "./schemaConverter";
+
+interface ChatCompletionResponse {
+  choices?: Array<{
+    message?: {
+      content?: unknown;
+    };
+  }>;
+}
 
 export class OpenAiCompatibleProvider implements AiProvider {
   private apiKey: string;
@@ -16,11 +26,11 @@ export class OpenAiCompatibleProvider implements AiProvider {
     schema: ResponseSchema,
     options: LlmOptions
   ): Promise<T> {
-    const jsonSchema = this.convertGeminiSchemaToJsonSchema(schema);
+    const jsonSchema = convertGeminiSchemaToJsonSchema(schema);
     const systemPrompt = options.systemPrompt || "You are a helpful AI assistant. Always output JSON matching the specified schema.";
 
     const url = `${this.baseUrl.replace(/\/+$/, '')}/chat/completions`;
-    
+
     // OpenAI 構造化出力 (Structured Outputs) のパラメータ
     const requestBody = {
       model: options.modelName,
@@ -47,62 +57,17 @@ export class OpenAiCompatibleProvider implements AiProvider {
         headers['Authorization'] = `Bearer ${this.apiKey}`;
       }
 
-      const response = await axios.post(url, requestBody, { headers });
+      const response = await axios.post<ChatCompletionResponse>(url, requestBody, { headers });
       const text = response.data?.choices?.[0]?.message?.content;
 
-      if (!text) {
+      if (typeof text !== 'string' || !text) {
         throw new Error("OpenAI-compatible provider returned an empty response.");
       }
 
       return JSON.parse(text) as T;
     } catch (error: unknown) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const err = error as any;
-      const apiErrorMsg = err.response?.data?.error?.message || err.message;
+      const apiErrorMsg = readApiErrorMessage(error);
       throw new Error(`OpenAI-compatible request failed: ${apiErrorMsg}`, { cause: error });
     }
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private convertGeminiSchemaToJsonSchema(schema: any): any {
-    if (!schema) return undefined;
-    
-    const typeMap: Record<string, string> = {
-      'STRING': 'string',
-      'NUMBER': 'number',
-      'INTEGER': 'integer',
-      'BOOLEAN': 'boolean',
-      'OBJECT': 'object',
-      'ARRAY': 'array'
-    };
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const jsonSchema: any = {};
-    
-    if (schema.type) {
-      const rawType = String(schema.type);
-      jsonSchema.type = typeMap[rawType] || rawType.toLowerCase();
-    }
-
-    if (schema.description) {
-      jsonSchema.description = schema.description;
-    }
-
-    if (schema.properties) {
-      jsonSchema.properties = {};
-      for (const [key, value] of Object.entries(schema.properties)) {
-        jsonSchema.properties[key] = this.convertGeminiSchemaToJsonSchema(value);
-      }
-    }
-
-    if (schema.required) {
-      jsonSchema.required = schema.required;
-    }
-
-    if (schema.items) {
-      jsonSchema.items = this.convertGeminiSchemaToJsonSchema(schema.items);
-    }
-
-    return jsonSchema;
   }
 }

@@ -1,6 +1,26 @@
 import axios from 'axios';
 import type { ResponseSchema } from "@google/generative-ai";
 import type { AiProvider, LlmOptions } from "../AiProvider";
+import { readApiErrorMessage } from "./apiError";
+import { convertGeminiSchemaToJsonSchema } from "./schemaConverter";
+
+interface AnthropicMessageResponse {
+  content?: unknown;
+}
+
+interface AnthropicToolUse {
+  type: 'tool_use';
+  name?: unknown;
+  input?: unknown;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function isToolUseBlock(item: unknown): item is AnthropicToolUse {
+  return isRecord(item) && item.type === 'tool_use';
+}
 
 export class AnthropicProvider implements AiProvider {
   private apiKey: string;
@@ -19,11 +39,11 @@ export class AnthropicProvider implements AiProvider {
     schema: ResponseSchema,
     options: LlmOptions
   ): Promise<T> {
-    const jsonSchema = this.convertGeminiSchemaToJsonSchema(schema);
+    const jsonSchema = convertGeminiSchemaToJsonSchema(schema);
     const systemPrompt = options.systemPrompt || "You are a helpful AI assistant.";
 
     const url = `${this.baseUrl.replace(/\/+$/, '')}/v1/messages`;
-    
+
     const requestBody = {
       model: options.modelName,
       max_tokens: 4000,
@@ -46,7 +66,7 @@ export class AnthropicProvider implements AiProvider {
     };
 
     try {
-      const response = await axios.post(url, requestBody, {
+      const response = await axios.post<AnthropicMessageResponse>(url, requestBody, {
         headers: {
           'x-api-key': this.apiKey,
           'anthropic-version': '2023-06-01',
@@ -59,61 +79,15 @@ export class AnthropicProvider implements AiProvider {
         throw new Error("Invalid Anthropic API response format.");
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const toolUse = content.find((item: any) => (item as Record<string, any>).type === 'tool_use') as Record<string, any> | undefined;
+      const toolUse = content.find(isToolUseBlock);
       if (!toolUse || toolUse.name !== 'structured_output') {
         throw new Error("Anthropic did not call the expected structured output tool.");
       }
 
       return toolUse.input as T;
     } catch (error: unknown) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const err = error as any;
-      const apiErrorMsg = err.response?.data?.error?.message || err.message;
+      const apiErrorMsg = readApiErrorMessage(error);
       throw new Error(`Anthropic API request failed: ${apiErrorMsg}`, { cause: error });
     }
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private convertGeminiSchemaToJsonSchema(schema: any): any {
-    if (!schema) return undefined;
-    
-    const typeMap: Record<string, string> = {
-      'STRING': 'string',
-      'NUMBER': 'number',
-      'INTEGER': 'integer',
-      'BOOLEAN': 'boolean',
-      'OBJECT': 'object',
-      'ARRAY': 'array'
-    };
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const jsonSchema: any = {};
-    
-    if (schema.type) {
-      const rawType = String(schema.type);
-      jsonSchema.type = typeMap[rawType] || rawType.toLowerCase();
-    }
-
-    if (schema.description) {
-      jsonSchema.description = schema.description;
-    }
-
-    if (schema.properties) {
-      jsonSchema.properties = {};
-      for (const [key, value] of Object.entries(schema.properties)) {
-        jsonSchema.properties[key] = this.convertGeminiSchemaToJsonSchema(value);
-      }
-    }
-
-    if (schema.required) {
-      jsonSchema.required = schema.required;
-    }
-
-    if (schema.items) {
-      jsonSchema.items = this.convertGeminiSchemaToJsonSchema(schema.items);
-    }
-
-    return jsonSchema;
   }
 }

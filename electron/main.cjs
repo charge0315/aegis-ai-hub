@@ -24,18 +24,22 @@ const fs = require('fs');
 // クラッシュロギングの設定（一切の外部モジュールのロード前に実行）
 // app.getPath('userData') の準備が整う前（ready前）のアクセスによるC++アサーション即死を防ぐため、遅延解決します
 let crashLogPath;
-process.on('uncaughtException', (error) => {
+// 直前のクラッシュ記録を消さないよう追記し、ログ書き込み自体の失敗も stderr に残す
+function writeCrashLog(message) {
+  const logPath = crashLogPath || path.join(process.env.USERPROFILE || process.env.HOME || 'C:/Users/Public', 'aegis_crash.log');
   try {
-    const logPath = crashLogPath || path.join(process.env.USERPROFILE || process.env.HOME || 'C:/Users/Public', 'aegis_crash.log');
-    fs.writeFileSync(logPath, `Uncaught Exception: ${new Date().toISOString()}\n${error.stack || error}\n`);
-  } catch (e) {}
+    fs.appendFileSync(logPath, message);
+  } catch (writeError) {
+    console.error(`[Main] クラッシュログの書き込みに失敗しました (${logPath}):`, writeError);
+    console.error(message);
+  }
+}
+process.on('uncaughtException', (error) => {
+  writeCrashLog(`Uncaught Exception: ${new Date().toISOString()}\n${error.stack || error}\n`);
   app.quit();
 });
-process.on('unhandledRejection', (reason, promise) => {
-  try {
-    const logPath = crashLogPath || path.join(process.env.USERPROFILE || process.env.HOME || 'C:/Users/Public', 'aegis_crash.log');
-    fs.writeFileSync(logPath, `Unhandled Rejection: ${new Date().toISOString()}\nReason: ${reason?.stack || reason}\n`);
-  } catch (e) {}
+process.on('unhandledRejection', (reason) => {
+  writeCrashLog(`Unhandled Rejection: ${new Date().toISOString()}\nReason: ${reason?.stack || reason}\n`);
   app.quit();
 });
 
@@ -228,7 +232,9 @@ function createWindow() {
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
-      nodeIntegration: false
+      nodeIntegration: false,
+      // preload.cjs は require('electron') のみ使用するため sandbox 下でも動作する
+      sandbox: true
     }
   });
 
@@ -243,6 +249,16 @@ function createWindow() {
       shell.openExternal(url);
     }
     return { action: 'deny' };
+  });
+
+  // リンククリック等によるメインウィンドウ自体の外部遷移を防ぎ、外部URLはシステムブラウザで開く
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    const isAppUrl = isDev ? url.startsWith('http://localhost:5173') : url.startsWith('file://');
+    if (isAppUrl) return;
+    event.preventDefault();
+    if (url.startsWith('https://') || url.startsWith('http://')) {
+      shell.openExternal(url);
+    }
   });
 
   if (isDev) {
@@ -484,7 +500,7 @@ app.whenReady().then(async () => {
   licenseManager = LicenseManager.getInstance(dataDir);
   await licenseManager.load();
   // バックグラウンドで定期検証（ネットワーク依存のため非同期）
-  licenseManager.verify().catch(() => {});
+  licenseManager.verify().catch((e) => log.warn('[Main] ライセンス検証に失敗しました:', e));
 
   await startBackend();
   setupIpcHandlers();
