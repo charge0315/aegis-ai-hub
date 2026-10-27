@@ -6,6 +6,7 @@ import { SchemaType, type ResponseSchema } from '@google/generative-ai';
 import type { Article } from '../models/Article';
 import type { GeminiService } from './GeminiService';
 import type { ArchivistAgent } from '../agents/ArchivistAgent';
+import { DEFAULT_OBSIDIAN_VAULT_PATH } from '../models/vaultPath';
 
 export interface ObsidianExportOptions {
   vaultPath?: string;
@@ -38,7 +39,7 @@ export class ObsidianVaultService {
   private processedLinks: Set<string> = new Set();
 
   constructor(
-    vaultPath: string = 'C:\\Users\\charg\\Documents\\Personal Space',
+    vaultPath: string = DEFAULT_OBSIDIAN_VAULT_PATH,
     geminiService?: GeminiService,
     archivistAgent?: ArchivistAgent
   ) {

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { nexusApi } from '../api/nexusApi';
 import type { UiSettings } from '../types';
 import type { Language } from '../i18n/translations';
+import { DEFAULT_OBSIDIAN_VAULT_PATH, resolveObsidianVaultPath } from '../models/vaultPath';
 
 /**
  * UIの表示設定（フィードサイズ、画像表示、言語、テーマ等）をバックエンドと同期し、永続化するためのカスタムフック。
@@ -26,6 +27,9 @@ export const useUiSettingsSync = () => {
   const [language, setLanguage] = useState<Language>('ja');
   const [autoLaunch, setAutoLaunch] = useState(false);
   const [refreshInterval, setRefreshInterval] = useState<number>(15);
+  // 画面からは変えない設定。読み込んだ値をそのまま保存し直す（固定値で上書きしない）
+  const [obsidianVaultPath, setObsidianVaultPath] = useState<string>(DEFAULT_OBSIDIAN_VAULT_PATH);
+  const [enableObsidianAutoSync, setEnableObsidianAutoSync] = useState(true);
 
   // Load UI settings
   useEffect(() => {
@@ -40,6 +44,8 @@ export const useUiSettingsSync = () => {
         setLanguage(saved.language || 'ja');
         setAutoLaunch(saved.autoLaunch || false);
         setRefreshInterval(saved.refreshInterval ?? 15);
+        setObsidianVaultPath(resolveObsidianVaultPath(saved.obsidianVaultPath));
+        setEnableObsidianAutoSync(saved.enableObsidianAutoSync ?? true);
       } catch (err) {
         console.error("Failed to load UI settings:", err);
       }
@@ -62,8 +68,8 @@ export const useUiSettingsSync = () => {
             language,
             autoLaunch,
             refreshInterval,
-            obsidianVaultPath: 'C:\\Users\\charg\\Documents\\Personal Space',
-            enableObsidianAutoSync: true
+            obsidianVaultPath,
+            enableObsidianAutoSync
           });
         }
       } catch (err) {
@@ -72,7 +78,7 @@ export const useUiSettingsSync = () => {
     };
     const timeout = setTimeout(() => { void save(); }, 100);
     return () => clearTimeout(timeout);
-  }, [isJapaneseOnly, feedSize, showImages, isInitialized, theme, language, autoLaunch, refreshInterval]);
+  }, [isJapaneseOnly, feedSize, showImages, isInitialized, theme, language, autoLaunch, refreshInterval, obsidianVaultPath, enableObsidianAutoSync]);
 
   return {
     feedSize, setFeedSize,

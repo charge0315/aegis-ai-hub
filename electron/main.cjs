@@ -61,6 +61,7 @@ const { nexusRouter } = require('../src/api/server/NexusRouter');
 const { ScraperFacade } = require('../src/ScraperFacade');
 const { NexusOrchestrator } = require('../src/core/NexusOrchestrator');
 const { ObsidianVaultService } = require('../src/services/ObsidianVaultService');
+const { resolveObsidianVaultPath } = require('../src/models/vaultPath');
 const { LicenseManager } = require('../src/services/LicenseManager');
 
 let mainWindow;
@@ -162,7 +163,7 @@ async function startBackend() {
 
   const uiSettings = await settingsManager.getUiSettings();
   const obsidianVaultService = new ObsidianVaultService(
-    uiSettings.obsidianVaultPath || 'C:\\Users\\charg\\Documents\\Personal Space',
+    resolveObsidianVaultPath(uiSettings.obsidianVaultPath),
     geminiService
   );
   scraper.obsidianVaultService = obsidianVaultService;

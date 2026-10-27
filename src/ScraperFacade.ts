@@ -18,6 +18,7 @@ import { Article } from './models/Article';
 import { GeminiService } from './services/GeminiService';
 import { ExternalTrendFetcher } from './services/ExternalTrendFetcher';
 import { ObsidianVaultService } from './services/ObsidianVaultService';
+import { DEFAULT_OBSIDIAN_VAULT_PATH } from './models/vaultPath';
 import type { Interests } from './models/Schemas';
 import type { TrendSuggestion } from './types';
 import { normalizeCategoryName } from './utils/normalize';
@@ -46,7 +47,7 @@ export class ScraperFacade {
         this.enrichmentService = new EnrichmentService(this.geminiService, dataDir);
         this.externalTrendFetcher = new ExternalTrendFetcher();
         this.obsidianVaultService = new ObsidianVaultService(
-            'C:\\Users\\charg\\Documents\\Personal Space',
+            DEFAULT_OBSIDIAN_VAULT_PATH,
             this.geminiService
         );
     }

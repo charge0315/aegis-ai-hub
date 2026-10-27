@@ -10,6 +10,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import type { Article, NexusSettings, AgentStatus, InterestCategory, FeedConfig, UiSettings, TrendSuggestion, Interests, UsageStats, Credentials } from '../types';
+import { DEFAULT_OBSIDIAN_VAULT_PATH } from '../models/vaultPath';
 
 /** 
  * ウィンドウの座標とサイズ情報を保持するインターフェース。
@@ -243,7 +244,7 @@ export const nexusApi = {
         language: 'ja',
         autoLaunch: false,
         refreshInterval: 15,
-        obsidianVaultPath: 'C:\\Users\\charg\\Documents\\Personal Space',
+        obsidianVaultPath: DEFAULT_OBSIDIAN_VAULT_PATH,
         enableObsidianAutoSync: true
       };
     }

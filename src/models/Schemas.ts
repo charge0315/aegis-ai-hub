@@ -9,6 +9,7 @@
  */
 
 import { z } from 'zod';
+import { DEFAULT_OBSIDIAN_VAULT_PATH } from './vaultPath';
 
 /**
  * 1. Feed Config (フィード構成スキーマ)
@@ -126,7 +127,7 @@ export const UiSettingsSchema = z.object({
   language: z.enum(['ja', 'en']).default('ja'),
   autoLaunch: z.boolean().default(false),
   refreshInterval: z.number().default(15),
-  obsidianVaultPath: z.string().default('C:\\Users\\charg\\Documents\\Personal Space'),
+  obsidianVaultPath: z.string().default(DEFAULT_OBSIDIAN_VAULT_PATH),
   enableObsidianAutoSync: z.boolean().default(true),
 });
 
