@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { ResponseSchema } from "@google/generative-ai";
+import type { ResponseSchema } from "../geminiTypes";
 import type { AiProvider, LlmOptions } from "../AiProvider";
 import { readThrownMessage } from "./apiError";
 import { convertGeminiSchemaToJsonSchema, type JsonSchema } from "./schemaConverter";

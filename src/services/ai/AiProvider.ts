@@ -1,4 +1,4 @@
-import type { ResponseSchema } from "@google/generative-ai";
+import type { ResponseSchema } from "./geminiTypes";
 
 export interface LlmOptions {
   modelName: string;

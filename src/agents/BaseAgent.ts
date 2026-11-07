@@ -1,5 +1,5 @@
 import { GeminiService } from "../services/GeminiService";
-import type { ResponseSchema } from "@google/generative-ai";
+import type { ResponseSchema } from "../services/ai/geminiTypes";
 
 /**
  * BaseAgent: Aegis Nexusにおける「専門家エージェント」の基底クラス。

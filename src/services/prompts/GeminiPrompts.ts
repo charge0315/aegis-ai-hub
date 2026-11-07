@@ -1,4 +1,4 @@
-import { type ResponseSchema, SchemaType } from "@google/generative-ai";
+import { SchemaType, type ResponseSchema } from "../ai/geminiTypes";
 
 /**
  * GeminiPrompts: GeminiServiceで使用されるプロンプトおよびレスポンススキーマの定義。
@@ -141,8 +141,9 @@ export const RESTRUCTURE_SCHEMA = (targetCount: number): ResponseSchema => ({
         },
         required: ["name", "emoji", "brands", "keywords", "score", "reason"]
       },
-      minItems: targetCount,
-      maxItems: targetCount
+      // @google/genai の Schema は int64 を文字列で受け取る（API の仕様。旧 SDK では数値を送っていた）
+      minItems: String(targetCount),
+      maxItems: String(targetCount)
     },
     feedMapping: {
       type: SchemaType.ARRAY,

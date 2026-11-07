@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { SchemaType, type ResponseSchema } from '@google/generative-ai';
+import { SchemaType, type ResponseSchema } from '../../../src/services/ai/geminiTypes';
 import { convertGeminiSchemaToJsonSchema } from '../../../src/services/ai/providers/schemaConverter';
 
 describe('convertGeminiSchemaToJsonSchema', () => {

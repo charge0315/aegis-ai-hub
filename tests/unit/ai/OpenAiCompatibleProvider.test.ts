@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import axios from 'axios';
-import { SchemaType, type ResponseSchema } from '@google/generative-ai';
+import { SchemaType, type ResponseSchema } from '../../../src/services/ai/geminiTypes';
 import { OpenAiCompatibleProvider } from '../../../src/services/ai/providers/OpenAiCompatibleProvider';
 import { convertGeminiSchemaToJsonSchema } from '../../../src/services/ai/providers/schemaConverter';
 import { axiosError } from './axiosTestUtils';

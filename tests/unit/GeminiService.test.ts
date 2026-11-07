@@ -2,18 +2,16 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { GeminiService } from '../../src/services/GeminiService';
 import type { Interests, FeedConfig } from '../../src/models/Schemas';
 
-// Mocking @google/generative-ai
-vi.mock('@google/generative-ai', () => {
-  class MockGoogleGenerativeAI {
-    getGenerativeModel() {
-      return {
-        generateContent: vi.fn()
-      };
-    }
+// Mocking @google/genai
+vi.mock('@google/genai', () => {
+  class MockGoogleGenAI {
+    models = {
+      generateContent: vi.fn()
+    };
   }
   return {
-    GoogleGenerativeAI: MockGoogleGenerativeAI,
-    SchemaType: {
+    GoogleGenAI: MockGoogleGenAI,
+    Type: {
       OBJECT: 'OBJECT',
       ARRAY: 'ARRAY',
       STRING: 'STRING',
