@@ -2,8 +2,8 @@ import { defineConfig, devices } from '@playwright/test';
 
 const isCI = !!process.env.CI;
 
-// ローカル開発環境では特定バージョンのChromiumパスを指定（CIではPlaywrightがインストールしたものを使用）
-const localChromiumPath = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
+// 特定の Chromium を使いたいときだけ PW_CHROMIUM_PATH で指定する（未指定なら Playwright がインストールしたものを使う）
+const localChromiumPath = process.env.PW_CHROMIUM_PATH;
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -21,7 +21,7 @@ export default defineConfig({
       name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
-        ...(isCI ? {} : {
+        ...(isCI || !localChromiumPath ? {} : {
           launchOptions: {
             executablePath: localChromiumPath,
           },
