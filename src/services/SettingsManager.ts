@@ -2,6 +2,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { InterestsSchema, FeedConfigSchema, WindowStateSchema, CredentialsSchema, UiSettingsSchema, type Interests, type FeedConfig, type Credentials, type UiSettings, type SyncSettings } from '../models/Schemas';
 import { normalizeCategoryName } from '../utils/normalize';
+import { DEFAULT_MODEL } from '../models/AiModels';
 import { UsageManager } from './UsageManager';
 
 export interface SettingsManagerConfig {
@@ -50,7 +51,7 @@ export class SettingsManager {
     await this._ensureFile(this.feedConfigPath, {});
     await this._ensureFile(this.credentialsPath, {
       activeProvider: 'google',
-      activeModel: 'gemini-3.5-flash',
+      activeModel: DEFAULT_MODEL,
       google: {},
       anthropic: {},
       openai: {},
@@ -130,7 +131,7 @@ export class SettingsManager {
       // 初期値またはフォールバック
       return CredentialsSchema.parse({
         activeProvider: 'google',
-        activeModel: 'gemini-3.5-flash',
+        activeModel: DEFAULT_MODEL,
         google: {},
         anthropic: {},
         openai: {},

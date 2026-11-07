@@ -7,6 +7,7 @@ import * as Prompts from "./prompts/GeminiPrompts";
 import * as AiSchemas from "../models/AiSchemas";
 import type { AiProvider } from "./ai/AiProvider";
 import { AiProviderFactory } from "./ai/AiProviderFactory";
+import { DEFAULT_MODEL, HIGH_REASONING_MODELS } from "../models/AiModels";
 
 export interface CuratedArticle {
   id: number;
@@ -37,9 +38,9 @@ export interface CuratedArticle {
  */
 export class GeminiService {
   private provider: AiProvider | null = null;
-  private activeModelName: string = "gemini-3.5-flash";
-  private primaryModelName: string = "gemini-3.5-flash";
-  private highReasoningModelName: string = "gemini-3.1-pro-preview";
+  private activeModelName: string = DEFAULT_MODEL;
+  private primaryModelName: string = DEFAULT_MODEL;
+  private highReasoningModelName: string = HIGH_REASONING_MODELS.gemini;
   private usageManager: UsageManager | null = null;
 
   constructor(credentialsOrApiKey: Credentials | string | undefined) {
@@ -47,7 +48,7 @@ export class GeminiService {
       if (typeof credentialsOrApiKey === 'string') {
         const creds: Credentials = {
           activeProvider: 'google',
-          activeModel: 'gemini-3.5-flash',
+          activeModel: DEFAULT_MODEL,
           google: { apiKey: credentialsOrApiKey },
           anthropic: {},
           openai: {},
@@ -55,10 +56,10 @@ export class GeminiService {
           geminiApiKey: credentialsOrApiKey
         };
         this.provider = AiProviderFactory.create(creds);
-        this.activeModelName = 'gemini-3.5-flash';
+        this.activeModelName = DEFAULT_MODEL;
       } else {
         this.provider = AiProviderFactory.create(credentialsOrApiKey);
-        this.activeModelName = credentialsOrApiKey.activeModel || 'gemini-3.5-flash';
+        this.activeModelName = credentialsOrApiKey.activeModel || DEFAULT_MODEL;
       }
     }
   }
@@ -76,7 +77,7 @@ export class GeminiService {
   updateApiKey(apiKey: string): void {
     const creds: Credentials = {
       activeProvider: 'google',
-      activeModel: 'gemini-3.5-flash',
+      activeModel: DEFAULT_MODEL,
       google: { apiKey },
       anthropic: {},
       openai: {},
@@ -91,7 +92,7 @@ export class GeminiService {
    */
   updateCredentials(credentials: Credentials): void {
     this.provider = AiProviderFactory.create(credentials);
-    this.activeModelName = credentials.activeModel || 'gemini-3.5-flash';
+    this.activeModelName = credentials.activeModel || DEFAULT_MODEL;
   }
 
   /**
@@ -103,17 +104,19 @@ export class GeminiService {
         this.activeModelName.includes('flash') || 
         this.activeModelName.includes('haiku') || 
         this.activeModelName.includes('mini') ||
+        this.activeModelName.includes('terra') ||
+        this.activeModelName.includes('luna') ||
         this.activeModelName.includes('8b') ||
         this.activeModelName.includes('3b')
       ) {
         if (this.activeModelName.startsWith('gemini')) {
-          return 'gemini-3.5-pro';
+          return HIGH_REASONING_MODELS.gemini;
         }
         if (this.activeModelName.startsWith('claude')) {
-          return 'claude-3-5-sonnet-latest';
+          return HIGH_REASONING_MODELS.claude;
         }
         if (this.activeModelName.startsWith('gpt')) {
-          return 'gpt-4o';
+          return HIGH_REASONING_MODELS.gpt;
         }
       }
     }

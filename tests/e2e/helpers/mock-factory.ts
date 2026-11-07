@@ -77,7 +77,7 @@ export class MockFactory {
         saveApiKey: () => Promise.resolve({ success: true }),
         getCredentials: () => Promise.resolve({
           activeProvider: 'google',
-          activeModel: 'gemini-3.5-flash',
+          activeModel: 'gemini-3.8-flash',
           google: { apiKey: 'mock-api-key' },
           anthropic: {},
           openai: {},

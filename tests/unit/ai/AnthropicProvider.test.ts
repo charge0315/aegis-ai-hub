@@ -46,12 +46,13 @@ describe('AnthropicProvider', () => {
     expect(() => new AnthropicProvider('')).toThrow('Anthropic API key is required.');
   });
 
-  it('returns structured tool input', async () => {
+  it('returns the JSON from the text block of a structured output response', async () => {
     vi.mocked(axios.post).mockResolvedValue({
       data: {
+        stop_reason: 'end_turn',
         content: [
-          { type: 'text', text: 'ignored' },
-          { type: 'tool_use', name: 'structured_output', input: { sentiment: 'positive' } },
+          { type: 'thinking', thinking: '' },
+          { type: 'text', text: '{"sentiment":"positive"}' },
         ],
       },
     });
@@ -61,28 +62,77 @@ describe('AnthropicProvider', () => {
     expect(result).toEqual({ sentiment: 'positive' });
     expect(axios.post).toHaveBeenCalledWith(
       'https://example.com/anthropic/v1/messages',
-      expect.objectContaining({
+      {
         model: 'claude-test',
-        max_tokens: 4000,
+        max_tokens: 16000,
         system: 'Be brief.',
         messages: [{ role: 'user', content: 'hello' }],
-        temperature: 0.4,
-        tool_choice: { type: 'tool', name: 'structured_output' },
-        tools: [
-          expect.objectContaining({
-            name: 'structured_output',
-            input_schema: convertGeminiSchemaToJsonSchema(schema),
-          }),
-        ],
-      }),
+        output_config: {
+          format: {
+            type: 'json_schema',
+            schema: { ...convertGeminiSchemaToJsonSchema(schema), additionalProperties: false },
+          },
+        },
+      },
       {
         headers: {
           'x-api-key': 'anthropic-key',
-          'anthropic-version': '2023-06-01',
+          'anthropic-version': '2026-10-21',
           'content-type': 'application/json',
         },
       },
     );
+  });
+
+  it('does not send temperature or a forced tool choice', async () => {
+    vi.mocked(axios.post).mockResolvedValue({
+      data: { stop_reason: 'end_turn', content: [{ type: 'text', text: '{"sentiment":"neutral"}' }] },
+    });
+
+    await provider.generateStructured('hello', schema, options);
+
+    const body = vi.mocked(axios.post).mock.calls[0][1] as Record<string, unknown>;
+    expect(body).not.toHaveProperty('temperature');
+    expect(body).not.toHaveProperty('tool_choice');
+    expect(body).not.toHaveProperty('tools');
+  });
+
+  it('adds additionalProperties: false to every nested object schema', async () => {
+    const nested: ResponseSchema = {
+      type: SchemaType.OBJECT,
+      properties: {
+        items: {
+          type: SchemaType.ARRAY,
+          items: {
+            type: SchemaType.OBJECT,
+            properties: { name: { type: SchemaType.STRING } },
+          },
+        },
+      },
+    };
+    vi.mocked(axios.post).mockResolvedValue({
+      data: { stop_reason: 'end_turn', content: [{ type: 'text', text: '{"items":[]}' }] },
+    });
+
+    await provider.generateStructured('hello', nested, options);
+
+    const body = vi.mocked(axios.post).mock.calls[0][1] as {
+      output_config: { format: { schema: Record<string, unknown> } };
+    };
+    expect(body.output_config.format.schema).toEqual({
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        items: {
+          type: 'array',
+          items: {
+            type: 'object',
+            additionalProperties: false,
+            properties: { name: { type: 'string' } },
+          },
+        },
+      },
+    });
   });
 
   it('wraps an invalid response that is not a content array', async () => {
@@ -93,13 +143,33 @@ describe('AnthropicProvider', () => {
     );
   });
 
-  it('wraps a response that does not call structured_output', async () => {
+  it('rejects a response truncated by max_tokens', async () => {
     vi.mocked(axios.post).mockResolvedValue({
-      data: { content: [{ type: 'text', text: 'plain' }] },
+      data: { stop_reason: 'max_tokens', content: [{ type: 'text', text: '{"senti' }] },
     });
 
     await expect(provider.generateStructured('hello', schema, options)).rejects.toThrow(
-      'Anthropic API request failed: Anthropic did not call the expected structured output tool.',
+      'Anthropic API request failed: Anthropic response was truncated (stop_reason: max_tokens).',
+    );
+  });
+
+  it('rejects a refusal', async () => {
+    vi.mocked(axios.post).mockResolvedValue({
+      data: { stop_reason: 'refusal', content: [{ type: 'text', text: '' }] },
+    });
+
+    await expect(provider.generateStructured('hello', schema, options)).rejects.toThrow(
+      'Anthropic API request failed: Anthropic refused to answer (stop_reason: refusal).',
+    );
+  });
+
+  it('rejects a response without a text block', async () => {
+    vi.mocked(axios.post).mockResolvedValue({
+      data: { stop_reason: 'end_turn', content: [{ type: 'thinking', thinking: '' }] },
+    });
+
+    await expect(provider.generateStructured('hello', schema, options)).rejects.toThrow(
+      'Anthropic API request failed: Anthropic returned no text output.',
     );
   });
 

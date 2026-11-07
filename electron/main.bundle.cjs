@@ -20449,11 +20449,65 @@ var init_zod = __esm({
   }
 });
 
+// src/models/vaultPath.ts
+var vaultPath_exports = {};
+__export(vaultPath_exports, {
+  DEFAULT_OBSIDIAN_VAULT_PATH: () => DEFAULT_OBSIDIAN_VAULT_PATH,
+  resolveObsidianVaultPath: () => resolveObsidianVaultPath
+});
+var DEFAULT_OBSIDIAN_VAULT_PATH, LEGACY_OBSIDIAN_VAULT_PATHS, normalizeForCompare, resolveObsidianVaultPath;
+var init_vaultPath = __esm({
+  "src/models/vaultPath.ts"() {
+    DEFAULT_OBSIDIAN_VAULT_PATH = "C:\\Users\\charg\\Documents\\Vaults\\Personal";
+    LEGACY_OBSIDIAN_VAULT_PATHS = ["C:\\Users\\charg\\Documents\\Personal Space"];
+    normalizeForCompare = (p) => p.trim().replace(/[\\/]+$/, "").toLowerCase();
+    resolveObsidianVaultPath = (path7) => {
+      if (!path7 || !path7.trim()) return DEFAULT_OBSIDIAN_VAULT_PATH;
+      const key = normalizeForCompare(path7);
+      return LEGACY_OBSIDIAN_VAULT_PATHS.some((legacy) => normalizeForCompare(legacy) === key) ? DEFAULT_OBSIDIAN_VAULT_PATH : path7;
+    };
+  }
+});
+
+// src/models/AiModels.ts
+function replaceRetiredModel(model) {
+  return RETIRED_MODEL_REPLACEMENTS[model] ?? model;
+}
+var PROVIDER_MODELS, DEFAULT_MODEL, HIGH_REASONING_MODELS, RETIRED_MODEL_REPLACEMENTS;
+var init_AiModels = __esm({
+  "src/models/AiModels.ts"() {
+    PROVIDER_MODELS = {
+      google: ["gemini-3.8-flash", "gemini-3.6-flash", "gemini-4-argon", "gemini-3.5-flash-lite", "gemini-3.1-pro-preview"],
+      anthropic: ["claude-sonnet-5-5", "claude-opus-5-5", "claude-haiku-5-5", "claude-fable-5-1"],
+      openai: ["gpt-6.1-sol", "gpt-6-astra", "gpt-6.1-terra", "gpt-6-luna"],
+      ollama: ["gemma4", "qwen3.5", "gpt-oss", "llama3.1", "deepseek-r1"]
+    };
+    DEFAULT_MODEL = PROVIDER_MODELS.google[0];
+    HIGH_REASONING_MODELS = {
+      gemini: "gemini-4-argon",
+      claude: "claude-sonnet-5-5",
+      gpt: "gpt-6.1-sol"
+    };
+    RETIRED_MODEL_REPLACEMENTS = {
+      "claude-3-5-sonnet-latest": "claude-sonnet-5-5",
+      "claude-3-5-sonnet-20241022": "claude-sonnet-5-5",
+      "claude-3-5-sonnet-20240620": "claude-sonnet-5-5",
+      "claude-3-5-haiku-latest": "claude-haiku-5-5",
+      "claude-3-5-haiku-20241022": "claude-haiku-5-5",
+      "claude-3-5-opus-latest": "claude-opus-5-5",
+      "o1-mini": "gpt-6.1-terra",
+      "gemini-3.5-pro": "gemini-4-argon"
+    };
+  }
+});
+
 // src/models/Schemas.ts
 var FeedConfigSchema, InterestCategorySchema, SkillSchema, InterestsSchema, WindowStateSchema, SyncSettingsSchema, UiSettingsSchema, UsageStatsSchema, CredentialsSchema;
 var init_Schemas = __esm({
   "src/models/Schemas.ts"() {
     init_zod();
+    init_vaultPath();
+    init_AiModels();
     FeedConfigSchema = external_exports.record(
       external_exports.string(),
       external_exports.object({
@@ -20511,7 +20565,7 @@ var init_Schemas = __esm({
       language: external_exports.enum(["ja", "en"]).default("ja"),
       autoLaunch: external_exports.boolean().default(false),
       refreshInterval: external_exports.number().default(15),
-      obsidianVaultPath: external_exports.string().default("C:\\Users\\charg\\Documents\\Personal Space"),
+      obsidianVaultPath: external_exports.string().default(DEFAULT_OBSIDIAN_VAULT_PATH),
       enableObsidianAutoSync: external_exports.boolean().default(true)
     });
     UsageStatsSchema = external_exports.record(
@@ -20519,7 +20573,7 @@ var init_Schemas = __esm({
       // キーは YYYY-MM-DD 形式の日付文字列
       external_exports.record(
         external_exports.string(),
-        // キーはモデル名（例: gemini-3.5-flash）
+        // キーはモデル名（例: gemini-3.8-flash）
         external_exports.object({
           promptTokens: external_exports.number(),
           candidatesTokens: external_exports.number(),
@@ -20531,7 +20585,8 @@ var init_Schemas = __esm({
     CredentialsSchema = external_exports.object({
       geminiApiKey: external_exports.string().optional(),
       activeProvider: external_exports.enum(["google", "anthropic", "openai", "ollama"]).default("google"),
-      activeModel: external_exports.string().default("gemini-3.5-flash"),
+      // 提供が終わったモデル ID は読み込み時に後継へ置き換える
+      activeModel: external_exports.string().default(DEFAULT_MODEL).transform(replaceRetiredModel),
       google: external_exports.object({
         apiKey: external_exports.string().optional(),
         baseUrl: external_exports.string().optional()
@@ -20643,6 +20698,7 @@ var init_SettingsManager = __esm({
     import_path = __toESM(require("path"), 1);
     init_Schemas();
     init_normalize();
+    init_AiModels();
     init_UsageManager();
     SettingsManager = class {
       dataDir;
@@ -20669,7 +20725,7 @@ var init_SettingsManager = __esm({
         await this._ensureFile(this.feedConfigPath, {});
         await this._ensureFile(this.credentialsPath, {
           activeProvider: "google",
-          activeModel: "gemini-3.5-flash",
+          activeModel: DEFAULT_MODEL,
           google: {},
           anthropic: {},
           openai: {},
@@ -20740,7 +20796,7 @@ var init_SettingsManager = __esm({
         } catch {
           return CredentialsSchema.parse({
             activeProvider: "google",
-            activeModel: "gemini-3.5-flash",
+            activeModel: DEFAULT_MODEL,
             google: {},
             anthropic: {},
             openai: {},
@@ -40784,15 +40840,36 @@ var init_schemaConverter = __esm({
 function isRecord3(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
-function isToolUseBlock(item) {
-  return isRecord3(item) && item.type === "tool_use";
+function isTextBlock(item) {
+  return isRecord3(item) && item.type === "text" && typeof item.text === "string";
 }
-var AnthropicProvider;
+function toStrictSchema(schema) {
+  if (!schema) {
+    return void 0;
+  }
+  const { properties, items, ...rest } = schema;
+  const strict = { ...rest };
+  if (properties) {
+    strict.properties = Object.fromEntries(
+      Object.entries(properties).map(([key, value]) => [key, toStrictSchema(value)])
+    );
+  }
+  if (items) {
+    strict.items = toStrictSchema(items);
+  }
+  if (schema.type === "object") {
+    strict.additionalProperties = false;
+  }
+  return strict;
+}
+var ANTHROPIC_VERSION, MAX_TOKENS, AnthropicProvider;
 var init_AnthropicProvider = __esm({
   "src/services/ai/providers/AnthropicProvider.ts"() {
     init_axios2();
     init_apiError();
     init_schemaConverter();
+    ANTHROPIC_VERSION = "2026-10-21";
+    MAX_TOKENS = 16e3;
     AnthropicProvider = class {
       apiKey;
       baseUrl;
@@ -40803,35 +40880,34 @@ var init_AnthropicProvider = __esm({
         this.apiKey = apiKey;
         this.baseUrl = baseUrl || "https://api.anthropic.com";
       }
+      /**
+       * 構造化出力（output_config.format）で JSON を生成する。
+       * Claude 5.5 系はツールの強制（tool_choice: tool）と temperature を受け付けないため、
+       * ツール呼び出しではなく JSON Schema による出力指定を使う。options.temperature は送らない。
+       */
       async generateStructured(prompt, schema, options) {
-        const jsonSchema = convertGeminiSchemaToJsonSchema(schema);
+        const jsonSchema = toStrictSchema(convertGeminiSchemaToJsonSchema(schema));
         const systemPrompt = options.systemPrompt || "You are a helpful AI assistant.";
         const url3 = `${this.baseUrl.replace(/\/+$/, "")}/v1/messages`;
         const requestBody = {
           model: options.modelName,
-          max_tokens: 4e3,
+          max_tokens: MAX_TOKENS,
           system: systemPrompt,
           messages: [
             { role: "user", content: prompt }
           ],
-          tools: [
-            {
-              name: "structured_output",
-              description: "Generates structured data conforming to the schema.",
-              input_schema: jsonSchema
+          output_config: {
+            format: {
+              type: "json_schema",
+              schema: jsonSchema
             }
-          ],
-          tool_choice: {
-            type: "tool",
-            name: "structured_output"
-          },
-          temperature: options.temperature
+          }
         };
         try {
           const response = await axios_default.post(url3, requestBody, {
             headers: {
               "x-api-key": this.apiKey,
-              "anthropic-version": "2023-06-01",
+              "anthropic-version": ANTHROPIC_VERSION,
               "content-type": "application/json"
             }
           });
@@ -40839,11 +40915,18 @@ var init_AnthropicProvider = __esm({
           if (!Array.isArray(content)) {
             throw new Error("Invalid Anthropic API response format.");
           }
-          const toolUse = content.find(isToolUseBlock);
-          if (!toolUse || toolUse.name !== "structured_output") {
-            throw new Error("Anthropic did not call the expected structured output tool.");
+          const stopReason = response.data?.stop_reason;
+          if (stopReason === "max_tokens") {
+            throw new Error("Anthropic response was truncated (stop_reason: max_tokens).");
           }
-          return toolUse.input;
+          if (stopReason === "refusal") {
+            throw new Error("Anthropic refused to answer (stop_reason: refusal).");
+          }
+          const text3 = content.filter(isTextBlock).map((block) => block.text).join("");
+          if (!text3) {
+            throw new Error("Anthropic returned no text output.");
+          }
+          return JSON.parse(text3);
         } catch (error62) {
           const apiErrorMsg = readApiErrorMessage(error62);
           throw new Error(`Anthropic API request failed: ${apiErrorMsg}`, { cause: error62 });
@@ -40854,12 +40937,13 @@ var init_AnthropicProvider = __esm({
 });
 
 // src/services/ai/providers/OpenAiCompatibleProvider.ts
-var OpenAiCompatibleProvider;
+var REASONING_MODEL_PATTERN, OpenAiCompatibleProvider;
 var init_OpenAiCompatibleProvider = __esm({
   "src/services/ai/providers/OpenAiCompatibleProvider.ts"() {
     init_axios2();
     init_apiError();
     init_schemaConverter();
+    REASONING_MODEL_PATTERN = /^(gpt-([5-9]|\d{2,})|o\d)/;
     OpenAiCompatibleProvider = class {
       apiKey;
       baseUrl;
@@ -40886,7 +40970,7 @@ var init_OpenAiCompatibleProvider = __esm({
               schema: jsonSchema
             }
           },
-          temperature: options.temperature ?? 0.2
+          ...REASONING_MODEL_PATTERN.test(options.modelName) ? {} : { temperature: options.temperature ?? 0.2 }
         };
         try {
           const headers = {
@@ -41036,18 +41120,19 @@ var init_GeminiService = __esm({
     init_GeminiPrompts();
     init_AiSchemas();
     init_AiProviderFactory();
+    init_AiModels();
     GeminiService = class {
       provider = null;
-      activeModelName = "gemini-3.5-flash";
-      primaryModelName = "gemini-3.5-flash";
-      highReasoningModelName = "gemini-3.1-pro-preview";
+      activeModelName = DEFAULT_MODEL;
+      primaryModelName = DEFAULT_MODEL;
+      highReasoningModelName = HIGH_REASONING_MODELS.gemini;
       usageManager = null;
       constructor(credentialsOrApiKey) {
         if (credentialsOrApiKey) {
           if (typeof credentialsOrApiKey === "string") {
             const creds = {
               activeProvider: "google",
-              activeModel: "gemini-3.5-flash",
+              activeModel: DEFAULT_MODEL,
               google: { apiKey: credentialsOrApiKey },
               anthropic: {},
               openai: {},
@@ -41055,10 +41140,10 @@ var init_GeminiService = __esm({
               geminiApiKey: credentialsOrApiKey
             };
             this.provider = AiProviderFactory.create(creds);
-            this.activeModelName = "gemini-3.5-flash";
+            this.activeModelName = DEFAULT_MODEL;
           } else {
             this.provider = AiProviderFactory.create(credentialsOrApiKey);
-            this.activeModelName = credentialsOrApiKey.activeModel || "gemini-3.5-flash";
+            this.activeModelName = credentialsOrApiKey.activeModel || DEFAULT_MODEL;
           }
         }
       }
@@ -41074,7 +41159,7 @@ var init_GeminiService = __esm({
       updateApiKey(apiKey) {
         const creds = {
           activeProvider: "google",
-          activeModel: "gemini-3.5-flash",
+          activeModel: DEFAULT_MODEL,
           google: { apiKey },
           anthropic: {},
           openai: {},
@@ -41088,22 +41173,22 @@ var init_GeminiService = __esm({
        */
       updateCredentials(credentials) {
         this.provider = AiProviderFactory.create(credentials);
-        this.activeModelName = credentials.activeModel || "gemini-3.5-flash";
+        this.activeModelName = credentials.activeModel || DEFAULT_MODEL;
       }
       /**
        * 推論レベルに応じた適切なモデル名をマッピングします。
        */
       getMappedModelName(alias) {
         if (alias === this.highReasoningModelName) {
-          if (this.activeModelName.includes("flash") || this.activeModelName.includes("haiku") || this.activeModelName.includes("mini") || this.activeModelName.includes("8b") || this.activeModelName.includes("3b")) {
+          if (this.activeModelName.includes("flash") || this.activeModelName.includes("haiku") || this.activeModelName.includes("mini") || this.activeModelName.includes("terra") || this.activeModelName.includes("luna") || this.activeModelName.includes("8b") || this.activeModelName.includes("3b")) {
             if (this.activeModelName.startsWith("gemini")) {
-              return "gemini-3.5-pro";
+              return HIGH_REASONING_MODELS.gemini;
             }
             if (this.activeModelName.startsWith("claude")) {
-              return "claude-3-5-sonnet-latest";
+              return HIGH_REASONING_MODELS.claude;
             }
             if (this.activeModelName.startsWith("gpt")) {
-              return "gpt-4o";
+              return HIGH_REASONING_MODELS.gpt;
             }
           }
         }
@@ -95540,12 +95625,13 @@ var init_ObsidianVaultService = __esm({
     import_os = __toESM(require("os"), 1);
     import_child_process = require("child_process");
     init_dist();
+    init_vaultPath();
     ObsidianVaultService = class {
       vaultPath;
       geminiService;
       archivistAgent;
       processedLinks = /* @__PURE__ */ new Set();
-      constructor(vaultPath = "C:\\Users\\charg\\Documents\\Personal Space", geminiService2, archivistAgent) {
+      constructor(vaultPath = DEFAULT_OBSIDIAN_VAULT_PATH, geminiService2, archivistAgent) {
         this.vaultPath = vaultPath;
         this.geminiService = geminiService2;
         this.archivistAgent = archivistAgent;
@@ -95829,6 +95915,7 @@ var init_ScraperFacade = __esm({
     init_GeminiService();
     init_ExternalTrendFetcher();
     init_ObsidianVaultService();
+    init_vaultPath();
     init_normalize();
     ScraperFacade = class {
       feedManager;
@@ -95849,7 +95936,7 @@ var init_ScraperFacade = __esm({
         this.enrichmentService = new EnrichmentService(this.geminiService, dataDir2);
         this.externalTrendFetcher = new ExternalTrendFetcher();
         this.obsidianVaultService = new ObsidianVaultService(
-          "C:\\Users\\charg\\Documents\\Personal Space",
+          DEFAULT_OBSIDIAN_VAULT_PATH,
           this.geminiService
         );
       }
@@ -96660,6 +96747,7 @@ var { nexusRouter: nexusRouter2 } = (init_NexusRouter(), __toCommonJS(NexusRoute
 var { ScraperFacade: ScraperFacade2 } = (init_ScraperFacade(), __toCommonJS(ScraperFacade_exports));
 var { NexusOrchestrator: NexusOrchestrator2 } = (init_NexusOrchestrator(), __toCommonJS(NexusOrchestrator_exports));
 var { ObsidianVaultService: ObsidianVaultService2 } = (init_ObsidianVaultService(), __toCommonJS(ObsidianVaultService_exports));
+var { resolveObsidianVaultPath: resolveObsidianVaultPath2 } = (init_vaultPath(), __toCommonJS(vaultPath_exports));
 var { LicenseManager: LicenseManager2 } = (init_LicenseManager(), __toCommonJS(LicenseManager_exports));
 var mainWindow;
 var settingsManager;
@@ -96722,7 +96810,7 @@ async function startBackend() {
   scraper.feedManager = feedManager;
   const uiSettings = await settingsManager.getUiSettings();
   const obsidianVaultService = new ObsidianVaultService2(
-    uiSettings.obsidianVaultPath || "C:\\Users\\charg\\Documents\\Personal Space",
+    resolveObsidianVaultPath2(uiSettings.obsidianVaultPath),
     geminiService
   );
   scraper.obsidianVaultService = obsidianVaultService;

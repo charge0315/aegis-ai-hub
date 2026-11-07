@@ -11,6 +11,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { Article, NexusSettings, AgentStatus, InterestCategory, FeedConfig, UiSettings, TrendSuggestion, Interests, UsageStats, Credentials } from '../types';
 import { DEFAULT_OBSIDIAN_VAULT_PATH } from '../models/vaultPath';
+import { DEFAULT_MODEL } from '../models/AiModels';
 
 /** 
  * ウィンドウの座標とサイズ情報を保持するインターフェース。
@@ -209,7 +210,7 @@ export const nexusApi = {
     // Web環境やE2Eでのフォールバック
     return {
       activeProvider: 'google',
-      activeModel: 'gemini-3.5-flash',
+      activeModel: DEFAULT_MODEL,
       google: {},
       anthropic: {},
       openai: {},

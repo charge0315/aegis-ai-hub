@@ -3,6 +3,7 @@ import { nexusApi } from '../api/nexusApi';
 import { useTranslation } from './useTranslationHook';
 import type { DialogType } from '../components/CustomDialog';
 import type { Credentials } from '../types';
+import { DEFAULT_MODEL } from '../models/AiModels';
 
 interface UseApiKeyManagerProps {
   customAlert: (title: string, message: string, type?: DialogType) => Promise<void>;
@@ -12,7 +13,7 @@ export function useApiKeyManager({ customAlert }: UseApiKeyManagerProps) {
   const { t } = useTranslation();
   const [credentials, setCredentials] = useState<Credentials>({
     activeProvider: 'google',
-    activeModel: 'gemini-3.5-flash',
+    activeModel: DEFAULT_MODEL,
     google: {},
     anthropic: {},
     openai: {},

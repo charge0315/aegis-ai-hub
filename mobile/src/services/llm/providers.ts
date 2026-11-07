@@ -59,7 +59,7 @@ const gemini: LLMProvider = {
   id: 'gemini',
   label: 'Google Gemini',
   requiresApiKey: true,
-  defaultModel: 'gemini-2.5-flash',
+  defaultModel: 'gemini-3.8-flash',
   async chat({ apiKey, model, system, prompt }) {
     if (!apiKey) throw new Error('Gemini API key is required');
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
@@ -80,7 +80,7 @@ const claude: LLMProvider = {
   id: 'claude',
   label: 'Anthropic Claude',
   requiresApiKey: true,
-  defaultModel: 'claude-sonnet-5',
+  defaultModel: 'claude-sonnet-5-5',
   async chat({ apiKey, model, system, prompt }) {
     if (!apiKey) throw new Error('Anthropic API key is required');
     const json = await fetchJson<ClaudeResponse>('https://api.anthropic.com/v1/messages', {
@@ -106,7 +106,7 @@ const openai: LLMProvider = {
   id: 'openai',
   label: 'OpenAI 互換',
   requiresApiKey: true,
-  defaultModel: 'gpt-4o-mini',
+  defaultModel: 'gpt-6-luna',
   async chat({ apiKey, model, baseUrl, system, prompt }) {
     if (!apiKey) throw new Error('OpenAI API key is required');
     const url = `${(baseUrl || 'https://api.openai.com/v1').replace(/\/$/, '')}/chat/completions`;
@@ -130,7 +130,7 @@ const ollama: LLMProvider = {
   id: 'ollama',
   label: 'Ollama (Local LLM)',
   requiresApiKey: false,
-  defaultModel: 'llama3',
+  defaultModel: 'gemma4',
   async chat({ model, baseUrl, system, prompt }) {
     const url = `${(baseUrl || 'http://localhost:11434').replace(/\/$/, '')}/api/chat`;
     const json = await fetchJson<OllamaResponse>(url, {

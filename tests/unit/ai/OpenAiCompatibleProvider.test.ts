@@ -94,6 +94,36 @@ describe('OpenAiCompatibleProvider', () => {
     );
   });
 
+  it.each(['gpt-6.1-sol', 'gpt-6-luna', 'gpt-5.6-sol', 'o4-mini'])(
+    'does not send temperature to the reasoning model %s',
+    async (modelName) => {
+      const provider = new OpenAiCompatibleProvider('openai-key');
+      vi.mocked(axios.post).mockResolvedValue({
+        data: { choices: [{ message: { content: '{"answer":"ok"}' } }] },
+      });
+
+      await provider.generateStructured('hello', schema, { modelName, temperature: 0.4 });
+
+      const body = vi.mocked(axios.post).mock.calls[0][1] as Record<string, unknown>;
+      expect(body).not.toHaveProperty('temperature');
+    },
+  );
+
+  it.each(['gpt-4o', 'gpt-oss', 'llama-test'])('keeps temperature for the non-reasoning model %s', async (modelName) => {
+    const provider = new OpenAiCompatibleProvider('openai-key');
+    vi.mocked(axios.post).mockResolvedValue({
+      data: { choices: [{ message: { content: '{"answer":"ok"}' } }] },
+    });
+
+    await provider.generateStructured('hello', schema, { modelName, temperature: 0.4 });
+
+    expect(axios.post).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ temperature: 0.4 }),
+      expect.anything(),
+    );
+  });
+
   it('wraps an empty completion', async () => {
     const provider = new OpenAiCompatibleProvider('openai-key');
     vi.mocked(axios.post).mockResolvedValue({

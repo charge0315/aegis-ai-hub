@@ -20,6 +20,7 @@ import {
 import { GlassPanel } from '../GlassPanel';
 import type { UiSettings, Credentials } from '../../types';
 import { useLicense } from '../../hooks/useLicense';
+import { DEFAULT_MODEL, PROVIDER_MODELS } from '../../models/AiModels';
 
 interface SystemSettingsProps {
   apiKey: string;
@@ -40,13 +41,6 @@ interface SystemSettingsProps {
   isReacquiring: boolean;
   handleReacquireAllFeeds: () => Promise<void>;
 }
-
-const PROVIDER_MODELS = {
-  google: ['gemini-3.5-flash', 'gemini-3.5-pro', 'gemini-3.6-flash', 'gemini-3.1-pro-preview', 'gemini-2.5-flash'],
-  anthropic: ['claude-3-5-sonnet-latest', 'claude-3-5-opus-latest', 'claude-3-5-haiku-latest'],
-  openai: ['gpt-4o', 'gpt-4o-mini', 'o1-mini', 'gpt-oss-120b'],
-  ollama: ['llama3', 'llama3.1', 'mistral', 'phi3', 'gemma2']
-};
 
 export const SystemSettings: React.FC<SystemSettingsProps> = ({
   setApiKey,
@@ -80,7 +74,7 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
   // Local state for credentials editing
   const [localCreds, setLocalCreds] = useState<Credentials>({
     activeProvider: 'google',
-    activeModel: 'gemini-3.5-flash',
+    activeModel: DEFAULT_MODEL,
     google: {},
     anthropic: {},
     openai: {},

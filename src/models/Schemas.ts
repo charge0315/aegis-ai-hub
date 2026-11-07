@@ -10,6 +10,7 @@
 
 import { z } from 'zod';
 import { DEFAULT_OBSIDIAN_VAULT_PATH } from './vaultPath';
+import { DEFAULT_MODEL, replaceRetiredModel } from './AiModels';
 
 /**
  * 1. Feed Config (フィード構成スキーマ)
@@ -141,7 +142,7 @@ export type UiSettings = z.infer<typeof UiSettingsSchema>;
 export const UsageStatsSchema = z.record(
   z.string(), // キーは YYYY-MM-DD 形式の日付文字列
   z.record(
-    z.string(), // キーはモデル名（例: gemini-3.5-flash）
+    z.string(), // キーはモデル名（例: gemini-3.8-flash）
     z.object({
       promptTokens: z.number(),
       candidatesTokens: z.number(),
@@ -161,7 +162,8 @@ export type UsageStats = z.infer<typeof UsageStatsSchema>;
 export const CredentialsSchema = z.object({
   geminiApiKey: z.string().optional(),
   activeProvider: z.enum(['google', 'anthropic', 'openai', 'ollama']).default('google'),
-  activeModel: z.string().default('gemini-3.5-flash'),
+  // 提供が終わったモデル ID は読み込み時に後継へ置き換える
+  activeModel: z.string().default(DEFAULT_MODEL).transform(replaceRetiredModel),
   google: z.object({
     apiKey: z.string().optional(),
     baseUrl: z.string().optional(),
