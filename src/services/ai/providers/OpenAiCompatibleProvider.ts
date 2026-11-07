@@ -12,6 +12,12 @@ interface ChatCompletionResponse {
   }>;
 }
 
+/**
+ * OpenAI の推論モデル（gpt-5 以降・o 系）か。
+ * 推論モデルが temperature を受け付けるかは公式に明記が無いため、送らない側に倒す。
+ */
+const REASONING_MODEL_PATTERN = /^(gpt-([5-9]|\d{2,})|o\d)/;
+
 export class OpenAiCompatibleProvider implements AiProvider {
   private apiKey: string;
   private baseUrl: string;
@@ -46,7 +52,9 @@ export class OpenAiCompatibleProvider implements AiProvider {
           schema: jsonSchema
         }
       },
-      temperature: options.temperature ?? 0.2
+      ...(REASONING_MODEL_PATTERN.test(options.modelName)
+        ? {}
+        : { temperature: options.temperature ?? 0.2 })
     };
 
     try {

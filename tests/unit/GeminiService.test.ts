@@ -31,6 +31,35 @@ describe('GeminiService', () => {
     vi.clearAllMocks();
   });
 
+  describe('high reasoning model mapping', () => {
+    const mapFor = (activeModel: string): string => {
+      const target = service as unknown as {
+        activeModelName: string;
+        highReasoningModelName: string;
+        getMappedModelName: (alias: string) => string;
+      };
+      target.activeModelName = activeModel;
+      return target.getMappedModelName(target.highReasoningModelName);
+    };
+
+    it.each([
+      ['gemini-3.8-flash', 'gemini-4-argon'],
+      ['gemini-3.5-flash-lite', 'gemini-4-argon'],
+      ['claude-haiku-5-5', 'claude-sonnet-5-5'],
+      ['gpt-6.1-terra', 'gpt-6.1-sol'],
+      ['gpt-6-luna', 'gpt-6.1-sol'],
+    ])('maps the light model %s to %s', (active, expected) => {
+      expect(mapFor(active)).toBe(expected);
+    });
+
+    it.each(['gemini-4-argon', 'claude-opus-5-5', 'gpt-6-astra', 'gemma4'])(
+      'keeps the non-light model %s',
+      (active) => {
+        expect(mapFor(active)).toBe(active);
+      },
+    );
+  });
+
   describe('getRestructureProposal', () => {
     it('should recover missing brands and keywords (Data Retention Recovery)', async () => {
       const interests: Interests = {
