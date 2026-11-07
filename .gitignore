@@ -122,3 +122,6 @@ fix_ui*.py
 *.bak2
 /dashboard/
 /server/
+
+# esbuild で作る main プロセスの bundle（npm run build:electron で生成）
+electron/main.bundle.cjs
