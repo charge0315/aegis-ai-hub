@@ -1,0 +1,949 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`schema snapshots > ANALYZE_TRENDS_SCHEMA: Gemini スキーマ(type 小文字化) 1`] = `
+{
+  "properties": {
+    "suggestions": {
+      "items": {
+        "properties": {
+          "category": {
+            "type": "string",
+          },
+          "confidence": {
+            "type": "number",
+          },
+          "context": {
+            "type": "string",
+          },
+          "reason": {
+            "type": "string",
+          },
+          "type": {
+            "type": "string",
+          },
+          "value": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "value",
+          "category",
+          "reason",
+          "type",
+          "confidence",
+          "context",
+        ],
+        "type": "object",
+      },
+      "type": "array",
+    },
+  },
+  "required": [
+    "suggestions",
+  ],
+  "type": "object",
+}
+`;
+
+exports[`schema snapshots > ANALYZE_TRENDS_SCHEMA: JSON Schema 変換結果 1`] = `
+{
+  "properties": {
+    "suggestions": {
+      "items": {
+        "properties": {
+          "category": {
+            "type": "string",
+          },
+          "confidence": {
+            "type": "number",
+          },
+          "context": {
+            "type": "string",
+          },
+          "reason": {
+            "type": "string",
+          },
+          "type": {
+            "type": "string",
+          },
+          "value": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "value",
+          "category",
+          "reason",
+          "type",
+          "confidence",
+          "context",
+        ],
+        "type": "object",
+      },
+      "type": "array",
+    },
+  },
+  "required": [
+    "suggestions",
+  ],
+  "type": "object",
+}
+`;
+
+exports[`schema snapshots > CURATE_SCHEMA: Gemini スキーマ(type 小文字化) 1`] = `
+{
+  "properties": {
+    "selections": {
+      "items": {
+        "properties": {
+          "id": {
+            "type": "number",
+          },
+          "reason": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "id",
+          "reason",
+        ],
+        "type": "object",
+      },
+      "type": "array",
+    },
+  },
+  "required": [
+    "selections",
+  ],
+  "type": "object",
+}
+`;
+
+exports[`schema snapshots > CURATE_SCHEMA: JSON Schema 変換結果 1`] = `
+{
+  "properties": {
+    "selections": {
+      "items": {
+        "properties": {
+          "id": {
+            "type": "number",
+          },
+          "reason": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "id",
+          "reason",
+        ],
+        "type": "object",
+      },
+      "type": "array",
+    },
+  },
+  "required": [
+    "selections",
+  ],
+  "type": "object",
+}
+`;
+
+exports[`schema snapshots > DISCOVER_ENGLISH_SITES_SCHEMA: Gemini スキーマ(type 小文字化) 1`] = `
+{
+  "properties": {
+    "sites": {
+      "items": {
+        "properties": {
+          "category": {
+            "type": "string",
+          },
+          "lang": {
+            "type": "string",
+          },
+          "name": {
+            "type": "string",
+          },
+          "url": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+          "url",
+          "category",
+          "lang",
+        ],
+        "type": "object",
+      },
+      "type": "array",
+    },
+  },
+  "required": [
+    "sites",
+  ],
+  "type": "object",
+}
+`;
+
+exports[`schema snapshots > DISCOVER_ENGLISH_SITES_SCHEMA: JSON Schema 変換結果 1`] = `
+{
+  "properties": {
+    "sites": {
+      "items": {
+        "properties": {
+          "category": {
+            "type": "string",
+          },
+          "lang": {
+            "type": "string",
+          },
+          "name": {
+            "type": "string",
+          },
+          "url": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+          "url",
+          "category",
+          "lang",
+        ],
+        "type": "object",
+      },
+      "type": "array",
+    },
+  },
+  "required": [
+    "sites",
+  ],
+  "type": "object",
+}
+`;
+
+exports[`schema snapshots > DISCOVER_SITES_SCHEMA: Gemini スキーマ(type 小文字化) 1`] = `
+{
+  "properties": {
+    "sites": {
+      "items": {
+        "properties": {
+          "category": {
+            "type": "string",
+          },
+          "name": {
+            "type": "string",
+          },
+          "url": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+          "url",
+          "category",
+        ],
+        "type": "object",
+      },
+      "type": "array",
+    },
+  },
+  "required": [
+    "sites",
+  ],
+  "type": "object",
+}
+`;
+
+exports[`schema snapshots > DISCOVER_SITES_SCHEMA: JSON Schema 変換結果 1`] = `
+{
+  "properties": {
+    "sites": {
+      "items": {
+        "properties": {
+          "category": {
+            "type": "string",
+          },
+          "name": {
+            "type": "string",
+          },
+          "url": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+          "url",
+          "category",
+        ],
+        "type": "object",
+      },
+      "type": "array",
+    },
+  },
+  "required": [
+    "sites",
+  ],
+  "type": "object",
+}
+`;
+
+exports[`schema snapshots > EVOLUTION_SCHEMA: Gemini スキーマ(type 小文字化) 1`] = `
+{
+  "properties": {
+    "brands": {
+      "items": {
+        "properties": {
+          "category": {
+            "type": "string",
+          },
+          "reason": {
+            "type": "string",
+          },
+          "value": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "value",
+          "category",
+          "reason",
+        ],
+        "type": "object",
+      },
+      "type": "array",
+    },
+    "keywords": {
+      "items": {
+        "properties": {
+          "category": {
+            "type": "string",
+          },
+          "reason": {
+            "type": "string",
+          },
+          "value": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "value",
+          "category",
+          "reason",
+        ],
+        "type": "object",
+      },
+      "type": "array",
+    },
+    "sites": {
+      "items": {
+        "properties": {
+          "category": {
+            "type": "string",
+          },
+          "name": {
+            "type": "string",
+          },
+          "reason": {
+            "type": "string",
+          },
+          "url": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+          "url",
+          "category",
+          "reason",
+        ],
+        "type": "object",
+      },
+      "type": "array",
+    },
+  },
+  "required": [
+    "sites",
+    "brands",
+    "keywords",
+  ],
+  "type": "object",
+}
+`;
+
+exports[`schema snapshots > EVOLUTION_SCHEMA: JSON Schema 変換結果 1`] = `
+{
+  "properties": {
+    "brands": {
+      "items": {
+        "properties": {
+          "category": {
+            "type": "string",
+          },
+          "reason": {
+            "type": "string",
+          },
+          "value": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "value",
+          "category",
+          "reason",
+        ],
+        "type": "object",
+      },
+      "type": "array",
+    },
+    "keywords": {
+      "items": {
+        "properties": {
+          "category": {
+            "type": "string",
+          },
+          "reason": {
+            "type": "string",
+          },
+          "value": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "value",
+          "category",
+          "reason",
+        ],
+        "type": "object",
+      },
+      "type": "array",
+    },
+    "sites": {
+      "items": {
+        "properties": {
+          "category": {
+            "type": "string",
+          },
+          "name": {
+            "type": "string",
+          },
+          "reason": {
+            "type": "string",
+          },
+          "url": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+          "url",
+          "category",
+          "reason",
+        ],
+        "type": "object",
+      },
+      "type": "array",
+    },
+  },
+  "required": [
+    "sites",
+    "brands",
+    "keywords",
+  ],
+  "type": "object",
+}
+`;
+
+exports[`schema snapshots > FALLBACK_EVOLUTION_SCHEMA: Gemini スキーマ(type 小文字化) 1`] = `
+{
+  "properties": {
+    "sites": {
+      "items": {
+        "properties": {
+          "category": {
+            "type": "string",
+          },
+          "name": {
+            "type": "string",
+          },
+          "reason": {
+            "type": "string",
+          },
+          "url": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+          "url",
+          "category",
+          "reason",
+        ],
+        "type": "object",
+      },
+      "type": "array",
+    },
+  },
+  "required": [
+    "sites",
+  ],
+  "type": "object",
+}
+`;
+
+exports[`schema snapshots > FALLBACK_EVOLUTION_SCHEMA: JSON Schema 変換結果 1`] = `
+{
+  "properties": {
+    "sites": {
+      "items": {
+        "properties": {
+          "category": {
+            "type": "string",
+          },
+          "name": {
+            "type": "string",
+          },
+          "reason": {
+            "type": "string",
+          },
+          "url": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+          "url",
+          "category",
+          "reason",
+        ],
+        "type": "object",
+      },
+      "type": "array",
+    },
+  },
+  "required": [
+    "sites",
+  ],
+  "type": "object",
+}
+`;
+
+exports[`schema snapshots > RESTRUCTURE_SCHEMA(10): Gemini スキーマ(type 小文字化) 1`] = `
+{
+  "properties": {
+    "categories": {
+      "items": {
+        "properties": {
+          "brands": {
+            "items": {
+              "type": "string",
+            },
+            "type": "array",
+          },
+          "emoji": {
+            "type": "string",
+          },
+          "keywords": {
+            "items": {
+              "type": "string",
+            },
+            "type": "array",
+          },
+          "name": {
+            "type": "string",
+          },
+          "reason": {
+            "type": "string",
+          },
+          "score": {
+            "type": "number",
+          },
+        },
+        "required": [
+          "name",
+          "emoji",
+          "brands",
+          "keywords",
+          "score",
+          "reason",
+        ],
+        "type": "object",
+      },
+      "maxItems": "10",
+      "minItems": "10",
+      "type": "array",
+    },
+    "feedMapping": {
+      "items": {
+        "properties": {
+          "newCategory": {
+            "type": "string",
+          },
+          "url": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "url",
+          "newCategory",
+        ],
+        "type": "object",
+      },
+      "type": "array",
+    },
+    "newSuggestedFeeds": {
+      "items": {
+        "properties": {
+          "category": {
+            "type": "string",
+          },
+          "name": {
+            "type": "string",
+          },
+          "url": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+          "url",
+          "category",
+        ],
+        "type": "object",
+      },
+      "type": "array",
+    },
+  },
+  "required": [
+    "categories",
+    "feedMapping",
+    "newSuggestedFeeds",
+  ],
+  "type": "object",
+}
+`;
+
+exports[`schema snapshots > RESTRUCTURE_SCHEMA(10): JSON Schema 変換結果 1`] = `
+{
+  "properties": {
+    "categories": {
+      "items": {
+        "properties": {
+          "brands": {
+            "items": {
+              "type": "string",
+            },
+            "type": "array",
+          },
+          "emoji": {
+            "type": "string",
+          },
+          "keywords": {
+            "items": {
+              "type": "string",
+            },
+            "type": "array",
+          },
+          "name": {
+            "type": "string",
+          },
+          "reason": {
+            "type": "string",
+          },
+          "score": {
+            "type": "number",
+          },
+        },
+        "required": [
+          "name",
+          "emoji",
+          "brands",
+          "keywords",
+          "score",
+          "reason",
+        ],
+        "type": "object",
+      },
+      "type": "array",
+    },
+    "feedMapping": {
+      "items": {
+        "properties": {
+          "newCategory": {
+            "type": "string",
+          },
+          "url": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "url",
+          "newCategory",
+        ],
+        "type": "object",
+      },
+      "type": "array",
+    },
+    "newSuggestedFeeds": {
+      "items": {
+        "properties": {
+          "category": {
+            "type": "string",
+          },
+          "name": {
+            "type": "string",
+          },
+          "url": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+          "url",
+          "category",
+        ],
+        "type": "object",
+      },
+      "type": "array",
+    },
+  },
+  "required": [
+    "categories",
+    "feedMapping",
+    "newSuggestedFeeds",
+  ],
+  "type": "object",
+}
+`;
+
+exports[`schema snapshots > SUGGEST_CATEGORY_DETAILS_SCHEMA: Gemini スキーマ(type 小文字化) 1`] = `
+{
+  "properties": {
+    "brands": {
+      "items": {
+        "type": "string",
+      },
+      "type": "array",
+    },
+    "emoji": {
+      "type": "string",
+    },
+    "keywords": {
+      "items": {
+        "type": "string",
+      },
+      "type": "array",
+    },
+    "reason": {
+      "type": "string",
+    },
+  },
+  "required": [
+    "brands",
+    "keywords",
+    "emoji",
+    "reason",
+  ],
+  "type": "object",
+}
+`;
+
+exports[`schema snapshots > SUGGEST_CATEGORY_DETAILS_SCHEMA: JSON Schema 変換結果 1`] = `
+{
+  "properties": {
+    "brands": {
+      "items": {
+        "type": "string",
+      },
+      "type": "array",
+    },
+    "emoji": {
+      "type": "string",
+    },
+    "keywords": {
+      "items": {
+        "type": "string",
+      },
+      "type": "array",
+    },
+    "reason": {
+      "type": "string",
+    },
+  },
+  "required": [
+    "brands",
+    "keywords",
+    "emoji",
+    "reason",
+  ],
+  "type": "object",
+}
+`;
+
+exports[`schema snapshots > TRANSLATE_ARTICLES_SCHEMA: Gemini スキーマ(type 小文字化) 1`] = `
+{
+  "properties": {
+    "translations": {
+      "items": {
+        "properties": {
+          "desc": {
+            "type": "string",
+          },
+          "title": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "title",
+          "desc",
+        ],
+        "type": "object",
+      },
+      "type": "array",
+    },
+  },
+  "required": [
+    "translations",
+  ],
+  "type": "object",
+}
+`;
+
+exports[`schema snapshots > TRANSLATE_ARTICLES_SCHEMA: JSON Schema 変換結果 1`] = `
+{
+  "properties": {
+    "translations": {
+      "items": {
+        "properties": {
+          "desc": {
+            "type": "string",
+          },
+          "title": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "title",
+          "desc",
+        ],
+        "type": "object",
+      },
+      "type": "array",
+    },
+  },
+  "required": [
+    "translations",
+  ],
+  "type": "object",
+}
+`;
+
+exports[`schema snapshots > TRANSLATE_INTERESTS_SCHEMA: Gemini スキーマ(type 小文字化) 1`] = `
+{
+  "properties": {
+    "categories": {
+      "items": {
+        "properties": {
+          "brands": {
+            "items": {
+              "type": "string",
+            },
+            "type": "array",
+          },
+          "emoji": {
+            "type": "string",
+          },
+          "keywords": {
+            "items": {
+              "type": "string",
+            },
+            "type": "array",
+          },
+          "name": {
+            "type": "string",
+          },
+          "originalName": {
+            "type": "string",
+          },
+          "reason": {
+            "type": "string",
+          },
+          "score": {
+            "type": "number",
+          },
+        },
+        "required": [
+          "originalName",
+          "name",
+          "emoji",
+          "brands",
+          "keywords",
+          "score",
+          "reason",
+        ],
+        "type": "object",
+      },
+      "type": "array",
+    },
+  },
+  "required": [
+    "categories",
+  ],
+  "type": "object",
+}
+`;
+
+exports[`schema snapshots > TRANSLATE_INTERESTS_SCHEMA: JSON Schema 変換結果 1`] = `
+{
+  "properties": {
+    "categories": {
+      "items": {
+        "properties": {
+          "brands": {
+            "items": {
+              "type": "string",
+            },
+            "type": "array",
+          },
+          "emoji": {
+            "type": "string",
+          },
+          "keywords": {
+            "items": {
+              "type": "string",
+            },
+            "type": "array",
+          },
+          "name": {
+            "type": "string",
+          },
+          "originalName": {
+            "type": "string",
+          },
+          "reason": {
+            "type": "string",
+          },
+          "score": {
+            "type": "number",
+          },
+        },
+        "required": [
+          "originalName",
+          "name",
+          "emoji",
+          "brands",
+          "keywords",
+          "score",
+          "reason",
+        ],
+        "type": "object",
+      },
+      "type": "array",
+    },
+  },
+  "required": [
+    "categories",
+  ],
+  "type": "object",
+}
+`;

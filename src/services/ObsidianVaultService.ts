@@ -2,7 +2,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
 import { exec } from 'child_process';
-import { SchemaType, type ResponseSchema } from '@google/generative-ai';
+import { SchemaType, type ResponseSchema } from './ai/geminiTypes';
 import type { Article } from '../models/Article';
 import type { GeminiService } from './GeminiService';
 import type { ArchivistAgent } from '../agents/ArchivistAgent';

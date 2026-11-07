@@ -1,4 +1,4 @@
-import { type ResponseSchema } from "@google/generative-ai";
+import { type ResponseSchema } from "./ai/geminiTypes";
 import { z } from 'zod';
 import type { Interests, InterestCategory, FeedConfig, Credentials } from "../models/Schemas";
 import { normalizeCategoryName } from "../utils/normalize";

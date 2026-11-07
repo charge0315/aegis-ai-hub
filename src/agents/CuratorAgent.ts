@@ -1,6 +1,6 @@
 import { BaseAgent } from "./BaseAgent";
 import { GeminiService } from "../services/GeminiService";
-import { SchemaType, type ResponseSchema } from "@google/generative-ai";
+import { SchemaType, type ResponseSchema } from "../services/ai/geminiTypes";
 import type { Interests } from "../models/Schemas";
 
 export interface CurationResult {
