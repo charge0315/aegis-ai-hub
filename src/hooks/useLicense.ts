@@ -27,19 +27,17 @@ export function useLicense() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void refresh();
 
-    // ライセンス変更イベントを購読
-    const handler = (event: Event) => {
-      const detail = (event as CustomEvent<LicenseState>).detail;
-      setLicenseState(detail);
+    // ライセンス変更イベントを購読（main が IPC の license-changed で送る）
+    const unsubLicense = window.nexusApi?.onLicenseChanged?.((state) => {
+      setLicenseState(state);
       window.nexusApi.getFeatureGates().then(setFeatureGates);
-    };
-    window.addEventListener('license-changed', handler);
+    });
 
     // アップデートイベント
     const unsubUpdate = window.nexusApi?.onUpdateEvent?.((data) => setUpdateEvent(data));
 
     return () => {
-      window.removeEventListener('license-changed', handler);
+      unsubLicense?.();
       unsubUpdate?.();
     };
   }, [refresh]);

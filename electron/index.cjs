@@ -25,5 +25,5 @@ if (app.isPackaged) {
    * これにより、コンパイル待ちの手間を省き、迅速なフィードバックサイクルを可能にします。
    */
   require('esbuild-register');
-  require('./main.cjs');
+  require('./main.ts');
 }

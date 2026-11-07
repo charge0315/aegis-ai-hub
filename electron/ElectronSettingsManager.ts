@@ -10,8 +10,8 @@
 
 import { safeStorage } from 'electron';
 import fs from 'fs/promises';
-import { SettingsManager, SettingsManagerConfig } from '../src/services/SettingsManager';
-import { CredentialsSchema, Credentials } from '../src/models/Schemas';
+import { SettingsManager, type SettingsManagerConfig } from '../src/services/SettingsManager';
+import { CredentialsSchema, type Credentials } from '../src/models/Schemas';
 
 export class ElectronSettingsManager extends SettingsManager {
   /**

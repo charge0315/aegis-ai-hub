@@ -85,7 +85,6 @@ export interface NexusApiBridge {
   saveApiKey: (apiKey: string) => Promise<{ success: boolean }>;
   getCredentials: () => Promise<Credentials>;
   saveCredentials: (creds: Credentials) => Promise<{ success: boolean }>;
-  getProposals: () => Promise<{ sites: { url: string; name: string; reason: string; category: string }[] }>;
   restructureCategories: (count?: number, language?: string) => Promise<{ categories: Record<string, InterestCategory>; feedConfig: FeedConfig }>;
   discoverTrends: () => Promise<{ suggestions: TrendSuggestion[] }>;
   translateInterests: (settings: NexusSettings) => Promise<{ interests: Interests, feedConfig: FeedConfig }>;
@@ -106,6 +105,7 @@ export interface NexusApiBridge {
   // 自動アップデート
   checkForUpdates?: () => Promise<{ status: string }>;
   installUpdate?: () => Promise<void>;
+  onLicenseChanged?: (callback: (state: import('../services/LicenseManager').LicenseState) => void) => () => void;
   onUpdateEvent?: (callback: (data: { type: 'available' | 'downloaded' | 'error'; info?: unknown; message?: string }) => void) => () => void;
 }
 

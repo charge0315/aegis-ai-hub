@@ -28,6 +28,21 @@ export interface WindowState {
  * E2Eテスト環境下であるかどうかを判定する内部関数。
  * テスト時はベースURLを空にし、モックサーバーへのリクエストを容易にする。
  */
+/**
+ * 内部 HTTP API のトークン。ブラウザ単体の開発時だけ使う（Electron の中では IPC を使う）。
+ * main 側の NEXUS_API_TOKEN と同じ値を、Vite の VITE_NEXUS_API_TOKEN に入れる。
+ */
+const apiToken = (): string | undefined => (import.meta.env?.VITE_NEXUS_API_TOKEN as string | undefined) || undefined;
+
+/** 内部 HTTP API への fetch。トークンがあれば Authorization ヘッダーを付ける。 */
+const apiFetch = (url: string, init: RequestInit = {}): Promise<Response> => {
+  const token = apiToken();
+  if (!token) return fetch(url, init);
+  const headers = new Headers(init.headers);
+  headers.set('Authorization', `Bearer ${token}`);
+  return fetch(url, { ...init, headers });
+};
+
 const isE2E = () => (typeof window !== 'undefined' && (window as unknown as { isE2ETest?: boolean }).isE2ETest === true);
 
 /**
@@ -56,7 +71,7 @@ export const nexusApi = {
     // 2. Browser Fallback (Fetch)
     try {
       const url = `${this.getBackendUrl()}/api/dashboard`;
-      const res = await fetch(url);
+      const res = await apiFetch(url);
       const data = await res.json();
       const allArticles: Article[] = [];
       // Flatten grouped dashboard data from HTTP API
@@ -78,8 +93,8 @@ export const nexusApi = {
     try {
       const urlInterests = `${this.getBackendUrl()}/api/v5/interests`;
       const urlFeeds = `${this.getBackendUrl()}/api/v5/feeds`;
-      const interests = await fetch(urlInterests).then(r => r.json());
-      const feeds = await fetch(urlFeeds).then(r => r.json());
+      const interests = await apiFetch(urlInterests).then(r => r.json());
+      const feeds = await apiFetch(urlFeeds).then(r => r.json());
       return { interests, feedConfig: feeds };
     } catch (e) {
       console.error('[nexusApi] Fetch settings failed:', e);
@@ -92,7 +107,7 @@ export const nexusApi = {
     if (window.nexusApi?.syncSettings && !isE2E()) {
       return await window.nexusApi.syncSettings(settings);
     }
-    const res = await fetch(`${this.getBackendUrl()}/api/v5/sync-settings`, {
+    const res = await apiFetch(`${this.getBackendUrl()}/api/v5/sync-settings`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(settings)
@@ -105,7 +120,7 @@ export const nexusApi = {
     if (window.nexusApi?.triggerOrchestration && !isE2E()) {
       return await window.nexusApi.triggerOrchestration(requirements);
     }
-    const res = await fetch(`${this.getBackendUrl()}/api/v5/orchestrate`, {
+    const res = await apiFetch(`${this.getBackendUrl()}/api/v5/orchestrate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ requirements })
@@ -118,7 +133,7 @@ export const nexusApi = {
     if (window.nexusApi?.suggestCategory && !isE2E()) {
       return await window.nexusApi.suggestCategory(categoryName);
     }
-    const res = await fetch(`${this.getBackendUrl()}/api/v5/suggest-category`, {
+    const res = await apiFetch(`${this.getBackendUrl()}/api/v5/suggest-category`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ categoryName })
@@ -131,7 +146,7 @@ export const nexusApi = {
     if (window.nexusApi?.restructureCategories && !isE2E()) {
       return await window.nexusApi.restructureCategories(count, language);
     }
-    const res = await fetch(`${this.getBackendUrl()}/api/v5/restructure-categories`, {
+    const res = await apiFetch(`${this.getBackendUrl()}/api/v5/restructure-categories`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ count, language })
@@ -144,7 +159,7 @@ export const nexusApi = {
     if (window.nexusApi?.discoverTrends && !isE2E()) {
       return await window.nexusApi.discoverTrends();
     }
-    const res = await fetch(`${this.getBackendUrl()}/api/v5/discover-trends`, { method: 'POST' });
+    const res = await apiFetch(`${this.getBackendUrl()}/api/v5/discover-trends`, { method: 'POST' });
     return await res.json();
   },
 
@@ -153,7 +168,7 @@ export const nexusApi = {
     if (window.nexusApi?.translateInterests && !isE2E()) {
       return await window.nexusApi.translateInterests(settings);
     }
-    const res = await fetch(`${this.getBackendUrl()}/api/v5/translate-interests`, {
+    const res = await apiFetch(`${this.getBackendUrl()}/api/v5/translate-interests`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(settings)
@@ -166,7 +181,7 @@ export const nexusApi = {
     if (window.nexusApi?.resetToDefaults && !isE2E()) {
       return await window.nexusApi.resetToDefaults(language);
     }
-    const res = await fetch(`${this.getBackendUrl()}/api/v5/reset-to-defaults`, {
+    const res = await apiFetch(`${this.getBackendUrl()}/api/v5/reset-to-defaults`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ language })
@@ -179,7 +194,7 @@ export const nexusApi = {
     if (window.nexusApi?.reacquireAllFeeds && !isE2E()) {
       return await window.nexusApi.reacquireAllFeeds();
     }
-    const res = await fetch(`${this.getBackendUrl()}/api/v5/reacquire-all-feeds`, {
+    const res = await apiFetch(`${this.getBackendUrl()}/api/v5/reacquire-all-feeds`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' }
     });
@@ -233,7 +248,7 @@ export const nexusApi = {
     }
     try {
       const url = `${this.getBackendUrl()}/api/v5/ui-settings`;
-      const res = await fetch(url);
+      const res = await apiFetch(url);
       return await res.json();
     } catch {
       return {
@@ -274,7 +289,7 @@ export const nexusApi = {
     }
     try {
       const url = `${this.getBackendUrl()}/api/v5/usage-stats`;
-      const res = await fetch(url);
+      const res = await apiFetch(url);
       return await res.json();
     } catch {
       return {};
@@ -417,7 +432,8 @@ export function useAgentEvents(onRefresh?: () => void) {
     const backendUrl = isE2E() ? '' : 'http://localhost:3005';
     // ブラウザ版またはE2E環境では SSE (Server-Sent Events) でイベントを受信する。
     if (!window.nexusApi || isE2E()) {
-      const eventSource = new EventSource(`${backendUrl}/api/v5/events`);
+      const token = apiToken();
+      const eventSource = new EventSource(`${backendUrl}/api/v5/events${token ? `?token=${encodeURIComponent(token)}` : ''}`);
       eventSource.onmessage = (e) => {
         try {
           const data = JSON.parse(e.data);

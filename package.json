@@ -12,7 +12,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "build:electron": "npx esbuild electron/main.cjs --bundle --platform=node --target=node24 --outfile=electron/main.bundle.cjs --external:electron --external:fastify --external:@fastify/cors --external:electron-updater --external:electron-log --loader:.ts=ts",
+    "build:electron": "npx esbuild electron/main.ts --bundle --platform=node --target=node24 --outfile=electron/main.bundle.cjs --external:electron --external:fastify --external:@fastify/cors --external:electron-updater --external:electron-log --loader:.ts=ts",
     "dist": "npm run build && npm run build:electron && electron-builder",
     "lint": "eslint .",
     "preview": "vite preview",

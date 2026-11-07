@@ -43,6 +43,7 @@ import { FeedView } from './components/FeedView';
 import { OnboardingModal } from './components/OnboardingModal';
 import { useArticleFilter } from './hooks/useArticleFilter';
 import { useLicense } from './hooks/useLicense';
+import { UpdateBanner } from './components/UpdateBanner';
 
 interface AppBodyProps {
   ui: ReturnType<typeof useUiSettingsSync>;
@@ -120,7 +121,7 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
   const agents = useAgentEvents(refetch);
 
   // ライセンス状態とフィーチャーゲート
-  const { featureGates } = useLicense();
+  const { featureGates, updateEvent, installUpdate } = useLicense();
 
   // カスタムフックを使用して記事のフィルタリング、ソート、グループ化、統計計算を実行
   const {
@@ -151,6 +152,9 @@ const AppBody: React.FC<AppBodyProps> = ({ ui, settings, articles, sync, refetch
 
   return (
     <div className="window-base flex h-screen text-slate-200 overflow-hidden font-sans pb-[28px]">
+      {/* 自動更新の通知（main の update-event を表示する） */}
+      <UpdateBanner updateEvent={updateEvent} onInstall={() => { void installUpdate(); }} />
+
       {/* 初回起動オンボーディング */}
       {showOnboarding && (
         <OnboardingModal onSetup={handleOnboardingSetup} onSkip={handleOnboardingSkip} />
