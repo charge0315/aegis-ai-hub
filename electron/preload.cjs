@@ -48,11 +48,6 @@ contextBridge.exposeInMainWorld('nexusApi', {
   suggestCategory: (categoryName) => ipcRenderer.invoke('suggest-category', categoryName),
 
   /**
-   * AIが見つけた「改善の余地があるフィード」や「新しく追加すべき情報源」の提案を取得します。
-   */
-  getProposals: () => ipcRenderer.invoke('get-proposals'),
-
-  /**
    * セキュアに保存されている Gemini APIキーを取得します。
    */
   getApiKey: () => ipcRenderer.invoke('get-api-key'),
@@ -157,6 +152,15 @@ contextBridge.exposeInMainWorld('nexusApi', {
    * 機能ゲートの一覧（どの機能がFree/Proで使えるか）を取得します。
    */
   getFeatureGates: () => ipcRenderer.invoke('get-feature-gates'),
+
+  /**
+   * ライセンスの状態が変わったとき（有効化・解除）に呼ばれます。解除用の関数を返します。
+   */
+  onLicenseChanged: (callback) => {
+    const subscription = (event, state) => callback(state);
+    ipcRenderer.on('license-changed', subscription);
+    return () => ipcRenderer.removeListener('license-changed', subscription);
+  },
 
   // ── 自動アップデート ─────────────────────────────────────────────
 

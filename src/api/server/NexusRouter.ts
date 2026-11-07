@@ -149,6 +149,69 @@ export const nexusRouter = async (fastify: FastifyInstance, options: FastifyPlug
   fastify.get('/usage-stats', async () => {
     return await settingsManager.getUsageStats();
   });
+
+  // ── Phase 3 で追加（nexusApi が呼んでいたが、ここに無かった 4 ルート）──────────
+
+  /**
+   * POST /suggest-category
+   * カテゴリ名から、ブランド・キーワード・絵文字の提案を AI に出させる（IPC の suggest-category と同じ処理）。
+   */
+  fastify.post('/suggest-category', async (request, reply) => {
+    try {
+      const { categoryName } = (request.body ?? {}) as { categoryName?: string };
+      return await options.gemini.suggestCategoryDetails(categoryName ?? '');
+    } catch (error) {
+      console.error('[NexusRouter] Suggest Category Error:', error);
+      reply.status(500).send({ error: 'Failed to suggest category details' });
+    }
+  });
+
+  /**
+   * POST /translate-interests
+   * 興味関心の設定を、別の言語に翻訳する（IPC の translate-interests と同じ処理）。
+   */
+  fastify.post('/translate-interests', async (request, reply) => {
+    try {
+      return await options.evolution.translateInterests(request.body);
+    } catch (error) {
+      console.error('[NexusRouter] Translate Interests Error:', error);
+      reply.status(500).send({ error: 'Failed to translate interests' });
+    }
+  });
+
+  /**
+   * POST /reset-to-defaults
+   * 設定を初期状態に戻す（IPC の reset-to-defaults と同じ処理）。
+   * 注意: SettingsManager.resetToDefaults() は引数を取らないので、言語は実際には使われない（IPC と同じ）。
+   */
+  fastify.post('/reset-to-defaults', async (request, reply) => {
+    try {
+      const { language } = (request.body ?? {}) as { language?: string };
+      const success = await settingsManager.resetToDefaults(language || 'ja');
+      return { success };
+    } catch (error) {
+      console.error('[NexusRouter] Reset To Defaults Error:', error);
+      reply.status(500).send({ error: 'Failed to reset settings' });
+    }
+  });
+
+  /**
+   * GET /events
+   * エージェントの進捗を SSE（Server-Sent Events）で配信する。
+   * CORS プラグインが付けたヘッダーを引き継いでから、応答を Fastify の管理から外して書き続ける。
+   */
+  fastify.get('/events', async (_request, reply) => {
+    reply.hijack();
+    for (const [name, value] of Object.entries(reply.getHeaders())) {
+      if (value !== undefined) reply.raw.setHeader(name, value as string | number | string[]);
+    }
+    reply.raw.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      Connection: 'keep-alive',
+    });
+    orchestrator.subscribe(reply);
+  });
 };
 
 export default nexusRouter;
